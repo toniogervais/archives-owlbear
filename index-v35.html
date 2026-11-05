@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Les Archives — Owlbear V3.5</title>  <script type="module" crossorigin src="./assets/main-DNypp9xJ.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/index-BfJgTiPE.js">
+  <link rel="stylesheet" crossorigin href="./assets/main-oAzCF3Sy.css">
+</head>
+<body>
+  <main>
+    <h1>Les Archives de l'Imaginaire</h1>
+    <p id="status" role="status" aria-live="polite">Initialisation…</p>
+    <section id="auth-panel">
+      <h2>Connexion du meneur</h2>
+      <label>Courriel <input id="email" type="email" autocomplete="email"></label>
+      <label>Mot de passe <input id="password" type="password" autocomplete="current-password"></label>
+      <details id="config-panel">
+        <summary>Réglages de connexion (première utilisation)</summary>
+        <label>URL Supabase <input id="url" type="url" autocomplete="off" placeholder="https://projet.supabase.co"></label>
+        <label>Clé publique (anon / publishable) <input id="key" type="password" autocomplete="off"></label>
+        <p class="hint">Utilise uniquement la clé publique. Ne saisis jamais de clé secrète ni de clé service_role.</p>
+      </details>
+      <div class="buttons"><button id="login">Se connecter</button></div>
+    </section>
+    <section id="workspace" hidden>
+      <h2>Ma partie Owlbear</h2>
+      <label>Campagne <select id="campaign"></select></label>
+      <p id="link-state" class="hint">Vérification de la salle en cours…</p>
+      <details id="scene-settings">
+        <summary>Réglages de la scène</summary>
+        <p id="room" class="hint"></p>
+        <div class="buttons"><button id="link">Associer cette salle</button><button id="refresh">Actualiser l'état</button></div>
+        <div class="buttons"><button id="scene">Activer cette scène</button><button id="archives">Mode ARCHIVES</button><button id="owlbear">Mode OWLBEAR</button></div>
+        <p id="live-state">État non chargé.</p>
+        <p class="hint">L'association d'une salle et la sélection du mode restent réservées au meneur. Elles ne déplacent aucun pion.</p>
+      </details>
+    </section>
+    <section id="inventory-section" hidden>
+      <h2>Sauvegarde des cartes et pions</h2>
+      <p id="auto-state" class="auto-state" aria-live="polite">Sauvegarde automatique désactivée.</p>
+      <div class="buttons"><button id="auto-toggle">Activer la sauvegarde automatique</button></div>
+      <p class="hint">Active cette fonction une fois : ton choix sera mémorisé pour cette campagne et cette salle sur cet appareil. La sauvegarde se met en veille si la scène ou le mode change. Seuls les déplacements de cartes et pions sont enregistrés, pas leurs images.</p>
+      <details id="technical-tools">
+        <summary>Outils avancés (facultatif)</summary>
+        <p id="inventory-state" aria-live="polite">Lecture en attente…</p>
+        <div class="buttons"><button id="inspect">Actualiser les éléments</button><button id="snapshot">Enregistrer un instantané</button></div>
+        <p id="snapshot-state">Aucun instantané enregistré pendant cette session.</p>
+        <p class="hint">La sauvegarde et l'association des cartes restent privées au MJ. L'extension doit rester ouverte pour écouter les changements en V3.5.</p>
+      </details>
+      <div class="buttons"><button id="logout">Déconnexion</button></div>
+    </section>
+  </main>
+</body>
+</html>
