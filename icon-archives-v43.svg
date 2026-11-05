@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" aria-label="Les Archives de l'Imaginaire, grimoire ouvert">
+  <title>Les Archives de l'Imaginaire</title>
+  <g fill="none" stroke="#f5d68a" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M31.8 18C25.5 14.1 17.4 13.5 8.6 17v27.1c9-3.1 16.9-2.7 23.2 1.8V18Z" stroke-width="4.2"/>
+    <path d="M32.2 18c6.3-3.9 14.4-4.5 23.2-1v27.1c-9-3.1-16.9-2.7-23.2 1.8V18Z" stroke-width="4.2"/>
+    <path d="M31.9 18v28.1" stroke-width="3"/>
+    <path d="M14.1 24.7c3.7-.8 7.4-.7 11.3.4M38.6 25.1c3.8-1.1 7.5-1.2 11.3-.4M38.6 33c3.8-1 7.5-1 11.3-.4" stroke-width="2.5"/>
+    <path d="m19 37.7 3.4-7.7 3.4 7.7m-5.7-2.4h4.6" stroke-width="2.4"/>
+    <path d="m32 4 2.4 5.8L40 12l-5.6 2.2L32 20l-2.4-5.8L24 12l5.6-2.2Z" fill="#f5d68a" stroke="none"/>
+  </g>
+</svg>

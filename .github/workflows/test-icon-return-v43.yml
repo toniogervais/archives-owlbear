@@ -1,0 +1,20 @@
+name: Validation du retour et de l'icône V4.3
+on:
+  push:
+    branches:
+      - develop/archives-icon-v43
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Contrôle syntaxe du module
+        run: node --check src/v43/background.mjs
+      - name: Tests du retour et de l'icône
+        run: node --test tests/icon-return-v43.test.cjs

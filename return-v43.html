@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="fr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Retour aux Archives</title>
+<style>
+:root{color-scheme:dark;font-family:"Segoe UI",system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;padding:12px;background:#19121f;color:#f5e7c9}
+a{min-height:53px;display:flex;align-items:center;justify-content:center;text-align:center;
+border:1px solid #d7af62;border-radius:10px;background:#463316;color:#ffe8ad;
+font-size:16px;font-weight:700;text-decoration:none;cursor:pointer}
+a:hover{background:#65491f}
+a:focus-visible{outline:3px solid #f5d68a;outline-offset:2px}
+p{margin:8px 2px 0;text-align:center;font-size:11px;color:#c7b699}
+</style></head><body>
+<a id="return" target="archives-main" href="https://toniogervais.github.io/archives-owlbear/archives-app-v53-v41.html">← Retour aux Archives</a>
+<p>Retrouver mon canevas et mes cellules</p>
+<script type="module">
+import { O as OBR } from "./assets/index-BfJgTiPE.js";
+import { focusArchives } from "./src/v41/focus-archives.mjs";
+const link=document.getElementById("return");
+link.addEventListener("click",event=>{
+  if(focusArchives(link.href)){
+    event.preventDefault();
+    // Release the right-hand popover so it does not cover the map on return.
+    void OBR.popover.close("fr.archives-imaginaire.bridge/quick-return-v43").catch(()=>{});
+  }
+});
+await new Promise(resolve=>OBR.onReady(resolve));
+if(await OBR.player.getRole()==="GM")link.href+="?resume=1";
+</script>
+</body></html>

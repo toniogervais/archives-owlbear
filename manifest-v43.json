@@ -1,0 +1,14 @@
+{
+  "name": "Les Archives de l'Imaginaire — navigation V4.3",
+  "version": "4.3.0",
+  "manifest_version": 1,
+  "description": "Grimoire transparent et retour simplifié vers Les Archives, invitations MJ conservées.",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/background-v43.html",
+  "action": {
+    "title": "Les Archives de l'Imaginaire",
+    "icon": "https://toniogervais.github.io/archives-owlbear/icon-archives-v43.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/index-v41.html",
+    "width": 360,
+    "height": 260
+  }
+}
