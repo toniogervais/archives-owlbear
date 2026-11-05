@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Les Archives — Consultation Owlbear V3.5.1</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#f0f2f7;background:#111724}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;background:radial-gradient(ellipse at top,#253148,#111724 70%)}
+    main{max-width:1020px;margin:auto;padding:24px 16px 70px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}
+    h1{font-size:clamp(22px,4vw,31px);color:#f3d18b;margin:4px 0 5px}
+    h2{font-size:18px;margin:0 0 14px}
+    p{line-height:1.5}
+    .sub{color:#b5c0d2;margin:0 0 22px}
+    .tag{font-size:12px;border:1px solid #6b7d99;border-radius:30px;padding:5px 10px;color:#e6d19f}
+    .panel{background:#1b2537;border:1px solid #455672;border-radius:12px;padding:18px;margin-top:16px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+    label{display:block;font-size:13px;color:#d6deec}
+    input,select{display:block;width:100%;background:#121c2d;color:#fff;border:1px solid #72819c;border-radius:7px;padding:11px;margin-top:5px;font:inherit}
+    button{font:inherit;background:#47668f;color:#fff;border:1px solid #9aadc9;border-radius:7px;padding:10px 14px;cursor:pointer}
+    button:hover{background:#597ca8}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    .buttons{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .hint{font-size:12px;color:#aebbd0}
+    #status{padding:11px 14px;border-radius:8px;background:#293c57;color:#fff;min-height:43px}
+    .stats{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+    .stat{padding:10px 14px;border:1px solid #4c617c;border-radius:8px;min-width:120px}
+    .stat strong{display:block;font-size:22px;color:#f3d18b}
+    .muted{color:#b6c3d4}
+    .table-wrap{overflow-x:auto}
+    table{border-collapse:collapse;width:100%;font-size:14px}
+    th,td{padding:11px 9px;border-bottom:1px solid #3b4b62;text-align:left}
+    th{color:#dfc992;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+    td.coord{font-variant-numeric:tabular-nums;white-space:nowrap}
+    .hidden{color:#e3b6a2}
+
+    .plot-frame{border:1px solid #4a5d79;border-radius:8px;background:#0e1726;overflow:hidden}
+    #plot{display:block;width:100%;height:auto;aspect-ratio:960/620;touch-action:none;cursor:grab;user-select:none}
+    #plot.dragging{cursor:grabbing}
+    .legend{display:flex;gap:16px;flex-wrap:wrap;margin:10px 0;font-size:13px;color:#d3dce9}
+    .legend strong{display:inline-block;margin-right:5px}
+    .map-glyph{color:#e8bc6c}
+    .token-glyph{color:#80bce9}
+    .map-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}
+    #selection{min-height:50px;border-left:3px solid #9eb5d6;background:#24344c;padding:10px 13px;border-radius:4px;line-height:1.5;overflow-wrap:anywhere}
+    #plot .marker{cursor:pointer;outline:none}
+    #plot .marker.selected .marker-shape{stroke:#fff;stroke-width:4}
+    #plot .marker:focus .marker-shape{stroke:#fff;stroke-width:4}
+    #plot .marker-label{cursor:pointer}
+    #plot .marker:focus .marker-shape,#plot .marker:hover .marker-shape{stroke:#fff;stroke-width:3.5}
+    #plot .marker-label{pointer-events:none;fill:#f6f7fb;font-size:13px;paint-order:stroke;stroke:#0d1625;stroke-width:4px;stroke-linejoin:round}
+    #plot .axis-label{fill:#aebfd4;font-size:12px}
+    .plot-note{font-size:12px;color:#b9c6d8;margin:10px 0}
+
+    details summary{cursor:pointer;color:#e1cd9a;padding:11px 0;font-weight:600}
+    details[open] summary{margin-bottom:9px}
+    .slim{padding:13px 16px}
+    .heading-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .heading-row h2{margin:0}
+    .quiet{font-size:13px;color:#b6c3d4;margin:8px 0}
+    .simple-status{display:inline-flex;align-items:center;gap:8px;font-size:13px}
+    .simple-status::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#7fb5a4}
+    #status{margin-bottom:9px}
+    .opt-choices{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}
+    .opt-choices label{min-width:min(100%,270px);flex:1}
+    #technical-panel{margin-top:15px}
+    [hidden]{display:none!important}
+  </style>
+  <script type="module" crossorigin src="./assets/archivesViewer-x7kD_sWy.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/index-BfJgTiPE.js">
+  <link rel="modulepreload" crossorigin href="./assets/index-D5xPhma_.js">
+</head>
+<body>
+<main>
+  <header><div><h1>Les Archives de l'Imaginaire</h1><p class="sub">Consultation des cartes et pions Owlbear — V3.5.1</p></div><div class="buttons" style="margin:0;align-items:center">
+    <button id="return-owlbear" type="button">← Retour à Owlbear</button>
+    <span class="tag">Lecture seule · MJ</span>
+  </div></header>
+  <p id="status" role="status" aria-live="polite">Initialisation du module…</p>
+  <section class="panel" id="auth-panel">
+    <h2>Entrer dans mon espace</h2>
+    <p class="quiet">Connecte-toi avec ton compte meneur des Archives.</p>
+    <div class="grid">
+      <label>Courriel <input id="email" type="email" autocomplete="email"></label>
+      <label>Mot de passe <input id="password" type="password" autocomplete="current-password"></label>
+    </div>
+    <details id="connect-settings">
+      <summary>Paramètres de connexion Supabase</summary>
+      <div class="grid">
+        <label>Adresse Supabase <input id="url" type="url" autocomplete="off" placeholder="https://projet.supabase.co"></label>
+        <label>Clé publique Supabase <input id="key" type="password" autocomplete="off"></label>
+      </div>
+      <p class="hint">Utilise uniquement la clé publique (anon / publishable), jamais une clé secrète ou service_role. Aucun mot de passe n'est conservé par ce module.</p>
+    </details>
+    <div class="buttons"><button id="login">Entrer dans Les Archives</button></div>
+  </section>
+  <section id="workspace" hidden>
+
+    <section class="panel slim">
+      <div class="heading-row"><h2>Ma scène Owlbear</h2><button id="logout" hidden aria-hidden="true" tabindex="-1">Déconnexion du compte MJ</button></div>
+      <div id="campaign-row" class="opt-choices">
+        <label>Campagne <select id="campaign"></select></label>
+      </div>
+      <div id="scene-row" class="opt-choices">
+        <label>Scène <select id="scene"></select></label>
+      </div>
+      <p id="meta" class="quiet">Chargement de la scène…</p>
+      <div class="buttons"><button id="refresh">Actualiser maintenant</button></div>
+    </section>
+
+    <section class="panel" id="map-panel">
+      <div class="heading-row"><h2>Carte et pions</h2><span class="quiet" id="stream-state" aria-live="polite">Connexion aux positions…</span></div>
+      <p class="quiet">Retrouve les positions de ta scène sauvegardée. Clique sur un élément pour voir ses détails.</p>
+      <div class="legend">
+        <span><strong class="map-glyph">◆</strong> Carte (origine)</span>
+        <span><strong class="token-glyph">●</strong> Pion (position)</span>
+        <span>◌ Élément masqué (visible seulement par le MJ)</span>
+      </div>
+      <div class="map-tools">
+        <button type="button" id="zoom-in" aria-label="Agrandir le plan">Zoom +</button>
+        <button type="button" id="zoom-out" aria-label="Réduire le plan">Zoom −</button>
+        <button type="button" id="zoom-reset">Recentrer</button>
+      </div>
+      <div id="selection" role="status" aria-live="polite">Choisis un pion ou une carte sur le plan pour voir ses détails.</div>
+      <div class="plot-frame">
+        <svg id="plot" viewBox="0 0 960 620" role="img" aria-label="Plan schématique des positions Owlbear. Les éléments sont aussi accessibles dans le tableau ci-dessous."></svg>
+      </div>
+      <p class="plot-note">Déplace le plan avec la souris ou le doigt. Affichage simplifié : les images et les dimensions des cartes ne sont pas encore transmises.</p>
+    </section>
+
+
+    <details id="technical-panel" class="panel">
+      <summary>Informations techniques (facultatif)</summary>
+      <p id="scene-id" class="hint"></p>
+      <div class="stats">
+        <div class="stat"><strong id="maps">0</strong>Cartes</div>
+        <div class="stat"><strong id="tokens">0</strong>Pions</div>
+        <div class="stat"><strong id="hidden-count">0</strong>Masqués</div>
+      </div>
+      <section class="panel">
+      <h2>Tableau technique des éléments</h2>
+      <p class="hint">Liste exacte des coordonnées X/Y enregistrées. Réservée au MJ propriétaire, y compris les éléments masqués.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Type</th><th>Nom</th><th>Position X</th><th>Position Y</th><th>Visibilité</th></tr></thead>
+        <tbody id="items"><tr><td colspan="5">Aucun instantané sélectionné.</td></tr></tbody>
+      </table></div>
+    </section>
+    </details>
+  </section>
+</main>
+</body>
+</html>
