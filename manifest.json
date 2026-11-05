@@ -1,12 +1,12 @@
 {
   "name": "Archives Imaginaire — Owlbear",
-  "version": "2.7.1",
+  "version": "2.7.2",
   "manifest_version": 1,
   "description": "Passerelle test Owlbear/Supabase : salle, mode et scène active.",
   "action": {
     "title": "Archives — Synchronisation",
     "icon": "https://toniogervais.github.io/archives-owlbear/icon.svg",
-    "popover": "https://toniogervais.github.io/archives-owlbear/index.html",
+    "popover": "https://toniogervais.github.io/archives-owlbear/index-v272.html",
     "width": 400,
     "height": 600
   }
