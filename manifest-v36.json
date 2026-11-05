@@ -1,0 +1,14 @@
+{
+  "name": "Archives Imaginaire — Owlbear",
+  "version": "3.6.0",
+  "manifest_version": 1,
+  "description": "Accès à l'application complète des Archives depuis Owlbear avec retour en un clic.",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/background-v36.html",
+  "action": {
+    "title": "Archives — Synchronisation",
+    "icon": "https://toniogervais.github.io/archives-owlbear/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/index-v36.html",
+    "width": 400,
+    "height": 600
+  }
+}
