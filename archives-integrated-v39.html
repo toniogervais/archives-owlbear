@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les Archives de l'Imaginaire — Navigation intégrée V3.9</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0b0810;color:#f4e6c7;font-family:"Segoe UI",system-ui,sans-serif}
+*{box-sizing:border-box}
+#archives{width:100%;height:100%;border:0;display:block}
+dialog{width:min(92vw,480px);border-radius:14px;border:1px solid #c5a35b;background:#1a1421;color:#f4e6c7;padding:22px;box-shadow:0 16px 70px #000c}
+dialog::backdrop{background:#000a}dialog h2{margin:0 0 12px;font-size:20px}dialog p{line-height:1.5;font-size:14px}
+dialog input{width:100%;padding:12px;margin-top:7px;border-radius:8px;color:#f4e6c7;background:#100d15;border:1px solid #947a4c}
+dialog menu{display:flex;gap:8px;justify-content:flex-end;padding:0;margin:18px 0 0}
+button{min-height:42px;padding:10px 14px;border:1px solid #c4a05a;background:#3a2b16;border-radius:8px;color:#ffe5ab;font-weight:700;cursor:pointer}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid #f5ce75;outline-offset:2px}
+#feedback{position:fixed;z-index:20;left:50%;top:18px;transform:translateX(-50%);max-width:90vw;background:#1b1422;padding:13px;border-radius:9px;border:1px solid #bf9852;box-shadow:0 8px 28px #0009}
+#feedback[hidden]{display:none}#feedback a{color:#f9d887}
+#error{min-height:20px;color:#ffbdb1}
+#owlbear-panel{position:fixed;inset:0;z-index:30;background:#09080d;display:flex;flex-direction:column}
+#owlbear-panel[hidden]{display:none}
+#owlbear-header{height:54px;min-height:54px;padding:6px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px;background:#1a1421;border-bottom:1px solid #b99a57}
+#owlbear-header strong{font-size:16px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#owlbear-frame{flex:1;width:100%;min-height:0;border:0;background:#09080d}
+#owlbear-hint{margin:0;padding:5px 12px;color:#dac9a3;font-size:12px;text-align:center;background:#16121b}
+@media(max-width:560px){#owlbear-header{padding:5px 8px}#owlbear-header strong{font-size:12px}#owlbear-close{font-size:12px;padding:8px}}
+</style>
+</head>
+<body>
+<iframe id="archives" src="./archives-app-v51-v37.html" title="Les Archives de l'Imaginaire — application principale" allow="fullscreen"></iframe>
+<section id="owlbear-panel" hidden aria-label="Carte Owlbear intégrée aux Archives">
+<header id="owlbear-header"><strong>Owlbear Rodeo — cartes et pions</strong><button type="button" id="owlbear-close">← Retour aux Archives</button></header>
+<p id="owlbear-hint">Si Owlbear reste vide ou refuse l'affichage, l'intégration directe de la salle est bloquée par ses règles de sécurité. Reviens aux Archives.</p>
+<iframe id="owlbear-frame" title="Carte et pions Owlbear Rodeo" allow="fullscreen; clipboard-read; clipboard-write"></iframe>
+</section>
+<dialog id="room-setup" aria-labelledby="room-title">
+<form id="room-form">
+<h2 id="room-title">Relier la salle Owlbear</h2>
+<p>Colle une seule fois le lien de ta salle Owlbear. Tu pourras ensuite utiliser l’icône Owlbear de ton canevas.</p>
+<label for="room-url">Lien de la salle Owlbear</label>
+<input id="room-url" type="url" placeholder="https://www.owlbear.rodeo/room/…" required autocomplete="url">
+<p id="error" role="alert"></p>
+<menu><button type="button" id="room-cancel">Annuler</button><button type="submit">Enregistrer et ouvrir</button></menu>
+</form>
+</dialog>
+<div id="feedback" role="status" aria-live="polite" hidden></div>
+<script type="module" src="./src/v39/launcher.mjs"></script>
+</body>
+</html>
