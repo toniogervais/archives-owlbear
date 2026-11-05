@@ -1,0 +1,14 @@
+{
+  "name": "Les Archives — retour fonctionnel V4.2",
+  "version": "4.2.0",
+  "manifest_version": 1,
+  "description": "Correction du bouton de retour à droite : ouverture du menu de retour via l'API Owlbear. Invitations conservées.",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/background-v42.html",
+  "action": {
+    "title": "Les Archives — Retour",
+    "icon": "https://toniogervais.github.io/archives-owlbear/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/index-v41.html",
+    "width": 360,
+    "height": 260
+  }
+}

@@ -1,0 +1,22 @@
+name: Vérifier le bouton de retour Owlbear V4.2
+on:
+  push:
+    branches:
+      - develop/archives-right-button-v42
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier la syntaxe
+        run: node --check src/v42/background.mjs
+      - name: Vérifier le bouton de droite et les invitations
+        run: node --test tests/right-button-v42.test.cjs
