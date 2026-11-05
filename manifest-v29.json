@@ -1,0 +1,13 @@
+{
+  "name": "Archives Imaginaire — Owlbear",
+  "version": "2.9.0",
+  "manifest_version": 1,
+  "description": "Passerelle MJ Owlbear/Supabase : sauvegarde manuelle ou automatique des positions des cartes et pions.",
+  "action": {
+    "title": "Archives — Synchronisation",
+    "icon": "https://toniogervais.github.io/archives-owlbear/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/index-v29.html",
+    "width": 400,
+    "height": 600
+  }
+}
