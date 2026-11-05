@@ -1,0 +1,14 @@
+{
+  "name": "Archives Imaginaire — Owlbear",
+  "version": "3.8.0",
+  "manifest_version": 1,
+  "description": "Accès simplifié au canevas des Archives, retour direct à Owlbear, sans barre de synchronisation.",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/background-v38.html",
+  "action": {
+    "title": "Les Archives",
+    "icon": "https://toniogervais.github.io/archives-owlbear/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/index-v38.html",
+    "width": 360,
+    "height": 250
+  }
+}

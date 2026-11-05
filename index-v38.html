@@ -1,0 +1,8 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Les Archives</title>
+<style>body{font:14px "Segoe UI",system-ui,sans-serif;background:#131019;color:#f1e2c1;padding:16px;margin:0}h1{font-size:18px}button{width:100%;padding:14px;background:#3c2c15;color:#ffe3a2;border:1px solid #c9a65a;border-radius:8px;font-weight:700;cursor:pointer}p{line-height:1.5;color:#d6c7a9;font-size:12px}#status{color:#f5bdad}</style></head>
+<body><h1>✦ Les Archives de l'Imaginaire</h1><button id="open">Ouvrir Les Archives</button><p>Ton espace de préparation, depuis Owlbear. Pour une utilisation principale dans ton navigateur, ouvre l’adresse des Archives.</p><p id="status" role="status"></p>
+<script type="module">
+import { O as OBR } from './assets/index-BfJgTiPE.js';
+const b=document.getElementById('open'), s=document.getElementById('status');
+b.addEventListener('click',async()=>{b.disabled=true;try{await new Promise(resolve=>OBR.onReady(resolve));if(await OBR.player.getRole()!=='GM')throw Error('Réservé au meneur.');await OBR.modal.open({id:'fr.archives-imaginaire.bridge/archives-viewer',url:new URL('./archives-host-v38.html',location.href).href,fullScreen:true,hideBackdrop:true,hidePaper:true});}catch(e){s.textContent=e.message;}finally{b.disabled=false;}});
+</script></body></html>
