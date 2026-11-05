@@ -1,0 +1,32 @@
+<!doctype html><html lang="fr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Les Archives — Navigation</title>
+<style>body{margin:0;padding:16px;background:#18121e;color:#f2e6c6;font:14px "Segoe UI",system-ui,sans-serif}h1{font-size:17px;margin:0 0 14px}
+button,a{display:block;box-sizing:border-box;width:100%;border:1px solid #ba9956;border-radius:8px;color:#fff0c7;background:#3e2e17;padding:12px;text-align:center;text-decoration:none;font-weight:700;cursor:pointer}
+button.secondary{background:#241b2b;margin-top:13px;font-weight:500;font-size:12px}#status{font-size:12px;color:#ead3a4}
+button:focus-visible,a:focus-visible{outline:3px solid #f2c56b}</style></head><body>
+<h1>✦ Les Archives de l'Imaginaire</h1>
+<a id="return" target="archives-main" href="https://toniogervais.github.io/archives-owlbear/archives-app-v52-v40.html">← Retour aux Archives</a>
+<button class="secondary" id="invite" hidden>Inviter les joueurs à revenir aux Archives</button>
+<p id="status" role="status"></p>
+<script type="module">
+import { O as OBR } from "./assets/index-BfJgTiPE.js";
+const status=document.getElementById("status"), button=document.getElementById("invite");
+const channel="fr.archives-imaginaire.bridge/return-invite:v40";
+await new Promise(resolve=>OBR.onReady(resolve));
+if(await OBR.player.getRole()==="GM"){
+  document.getElementById("return").href += "?main=1";
+  button.hidden=false;
+  button.addEventListener("click",async()=>{
+    button.disabled=true;
+    try{
+      await OBR.broadcast.sendMessage(channel,{
+        type:"archives:invite:v40",target:"ARCHIVES",
+        id:Date.now()+"-"+Math.random().toString(36).slice(2)
+      });
+      status.textContent="Invitation envoyée aux joueurs présents dans Owlbear.";
+    }catch(e){status.textContent="Envoi impossible : "+e.message}
+    finally{button.disabled=false}
+  });
+}
+</script></body></html>

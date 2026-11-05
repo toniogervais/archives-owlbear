@@ -1,0 +1,14 @@
+{
+  "name": "Les Archives — navigation MJ et invitations",
+  "version": "4.0.0",
+  "manifest_version": 1,
+  "description": "Retour aux Archives en un clic et invitations aux joueurs sur ordre du meneur.",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/background-v40.html",
+  "action": {
+    "title": "Retour aux Archives",
+    "icon": "https://toniogervais.github.io/archives-owlbear/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/index-v40.html",
+    "width": 360,
+    "height": 260
+  }
+}

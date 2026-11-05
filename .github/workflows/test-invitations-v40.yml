@@ -1,0 +1,22 @@
+name: Vérification du prototype Archives V4.0
+on:
+  push:
+    branches:
+      - develop/archives-first-invitations-v40
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Contrôle syntaxe des modules
+        run: |
+          node --check src/v40/archives-navigation.mjs
+          node --check src/v40/background.mjs
+      - name: Tests de structure et de câblage
+        run: node --test tests/invitations-v40.test.cjs
