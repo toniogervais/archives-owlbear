@@ -1,0 +1,14 @@
+{
+  "name": "Archives Imaginaire — Owlbear",
+  "version": "3.5.1",
+  "manifest_version": 1,
+  "description": "Bascule en un clic Owlbear/Archives avec retour direct et sauvegarde MJ.",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/background-v351.html",
+  "action": {
+    "title": "Archives — Synchronisation",
+    "icon": "https://toniogervais.github.io/archives-owlbear/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/index-v351.html",
+    "width": 400,
+    "height": 600
+  }
+}
