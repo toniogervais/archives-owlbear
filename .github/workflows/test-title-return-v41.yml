@@ -1,0 +1,23 @@
+name: Vérifier Archives V4.1 — titre et retour
+on:
+  push:
+    branches:
+      - develop/archives-title-return-v41
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntaxe des modules de navigation
+        run: |
+          node --check src/v41/archives-navigation.mjs
+          node --check src/v41/background.mjs
+          node --check src/v41/focus-archives.mjs
+      - name: Tests navigation V4.1
+        run: node --test tests/title-return-v41.test.cjs

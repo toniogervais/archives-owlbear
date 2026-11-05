@@ -1,0 +1,14 @@
+{
+  "name": "Les Archives — retour rapide & invitations",
+  "version": "4.1.0",
+  "manifest_version": 1,
+  "description": "Retour aux Archives sans recharger l'onglet existant, invitations des joueurs.",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/background-v41.html",
+  "action": {
+    "title": "Retour aux Archives",
+    "icon": "https://toniogervais.github.io/archives-owlbear/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/index-v41.html",
+    "width": 360,
+    "height": 260
+  }
+}
