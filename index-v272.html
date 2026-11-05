@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="fr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Les Archives — Owlbear</title>  <script type="module" crossorigin src="./assets/index-BeqIfdJB.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-BJbpcW2f.css">
+</head>
+<body>
+  <main>
+    <h1>Les Archives de l'Imaginaire</h1>
+    <p id="status" role="status">Initialisation…</p>
+    <section>
+      <h2>Connexion Supabase</h2>
+      <label>URL Supabase <input id="url" type="url" placeholder="https://projet.supabase.co"></label>
+      <label>Clé publique (anon/publishable) <input id="key" type="password" autocomplete="off"></label>
+      <label>Courriel <input id="email" type="email" autocomplete="email"></label>
+      <label>Mot de passe <input id="password" type="password" autocomplete="current-password"></label>
+      <div class="buttons"><button id="login">Se connecter</button><button id="logout">Se déconnecter</button></div>
+      <p class="hint">Ne jamais utiliser de clé service_role ou de secret Supabase. Les identifiants ne sont pas publiés dans GitHub.</p>
+    </section>
+    <section id="workspace" hidden>
+      <h2>Salle et campagne</h2>
+      <p id="room"></p>
+      <label>Campagne <select id="campaign"></select></label>
+      <div class="buttons"><button id="link">Associer cette salle</button><button id="refresh">Actualiser l'état</button></div>
+      <p id="link-state">Aucune association vérifiée.</p>
+      <div class="buttons"><button id="scene">Activer cette scène</button><button id="archives">Mode ARCHIVES</button><button id="owlbear">Mode OWLBEAR</button></div>
+      <p id="live-state">État non chargé.</p>
+      <p class="hint">Version pilote : association, mode et scène uniquement. Révélations d'images et pions non activés.</p>
+    </section>
+  </main>
+</body>
+</html>
