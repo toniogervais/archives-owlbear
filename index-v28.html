@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="fr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Les Archives — Owlbear</title>  <script type="module" crossorigin src="./assets/index-D-d6gF93.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-BJbpcW2f.css">
+</head>
+<body>
+  <main>
+    <h1>Les Archives de l'Imaginaire</h1>
+    <p id="status" role="status">Initialisation…</p>
+    <section>
+      <h2>Connexion Supabase</h2>
+      <label>URL Supabase <input id="url" type="url" placeholder="https://projet.supabase.co"></label>
+      <label>Clé publique (anon/publishable) <input id="key" type="password" autocomplete="off"></label>
+      <label>Courriel <input id="email" type="email" autocomplete="email"></label>
+      <label>Mot de passe <input id="password" type="password" autocomplete="current-password"></label>
+      <div class="buttons"><button id="login">Se connecter</button><button id="logout">Se déconnecter</button></div>
+      <p class="hint">Ne jamais utiliser de clé service_role ou de secret Supabase. Les identifiants ne sont pas publiés dans GitHub.</p>
+    </section>
+    <section id="workspace" hidden>
+      <h2>Salle et campagne</h2>
+      <p id="room"></p>
+      <label>Campagne <select id="campaign"></select></label>
+      <div class="buttons"><button id="link">Associer cette salle</button><button id="refresh">Actualiser l'état</button></div>
+      <p id="link-state">Aucune association vérifiée.</p>
+      <div class="buttons"><button id="scene">Activer cette scène</button><button id="archives">Mode ARCHIVES</button><button id="owlbear">Mode OWLBEAR</button></div>
+      <p id="live-state">État non chargé.</p>
+      <p class="hint">La scène est liée à la campagne. Les changements de mode ne déplacent pas les pions.</p>
+    </section>
+    <section id="inventory-section" hidden>
+      <h2>Cartes et pions de la scène</h2>
+      <p id="inventory-state" aria-live="polite">Lecture en attente…</p>
+      <div class="buttons"><button id="inspect">Actualiser les éléments</button><button id="snapshot">Enregistrer un instantané</button></div>
+      <p id="snapshot-state">Aucun instantané enregistré pendant cette session.</p>
+      <p class="hint">V2.8 : enregistrement manuel des noms, identifiants et positions des cartes et pions dans Supabase, visible par le MJ propriétaire uniquement. Pas de copie des images ni de déplacement automatique des pions. Nécessite la migration SQL V2.8.</p>
+    </section>
+  </main>
+</body>
+</html>
