@@ -1,0 +1,15 @@
+{
+  "name": "Archives Imaginaire",
+  "version": "4.4.0",
+  "manifest_version": 1,
+  "description": "Retour direct dans Edge avec module facultatif. Invitations MJ conservées.",
+  "icon": "https://toniogervais.github.io/archives-owlbear/icon-archives-v43.svg",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/background-v44.html",
+  "action": {
+    "title": "Retour aux Archives",
+    "icon": "https://toniogervais.github.io/archives-owlbear/icon-archives-v43.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/index-v41.html",
+    "width": 360,
+    "height": 260
+  }
+}
