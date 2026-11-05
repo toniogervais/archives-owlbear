@@ -1,0 +1,36 @@
+name: Build Archives Windows (prototype)
+on:
+  push:
+    branches:
+      - develop/archives-windows-native
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/build-archives-windows.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build Windows x64
+        shell: pwsh
+        run: |
+          dotnet publish desktop/ArchivesImaginaire.Windows/ArchivesImaginaire.Windows.csproj -c Release -r win-x64 --self-contained true -o output/ArchivesImaginaire
+      - name: Package Windows application
+        shell: pwsh
+        run: |
+          Compress-Archive -Path 'output/ArchivesImaginaire/*' -DestinationPath 'output/ArchivesImaginaire-Windows-x64.zip' -Force
+      - name: Attach build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ArchivesImaginaire-Windows-x64
+          path: output/ArchivesImaginaire-Windows-x64.zip
+          retention-days: 14
