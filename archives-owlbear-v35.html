@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Les Archives — Consultation Owlbear V3.5</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#f0f2f7;background:#111724}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;background:radial-gradient(ellipse at top,#253148,#111724 70%)}
+    main{max-width:1020px;margin:auto;padding:24px 16px 70px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}
+    h1{font-size:clamp(22px,4vw,31px);color:#f3d18b;margin:4px 0 5px}
+    h2{font-size:18px;margin:0 0 14px}
+    p{line-height:1.5}
+    .sub{color:#b5c0d2;margin:0 0 22px}
+    .tag{font-size:12px;border:1px solid #6b7d99;border-radius:30px;padding:5px 10px;color:#e6d19f}
+    .panel{background:#1b2537;border:1px solid #455672;border-radius:12px;padding:18px;margin-top:16px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+    label{display:block;font-size:13px;color:#d6deec}
+    input,select{display:block;width:100%;background:#121c2d;color:#fff;border:1px solid #72819c;border-radius:7px;padding:11px;margin-top:5px;font:inherit}
+    button{font:inherit;background:#47668f;color:#fff;border:1px solid #9aadc9;border-radius:7px;padding:10px 14px;cursor:pointer}
+    button:hover{background:#597ca8}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    .buttons{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .hint{font-size:12px;color:#aebbd0}
+    #status{padding:11px 14px;border-radius:8px;background:#293c57;color:#fff;min-height:43px}
+    .stats{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+    .stat{padding:10px 14px;border:1px solid #4c617c;border-radius:8px;min-width:120px}
+    .stat strong{display:block;font-size:22px;color:#f3d18b}
+    .muted{color:#b6c3d4}
+    .table-wrap{overflow-x:auto}
+    table{border-collapse:collapse;width:100%;font-size:14px}
+    th,td{padding:11px 9px;border-bottom:1px solid #3b4b62;text-align:left}
+    th{color:#dfc992;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+    td.coord{font-variant-numeric:tabular-nums;white-space:nowrap}
+    .hidden{color:#e3b6a2}
+
+    .plot-frame{border:1px solid #4a5d79;border-radius:8px;background:#0e1726;overflow:hidden}
+    #plot{display:block;width:100%;height:auto;aspect-ratio:960/620;touch-action:none;cursor:grab;user-select:none}
+    #plot.dragging{cursor:grabbing}
+    .legend{display:flex;gap:16px;flex-wrap:wrap;margin:10px 0;font-size:13px;color:#d3dce9}
+    .legend strong{display:inline-block;margin-right:5px}
+    .map-glyph{color:#e8bc6c}
+    .token-glyph{color:#80bce9}
+    .map-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}
+    #selection{min-height:50px;border-left:3px solid #9eb5d6;background:#24344c;padding:10px 13px;border-radius:4px;line-height:1.5;overflow-wrap:anywhere}
+    #plot .marker{cursor:pointer;outline:none}
+    #plot .marker.selected .marker-shape{stroke:#fff;stroke-width:4}
+    #plot .marker:focus .marker-shape{stroke:#fff;stroke-width:4}
+    #plot .marker-label{cursor:pointer}
+    #plot .marker:focus .marker-shape,#plot .marker:hover .marker-shape{stroke:#fff;stroke-width:3.5}
+    #plot .marker-label{pointer-events:none;fill:#f6f7fb;font-size:13px;paint-order:stroke;stroke:#0d1625;stroke-width:4px;stroke-linejoin:round}
+    #plot .axis-label{fill:#aebfd4;font-size:12px}
+    .plot-note{font-size:12px;color:#b9c6d8;margin:10px 0}
+
+    details summary{cursor:pointer;color:#e1cd9a;padding:11px 0;font-weight:600}
+    details[open] summary{margin-bottom:9px}
+    .slim{padding:13px 16px}
+    .heading-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .heading-row h2{margin:0}
+    .quiet{font-size:13px;color:#b6c3d4;margin:8px 0}
+    .simple-status{display:inline-flex;align-items:center;gap:8px;font-size:13px}
+    .simple-status::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#7fb5a4}
+    #status{margin-bottom:9px}
+    .opt-choices{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}
+    .opt-choices label{min-width:min(100%,270px);flex:1}
+    #technical-panel{margin-top:15px}
+    [hidden]{display:none!important}
+  </style>
+</head>
+<body>
+<main>
+  <header><div><h1>Les Archives de l'Imaginaire</h1><p class="sub">Consultation des cartes et pions Owlbear — V3.5</p></div><div class="buttons" style="margin:0;align-items:center">
+    <button id="return-owlbear" hidden type="button">← Retour à Owlbear</button>
+    <span class="tag">Lecture seule · MJ</span>
+  </div></header>
+  <p id="status" role="status" aria-live="polite">Initialisation du module…</p>
+  <section class="panel" id="auth-panel">
+    <h2>Entrer dans mon espace</h2>
+    <p class="quiet">Connecte-toi avec ton compte meneur des Archives.</p>
+    <div class="grid">
+      <label>Courriel <input id="email" type="email" autocomplete="email"></label>
+      <label>Mot de passe <input id="password" type="password" autocomplete="current-password"></label>
+    </div>
+    <details id="connect-settings">
+      <summary>Paramètres de connexion Supabase</summary>
+      <div class="grid">
+        <label>Adresse Supabase <input id="url" type="url" autocomplete="off" placeholder="https://projet.supabase.co"></label>
+        <label>Clé publique Supabase <input id="key" type="password" autocomplete="off"></label>
+      </div>
+      <p class="hint">Utilise uniquement la clé publique (anon / publishable), jamais une clé secrète ou service_role. Aucun mot de passe n'est conservé par ce module.</p>
+    </details>
+    <div class="buttons"><button id="login">Entrer dans Les Archives</button></div>
+  </section>
+  <section id="workspace" hidden>
+
+    <section class="panel slim">
+      <div class="heading-row"><h2>Ma scène Owlbear</h2><button id="logout">Quitter</button></div>
+      <div id="campaign-row" class="opt-choices">
+        <label>Campagne <select id="campaign"></select></label>
+      </div>
+      <div id="scene-row" class="opt-choices">
+        <label>Scène <select id="scene"></select></label>
+      </div>
+      <p id="meta" class="quiet">Chargement de la scène…</p>
+      <div class="buttons"><button id="refresh">Actualiser maintenant</button></div>
+    </section>
+
+    <section class="panel" id="map-panel">
+      <div class="heading-row"><h2>Carte et pions</h2><span class="quiet" id="stream-state" aria-live="polite">Connexion aux positions…</span></div>
+      <p class="quiet">Retrouve les positions de ta scène sauvegardée. Clique sur un élément pour voir ses détails.</p>
+      <div class="legend">
+        <span><strong class="map-glyph">◆</strong> Carte (origine)</span>
+        <span><strong class="token-glyph">●</strong> Pion (position)</span>
+        <span>◌ Élément masqué (visible seulement par le MJ)</span>
+      </div>
+      <div class="map-tools">
+        <button type="button" id="zoom-in" aria-label="Agrandir le plan">Zoom +</button>
+        <button type="button" id="zoom-out" aria-label="Réduire le plan">Zoom −</button>
+        <button type="button" id="zoom-reset">Recentrer</button>
+      </div>
+      <div id="selection" role="status" aria-live="polite">Choisis un pion ou une carte sur le plan pour voir ses détails.</div>
+      <div class="plot-frame">
+        <svg id="plot" viewBox="0 0 960 620" role="img" aria-label="Plan schématique des positions Owlbear. Les éléments sont aussi accessibles dans le tableau ci-dessous."></svg>
+      </div>
+      <p class="plot-note">Déplace le plan avec la souris ou le doigt. Affichage simplifié : les images et les dimensions des cartes ne sont pas encore transmises.</p>
+    </section>
+
+
+    <details id="technical-panel" class="panel">
+      <summary>Informations techniques (facultatif)</summary>
+      <p id="scene-id" class="hint"></p>
+      <div class="stats">
+        <div class="stat"><strong id="maps">0</strong>Cartes</div>
+        <div class="stat"><strong id="tokens">0</strong>Pions</div>
+        <div class="stat"><strong id="hidden-count">0</strong>Masqués</div>
+      </div>
+      <section class="panel">
+      <h2>Tableau technique des éléments</h2>
+      <p class="hint">Liste exacte des coordonnées X/Y enregistrées. Réservée au MJ propriétaire, y compris les éléments masqués.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Type</th><th>Nom</th><th>Position X</th><th>Position Y</th><th>Visibilité</th></tr></thead>
+        <tbody id="items"><tr><td colspan="5">Aucun instantané sélectionné.</td></tr></tbody>
+      </table></div>
+    </section>
+    </details>
+  </section>
+</main>
+<script type="module">
+  import {createClient} from "https://esm.sh/@supabase/supabase-js@2.58.0";
+  const $ = id => document.getElementById(id);
+  const CONFIG_KEY = "archives_owlbear_public_config_v27";
+  let db = null, currentUser = null, currentCampaign = "", rows = [], currentScene = "", busy = false;
+  const status = text => { $("status").textContent = text; };
+  const requireData = response => { if(response.error) throw response.error; return response.data; };
+  const setBusy = value => {
+    busy = value;
+    for(const b of document.querySelectorAll("button")) b.disabled = value;
+  };
+  const showError = error => status("Erreur : " + String(error?.message || error).slice(0,220));
+  function initClient() {
+    const url = $("url").value.trim().replace(/\/$/, "");
+    const key = $("key").value.trim();
+    if(!/^https:\/\/[a-z0-9.-]+\.supabase\.co$/i.test(url)) { $("connect-settings").open=true; throw Error("Adresse Supabase invalide."); }
+    if(key.length < 20) { $("connect-settings").open=true; throw Error("Clé publique Supabase manquante."); }
+    localStorage.setItem(CONFIG_KEY, JSON.stringify({url,key}));
+    db = createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+  }
+  const CAMPAIGN_KEY = "archives_owlbear_viewer_campaign_v32";
+  let loadingSnapshots=false, requestCounter=0;
+  let snapshotChannel=null, channelCampaign="", realtimeDelivered=false;
+  let lastBackupAt=0, plotCalibration=null, selectedItemId=null;
+  function streamStatus(message){$("stream-state").textContent=message;}
+  function removeChannel(){
+    const channel=snapshotChannel;
+    snapshotChannel=null;channelCampaign="";realtimeDelivered=false;
+    if(channel && db) void db.removeChannel(channel).catch(()=>{});
+  }
+  function applyLiveEvent(payload,campaign){
+    if(!currentUser || currentCampaign!==campaign || $("campaign").value!==campaign)return;
+    const incoming=payload?.new;
+    if(!incoming || incoming.campaign_id!==campaign || !incoming.scene_key ||
+      !Array.isArray(incoming.items) || typeof incoming.captured_at!=="string")return;
+    const existing=rows.find(r=>r.scene_key===incoming.scene_key);
+    if(existing && Date.parse(existing.captured_at)>=Date.parse(incoming.captured_at))return;
+    const replacement={scene_key:incoming.scene_key,captured_at:incoming.captured_at,items:incoming.items};
+    rows=existing?rows.map(r=>r.scene_key===incoming.scene_key?replacement:r):[replacement,...rows];
+    rows.sort((a,b)=>Date.parse(b.captured_at)-Date.parse(a.captured_at));
+    realtimeDelivered=true;
+    if($("scene").value===incoming.scene_key)showScene({preserveView:true});
+    else if(!existing)void loadSnapshots({silent:true}).catch(showError);
+    streamStatus("Direct · positions synchronisées");
+  }
+  function bindSnapshotChannel(campaign){
+    if(!db || !currentUser || !campaign || channelCampaign===campaign)return;
+    removeChannel();
+    const channel=db.channel("archives-snapshot-"+campaign)
+      .on("postgres_changes",{
+        event:"*",schema:"public",table:"owlbear_scene_snapshots",
+        filter:"campaign_id=eq."+campaign
+      },payload=>applyLiveEvent(payload,campaign));
+    snapshotChannel=channel;channelCampaign=campaign;
+    channel.subscribe(state=>{
+      if(snapshotChannel!==channel)return;
+      if(state==="SUBSCRIBED")streamStatus("Connexion directe · secours actif");
+      if(state==="CHANNEL_ERROR"||state==="TIMED_OUT"||state==="CLOSED")
+        streamStatus("Connexion directe interrompue · secours actif");
+    });
+  }
+  async function loadCampaigns() {
+    const campaigns = requireData(await db.from("campaigns").select("id,name").eq("owner_id",currentUser.id).order("name"));
+    $("campaign").replaceChildren(new Option("Choisir une campagne…",""));
+    for(const campaign of campaigns||[]) $("campaign").add(new Option(campaign.name||campaign.id,campaign.id));
+    $("auth-panel").hidden = true;
+    $("workspace").hidden = false;
+    // Une campagne unique est selectionnee sans clic. Sinon selectionner la derniere,
+    // et conserver le selecteur accessible pour changer de campagne.
+    const previous=localStorage.getItem(CAMPAIGN_KEY)||"";
+    const choice=campaigns.find(x=>x.id===previous) || (campaigns.length===1?campaigns[0]:null);
+    $("campaign-row").hidden = campaigns.length<=1;
+    if(choice){$("campaign").value=choice.id;await loadSnapshots();return;}
+    $("meta").textContent=campaigns.length?"Choisis ta campagne.":"Aucune campagne accessible à ce compte.";
+    resetTable(campaigns.length?"Choisis une campagne.":"Aucune campagne.");
+    status(campaigns.length?"Connecté. Choisis ta campagne.":"Aucune campagne dont ce compte est propriétaire.");
+  }
+  async function login() {
+    initClient();
+    const email = $("email").value.trim(), password = $("password").value;
+    if(!email||!password) throw Error("Courriel et mot de passe requis.");
+    try{ requireData(await db.auth.signInWithPassword({email,password})); }
+    finally{ $("password").value = ""; }
+    const data = requireData(await db.auth.getUser());
+    currentUser = data.user;
+    if(!currentUser) throw Error("Connexion non confirmée.");
+    await loadCampaigns();
+  }
+
+  // Plan schematique : les positions sont reproduites a l'echelle relative,
+  // sans supposer la taille des images Owlbear (non sauvegardee en V2.9).
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  const PLOT_W = 960, PLOT_H = 620;
+  const plot = $("plot");
+  let plotView = {x:0,y:0,w:PLOT_W,h:PLOT_H};
+  let pointerStart = null, didDrag = false;
+
+  function svgNode(tag, attributes={}, label) {
+    const node = document.createElementNS(SVG_NS,tag);
+    for(const [key,value] of Object.entries(attributes)) node.setAttribute(key,String(value));
+    if(label!==undefined) node.textContent=label;
+    return node;
+  }
+  function applyView() {
+    plot.setAttribute("viewBox",[plotView.x,plotView.y,plotView.w,plotView.h].join(" "));
+  }
+  function updateZoom(multiplier) {
+    const w=Math.max(120,Math.min(PLOT_W*3,plotView.w*multiplier));
+    const h=w*PLOT_H/PLOT_W;
+    const cx=plotView.x+plotView.w/2,cy=plotView.y+plotView.h/2;
+    plotView={x:cx-w/2,y:cy-h/2,w,h};applyView();
+  }
+  function formatCoord(value){
+    return Number.isFinite(value) ? value.toLocaleString("fr-FR",{maximumFractionDigits:2}) : "?";
+  }
+  function selectPoint(item) {
+    selectedItemId=String(item.id||"");
+    for(const marker of plot.querySelectorAll(".marker")) {
+      marker.classList.toggle("selected",marker._owlbearItem===item);
+    }
+    $("selection").textContent=(item.layer==="MAP"?"Carte : ":"Pion : ")+(item.name||"Sans nom")+
+      " · X : "+formatCoord(Number(item.position.x))+
+      " · Y : "+formatCoord(Number(item.position.y))+
+      " · "+(item.visible===false?"Masqué":"Visible");
+  }
+  function gridStep(span){
+    const rough=span/7;
+    const power=Math.pow(10,Math.floor(Math.log10(rough||1)));
+    const f=rough/power;
+    return (f<=1?1:f<=2?2:f<=5?5:10)*power;
+  }
+  function renderPlot(sourceItems,preserveView=false){
+    plot.replaceChildren();
+    if(!preserveView){
+      plotView={x:0,y:0,w:PLOT_W,h:PLOT_H};
+      plotCalibration=null;
+      selectedItemId=null;
+    }
+    applyView();
+    $("selection").textContent="Choisis un pion ou une carte sur le plan pour voir ses détails.";
+    const items=(sourceItems||[]).filter(item=>
+      item && (item.layer==="MAP"||item.layer==="CHARACTER") &&
+      Number.isFinite(item.position?.x) && Number.isFinite(item.position?.y)
+    );
+    const panel=svgNode("rect",{x:0,y:0,width:PLOT_W,height:PLOT_H,fill:"#0e1726"});
+    plot.append(panel);
+    if(items.length===0){
+      plot.append(svgNode("text",{x:PLOT_W/2,y:PLOT_H/2,fill:"#b3c2d8","text-anchor":"middle","font-size":18},
+        "Aucune position à afficher pour cette scène."));
+      return;
+    }
+    const minX=Math.min(...items.map(x=>x.position.x)), maxX=Math.max(...items.map(x=>x.position.x));
+    const minY=Math.min(...items.map(x=>x.position.y)), maxY=Math.max(...items.map(x=>x.position.y));
+    // Marges en pixels. Utiliser une echelle identique sur X et Y.
+    const pad=85;
+    const spanX=Math.max(600,maxX-minX), spanY=Math.max(600,maxY-minY);
+    if(!plotCalibration){
+      plotCalibration={
+        scale:Math.min((PLOT_W-2*pad)/spanX,(PLOT_H-2*pad)/spanY),
+        centerX:(minX+maxX)/2,centerY:(minY+maxY)/2
+      };
+    }
+    const {scale,centerX,centerY}=plotCalibration;
+    const tx=x=>PLOT_W/2+(x-centerX)*scale;
+    const ty=y=>PLOT_H/2+(y-centerY)*scale;
+    const worldLeft=centerX-(PLOT_W/2-pad)/scale;
+    const worldRight=centerX+(PLOT_W/2-pad)/scale;
+    const worldTop=centerY-(PLOT_H/2-pad)/scale;
+    const worldBottom=centerY+(PLOT_H/2-pad)/scale;
+    const grid=svgNode("g",{"aria-hidden":"true"});
+    const step=gridStep(Math.min(worldRight-worldLeft,worldBottom-worldTop));
+    const drawLines=(isVertical)=>{
+      const low=isVertical?worldLeft:worldTop;
+      const high=isVertical?worldRight:worldBottom;
+      const first=Math.ceil(low/step)*step;
+      for(let n=0;n<=24;n++){
+        const world=first+n*step;
+        if(world>high+step*0.0001)break;
+        const pixel=isVertical?tx(world):ty(world);
+        grid.append(svgNode("line",isVertical?
+          {x1:pixel,y1:0,x2:pixel,y2:PLOT_H,stroke:Math.abs(world)<step/1000?"#71869b":"#29384c","stroke-width":Math.abs(world)<step/1000?1.7:1}:
+          {x1:0,y1:pixel,x2:PLOT_W,y2:pixel,stroke:Math.abs(world)<step/1000?"#71869b":"#29384c","stroke-width":Math.abs(world)<step/1000?1.7:1}));
+        grid.append(svgNode("text",isVertical?
+          {x:pixel+4,y:20,class:"axis-label"}:
+          {x:7,y:Math.max(16,Math.min(PLOT_H-5,pixel-5)),class:"axis-label"},
+          formatCoord(world)));
+      }
+    };
+    drawLines(true);drawLines(false);
+    plot.append(grid);
+    // Les cartes sont dessinees avant les pions.
+    for(const item of [...items].sort((a,b)=>(a.layer==="MAP"?0:1)-(b.layer==="MAP"?0:1))){
+      const x=tx(item.position.x),y=ty(item.position.y),isMap=item.layer==="MAP";
+      const group=svgNode("g",{class:"marker",tabindex:0,role:"button",
+        "aria-label":(isMap?"Carte ":"Pion ")+(item.name||"Sans nom")+
+          ", X "+formatCoord(item.position.x)+", Y "+formatCoord(item.position.y)});
+      group._owlbearItem=item;
+      // Une zone tactile invisible entoure le pion pour rendre sa selection simple.
+      group.append(svgNode("circle",{cx:x,cy:y,r:23,fill:"#fff","fill-opacity":0,
+        "pointer-events":"all",class:"marker-hit"}));
+      const color=item.visible===false?"#c89f94":isMap?"#e8bc6c":"#80bce9";
+      if(isMap){
+        group.append(svgNode("path",{d:"M "+x+" "+(y-12)+" L "+(x+12)+" "+y+" L "+x+" "+(y+12)+" L "+(x-12)+" "+y+" Z",
+          class:"marker-shape",fill:item.visible===false?"none":color,
+          stroke:color,"stroke-width":2.5,"stroke-dasharray":item.visible===false?"4 3":"none"}));
+      }else{
+        group.append(svgNode("circle",{cx:x,cy:y,r:9,class:"marker-shape",
+          fill:item.visible===false?"none":color,stroke:color,"stroke-width":2.5,
+          "stroke-dasharray":item.visible===false?"4 3":"none"}));
+      }
+      const fullName=String(item.name||"Sans nom");
+      if(items.length<=30){
+        group.append(svgNode("text",{x:x+14,y:y-11,class:"marker-label","pointer-events":"all"},
+          fullName.length>20?fullName.slice(0,19)+"…":fullName));
+      }
+      group.append(svgNode("title",{},(isMap?"Carte : ":"Pion : ")+fullName+
+        " | X : "+formatCoord(item.position.x)+", Y : "+formatCoord(item.position.y)));
+      group.addEventListener("click",()=>{
+        if(!didDrag) selectPoint(item);
+      });
+      group.addEventListener("keydown",event=>{
+        if(event.key==="Enter"||event.key===" "){event.preventDefault();selectPoint(item);}
+      });
+      plot.append(group);
+    }
+    if(selectedItemId){
+      const target=items.find(x=>String(x.id||"")===selectedItemId);
+      if(target)selectPoint(target);
+    }
+  }
+  $("zoom-in").addEventListener("click",()=>updateZoom(0.75));
+  $("zoom-out").addEventListener("click",()=>updateZoom(1/0.75));
+  $("zoom-reset").addEventListener("click",()=>{
+    plotView={x:0,y:0,w:PLOT_W,h:PLOT_H};applyView();
+  });
+  plot.addEventListener("pointerdown",event=>{
+    if(event.button!==0)return;
+    const marker=event.target.closest?.(".marker");
+    pointerStart={clientX:event.clientX,clientY:event.clientY,
+      view:{...plotView},item:marker?marker._owlbearItem:null};
+    didDrag=false;
+    // Ne pas capturer le clic initial sur le SVG : cela vole le clic au pion.
+    // La capture n'est activee que si le doigt/la souris commence a glisser.
+  });
+  plot.addEventListener("pointermove",event=>{
+    if(!pointerStart)return;
+    const dx=event.clientX-pointerStart.clientX,dy=event.clientY-pointerStart.clientY;
+    if(Math.hypot(dx,dy)>5)didDrag=true;
+    if(!didDrag)return;
+    if(!plot.hasPointerCapture(event.pointerId)) plot.setPointerCapture(event.pointerId);
+    plot.classList.add("dragging");
+    plotView={...pointerStart.view,x:pointerStart.view.x-dx*pointerStart.view.w/plot.clientWidth,
+      y:pointerStart.view.y-dy*pointerStart.view.h/plot.clientHeight};
+    applyView();
+  });
+  function stopDrag(){pointerStart=null;plot.classList.remove("dragging");}
+  plot.addEventListener("pointerup",event=>{
+    // Selection explicite, meme sur navigateurs ou un clic SVG n'est pas emis.
+    if(pointerStart && !didDrag && pointerStart.item) selectPoint(pointerStart.item);
+    stopDrag();
+  });
+  plot.addEventListener("pointercancel",stopDrag);
+  plot.addEventListener("lostpointercapture",stopDrag);
+
+  function resetTable(message) {
+    $("maps").textContent = "0"; $("tokens").textContent = "0"; $("hidden-count").textContent = "0";
+    const tr = document.createElement("tr"), td = document.createElement("td");
+    td.colSpan = 5; td.textContent = message; tr.append(td); $("items").replaceChildren(tr);
+    renderPlot([]);
+  }
+  function showScene({preserveView=false}={}) {
+    currentScene = $("scene").value;
+    const row = rows.find(x=>x.scene_key===currentScene);
+    if(!row) { $("meta").textContent="Aucune scène enregistrée pour cette campagne."; resetTable("Aucun élément."); return; }
+    const items = Array.isArray(row.items) ? row.items : [];
+    $("maps").textContent = String(items.filter(x=>x.layer==="MAP").length);
+    $("tokens").textContent = String(items.filter(x=>x.layer==="CHARACTER").length);
+    $("hidden-count").textContent = String(items.filter(x=>x.visible===false).length);
+    renderPlot(items,preserveView);
+    const date = row.captured_at ? new Date(row.captured_at).toLocaleString("fr-FR") : "inconnue";
+    $("meta").textContent = "Enregistré le " + date + " · " + items.filter(x=>x.layer==="MAP").length +
+      " carte(s) · " + items.filter(x=>x.layer==="CHARACTER").length + " pion(s)";
+    $("scene-id").textContent = "Référence de scène : " + row.scene_key;
+    const tbody = document.createDocumentFragment();
+    for(const item of items) {
+      if(!item || (item.layer!=="MAP" && item.layer!=="CHARACTER")) continue;
+      const tr=document.createElement("tr");
+      const cells=[item.layer==="MAP"?"Carte":"Pion",String(item.name||"Sans nom"),String(item.position?.x??"—"),String(item.position?.y??"—"),item.visible===false?"Masqué":"Visible"];
+      for(let i=0;i<cells.length;i++){
+        const td=document.createElement("td");td.textContent=cells[i];
+        if(i===2||i===3) td.className="coord";
+        if(i===4 && item.visible===false) td.className="hidden";
+        tr.append(td);
+      }
+      tbody.append(tr);
+    }
+    if(!items.length){resetTable("Aucun élément dans cet instantané.");}
+    else $("items").replaceChildren(tbody);
+  }
+  async function loadSnapshots({silent=false}={}) {
+    const campaign=$("campaign").value;
+    if(currentCampaign!==campaign){
+      removeChannel();
+      currentCampaign=campaign;
+    }
+    if(!campaign){
+      rows=[];currentScene="";$("scene").replaceChildren(new Option("Aucune scène",""));
+      $("meta").textContent="Choisis une campagne.";resetTable("Aucune campagne sélectionnée.");
+      return;
+    }
+    if(loadingSnapshots)return;
+    loadingSnapshots=true;
+    const requestId=++requestCounter;
+    try {
+      if(!silent)status("Chargement des positions…");
+      const responses=await Promise.all([
+        db.from("owlbear_scene_snapshots").select("scene_key,items,captured_at").eq("campaign_id",campaign).order("captured_at",{ascending:false}),
+        db.from("campaign_live_state").select("owlbear_scene_id").eq("campaign_id",campaign).maybeSingle()
+      ]);
+      if(currentCampaign!==campaign || requestId!==requestCounter)return;
+      const fresh=requireData(responses[0])||[];
+      const live=requireData(responses[1]);
+      const previousKey=$("scene").value;
+      const previous=rows.find(x=>x.scene_key===previousKey);
+      rows=fresh;
+      $("scene").replaceChildren(new Option("Choisir une scène…",""));
+      for(const row of rows) {
+        $("scene").add(new Option((row.scene_key===live?.owlbear_scene_id?"Active · ":"")+"Scène "+row.scene_key.slice(0,8),row.scene_key));
+      }
+      const selected=rows.find(x=>x.scene_key===previousKey)||
+        rows.find(x=>x.scene_key===live?.owlbear_scene_id)||rows[0];
+      $("scene-row").hidden=rows.length<=1;
+      const previousTimestamp=previous?.captured_at||"";
+      const changed=previousKey!==selected?.scene_key||previousTimestamp!==selected?.captured_at;
+      if(selected)$("scene").value=selected.scene_key;
+      if(changed || !silent)showScene({preserveView:silent && previousKey===selected?.scene_key});
+      bindSnapshotChannel(campaign);
+      if(!selected){$("meta").textContent="Aucune scène enregistrée.";resetTable("Aucune scène.");}
+      if(!silent || changed){
+        status(rows.length ? (silent?"Position des éléments actualisée.":"Scène chargée. Actualisation automatique active.") :
+          "Aucun instantané trouvé pour cette campagne.");
+      }
+    } finally {loadingSnapshots=false;}
+  }
+  // Les événements Realtime sont prioritaires; ce contrôle conserve un secours
+  // si la publication Postgres n'est pas encore activée dans Supabase.
+  setInterval(async()=>{
+    if(!currentUser || !currentCampaign || document.hidden || busy || loadingSnapshots)return;
+    const interval=realtimeDelivered?15000:3000;
+    if(Date.now()-lastBackupAt<interval)return;
+    lastBackupAt=Date.now();
+    try{await loadSnapshots({silent:true});}
+    catch(error){showError(error);}
+  },1000);
+  document.addEventListener("visibilitychange",()=>{
+    if(!document.hidden && currentUser && currentCampaign && !loadingSnapshots)
+      void loadSnapshots({silent:true}).catch(showError);
+  });
+  async function logout(){
+    removeChannel();
+    if(db) requireData(await db.auth.signOut());
+    currentUser=null;currentCampaign="";rows=[];requestCounter++;
+    $("workspace").hidden=true;$("auth-panel").hidden=false;
+    $("password").value="";status("Déconnecté.");
+  }
+  function act(button, fn){
+    $(button).addEventListener("click",async()=>{
+      if(busy)return;
+      setBusy(true);
+      try{await fn();}catch(error){showError(error);}
+      finally{setBusy(false);}
+    });
+  }
+  act("login",login);
+  act("logout",logout);
+  act("refresh",loadSnapshots);
+  $("campaign").addEventListener("change",()=>{
+    if(busy)return;
+    localStorage.setItem(CAMPAIGN_KEY,$("campaign").value);
+    loadSnapshots().catch(showError);
+  });
+  $("scene").addEventListener("change",()=>showScene());
+  async function restoreSession(){
+    try{
+      const config=JSON.parse(localStorage.getItem(CONFIG_KEY)||"null");
+      if(config?.url)$("url").value=config.url;
+      if(config?.key)$("key").value=config.key;
+      if(!config?.url||!config?.key){
+        $("connect-settings").open=true;
+        status("Première utilisation : renseigne les paramètres Supabase, puis connecte-toi.");
+        return;
+      }
+      initClient();
+      const response=await db.auth.getUser();
+      if(response.error || !response.data?.user){
+        status("Prêt. Connecte-toi avec ton compte MJ.");
+        return;
+      }
+      currentUser=response.data.user;
+      await loadCampaigns();
+    }catch(error){
+      $("auth-panel").hidden=false;
+      $("workspace").hidden=true;
+      $("connect-settings").open=true;
+      status("Connexion à vérifier. Tu peux te reconnecter avec ton compte MJ.");
+    }
+  }
+  restoreSession();
+
+  // Le lecteur V3.5 peut s'ouvrir en plein écran DANS Owlbear.
+  // Hors Owlbear, il reste un lecteur web normal et aucun bouton de retour n'est proposé.
+  (async()=>{
+    try {
+      const module=await import("https://esm.sh/@owlbear-rodeo/sdk@3.1.0");
+      const OBR=module.default;
+      if(!OBR?.isAvailable)return;
+      await new Promise(resolve=>OBR.onReady(resolve));
+      const role=await OBR.player.getRole();
+      if(role!=="GM")return;
+      $("return-owlbear").hidden=false;
+      $("return-owlbear").addEventListener("click",async()=>{
+        try{await OBR.modal.close("fr.archives-imaginaire.bridge/archives-viewer");}
+        catch(error){showError(error);}
+      });
+    } catch {
+      // Aucun impact sur le lecteur si l'API Owlbear n'est pas disponible.
+    }
+  })();
+
+</script>
+</body>
+</html>
