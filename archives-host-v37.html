@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Les Archives de l'Imaginaire — Espace complet V3.7</title>
+<style>
+:root{font-family:"Segoe UI",system-ui,sans-serif;color:#efe6d5;background:#08070b}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden}
+body{display:flex;flex-direction:column}
+header{height:56px;min-height:56px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:5px 15px;background:linear-gradient(90deg,#18121d,#08070b);border-bottom:1px solid #b99a45;box-shadow:0 3px 12px #000a;z-index:100}
+.brand{display:flex;gap:9px;align-items:center;min-width:0}
+.glyph{color:#e5c66f;font-size:26px;line-height:1}
+.name{font-size:clamp(13px,1.9vw,18px);font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.subtitle{font-size:11px;color:#c9bba3;letter-spacing:.02em}
+button{flex-shrink:0;background:#2b2519;border:1px solid #e1bc57;color:#ffe9a5;font:700 14px "Segoe UI",system-ui,sans-serif;border-radius:6px;cursor:pointer;padding:10px 15px;min-height:42px}
+button:hover{background:#514126}
+button:focus-visible{outline:3px solid #fff;outline-offset:2px}
+button:disabled{opacity:.5}
+#display{min-height:0;flex:1;background:#08070b}
+iframe{display:block;border:0;width:100%;height:100%;background:#08070b}
+#message{display:flex;flex:1;align-items:center;justify-content:center;text-align:center;padding:30px;font-size:15px;color:#d9c8a4}
+#message[hidden],#display[hidden]{display:none}
+@media(max-width:570px){header{height:53px;min-height:53px;padding:4px 9px}.subtitle{display:none}.glyph{font-size:20px}button{font-size:12px;padding:9px}}
+#session-bar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:8px 14px;background:#18121d;border-bottom:1px solid #6f5d32;font-size:12px}
+#session-bar select{max-width:250px;padding:8px;background:#0d0a13;color:#ffeab9;border:1px solid #806638;border-radius:5px}
+#session-bar button{font-size:12px;min-height:36px;padding:6px 10px}
+#session-status{flex-basis:100%;margin:0;color:#d9c8a4}
+@media(max-width:570px){#session-bar{gap:6px;padding:6px 9px}#session-bar select{max-width:100%}}
+</style>
+  <script type="module" crossorigin src="./src/v37/host.mjs"></script>
+  <link rel="modulepreload" crossorigin href="./assets/index-BfJgTiPE.js">
+</head>
+<body>
+<header>
+  <div class="brand"><span class="glyph" aria-hidden="true">✦</span><div>
+    <div class="name">Les Archives de l'Imaginaire</div>
+    <div class="subtitle">APPLICATION COMPLÈTE · CANEVAS, CELLULES ET BIBLIOTHÈQUE</div>
+  </div></div>
+  <button type="button" id="return-owlbear">← Retour à Owlbear</button>
+</header>
+<section id="session-bar" aria-label="Synchronisation de la partie">
+  <label for="campaign">Campagne de synchronisation</label>
+  <select id="campaign"><option value="">Connexion…</option></select>
+  <button id="mode-archives" type="button" disabled>Partager le mode Archives</button>
+  <button id="mode-owlbear" type="button" disabled>Partager le mode Owlbear et revenir</button>
+  <button id="refresh" type="button">Actualiser</button>
+  <p id="session-status" role="status" aria-live="polite">Connexion à Owlbear…</p>
+</section>
+<div id="display" hidden>
+  <iframe id="archives-frame" title="Application complète Les Archives de l'Imaginaire" referrerpolicy="strict-origin-when-cross-origin" allow="fullscreen"></iframe>
+</div>
+</body>
+</html>

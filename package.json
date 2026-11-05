@@ -1,0 +1,10 @@
+{
+  "name": "archives-owlbear",
+  "version": "3.7.0",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/session.test.mjs tests/interface.test.cjs && node tests/syntax.cjs",
+    "test:browser": "node tests/browser.cjs"
+  },
+  "devDependencies": { "jsdom": "26.1.0", "playwright": "1.51.1" }
+}

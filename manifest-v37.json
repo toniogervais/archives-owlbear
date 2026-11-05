@@ -1,0 +1,14 @@
+{
+  "name": "Archives Imaginaire — Owlbear",
+  "version": "3.7.0",
+  "manifest_version": 1,
+  "description": "Archives complètes, campagne liée à la salle et commandes de mode partagé.",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/background-v37.html",
+  "action": {
+    "title": "Archives — Synchronisation",
+    "icon": "https://toniogervais.github.io/archives-owlbear/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/index-v37.html",
+    "width": 400,
+    "height": 600
+  }
+}
