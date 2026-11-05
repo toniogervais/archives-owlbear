@@ -1,0 +1,13 @@
+{
+  "name": "Archives Imaginaire — Owlbear",
+  "version": "3.3.0",
+  "manifest_version": 1,
+  "description": "Passerelle MJ Owlbear : sauvegarde des pions avec consentement mémorisé et reprise automatique.",
+  "action": {
+    "title": "Archives — Synchronisation",
+    "icon": "https://toniogervais.github.io/archives-owlbear/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/index-v33.html",
+    "width": 400,
+    "height": 600
+  }
+}
