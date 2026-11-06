@@ -5,7 +5,7 @@ test("V4.13 manifest, launcher and entrypoints",()=>{
  const m=JSON.parse(read("manifest-v53.json"));assert.equal(m.version,"4.13.0");
  for(const url of [m.background_url,m.action.icon,m.action.popover])assert.ok(fs.existsSync(new URL(url).pathname.split("/").pop()));
  for(const part of ["relay","navigation","host","embedded","background","open"])assert.ok(fs.existsSync("src/v53/"+part+".mjs"));
- assert.match(read("archives.html"),/archives-app-v6(?:2-v53|3-v54)\.html/);
+ assert.match(read("archives.html"),/archives-app-v6(?:2-v53|3-v54|4-v55)\.html/);
  assert.match(read("src/v53/host.mjs"),/archives-app-v62-v53\.html/);
 });
 test("Synchronized edit events and player-safe local backup",()=>{

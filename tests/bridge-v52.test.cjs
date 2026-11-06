@@ -74,7 +74,7 @@ test("Local fallback tokens exist and can be passed as SVG images without secret
 test("Stable launcher targets the latest complete Archives",()=>{
  const launcher=read("archives.html");
  assert.match(launcher,/location\.replace\(target\.href\)/);
- assert.match(launcher,/archives-app-v6(?:1-v52|2-v53|3-v54)\.html/);
+ assert.match(launcher,/archives-app-v6(?:1-v52|2-v53|3-v54|4-v55)\.html/);
 });
 test("No silent overwrite on conflicts and return waits for central acknowledgement",()=>{
  assert.match(relay,/if\(inFlight\|\|pending\)/);

@@ -1,0 +1,14 @@
+{
+  "name": "Archives Imaginaire",
+  "version": "4.15.0",
+  "manifest_version": 1,
+  "description": "Archives centrales avec reconnexion automatique après inactivité et sauvegarde sécurisée.",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/background-v55.html",
+  "action": {
+    "title": "Les Archives",
+    "icon": "https://toniogervais.github.io/archives-owlbear/icon-archives-v43.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/index-v55.html",
+    "width": 360,
+    "height": 440
+  }
+}

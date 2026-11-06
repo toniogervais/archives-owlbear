@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Les Archives de l'Imaginaire — V4.15</title>
+<style>
+:root{font-family:"Segoe UI",system-ui,sans-serif;background:#0b0810;color:#f4e6c7}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden}
+body{display:flex;flex-direction:column}
+header{height:54px;min-height:54px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:6px 13px;background:#19131e;border-bottom:1px solid #b89a55}
+strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+button{min-height:40px;background:#342716;border:1px solid #c1a15a;border-radius:7px;color:#ffe0a1;padding:9px 13px;font-weight:700;cursor:pointer}
+button:focus-visible{outline:3px solid #f5d98c}
+iframe{width:100%;flex:1;min-height:0;border:0}
+#message{padding:14px;text-align:center}
+#message[hidden],iframe[hidden]{display:none}
+@media(max-width:550px){strong{font-size:12px}button{font-size:12px}}
+</style>
+<script type="module" src="./src/v55/host.mjs"></script></head>
+<body><header><strong>✦ Les Archives de l'Imaginaire</strong><button id="relink" type="button">Jumelage</button><button id="return" type="button">← Retour à Owlbear</button></header>
+<form id="pairing" hidden style="padding:24px"><label id="pair-label" for="pair-code"></label><input id="pair-code" type="password" autocomplete="off" required style="display:block;width:95%;padding:12px;margin:12px 0"><button type="submit">Relier les Archives</button></form><div id="message" hidden role="alert"></div>
+<iframe id="app" hidden title="Canevas et cellules des Archives"></iframe></body></html>

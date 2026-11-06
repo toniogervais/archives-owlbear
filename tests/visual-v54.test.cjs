@@ -12,7 +12,7 @@ test("V4.14 complete manifest and permanent launcher",()=>{
   assert.ok(fs.existsSync(f));
  for(const s of ["background","navigation","host","relay","embedded","open"])
   assert.ok(fs.existsSync("src/v54/"+s+".mjs"));
- assert.match(read("archives.html"),/archives-app-v63-v54\.html/);
+ assert.match(read("archives.html"),/archives-app-v6(?:3-v54|4-v55)\.html/);
  assert.match(read("src/v54/host.mjs"),/archives-app-v63-v54\.html/);
  assert.match(html,/src\/v54\/polish\.css/);
  assert.match(html,/src\/v54\/polish\.js/);
