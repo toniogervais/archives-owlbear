@@ -49,8 +49,9 @@ test("RLS restricts all cell transfer access to campaign owner",()=>{
  assert.match(sql,/enable row level security/);
  assert.match(sql,/created_by=auth\.uid\(\)/);
  assert.match(sql,/c\.owner_id=auth\.uid\(\)/);
- assert.match(sql,/l\.room_id=room_id/);
- assert.match(sql,/s\.owlbear_scene_id=scene_key/);
+ assert.doesNotMatch(sql,/l\.campaign_id=campaign_id/);
+ assert.match(sql,/l\.room_id::text=public\.archives_owlbear_cell_transfers\.room_id/);
+ assert.match(sql,/s\.owlbear_scene_id::text=public\.archives_owlbear_cell_transfers\.scene_key/);
  assert.match(sql,/revoke all.*anon,public/);
 });
 test("Owlbear manifest is valid and name is short",()=>{

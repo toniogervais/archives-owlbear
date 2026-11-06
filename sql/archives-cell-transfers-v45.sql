@@ -41,7 +41,7 @@ on public.archives_owlbear_cell_transfers for select to authenticated
 using (
   created_by=auth.uid()
   and exists (
-    select 1 from public.campaigns c where c.id=campaign_id and c.owner_id=auth.uid()
+    select 1 from public.campaigns c where c.id=public.archives_owlbear_cell_transfers.campaign_id and c.owner_id=auth.uid()
   )
 );
 drop policy if exists "cell_transfers_owner_insert" on public.archives_owlbear_cell_transfers;
@@ -51,15 +51,17 @@ with check (
   created_by=auth.uid()
   and status='pending'
   and exists (
-    select 1 from public.campaigns c where c.id=campaign_id and c.owner_id=auth.uid()
+    select 1 from public.campaigns c where c.id=public.archives_owlbear_cell_transfers.campaign_id and c.owner_id=auth.uid()
   )
   and exists (
     select 1 from public.owlbear_room_links l
-    where l.campaign_id=campaign_id and l.room_id=room_id
+    where l.campaign_id=public.archives_owlbear_cell_transfers.campaign_id
+      and l.room_id::text=public.archives_owlbear_cell_transfers.room_id
   )
   and exists (
     select 1 from public.campaign_live_state s
-    where s.campaign_id=campaign_id and s.owlbear_scene_id=scene_key
+    where s.campaign_id=public.archives_owlbear_cell_transfers.campaign_id
+      and s.owlbear_scene_id::text=public.archives_owlbear_cell_transfers.scene_key
   )
 );
 drop policy if exists "cell_transfers_owner_update" on public.archives_owlbear_cell_transfers;
@@ -68,13 +70,13 @@ on public.archives_owlbear_cell_transfers for update to authenticated
 using (
   created_by=auth.uid()
   and exists (
-    select 1 from public.campaigns c where c.id=campaign_id and c.owner_id=auth.uid()
+    select 1 from public.campaigns c where c.id=public.archives_owlbear_cell_transfers.campaign_id and c.owner_id=auth.uid()
   )
 )
 with check (
   created_by=auth.uid()
   and exists (
-    select 1 from public.campaigns c where c.id=campaign_id and c.owner_id=auth.uid()
+    select 1 from public.campaigns c where c.id=public.archives_owlbear_cell_transfers.campaign_id and c.owner_id=auth.uid()
   )
 );
 
