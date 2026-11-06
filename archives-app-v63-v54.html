@@ -2185,10 +2185,10 @@ window.DuneApp = (function() {
     };
     relayPayload=payload;
     if(remoteEditor){
-      if(!relayApplying)window.dispatchEvent(new CustomEvent("archives:edit:v53",{detail:payload}));
+      if(!relayApplying)window.dispatchEvent(new CustomEvent("archives:edit:v54",{detail:payload}));
       return;
     }
-    if(!relayApplying)window.dispatchEvent(new CustomEvent("archives:edit:v53",{detail:payload}));
+    if(!relayApplying)window.dispatchEvent(new CustomEvent("archives:edit:v54",{detail:payload}));
     // V4.13: player projections must never overwrite the central GM backup.
     if (!state.strictReadOnly && !state.playerMode) {
       try { window.localStorage.setItem("jdr_architect_save_v12", JSON.stringify(payload)); }
