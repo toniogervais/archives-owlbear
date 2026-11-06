@@ -11,10 +11,15 @@ button{background:transparent;cursor:pointer}a:focus-visible,button:focus-visibl
 <script type="module">
 import { O as OBR } from "./assets/index-BfJgTiPE.js";
 import { focusArchives } from "./src/v41/focus-archives.mjs";
+const modalId="fr.archives-imaginaire.bridge/return-invite";
+const ready=new Promise(resolve=>OBR.onReady(resolve));
+function closeInvitation(){
+  void ready.then(()=>OBR.modal.close(modalId)).catch(console.error);
+}
 const link=document.querySelector('a[target="archives-main"]');
 link.addEventListener("click",event=>{
   if(focusArchives(link.href))event.preventDefault();
+  closeInvitation();
 });
-await new Promise(resolve=>OBR.onReady(resolve));
-document.getElementById("stay").addEventListener("click",()=>OBR.modal.close("fr.archives-imaginaire.bridge/return-invite"));
+document.getElementById("stay").addEventListener("click",closeInvitation);
 </script></body></html>
