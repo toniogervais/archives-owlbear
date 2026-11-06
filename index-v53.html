@@ -1,0 +1,43 @@
+<!doctype html><html lang="fr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Les Archives — Retour</title>
+<style>
+:root{color-scheme:dark;font-family:"Segoe UI",system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;padding:15px;background:#18121e;color:#f2e6c6;font-size:14px}
+h1{font-size:17px;margin:0 0 14px}
+a{display:block;text-align:center;background:#3e2e17;border:1px solid #ba9956;
+  border-radius:8px;color:#fff0c7;text-decoration:none;padding:14px;font-weight:700}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid #eac985}
+details{margin-top:15px;border-top:1px solid #594628;padding-top:8px}
+summary{cursor:pointer;color:#d3be8d;font-size:12px}
+label{display:block;font-size:12px;margin:10px 0 0}
+input{display:block;width:100%;min-height:35px;margin-top:4px;border-radius:6px;
+  padding:7px;border:1px solid #8e754e;background:#100d16;color:#fff0c7}
+button{display:block;width:100%;margin-top:10px;min-height:35px;cursor:pointer;border:1px solid #8e754e;
+  border-radius:6px;background:#41321a;color:#fff0c7;font-weight:700}
+p{font-size:11px;line-height:1.5;color:#d3be8d}
+[hidden]{display:none!important}
+</style></head><body>
+<h1>✦ Les Archives de l'Imaginaire</h1>
+<a id="return" 
+ href="./archives-app-v62-v53.html">Afficher les Archives</a>
+<details id="archives-v46-auth-details">
+  <summary>Connexion MJ pour les transferts</summary>
+  <p id="archives-v46-auth-status" role="status">Vérification de la connexion…</p>
+  <form id="archives-v46-auth-form">
+    <label>E-mail des Archives<input id="archives-v46-email" type="email" required autocomplete="email"></label>
+    <label>Mot de passe<input id="archives-v46-password" type="password" required autocomplete="current-password"></label>
+    <details id="archives-v46-config">
+      <summary>Réglages de connexion (première utilisation)</summary>
+      <label>URL Supabase<input id="archives-v46-url" type="url" placeholder="https://projet.supabase.co"></label>
+      <label>Clé publique anon/publishable<input id="archives-v46-key" type="password" autocomplete="off"></label>
+      <p>Ne colle jamais une clé « service_role » ou secrète.</p>
+    </details>
+    <button id="archives-v46-auth-submit" type="submit">Connecter le compte MJ</button>
+  </form>
+  <button id="archives-v46-auth-logout" type="button" hidden>Déconnecter le compte MJ</button>
+</details>
+<script type="module" src="./src/v53/open.mjs"></script>
+<script type="module" src="./src/v46/transfer-auth.mjs"></script>
+</body></html>
