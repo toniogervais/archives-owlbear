@@ -1,0 +1,20 @@
+<!doctype html><html lang="fr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Invitation aux Archives</title>
+<style>body{font:15px "Segoe UI",system-ui,sans-serif;margin:0;padding:24px;background:#18121f;color:#f3e7ca;text-align:center}
+h1{font-size:19px;line-height:1.4}p{font-size:13px;line-height:1.5}
+a,button{display:block;box-sizing:border-box;width:100%;padding:13px;border:1px solid #d6ac5d;border-radius:9px;background:#4e3819;color:#fff0c7;text-decoration:none;font-weight:bold;margin-top:12px}
+button{background:transparent;cursor:pointer}a:focus-visible,button:focus-visible{outline:2px solid white}</style></head><body>
+<h1>Le maître de jeu vous invite à revenir aux Archives</h1>
+<a target="archives-main" href="https://toniogervais.github.io/archives-owlbear/archives-app-v58-v49.html">Revenir aux Archives</a>
+<button type="button" id="stay">Rester sur Owlbear</button>
+<script type="module">
+import { O as OBR } from "./assets/index-BfJgTiPE.js";
+import { focusArchives } from "./src/v41/focus-archives.mjs";
+const link=document.querySelector('a[target="archives-main"]');
+link.addEventListener("click",event=>{
+  if(focusArchives(link.href))event.preventDefault();
+});
+await new Promise(resolve=>OBR.onReady(resolve));
+document.getElementById("stay").addEventListener("click",()=>OBR.modal.close("fr.archives-imaginaire.bridge/return-invite"));
+</script></body></html>
