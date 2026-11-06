@@ -1,0 +1,21 @@
+name: Security - no unpublished player data V4.7
+on:
+  push:
+    branches:
+      - develop/security-player-data-v47
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check main app JavaScript syntax
+        run: |
+          node -e 'const s=require("fs").readFileSync("archives-app-v56-v47.html","utf8");const a=s.indexOf("<script id=\"main-app-script\">");const b=s.indexOf("</script>",a);if(a<0||b<0)throw Error("App script missing");new Function(s.slice(s.indexOf(">",a)+1,b));'
+      - name: Prove private cells are absent from outgoing payload
+        run: node --test tests/security-v47.test.cjs
