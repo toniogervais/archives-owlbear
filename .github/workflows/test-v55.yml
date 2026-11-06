@@ -1,0 +1,28 @@
+name: Tests reconnexion Archives V4.15
+on:
+  push:
+    paths:
+      - 'src/v55/**'
+      - 'archives-app-v64-v55.html'
+      - 'archives.html'
+      - 'manifest-v55.json'
+      - 'tests/bridge-v55.test.cjs'
+      - 'tests/bridge-v52.test.cjs'
+      - 'tests/bridge-v53.test.cjs'
+      - 'tests/visual-v54.test.cjs'
+      - 'tests/browser-v55.cjs'
+      - '.github/workflows/test-v55.yml'
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: node --test tests/bridge-v55.test.cjs tests/visual-v54.test.cjs tests/bridge-v53.test.cjs tests/bridge-v52.test.cjs tests/security-v52.test.cjs
+      - run: node tests/syntax.cjs
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/browser-v55.cjs
