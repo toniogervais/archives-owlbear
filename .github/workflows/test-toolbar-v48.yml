@@ -1,0 +1,22 @@
+name: Design Archives V4.8 et barre repliable
+on:
+  push:
+    branches:
+      - develop/archives-owlbear-style-toolbar-v48
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer les dependances de test
+        run: npm ci
+      - name: Verifier la syntaxe des interactions
+        run: node --check src/v48/toolbar.js
+      - name: Tester reduire retablir et conserver les commandes
+        run: node --test tests/toolbar-v48.test.cjs
