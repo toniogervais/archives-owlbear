@@ -1,0 +1,14 @@
+{
+  "name": "Archives Imaginaire",
+  "version": "4.8.0",
+  "manifest_version": 1,
+  "description": "Owlbear + Archives V4.8 : retour, invitations, transferts et nouvelle barre d'outils.",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/background-v48.html",
+  "action": {
+    "title": "Les Archives",
+    "icon": "https://toniogervais.github.io/archives-owlbear/icon-archives-v43.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/index-v48.html",
+    "width": 360,
+    "height": 440
+  }
+}

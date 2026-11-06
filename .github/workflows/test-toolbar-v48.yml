@@ -17,6 +17,9 @@ jobs:
       - name: Installer les dependances de test
         run: npm ci
       - name: Verifier la syntaxe des interactions
-        run: node --check src/v48/toolbar.js
+        run: |
+          node --check src/v48/toolbar.js
+          node --check src/v48/background.mjs
+          node --check src/v48/return-link.mjs
       - name: Tester reduire retablir et conserver les commandes
         run: node --test tests/toolbar-v48.test.cjs

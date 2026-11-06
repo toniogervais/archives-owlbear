@@ -85,3 +85,22 @@ test("Style does not change Owlbear integration or application actions",()=>{
  assert.match(css,/#top-hud \.tab-btn/);
  assert.match(css,/prefers-reduced-motion/);
 });
+
+test("Owlbear V4.8 navigation targets the new version without altering transfer behavior",()=>{
+ const manifest=JSON.parse(read("manifest-v48.json"));
+ assert.equal(manifest.version,"4.8.0");
+ assert.ok([...manifest.name].length<45);
+ assert.match(manifest.action.icon,/icon-archives-v43\.svg$/);
+ assert.match(manifest.background_url,/background-v48\.html$/);
+ assert.match(manifest.action.popover,/index-v48\.html$/);
+ const bg=read("src/v48/background.mjs");
+ assert.match(bg,/watchTransfers/);
+ assert.match(bg,/return-v48\.html/);
+ assert.match(bg,/invite-v48\.html/);
+ assert.match(read("src/v48/return-link.mjs"),/OBR\.broadcast\.sendMessage/);
+ for(const f of ["index-v48.html","return-v48.html","invite-v48.html"]){
+   assert.match(read(f),/archives-app-v57-v48\.html/);
+   assert.doesNotMatch(read(f),/archives-app-v56-v47\.html/);
+ }
+ assert.match(read("index-v48.html"),/src\/v46\/transfer-auth\.mjs/);
+});

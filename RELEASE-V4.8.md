@@ -16,8 +16,9 @@ La V4.8 réutilise intégralement le HTML V4.7 et ajoute seulement deux référe
 ## Liens après publication
 
 - Application : archives-app-v57-v48.html
+- Manifeste Owlbear cohérent : manifest-v48.json
 - L'ancienne version archives-app-v56-v47.html reste disponible pour revenir en arrière.
-- Le manifeste Owlbear V4.7 continue de fonctionner, mais son lien direct de retour vise encore V4.7 si le navigateur ouvre un nouvel onglet. Un manifeste V4.8 complémentaire sera proposé si nécessaire.
+- Le nouveau manifeste Owlbear V4.8 cible la nouvelle application et conserve les invitations des joueurs, le grimoire doré et le traitement des transferts. Il ne modifie pas les commandes d'Owlbear.
 
 ## Vérification
 
