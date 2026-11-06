@@ -2,6 +2,7 @@ const api=window.ArchivesRelay;
 const remote=new URLSearchParams(location.search).get("remote")==="1";
 const player=new URLSearchParams(location.search).get("ro")==="1";
 let peer, connection, revision=0, applying=false, pending=null, inFlight=false;
+let returning=false, mapRequested=false;
 const overlay=document.createElement("div");
 overlay.style.cssText="position:fixed;inset:0;z-index:999999;background:#17121fee;color:#ffeac0;display:none;place-items:center;padding:30px;text-align:center;font:18px system-ui";
 overlay.setAttribute("role","status");
@@ -43,6 +44,9 @@ if(remote){
           catch{block("Le scénario reçu ne peut pas être ouvert.");}
           finally{applying=false;}
           window.parent.postMessage({type:"archives:room:v51",room:message.room||""},location.origin);
+        }else if(message?.type==="map-ack" && returning){
+          returning=false;
+          window.parent.postMessage({type:"archives:flushed:v51"},location.origin);
         }else if(message?.type==="ack"){
           revision=message.revision;inFlight=false;flush();
         }else if(message?.type==="busy"){
@@ -61,13 +65,14 @@ if(remote){
     window.addEventListener("message",e=>{
       if(e.source!==window.parent||e.origin!==location.origin||e.data?.type!=="archives:flush:v51")return;
       const started=Date.now();
+      returning=true;mapRequested=false;
       const check=setInterval(()=>{
-        if(!pending&&!inFlight){
-          clearInterval(check);
-          send({type:"map"});
-          window.parent.postMessage({type:"archives:flushed:v51"},location.origin);
-        }else if(Date.now()-started>10000){
-          clearInterval(check);
+        if(!returning){clearInterval(check);return;}
+        if(!pending&&!inFlight&&!mapRequested){
+          mapRequested=true;send({type:"map"});
+        }
+        if(Date.now()-started>10000){
+          returning=false;clearInterval(check);
           window.parent.postMessage({type:"archives:flush-error:v51"},location.origin);
         }
       },100);
@@ -117,7 +122,8 @@ if(remote){
             if(connection!==conn)return;
             if(m?.type==="map"){
               const url=localStorage.getItem("archives_owlbear_room_url_v38");
-              if(url)window.ArchivesLiveInvitations?.inviteToOwlbear(url);
+              try{if(url)window.ArchivesLiveInvitations?.inviteToOwlbear(url);}
+              finally{conn.send({type:"map-ack"});}
               return;
             }
             if(m?.type!=="edit")return;
