@@ -9,6 +9,7 @@ test("V4.15 URLs, syntax, secret-guarded bridge and previous graphics",()=>{
  assert.match(read("archives-app-v64-v55.html"),/src\/v55\/relay\.mjs/);
  assert.match(read("archives-app-v64-v55.html"),/src\/v54\/polish\.css/);
  assert.match(read("src/v55/relay.mjs"),/conn\.metadata\?\.secret!==secret/);
+ assert.match(read("src/v55/relay.mjs"),/sameSession/);
  assert.match(read("src/v55/host.mjs"),/archives:can-relink-result:v55/);
  assert.match(read("src/v55/relay.mjs"),/archives:can-relink:v55/);
  for(const p of ["src/v55/background.mjs","src/v55/navigation.mjs","src/v55/open.mjs","archives-host-v55.html","invite-v55.html","index-v55.html","background-v55.html"])
@@ -30,7 +31,8 @@ test("Remote auto-reconnects after tab focus and never overwrites unconfirmed ed
    constructor(){super();this.open=true;this.destroyed=false;this.disconnected=false;peers.push(this);queueMicrotask(()=>this.emit("open","remote"))}
    connect(id,options){
      assert.equal(id,"bridge-remote");assert.equal(options.metadata.secret,secret);
-     const c=new Connection();connections.push(c);return c;
+     assert.match(options.metadata.session,/^[a-f0-9]{32}$/);
+   const c=new Connection();connections.push(c);return c;
    }
    reconnect(){this.disconnected=false;this.open=true;queueMicrotask(()=>this.emit("open","remote"))}
    destroy(){this.destroyed=true}

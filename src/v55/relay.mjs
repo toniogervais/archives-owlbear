@@ -31,6 +31,7 @@ if(remote){
     block("Jumelage absent. Relie les Archives depuis le panneau Owlbear.");
   }else{
     await api.loadPeer();
+    const sessionId=Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,"0")).join("");
     let retryTimer=null,handshakeTimer=null,attempt=0,lastPong=Date.now(),ready=false,halted=false;
     const unsafe=()=>!!pending||inFlight;
     const clearHandshake=()=>{clearTimeout(handshakeTimer);handshakeTimer=null;};
@@ -58,7 +59,7 @@ if(remote){
       if(connection?.open&&ready)return;
       if(connection){try{connection.close()}catch(_){}connection=null;}
       let conn;
-      try{conn=peer.connect(parts[0],{reliable:true,metadata:{secret:parts[1]}})}
+      try{conn=peer.connect(parts[0],{reliable:true,metadata:{secret:parts[1],session:sessionId}})}
       catch(_){retry("Archives principales injoignables.");return;}
       connection=conn;ready=false;
       handshakeTimer=setTimeout(()=>{
@@ -193,7 +194,9 @@ if(remote){
         peer=new window.Peer();
         peer.on("connection",conn=>{
           if(conn.metadata?.secret!==secret){conn.close();return;}
-          if(connection?.open&&Date.now()-lastSeen<42000){
+          const sameSession=typeof conn.metadata?.session==="string"&&
+            conn.metadata.session.length>=8&&conn.metadata.session===connection?.metadata?.session;
+          if(connection?.open&&Date.now()-lastSeen<42000&&!sameSession){
             conn.on("open",()=>{conn.send({type:"busy"});conn.close()});return;
           }
           if(connection){try{connection.close()}catch(_){}connection=null;unblock();}
