@@ -6,6 +6,7 @@ on:
       - 'archives-app-v62-v53.html'
       - 'manifest-v53.json'
       - 'tests/bridge-v53.test.cjs'
+      - 'tests/browser-v53.cjs'
       - 'invite-v53.html'
       - 'archives.html'
       - '.github/workflows/test-v53.yml'
@@ -21,3 +22,5 @@ jobs:
       - run: npm ci
       - run: node --test tests/bridge-v53.test.cjs tests/bridge-v52.test.cjs tests/security-v52.test.cjs
       - run: node tests/syntax.cjs
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/browser-v53.cjs
