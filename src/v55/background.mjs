@@ -1,5 +1,5 @@
-import { O as OBR } from "../../assets/index-BfJgTiPE.js";
-import { watchTransfers } from "../v46/transfer-receiver.mjs";
+import OBR from "../../assets/owlbear-transfer-sdk-v55.mjs";
+import { watchTransfers } from "./transfer-receiver.mjs";
 const channel="fr.archives-imaginaire.bridge/screen-v55";
 const viewer="fr.archives-imaginaire.bridge/archives-viewer";
 const invite="fr.archives-imaginaire.bridge/screen-invite-v55";
@@ -9,10 +9,7 @@ await OBR.tool.create({
   icons:[{icon:new URL("../../icon-archives-v43.svg",import.meta.url).href,label:"Afficher les Archives"}],
   onClick(){
     void OBR.modal.open({id:viewer,url:new URL("../../archives-host-v55.html",import.meta.url).href,fullScreen:true,hideBackdrop:true,hidePaper:true})
-      .then(async()=>{
-        if(await OBR.player.getRole()==="GM")
-          await OBR.broadcast.sendMessage(channel,{target:"ARCHIVES",id:crypto.randomUUID()});
-      }).catch(console.error);
+      .catch(console.error);
     return false;
   }
 });

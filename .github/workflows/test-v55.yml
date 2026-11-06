@@ -3,6 +3,9 @@ on:
   push:
     paths:
       - 'src/v55/**'
+      - 'assets/owlbear-transfer-sdk-v55.*'
+      - 'index-v55.html'
+      - 'tests/transfer-v55.test.cjs'
       - 'archives-app-v64-v55.html'
       - 'archives.html'
       - 'manifest-v55.json'
@@ -22,7 +25,7 @@ jobs:
         with:
           node-version: '22'
       - run: npm ci
-      - run: node --test tests/bridge-v55.test.cjs tests/visual-v54.test.cjs tests/bridge-v53.test.cjs tests/bridge-v52.test.cjs tests/security-v52.test.cjs
+      - run: node --test tests/transfer-v55.test.cjs tests/bridge-v55.test.cjs tests/visual-v54.test.cjs tests/bridge-v53.test.cjs tests/bridge-v52.test.cjs tests/security-v52.test.cjs
       - run: node tests/syntax.cjs
       - run: npx playwright install --with-deps chromium
       - run: node tests/browser-v55.cjs

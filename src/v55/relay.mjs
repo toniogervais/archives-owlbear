@@ -56,7 +56,7 @@ if(remote){
         retry("Service de jumelage interrompu.");return;
       }
       if(!peer.open){retry("En attente du jumelage.");return;}
-      if(connection?.open&&ready)return;
+      if(connection && (ready||handshakeTimer))return;
       if(connection){try{connection.close()}catch(_){}connection=null;}
       let conn;
       try{conn=peer.connect(parts[0],{reliable:true,metadata:{secret:parts[1],session:sessionId}})}
@@ -83,7 +83,10 @@ if(remote){
         }else if(message?.type==="ack"){
           revision=message.revision;inFlight=false;flush();
         }else if(message?.type==="map-ack"&&returning){
-          returning=false;window.parent.postMessage({type:"archives:flushed:v55"},location.origin);
+          returning=false;
+          connection=null;ready=false;
+          try{conn.close()}catch(_){}
+          window.parent.postMessage({type:"archives:flushed:v55"},location.origin);
         }else if(message?.type==="busy"){
           clearHandshake();halted=true;block("Une autre vue des Archives est active dans Owlbear.");
         }else if(message?.type==="persist-error"){
@@ -261,4 +264,4 @@ if(remote){
     revision++;
   });
 }
-window.addEventListener("pagehide",()=>peer?.destroy());
+window.addEventListener("pagehide",event=>{if(!event.persisted)peer?.destroy()});

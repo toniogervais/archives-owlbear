@@ -27,6 +27,12 @@ create table if not exists public.archives_owlbear_cell_transfers (
   completed_at timestamptz
 );
 
+-- Optional placement for files sent from the advanced image panel.
+alter table public.archives_owlbear_cell_transfers
+  add column if not exists placement_x double precision check (placement_x > -10000000 and placement_x < 10000000),
+  add column if not exists placement_y double precision check (placement_y > -10000000 and placement_y < 10000000),
+  add column if not exists placement_dpi double precision check (placement_dpi between 1 and 1200);
+
 create index if not exists archives_cell_transfers_room_pending_idx
   on public.archives_owlbear_cell_transfers(room_id,created_at)
   where status='pending';

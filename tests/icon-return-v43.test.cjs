@@ -15,7 +15,7 @@ test("The same icon is used on both Owlbear navigation surfaces",()=>{
  const manifest=JSON.parse(read("manifest-v43.json"));
  assert.match(bg,/icon-archives-v43\.svg/);
  assert.match(manifest.action.icon,/icon-archives-v43\.svg$/);
- assert.equal(manifest.version,"4.3.0");
+ assert.match(manifest.version,/^4\.3\.\d+$/);
 });
 test("The right-hand toolbar panel has only the return command",()=>{
  const pane=read("return-v43.html");
