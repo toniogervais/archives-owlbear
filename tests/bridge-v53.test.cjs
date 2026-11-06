@@ -22,7 +22,7 @@ test("Chrome Android player receives a single-button blurred overlay",()=>{
  vm.runInContext(nav,dom.getInternalVMContext());
  dom.window.dispatchEvent(new dom.window.CustomEvent("archives:invite:v40",{detail:{type:"archives:invite:v40",target:"OWLBEAR",url:"https://owlbear.rodeo/room/test"}}));
  const layer=dom.window.document.getElementById("archives-v40-player-invite");
- assert.ok(layer);assert.match(layer.style.backdropFilter,/blur/);
+ assert.ok(layer);assert.ok(nav.includes("backdrop-filter:blur(10px)"));
  assert.equal(layer.querySelectorAll("button").length,1);
  assert.equal(layer.getAttribute("aria-modal"),"true");
  assert.match(nav,/window\.location\.assign\(url\)/);
