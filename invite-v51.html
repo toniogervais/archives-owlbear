@@ -1,0 +1,16 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><style>body{font:16px system-ui;background:#19121f;color:#ffeac0;text-align:center;padding:20px}button{padding:14px;margin:8px;border:1px solid #c7a660;border-radius:8px;background:#49361b;color:inherit;cursor:pointer}</style></head><body>
+<h2 id="title"></h2><button id="accept"></button><button id="stay">Rester ici</button>
+<script type="module">
+import { O as OBR } from "./assets/index-BfJgTiPE.js";
+const archives=location.hash==="#ARCHIVES";
+document.getElementById("title").textContent=archives?"Le MJ vous invite dans les Archives":"Le MJ vous invite sur la carte";
+document.getElementById("accept").textContent=archives?"Afficher les Archives":"Afficher la carte";
+await new Promise(resolve=>OBR.onReady(resolve));
+const close=()=>OBR.modal.close("fr.archives-imaginaire.bridge/screen-invite-v51");
+document.getElementById("stay").onclick=()=>void close();
+document.getElementById("accept").onclick=async()=>{
+ if(archives)await OBR.modal.open({id:"fr.archives-imaginaire.bridge/archives-viewer",url:new URL("./archives-host-v51.html",location.href).href,fullScreen:true,hideBackdrop:true,hidePaper:true});
+ else await OBR.modal.close("fr.archives-imaginaire.bridge/archives-viewer");
+ await close();
+};
+</script></body></html>

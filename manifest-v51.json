@@ -1,0 +1,14 @@
+{
+  "name": "Archives Imaginaire",
+  "version": "4.11.0",
+  "manifest_version": 1,
+  "description": "Archives intégrées, jumelage privé MJ et Salon Live joueurs.",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/background-v51.html",
+  "action": {
+    "title": "Les Archives",
+    "icon": "https://toniogervais.github.io/archives-owlbear/icon-archives-v43.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/index-v51.html",
+    "width": 360,
+    "height": 440
+  }
+}
