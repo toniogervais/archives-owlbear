@@ -1,0 +1,14 @@
+{
+  "name": "Archives Imaginaire",
+  "version": "4.12.0",
+  "manifest_version": 1,
+  "description": "Archives centrales intégrées, jumelage privé et validation des sauvegardes avant retour.",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/background-v52.html",
+  "action": {
+    "title": "Les Archives",
+    "icon": "https://toniogervais.github.io/archives-owlbear/icon-archives-v43.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/index-v52.html",
+    "width": 360,
+    "height": 440
+  }
+}
