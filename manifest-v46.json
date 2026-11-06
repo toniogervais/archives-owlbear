@@ -1,6 +1,6 @@
 {
   "name": "Archives Imaginaire",
-  "version": "4.6.0",
+  "version": "4.6.1",
   "manifest_version": 1,
   "description": "Invitations MJ et transferts de cellules en tokens, connexion sécurisée.",
   "background_url": "https://toniogervais.github.io/archives-owlbear/background-v46.html",

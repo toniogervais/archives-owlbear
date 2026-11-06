@@ -8,7 +8,23 @@ import { publicConfig, SCENE_KEY } from "../v37/session.mjs";
 let buildImagePromise=null;
 async function getBuildImage(){
   if(!buildImagePromise)buildImagePromise=import("https://esm.sh/@owlbear-rodeo/sdk@2.4.0?bundle")
-    .then(module=>module.buildImage).catch(error=>{buildImagePromise=null;throw error});
+    .then(async module=>{
+      // The dynamically loaded builder has its OWN SDK instance. It must
+      // receive OBR_READY before it can set the creating player's ID.
+      const sdk=module.default;
+      if(!sdk?.isAvailable)throw Error("Connexion au SDK de création de token indisponible.");
+      if(!sdk.isReady){
+        await new Promise((resolve,reject)=>{
+          let unsub=null;
+          const timer=setTimeout(()=>{
+            unsub?.();
+            reject(new Error("Le SDK de création de token ne s'initialise pas dans Owlbear."));
+          },8000);
+          unsub=sdk.onReady(()=>{clearTimeout(timer);unsub?.();resolve()});
+        });
+      }
+      return module.buildImage;
+    }).catch(error=>{buildImagePromise=null;throw error});
   const builder=await buildImagePromise;
   if(typeof builder!=="function")throw Error("Constructeur de token Owlbear indisponible.");
   return builder;

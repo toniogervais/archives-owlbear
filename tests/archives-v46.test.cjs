@@ -67,6 +67,7 @@ test("Characters are placed as Owlbear tokens near GM viewport",()=>{
  assert.match(receiver,/OBR\.scene\.items\.addItems\(\[item\]\)/);
  assert.match(receiver,/same\(item\.metadata\[SOURCE_KEY\],itemMeta\)/);
  assert.match(receiver,/type:"PLAIN",plainText:row\.title/);
+ assert.match(receiver,/sdk\.onReady/);
 });
 test("SQL requires owner, linked room and active scene",()=>{
  const sql=read("sql/archives-cell-transfers-v45.sql");
@@ -79,7 +80,7 @@ test("SQL requires owner, linked room and active scene",()=>{
 test("Owlbear manifest name satisfies the short-name limit",()=>{
  const manifest=JSON.parse(read("manifest-v46.json"));
  assert.ok([...manifest.name].length<45);
- assert.equal(manifest.version,"4.6.0");
+ assert.equal(manifest.version,"4.6.1");
  assert.match(manifest.action.icon,/icon-archives-v43\.svg$/);
  assert.match(manifest.action.popover,/index-v46\.html$/);
 });
