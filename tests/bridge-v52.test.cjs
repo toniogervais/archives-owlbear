@@ -57,6 +57,25 @@ for(const persist of [true,false]){
   dom.window.close();
  });
 }
+test("Local fallback tokens exist and can be passed as SVG images without secrets",()=>{
+ const sender=read("src/v50/archives-transfer.mjs");
+ const receiver=read("src/v46/transfer-receiver.mjs");
+ for(const name of ["personnage","lieu","objet"]){
+  const path="token-"+name+"-v45.svg";
+  const svg=read(path);
+  assert.match(svg,/<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
+  assert.ok(sender.includes(path));
+ }
+ assert.match(receiver,/image\/svg\+xml/);
+ assert.match(sender,/Seuls le nom et l'image de la cellule seront transmis/);
+ assert.doesNotMatch(sender,/node\.clues,/);
+ assert.doesNotMatch(sender,/node\.desc,/);
+});
+test("Stable launcher targets the latest complete Archives",()=>{
+ const launcher=read("archives.html");
+ assert.match(launcher,/location\.replace\(target\.href\)/);
+ assert.match(launcher,/archives-app-v61-v52\.html/);
+});
 test("No silent overwrite on conflicts and return waits for central acknowledgement",()=>{
  assert.match(relay,/if\(inFlight\|\|pending\)/);
  assert.match(relay,/type:"archives:flush-error:v52"/);
