@@ -1,0 +1,14 @@
+{
+  "name": "Archives Imaginaire",
+  "version": "4.7.0",
+  "manifest_version": 1,
+  "description": "Bascule vers Les Archives V4.7 : confidentialité des joueurs corrigée.",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/background-v47.html",
+  "action": {
+    "title": "Les Archives",
+    "icon": "https://toniogervais.github.io/archives-owlbear/icon-archives-v43.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/index-v47.html",
+    "width": 360,
+    "height": 440
+  }
+}

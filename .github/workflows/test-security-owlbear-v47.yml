@@ -1,0 +1,22 @@
+name: Tests de navigation securisee Owlbear V4.7
+on:
+  push:
+    branches:
+      - develop/security-owlbear-return-v47
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntaxe des modules
+        run: |
+          node --check src/v47/background.mjs
+          node --check src/v47/return-link.mjs
+      - name: Liens vers la bonne version et invitations
+        run: node --test tests/security-owlbear-v47.test.cjs
