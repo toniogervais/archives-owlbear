@@ -2148,6 +2148,7 @@ window.DuneApp = (function() {
   window.ArchivesRelay = {
     loadPeer: function(){ return new Promise(function(resolve,reject){loadPeerJs(resolve,reject);}); },
     snapshot: function(){relayApplying=true;try{saveState();return relayPayload;}finally{relayApplying=false;}},
+    current: function(){return relayPayload;},
     room: function(){return state.liveRoomId;},
     apply: function(data){
       if(!data || !Array.isArray(data.boards) || !data.boards.length ||
@@ -4051,29 +4052,27 @@ window.DuneApp = (function() {
     document.body.appendChild(a); a.click(); a.remove();
   }
 
+  var peerJsLoad;
   function loadPeerJs(cb, onError) {
     if (window.Peer) { cb(); return; }
-    var s = document.createElement("script");
-    var finished = false;
-    var timer = setTimeout(function() {
-      if (finished) return;
-      finished = true;
-      try { s.onload = null; s.onerror = null; } catch (e) {}
-      if (typeof onError === "function") onError(new Error("Délai de chargement de PeerJS dépassé."));
-    }, 15000);
-    s.src = "https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js";
-    s.onload = function() {
-      if (finished) return;
-      finished = true; clearTimeout(timer);
-      if (window.Peer) cb();
-      else if (typeof onError === "function") onError(new Error("PeerJS ne s'est pas initialisé."));
-    };
-    s.onerror = function() {
-      if (finished) return;
-      finished = true; clearTimeout(timer);
-      if (typeof onError === "function") onError(new Error("Impossible de charger PeerJS depuis Internet."));
-    };
-    document.head.appendChild(s);
+    if (!peerJsLoad) {
+      peerJsLoad = new Promise(function(resolve, reject) {
+        var script = document.createElement("script");
+        var timer = setTimeout(function() { finish(new Error("Le module de connexion n’a pas répondu.")); }, 6000);
+        function finish(error) {
+          clearTimeout(timer);
+          script.onload = script.onerror = null;
+          if (!error && window.Peer) { resolve(); return; }
+          script.remove();
+          reject(error || new Error("Le module de connexion n’a pas démarré."));
+        }
+        script.src = new URL("./assets/peerjs-1.5.2.min.js", location.href).href;
+        script.onload = function(){ finish(); };
+        script.onerror = function(){ finish(new Error("Le module de connexion n’a pas pu être chargé.")); };
+        document.head.append(script);
+      }).catch(function(error){ peerJsLoad = null; throw error; });
+    }
+    peerJsLoad.then(cb, onError);
   }
 
   window.addEventListener("click", function(e) {
@@ -6843,10 +6842,10 @@ window.ArchivesRevealJournal={start,stop,refresh:()=>monitor?monitor.refresh():P
 
 })();
 </script>
-<script type="module" src="./src/v55/embedded.mjs"></script>
-<script type="module" src="./src/v55/navigation.mjs"></script>
+<link rel="stylesheet" href="./src/v56/bridge.css">
+<script type="module" src="./src/v56/relay.mjs"></script>
+<script type="module" src="./src/v56/navigation.mjs"></script>
 <script type="module" src="./src/v55/archives-transfer.mjs"></script>
-<script type="module" src="./src/v55/relay.mjs"></script>
 <script defer src="./src/v54/polish.js"></script>
 </body>
 </html>

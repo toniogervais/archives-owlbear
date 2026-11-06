@@ -18,7 +18,7 @@ await new Promise(resolve=>OBR.onReady(resolve));
 button.onclick=async()=>{
  button.disabled=true;error.style.display="none";
  try{
-  if(archives)await OBR.modal.open({id:"fr.archives-imaginaire.bridge/archives-viewer",url:new URL("./archives-host-v55.html",location.href).href,fullScreen:true,hideBackdrop:true,hidePaper:true});
+  if(archives)await OBR.modal.open({id:"fr.archives-imaginaire.bridge/archives-viewer",url:new URL("./archives-host-v55.html?v=4152",location.href).href,fullScreen:true,hideBackdrop:true,hidePaper:true});
   else await OBR.modal.close("fr.archives-imaginaire.bridge/archives-viewer");
   await OBR.modal.close("fr.archives-imaginaire.bridge/screen-invite-v55");
  }catch(e){error.textContent="Changement impossible. Vérifie la connexion, puis réessaie.";error.style.display="block";button.disabled=false;console.error(e);}
