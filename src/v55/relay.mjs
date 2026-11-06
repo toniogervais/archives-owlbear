@@ -106,13 +106,16 @@ if(remote){
     peer=new window.Peer();
     peer.on("open",()=>{clearTimeout(retryTimer);retryTimer=null;connect()});
     peer.on("disconnected",()=>{
+      // A signalling websocket can drop while an existing WebRTC data channel still works.
+      try{peer.reconnect()}catch(_){}
+      if(ready&&connection?.open)return;
       ready=false;
       if(unsafe()){safety();return;}
-      try{peer.reconnect()}catch(_){}
       retry("Service de jumelage momentanément déconnecté.");
     });
     peer.on("error",error=>{
       console.warn("Archives : jumelage",error?.type||error);
+      if(ready&&connection?.open)return;
       retry("Jumelage momentanément indisponible.");
     });
     const wake=()=>{
@@ -124,14 +127,14 @@ if(remote){
     window.addEventListener("focus",wake);
     setInterval(()=>{
       if(document.hidden||halted||!ready||!connection?.open)return;
-      if(Date.now()-lastPong>28000){
+      if(Date.now()-lastPong>18000){
         const old=connection;connection=null;ready=false;
         try{old.close()}catch(_){}
         retry("La liaison ne répond plus après une période d'inactivité.");
         return;
       }
       send({type:"ping"});
-    },8000);
+    },5000);
     window.addEventListener("archives:edit:v55",event=>{
       if(applying||halted)return;
       pending=copy(event.detail);flush();

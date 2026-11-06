@@ -15,7 +15,7 @@ test("V4.15 URLs, syntax, secret-guarded bridge and previous graphics",()=>{
   assert.ok(fs.existsSync(p),p);
 });
 test("Remote auto-reconnects after tab focus and never overwrites unconfirmed edits",async()=>{
- const secret="f".repeat(64),applied=[],connections=[];
+ const secret="f".repeat(64),applied=[],connections=[],peers=[];
  const dom=new JSDOM("<body></body>",{
    url:"https://toniogervais.github.io/archives-owlbear/archives-app-v64-v55.html?remote=1#bridge-remote."+secret,
    runScripts:"outside-only",pretendToBeVisual:true
@@ -27,7 +27,7 @@ test("Remote auto-reconnects after tab focus and never overwrites unconfirmed ed
    close(){if(!this.open)return;this.open=false;this.emit("close")}
  }
  class Peer extends EventEmitter{
-   constructor(){super();this.open=true;this.destroyed=false;this.disconnected=false;queueMicrotask(()=>this.emit("open","remote"))}
+   constructor(){super();this.open=true;this.destroyed=false;this.disconnected=false;peers.push(this);queueMicrotask(()=>this.emit("open","remote"))}
    connect(id,options){
      assert.equal(id,"bridge-remote");assert.equal(options.metadata.secret,secret);
      const c=new Connection();connections.push(c);return c;
@@ -49,6 +49,10 @@ test("Remote auto-reconnects after tab focus and never overwrites unconfirmed ed
    connections[0].emit("data",{type:"state",revision:1,payload:{id:"first"},room:""});
    assert.deepEqual(applied,[{id:"first"}]);
    assert.equal(w.document.querySelector('[role="status"]').style.display,"none");
+   peers[0].disconnected=true;
+   peers[0].emit("disconnected");
+   await new Promise(resolve=>setTimeout(resolve,5));
+   assert.equal(connections.length,1,"signalling interruption alone must not close a live data channel");
    connections[0].close();
    assert.match(w.document.querySelector('[role="status"]').textContent,/Reconnexion automatique/);
    w.dispatchEvent(new w.Event("focus"));
