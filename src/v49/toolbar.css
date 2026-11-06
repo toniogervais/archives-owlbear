@@ -1,0 +1,104 @@
+/* V4.9 : barre inspiree des outils Owlbear. Apparence uniquement. */
+#quick-icon-dock{
+  gap:6px!important;padding:7px!important;
+  background:rgba(27,28,36,.96)!important;
+  border:1px solid rgba(232,229,222,.25)!important;
+  border-radius:14px!important;
+  box-shadow:0 10px 30px rgba(0,0,0,.36)!important;
+  backdrop-filter:blur(12px);
+  max-height:calc(100dvh - 20px);
+  overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;
+}
+#quick-icon-dock.dock-horizontal{
+  max-height:62px;max-width:calc(100vw - 20px);
+  overflow-x:auto;overflow-y:hidden;flex-wrap:nowrap;
+}
+#quick-icon-dock > .quick-icon-btn{
+  width:40px!important;height:40px!important;
+  flex:0 0 40px!important;border-radius:10px!important;
+  border:1px solid rgba(229,226,218,.22)!important;
+  background:#30313a!important;color:#e7e6eb!important;
+  box-shadow:none!important;transform:none!important;
+  transition:background .15s,border-color .15s!important;
+}
+#quick-icon-dock > .quick-icon-btn::before{display:none!important;}
+#quick-icon-dock > .quick-icon-btn .quick-icon-svg{
+  width:22px!important;height:22px!important;
+  color:inherit!important;stroke:currentColor!important;
+  stroke-width:1.5!important;filter:none!important;
+}
+#quick-icon-dock > .quick-icon-btn .quick-icon-svg *{
+  stroke-width:1.5!important;
+}
+#quick-icon-dock > .quick-icon-btn:hover,
+#quick-icon-dock > .quick-icon-btn:focus-visible{
+  background:#454651!important;
+  border-color:#e4ca99!important;
+  color:#fff0c8!important;outline:2px solid rgba(228,202,153,.22);
+  outline-offset:1px;
+}
+#quick-icon-dock > .quick-icon-btn[aria-pressed="true"],
+#quick-icon-dock > .quick-icon-btn.link-creation-active{
+  background:#284a3a!important;color:#b8f8d0!important;
+  border-color:#75d5a3!important;
+  animation:none!important;
+}
+#quick-icon-dock .quick-dock-handle{
+  margin:0!important;background:#292b34!important;
+  border:1px solid rgba(229,226,218,.2)!important;
+  border-radius:9px!important;
+}
+#quick-icon-dock > #archives-toolbar-collapse{
+  display:grid!important;place-items:center;
+  flex:0 0 auto;width:40px;height:32px;
+  padding:0;border:1px solid #81775e;
+  border-radius:9px;background:#413d35;color:#f6dca9;
+  cursor:pointer;touch-action:manipulation;
+}
+#quick-icon-dock > #archives-toolbar-collapse svg{
+  width:19px;height:19px;fill:none;stroke:currentColor;
+  stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+}
+#quick-icon-dock > #archives-toolbar-collapse:hover{
+  background:#565043;border-color:#f0d396;
+}
+#quick-icon-dock > #archives-toolbar-collapse:focus-visible{
+  outline:2px solid #f7d99d;outline-offset:2px;
+}
+#quick-icon-dock.dock-horizontal > #archives-toolbar-collapse{
+  width:32px;height:40px;
+}
+#quick-icon-dock.archives-toolbar-collapsed{
+  width:max-content!important;gap:4px!important;padding:6px!important;
+  overflow:visible!important;max-height:none!important;
+}
+#quick-icon-dock.archives-toolbar-collapsed > .quick-icon-btn,
+body.player-mode #quick-icon-dock.archives-toolbar-collapsed > .quick-icon-btn,
+body.strict-readonly #quick-icon-dock.archives-toolbar-collapsed > .quick-icon-btn{
+  display:none!important;
+}
+#quick-icon-dock.archives-toolbar-collapsed > #archives-toolbar-collapse{
+  background:#544835;border-color:#e1c48a;
+  width:40px;height:40px;
+}
+body.player-mode #quick-icon-dock > #archives-toolbar-collapse,
+body.strict-readonly #quick-icon-dock > #archives-toolbar-collapse{display:grid!important;}
+#top-hud .top-group{
+  border:1px solid rgba(223,213,189,.27)!important;
+  border-radius:12px!important;
+  background:rgba(24,25,32,.91)!important;
+}
+#canvas-integrations-dock{
+  border:1px solid rgba(223,213,189,.27)!important;
+  border-radius:13px!important;
+  background:rgba(24,25,32,.92)!important;
+}
+#canvas-integrations-dock .canvas-integration-icon{
+  border-width:1px!important;border-radius:10px!important;
+}
+@media(max-width:700px){
+  #quick-icon-dock > .quick-icon-btn{width:40px!important;height:40px!important;flex-basis:40px!important;}
+}
+@media(prefers-reduced-motion:reduce){
+  #quick-icon-dock > .quick-icon-btn{transition:none!important;}
+}
