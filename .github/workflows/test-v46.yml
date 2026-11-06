@@ -1,0 +1,26 @@
+name: Vérification des invitations et tokens Owlbear V4.6
+on:
+  push:
+    branches:
+      - develop/archives-transfers-stabilization-v46
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntaxe des modules
+        run: |
+          node --check src/v46/archives-navigation.mjs
+          node --check src/v46/archives-transfer.mjs
+          node --check src/v46/transfer-receiver.mjs
+          node --check src/v46/transfer-auth.mjs
+          node --check src/v46/background.mjs
+          node --check src/v46/return-link.mjs
+      - name: Contrôles de parcours et de confidentialité
+        run: node --test tests/archives-v46.test.cjs
