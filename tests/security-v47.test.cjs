@@ -93,7 +93,7 @@ test("Unsafe player HTML export is disabled",()=>{
  assert.doesNotMatch(section,/JSON\.stringify\(\{\s*boards: state\.boards/);
 });
 test("Player progression export uses the safe projection",()=>{
- const section=src.slice(src.indexOf("exportPlayerProgression: function()"),src.indexOf("importPlayerProgression: function()"));
+ const section=src.slice(src.indexOf("exportPlayerProgression: function()"),src.indexOf("importPlayerProgression: function(input)"));
  assert.match(section,/projectPlayerPayload/);
  assert.doesNotMatch(section,/journalPages: state\.journalPages/);
 });
