@@ -1,0 +1,25 @@
+name: Vérifier le transfert et les invitations V4.5
+on:
+  push:
+    branches:
+      - develop/archives-transfert-joueurs-v45
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntaxe des scripts
+        run: |
+          node --check src/v45/archives-navigation.mjs
+          node --check src/v45/archives-transfer.mjs
+          node --check src/v45/background.mjs
+          node --check src/v45/return-link.mjs
+          node --check src/v45/transfer-receiver.mjs
+      - name: Vérifier les parcours MJ et joueurs
+        run: node --test tests/archives-v45.test.cjs

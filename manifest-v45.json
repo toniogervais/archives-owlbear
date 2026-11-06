@@ -1,0 +1,14 @@
+{
+  "name": "Archives Imaginaire",
+  "version": "4.5.0",
+  "manifest_version": 1,
+  "description": "Navigation MJ et invitations joueurs, transfert volontaire de cellules en tokens.",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/background-v45.html",
+  "action": {
+    "title": "Retour aux Archives",
+    "icon": "https://toniogervais.github.io/archives-owlbear/icon-archives-v43.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/index-v45.html",
+    "width": 360,
+    "height": 165
+  }
+}

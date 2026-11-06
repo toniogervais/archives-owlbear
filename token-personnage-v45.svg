@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256"><title>Personnage des Archives</title>
+<circle cx="128" cy="128" r="120" fill="#17121f" stroke="#d9b86c" stroke-width="12"/>
+<circle cx="128" cy="92" r="42" fill="#d9b86c"/>
+<path d="M52 206c4-45 35-69 76-69s72 24 76 69" fill="#d9b86c"/>
+<circle cx="128" cy="128" r="118" fill="none" stroke="#554022" stroke-width="5"/>
+</svg>

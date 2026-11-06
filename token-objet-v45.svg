@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256"><title>Objet des Archives</title>
+<circle cx="128" cy="128" r="120" fill="#17121f" stroke="#ae98d2" stroke-width="10"/>
+<path d="m128 42 80 86-80 86-80-86z" fill="#ae98d2"/>
+<path d="m128 65 59 63-59 63-59-63z" fill="#433357"/>
+</svg>

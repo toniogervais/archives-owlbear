@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256"><title>Lieu des Archives</title>
+<circle cx="128" cy="128" r="120" fill="#17121f" stroke="#8ebbd5" stroke-width="10"/>
+<path d="M128 44c-41 0-69 29-69 65 0 49 69 107 69 107s69-58 69-107c0-36-28-65-69-65z" fill="#8ebbd5"/>
+<circle cx="128" cy="111" r="31" fill="#17121f"/>
+</svg>
