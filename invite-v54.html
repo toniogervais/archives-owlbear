@@ -1,0 +1,27 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Invitation du maître de jeu</title><style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;font:16px system-ui;background:transparent;color:#ffeac0}
+#veil{position:fixed;inset:0;display:grid;place-items:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));background:rgba(7,8,19,.7);-webkit-backdrop-filter:blur(11px);backdrop-filter:blur(11px)}
+.card{width:min(440px,100%);padding:clamp(20px,6vw,34px);border:1px solid #ddbd79;border-radius:18px;background:#1b1526;box-shadow:0 20px 80px #000b;text-align:center}
+h1{margin:0 0 25px;font-size:clamp(20px,4vw,27px);line-height:1.35}
+button{width:100%;min-height:72px;padding:16px;border:2px solid #f0d697;border-radius:12px;background:#735523;color:white;font:700 clamp(17px,4vw,21px) system-ui;touch-action:manipulation;cursor:pointer}
+button:focus-visible{outline:3px solid white;outline-offset:4px}#error{display:none;margin:15px 0 0;color:#ffd3d3;font-size:14px}
+</style></head><body><main id="veil" role="dialog" aria-modal="true" aria-label="Invitation du maître de jeu"><div class="card">
+<h1 id="title">Le maître de jeu change d’espace</h1><button id="accept" type="button">Rejoindre</button><p id="error" role="alert"></p>
+</div></main><script type="module">
+import { O as OBR } from "./assets/index-BfJgTiPE.js";
+const archives=location.hash==="#ARCHIVES";
+const title=document.getElementById("title"),button=document.getElementById("accept"),error=document.getElementById("error");
+title.textContent=archives?"Le maître de jeu vous invite dans les Archives":"Le maître de jeu vous invite sur la carte";
+button.textContent=archives?"Afficher les Archives":"Afficher la carte Owlbear";
+await new Promise(resolve=>OBR.onReady(resolve));
+button.onclick=async()=>{
+ button.disabled=true;error.style.display="none";
+ try{
+  if(archives)await OBR.modal.open({id:"fr.archives-imaginaire.bridge/archives-viewer",url:new URL("./archives-host-v54.html",location.href).href,fullScreen:true,hideBackdrop:true,hidePaper:true});
+  else await OBR.modal.close("fr.archives-imaginaire.bridge/archives-viewer");
+  await OBR.modal.close("fr.archives-imaginaire.bridge/screen-invite-v54");
+ }catch(e){error.textContent="Changement impossible. Vérifie la connexion, puis réessaie.";error.style.display="block";button.disabled=false;console.error(e);}
+};
+button.focus();
+</script></body></html>

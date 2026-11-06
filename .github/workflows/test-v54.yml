@@ -1,0 +1,27 @@
+name: Tests Archives V4.14 effets visuels
+on:
+  push:
+    paths:
+      - 'src/v54/**'
+      - 'archives-app-v63-v54.html'
+      - 'archives.html'
+      - 'manifest-v54.json'
+      - 'background-v54.html'
+      - 'archives-host-v54.html'
+      - 'tests/visual-v54.test.cjs'
+      - 'tests/browser-v54.cjs'
+      - '.github/workflows/test-v54.yml'
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: node --test tests/visual-v54.test.cjs tests/bridge-v53.test.cjs tests/bridge-v52.test.cjs tests/security-v52.test.cjs
+      - run: node tests/syntax.cjs
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/browser-v54.cjs

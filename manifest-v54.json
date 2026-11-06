@@ -1,0 +1,14 @@
+{
+  "name": "Archives Imaginaire",
+  "version": "4.14.0",
+  "manifest_version": 1,
+  "description": "Archives centrales, interface cinématique, flèches lumineuses et invitations Android.",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/background-v54.html",
+  "action": {
+    "title": "Les Archives",
+    "icon": "https://toniogervais.github.io/archives-owlbear/icon-archives-v43.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/index-v54.html",
+    "width": 360,
+    "height": 440
+  }
+}
