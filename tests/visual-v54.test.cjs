@@ -16,6 +16,8 @@ test("V4.14 complete manifest and permanent launcher",()=>{
  assert.match(read("src/v54/host.mjs"),/archives-app-v63-v54\.html/);
  assert.match(html,/src\/v54\/polish\.css/);
  assert.match(html,/src\/v54\/polish\.js/);
+ assert.equal((html.match(/archives:edit:v54/g)||[]).length,2);
+ assert.match(read("src/v54/relay.mjs"),/archives:edit:v54/);
 });
 test("Only fully revealed arrows have animated energy flowing along actual path",()=>{
  assert.match(html,/var revealMotion = !!\(lk\.revealed && item\.n1\.revealed && item\.n2\.revealed\)/);

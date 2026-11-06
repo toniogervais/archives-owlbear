@@ -9,6 +9,8 @@ on:
       - 'background-v54.html'
       - 'archives-host-v54.html'
       - 'tests/visual-v54.test.cjs'
+      - 'tests/bridge-v53.test.cjs'
+      - 'tests/bridge-v52.test.cjs'
       - 'tests/browser-v54.cjs'
       - '.github/workflows/test-v54.yml'
   workflow_dispatch:
