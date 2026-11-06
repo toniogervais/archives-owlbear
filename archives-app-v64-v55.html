@@ -561,6 +561,8 @@ body.player-mode #settings-fab,body.player-mode #create-fab,body.strict-readonly
 body.player-mode #quick-icon-dock{display:flex!important}
 body.player-mode #quick-icon-dock .quick-icon-btn:not(#quick-grid-toggle):not(#quick-mode-switch):not(#quick-player-center-cell):not(#quick-player-center-all):not(#quick-player-layout):not(#quick-player-undo):not(#quick-player-journal){display:none!important}
 body.player-mode #quick-icon-dock #quick-mode-switch{display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}
+body.strict-readonly #quick-icon-dock #quick-mode-switch{display:none!important}
+body.owl-editor [data-live-standalone]{display:none!important}
 body.strict-readonly #quick-icon-dock .quick-icon-btn:not(#quick-grid-toggle):not(#quick-player-center-cell):not(#quick-player-center-all):not(#quick-player-layout):not(#quick-player-undo):not(#quick-player-journal){display:none!important}
 body.strict-readonly #quick-icon-dock #quick-player-center-cell,body.strict-readonly #quick-icon-dock #quick-player-center-all,body.strict-readonly #quick-icon-dock #quick-player-layout,body.strict-readonly #quick-icon-dock #quick-player-undo,body.strict-readonly #quick-icon-dock #quick-player-journal{display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}
 
@@ -1608,10 +1610,10 @@ body.player-mode #archives-home-fab{display:flex!important}
               <button type="button" class="pin-btn" onclick="DuneApp.togglePin('pin-block-session')">📌 Raccourci</button>
             </div>
             <div class="field-row">
-              <button type="button" class="btn btn-gold" onclick="DuneApp.startLiveHost()">📡 Salon Live</button>
+              <button type="button" class="btn btn-gold" data-live-standalone onclick="DuneApp.startLiveHost()">📡 Salon Live</button>
               <button type="button" class="btn" id="btn-live-panel" onclick="DuneApp.openLivePanel()" title="Ouvrir le suivi du Salon Live">👥 Joueurs <span id="live-player-count">0</span></button>
               <button type="button" class="btn btn-green" onclick="DuneApp.downloadReadOnlyPlayerHtml()">📥 HTML Joueurs</button>
-              <button type="button" class="btn" onclick="DuneApp.openPlayerTab()">🗔 2e Écran</button>
+              <button type="button" class="btn" data-live-standalone onclick="DuneApp.openPlayerTab()">🗔 2e Écran</button>
             </div>
             <div id="live-room-box" style="display:none; margin-bottom:5px;">
               <input type="text" id="inp-room-code" readonly style="font-weight:bold; color:var(--skin-gold-bright); text-align:center;">
@@ -1970,6 +1972,9 @@ window.DuneApp = (function() {
   }
 
   var blockOriginalParents = {};
+  var owlRoute = new URLSearchParams(window.location.search);
+  var owlEditor = owlRoute.get("owl-editor") === "1";
+  var owlPlayer = owlRoute.get("owl-view") === "1";
   var syncChannel = null;
   var peerInstance = null;
   var peerConns = [];
@@ -1992,7 +1997,8 @@ window.DuneApp = (function() {
     var connected = livePlayers.filter(function(p){ return p.connected; });
     if (count) count.textContent = String(connected.length);
     var modalCount = el("live-player-count-modal"); if (modalCount) modalCount.textContent = String(connected.length);
-    if (status) status.textContent = peerInstance && !peerInstance.destroyed ? "Salon actif — " + (state.liveRoomId || "") : "Salon arrêté";
+    if (status) status.textContent = owlEditor ? "Joueurs présents dans la salle Owlbear" :
+      peerInstance && !peerInstance.destroyed ? "Salon actif — " + (state.liveRoomId || "") : "Salon arrêté";
     if (!list) return;
     if (!livePlayers.length) { list.innerHTML = '<div style="padding:12px;color:var(--skin-text-muted);text-align:center;">Aucun joueur connecté pour le moment.</div>'; return; }
     list.innerHTML = livePlayers.map(function(p){
@@ -2007,7 +2013,7 @@ window.DuneApp = (function() {
 
 
   try {
-    if (window.BroadcastChannel) {
+    if (window.BroadcastChannel && !owlPlayer) {
       syncChannel = new BroadcastChannel("jdr_architect_sync_v12");
       syncChannel.onmessage = function(e) {
         // This channel carries a PLAYER-ONLY projection. Never overwrite an
@@ -2149,6 +2155,8 @@ window.DuneApp = (function() {
     loadPeer: function(){ return new Promise(function(resolve,reject){loadPeerJs(resolve,reject);}); },
     snapshot: function(){relayApplying=true;try{saveState();return relayPayload;}finally{relayApplying=false;}},
     current: function(){return relayPayload;},
+    publicView: function(){return projectPlayerPayload(relayPayload || this.snapshot());},
+    setOwlPlayers: function(players){if(owlEditor && !state.strictReadOnly){livePlayers=players;renderLivePlayers();}},
     room: function(){return state.liveRoomId;},
     apply: function(data){
       if(!data || !Array.isArray(data.boards) || !data.boards.length ||
@@ -2163,7 +2171,7 @@ window.DuneApp = (function() {
          "sidebarWidth","revealSoundPreset","customRevealAudioData","pinnedBlocks"].forEach(function(k){
            if(Object.prototype.hasOwnProperty.call(data,k))state[k]=data[k];
          });
-        applyThemeColors(state.skinName);applyCanvasBg();renderTabs();renderAll();saveState();
+        applyThemeColors(state.skinName);applyCanvasBg();renderTabs();renderAll(state.strictReadOnly ? data.revealedNodeId : null,state.strictReadOnly ? data.revealedLinkId : null);saveState();
       } finally {relayApplying=false;}
     }
   };
@@ -4082,6 +4090,7 @@ window.DuneApp = (function() {
   });
 
   loadState();
+  if (owlEditor && !state.strictReadOnly) document.body.classList.add("owl-editor");
   bindActiveBoardRefs();
   applyThemeColors(state.skinName);
 
@@ -5636,6 +5645,7 @@ window.DuneApp = (function() {
     openLivePanel: function() { openLivePanel(); },
     closeLivePanel: function() { closeLivePanel(); },
     startLiveHost: function() {
+      if(owlEditor){openLivePanel();return;}
       if(remoteEditor){window.alert("Démarre le Salon Live depuis l’onglet principal des Archives avant le jumelage.");return;}
       loadPeerJs(function() {
         try {
@@ -5760,22 +5770,18 @@ window.DuneApp = (function() {
       downloadJsonObject({ boards: exportBoards, activeBoardId: state.activeBoardId, nextRevCounter: state.nextRevCounter, fxEnabled: state.fxEnabled, playerLayout: state.playerLayout, journalPages: state.journalPages, bgImage: state.bgImage, canvasBgOp: state.canvasBgOp, skinName: state.skinName }, "projet-complet.json");
     },
     importJson: function(input) {
-      if (!input.files || !input.files[0]) return;
-      var r = new FileReader();
-      r.onload = function(e) {
+      if (state.strictReadOnly || !input.files || !input.files[0]) return;
+      var reader = new FileReader();
+      reader.onload = function(event) {
         try {
-          var d = JSON.parse(e.target.result);
-          if (d && Array.isArray(d.boards)) {
-            state.boards = d.boards; state.activeBoardId = d.activeBoardId || d.boards[0].id;
-            if (d.nextRevCounter) state.nextRevCounter = d.nextRevCounter;
-            if (typeof d.fxEnabled === "boolean") state.fxEnabled = d.fxEnabled;
-            state.playerLayout = d.playerLayout || {};
-            if (Array.isArray(d.journalPages)) state.journalPages = d.journalPages;
-            bindActiveBoardRefs(); applyCanvasBg(); renderTabs(); renderAll(); saveState();
-          }
-        } catch (err) {}
+          window.ArchivesRelay.apply(JSON.parse(event.target.result));
+          saveState();
+          setStatus("Scénario importé.");
+        } catch (error) { setStatus("Ce fichier JSON ne contient pas un scénario lisible."); }
+        finally { input.value = ""; }
       };
-      r.readAsText(input.files[0]);
+      reader.onerror = function(){setStatus("Ce fichier n’a pas pu être lu.");input.value="";};
+      reader.readAsText(input.files[0]);
     },
 
     toggleSidebar: function() {
@@ -5783,6 +5789,7 @@ window.DuneApp = (function() {
       updateSidebarCircleIcon();
     },
     togglePlayerMode: function() {
+      if (state.strictReadOnly) return;
       state.playerMode = !state.playerMode;
       document.body.classList.toggle("player-mode", state.playerMode);
       if (state.playerMode && el("sidebar")) el("sidebar").classList.add("hidden-sidebar");
@@ -5858,6 +5865,7 @@ window.DuneApp = (function() {
       var modal = el("new-scenario-modal"); if (modal) modal.classList.remove("open");
     },
     startNewScenario: function(saveCurrent) {
+      if (state.strictReadOnly) return;
       if (saveCurrent) {
         var payload = {
           type: "les_archives_de_l_imaginaire_scenario", version: 17,
@@ -6241,13 +6249,22 @@ body.player-mode #clear-act-button, body.strict-readonly #clear-act-button { dis
 (function(){
   function byId(id){return document.getElementById(id)}
   function hideScreen(){var screen=byId("archives-title-screen");if(screen){screen.classList.add("leaving");window.setTimeout(function(){screen.hidden=true;screen.classList.remove("leaving");},650);}}
+  function leaveIsolatedView(){
+    var state=window.DuneApp?.getState?.();
+    var params=new URLSearchParams(window.location.search);
+    if(!state?.strictReadOnly&&params.get("remote")!=="1")return false;
+    if(window.parent!==window){
+      window.parent.postMessage({protocol:"archives:owlbear:v56",type:"go-map"},location.origin);
+    }else window.location.assign(new URL("./archives.html",location.href));
+    return true;
+  }
   window.ArchivesAccueil={
     enterGM:function(){var m=byId("archives-gm-choice-modal");if(m)m.classList.add("open");},
     closeGMChoices:function(){var m=byId("archives-gm-choice-modal");if(m)m.classList.remove("open");},
     createNew:function(){this.closeGMChoices();if(window.DuneApp){window.DuneApp.startNewScenario(false);}hideScreen();},
     loadScenario:function(){this.closeGMChoices();hideScreen();var f=byId("up-json");if(f){f.value="";f.click();}},
     resumeScenario:function(){this.closeGMChoices();hideScreen();try{if(window.DuneApp)window.DuneApp.resetView();}catch(e){}},
-    openHomeConfirm:function(){var m=byId("archives-home-confirm");if(m)m.classList.add("open");},
+    openHomeConfirm:function(){if(leaveIsolatedView())return;var m=byId("archives-home-confirm");if(m)m.classList.add("open");},
     closeHomeConfirm:function(){var m=byId("archives-home-confirm");if(m)m.classList.remove("open");},
     openSaveConfirm:function(){var m=byId("archives-save-confirm");if(m)m.classList.add("open");},
     closeSaveConfirm:function(){var m=byId("archives-save-confirm");if(m)m.classList.remove("open");},
@@ -6258,7 +6275,7 @@ body.player-mode #clear-act-button, body.strict-readonly #clear-act-button { dis
       if(window.DuneApp&&typeof window.DuneApp.exportJson==="function"){window.DuneApp.exportJson();return true;}return false;
     },
     confirmSave:function(){this.closeSaveConfirm();if(this.downloadCurrent()){}else alert("La sauvegarde n’est pas disponible.");},
-    goHome:function(save){this.closeHomeConfirm();if(save){this.downloadCurrent();var screen=byId("archives-title-screen");if(screen){screen.hidden=false;screen.classList.remove("leaving");}}else{try{window.localStorage.removeItem("jdr_architect_save_v12");}catch(e){}try{if(window.syncChannel)window.syncChannel.close();}catch(e){}window.location.reload();} }
+    goHome:function(save){this.closeHomeConfirm();if(leaveIsolatedView())return;if(save){this.downloadCurrent();var screen=byId("archives-title-screen");if(screen){screen.hidden=false;screen.classList.remove("leaving");}}else{try{window.localStorage.removeItem("jdr_architect_save_v12");}catch(e){}try{if(window.syncChannel)window.syncChannel.close();}catch(e){}window.location.reload();} }
   };
   function initArchivesTitleScreen(){
     var screen=byId("archives-title-screen");
@@ -6843,7 +6860,7 @@ window.ArchivesRevealJournal={start,stop,refresh:()=>monitor?monitor.refresh():P
 })();
 </script>
 <link rel="stylesheet" href="./src/v56/bridge.css">
-<script type="module" src="./src/v56/relay.mjs"></script>
+<script type="module" src="./src/v56/relay.mjs?v=4153"></script>
 <script type="module" src="./src/v56/navigation.mjs"></script>
 <script type="module" src="./src/v55/archives-transfer.mjs"></script>
 <script defer src="./src/v54/polish.js"></script>

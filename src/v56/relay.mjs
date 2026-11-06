@@ -3,6 +3,8 @@ import {
 } from "./link.mjs";
 import { installCentral } from "./central.mjs";
 import { dialFallback } from "./peer.mjs";
+import { installOwlEditor, installOwlPlayer } from "../v57/editor.mjs";
+import { localEditor, localViewer } from "../v57/room.mjs";
 
 const api = window.ArchivesRelay;
 const params = new URLSearchParams(location.search);
@@ -10,7 +12,9 @@ const embedded = window.parent !== window;
 const remote = params.get("remote") === "1";
 const player = params.get("ro") === "1" || params.get("player") === "1";
 
-if (remote && embedded) installViewer();
+if (remote && embedded && params.has(localEditor)) installOwlEditor(api);
+else if (player && embedded && params.has(localViewer)) installOwlPlayer(api);
+else if (remote && embedded) installViewer();
 else if (player && embedded) installPlayer();
 else if (!remote && !player && !embedded) installCentral(api);
 

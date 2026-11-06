@@ -3,11 +3,14 @@ import {
   isPacket, liveRoomKey, packet, pairingKey, readLocal, screenChannel, trustedOwlbearSdk,
   validLiveRoom, validPairing, viewerId, writeLocal
 } from "./link.mjs";
+import { localEditor, localViewer, release } from "../v57/room.mjs";
+import { makeEditorHost, makePlayerHost } from "../v57/room-host.mjs";
 
 const $ = id => document.getElementById(id);
 const frame = $("app"), message = $("message"), button = $("return");
 const manual = $("manual"), form = $("pairing"), input = $("pair-code");
 let gm = false, closing = false, editorStarted = false, roomId, key, closeTimer, announcedRoom = "";
+let nativeHost;
 
 function fail(text) {
   message.textContent = text;
@@ -20,11 +23,15 @@ function openApp(code) {
   editorStarted = false;
   const url = new URL("../../archives-app-v64-v55.html", import.meta.url);
   url.searchParams.set("resume", "1");
-  url.searchParams.set("v", "4152");
-  if (gm) url.searchParams.set("remote", "1");
+  url.searchParams.set("v", release);
+  if (gm) {
+    url.searchParams.set("remote", "1");
+    if (nativeHost) url.searchParams.set(localEditor, "1");
+  }
   else {
     url.searchParams.set("ro", "1");
-    url.searchParams.set("room", code);
+    if (nativeHost) url.searchParams.set(localViewer, "1");
+    else url.searchParams.set("room", code);
   }
   frame.src = url.href;
   frame.hidden = false;
@@ -34,7 +41,8 @@ function openApp(code) {
 }
 
 async function close() {
-  if (gm) {
+  if (gm && nativeHost) nativeHost.goMap();
+  else if (gm) {
     // Invite players who still have the Archives open in Owlbear.
     // A broadcast failure must never prevent the GM from returning to the map.
     void OBR.broadcast.sendMessage(screenChannel, {target:"OWLBEAR", id:crypto.randomUUID()}).catch(console.warn);
@@ -67,6 +75,12 @@ window.addEventListener("message", event => {
   if (!roomId || event.source !== frame.contentWindow || event.origin !== location.origin || !isPacket(event.data)) return;
   const data = event.data;
   if (data.type === "go-map") { button.click(); return; }
+  if (nativeHost) {
+    if (gm && data.type === "owl-editor-ready") editorStarted = true;
+    if (gm && data.type === "return-result" && closing) finishReturn(data.safe === true);
+    else nativeHost.receive(data);
+    return;
+  }
   if (!gm) return;
   if (data.type === "editor-ready") {
     editorStarted = true;
@@ -89,6 +103,18 @@ window.addEventListener("message", event => {
     }
   }
 });
+window.addEventListener("pagehide", () => {
+  if (gm) nativeHost?.goMap();
+  nativeHost?.dispose();
+});
+
+function openedFromArchives() {
+  try {
+    const opener = window.top.opener;
+    return opener && !opener.closed && opener.location.origin === location.origin &&
+      /\/archives-app-v64-v55\.html$/.test(opener.location.pathname);
+  } catch { return false; }
+}
 
 async function start() {
   if (!trustedOwlbearSdk()) throw Error("Ouvre les Archives depuis l’icône dans une salle Owlbear.");
@@ -104,6 +130,7 @@ async function start() {
     if ((player.role === "GM") === gm) return;
     gm = false;
     roomId = null;
+    nativeHost?.dispose();
     frame.removeAttribute("src");
     frame.hidden = true;
     manual.hidden = true;
@@ -125,18 +152,19 @@ async function start() {
     } else openApp(code);
   });
   if (gm) {
+    if (!openedFromArchives())
+      nativeHost = await makeEditorHost(OBR, post, () => gm && !!roomId);
+    if (!gm || !roomId) { nativeHost?.dispose(); return; }
     openApp();
     return;
   }
   const metadata = await OBR.room.getMetadata();
   const code = metadata?.[liveRoomKey];
-  if (validLiveRoom(code)) openApp(code);
+  if (validLiveRoom(code) && location.hash !== "#" + localViewer) openApp(code);
   else {
-    $("manual-label").textContent = "J’ai un code du Salon Live";
-    $("pair-label").textContent = "Code du Salon Live donné par le maître de jeu";
-    input.type = "text";
-    manual.hidden = false;
-    fail("Le Salon Live n’est pas encore ouvert. Attends l’invitation du maître de jeu.");
+    nativeHost = await makePlayerHost(OBR, post, () => !gm && !!roomId);
+    if (!roomId) { nativeHost.dispose(); return; }
+    openApp();
   }
 }
 void start().catch(error => fail(error.message || "La liaison Owlbear est indisponible."));

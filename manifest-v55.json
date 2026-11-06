@@ -1,13 +1,13 @@
 {
   "name": "Archives Imaginaire",
-  "version": "4.15.2",
+  "version": "4.15.3",
   "manifest_version": 1,
-  "description": "Bascule directe depuis les Archives et transfert volontaire des cellules.",
-  "background_url": "https://toniogervais.github.io/archives-owlbear/background-v55.html?v=4152",
+  "description": "Archives et carte dans le même onglet Owlbear. Vue joueur synchronisée.",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/background-v55.html?v=4153",
   "action": {
     "title": "Les Archives",
     "icon": "https://toniogervais.github.io/archives-owlbear/icon-archives-v43.svg",
-    "popover": "https://toniogervais.github.io/archives-owlbear/index-v55.html?v=4152",
+    "popover": "https://toniogervais.github.io/archives-owlbear/index-v55.html?v=4153",
     "width": 360,
     "height": 440
   }

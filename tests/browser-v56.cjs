@@ -41,6 +41,8 @@ function roomFixture() {
     events.push({id,data});
     if(id==="OBR_TOOL_CREATE"){toolId=data.id;tool.disabled=false;}
     if(id==="OBR_PLAYER_GET_ROLE")reply={role};
+    if(id==="OBR_PLAYER_GET_CONNECTION_ID")reply={connectionId:"fixture-"+role};
+    if(id==="OBR_PARTY_GET_PLAYERS")reply={players:[]};
     if(id==="OBR_SCENE_IS_READY")reply={ready:true};
     if(id==="OBR_ROOM_GET_METADATA")reply={metadata};
     if(id==="OBR_ROOM_SET_METADATA")Object.assign(metadata,data.update);
@@ -49,7 +51,8 @@ function roomFixture() {
       addFrame(data.url,"viewer");
     }
     if(nonce)event.source.postMessage({id:id+"_RESPONSE"+nonce,data:reply},archives);
-    if(id==="OBR_MODAL_CLOSE")setTimeout(()=>document.getElementById("viewer")?.remove(),0);
+    if(id==="OBR_MODAL_CLOSE"&&data.id==="fr.archives-imaginaire.bridge/archives-viewer")
+      setTimeout(()=>document.getElementById("viewer")?.remove(),0);
   });
   </script>`;
 }
@@ -91,7 +94,7 @@ async function sendDraft(frame, title) {
     });
     const main=await context.newPage();
     await main.goto(archives+"/archives.html?resume=1");
-    await main.waitForURL(archives+app+"?resume=1&v=4152");
+    await main.waitForURL(archives+app+"?resume=1&v=4153");
     const mapButton=main.getByRole("button",{name:"Owlbear — afficher la carte"});
     main.once("dialog",async dialog=>{assert.equal(dialog.type(),"prompt");await dialog.accept(owl+"/room/test");});
     const [room]=await Promise.all([main.waitForEvent("popup"),mapButton.click()]);
@@ -121,11 +124,11 @@ async function sendDraft(frame, title) {
     await mapButton.click();
     assert.equal(context.pages().length,2,"the existing Owlbear tab is reused");
 
-    // A room opened separately must explain how to link and still let the GM return.
+    // The primary path can start directly in Owlbear and return without linking another tab.
     const separate=await context.newPage();
     await separate.goto(owl+"/room/isolated");
     await separate.locator("#archives-tool").click();
-    await editorOf(separate).getByText(/Ouvre Owlbear depuis l’icône/).waitFor({timeout:5000});
+    await editorOf(separate).getByRole("button",{name:"Importer un scénario"}).waitFor({timeout:6000});
     await separate.frameLocator("#viewer").getByRole("button",{name:"Retour à Owlbear"}).click();
     await separate.locator("#viewer").waitFor({state:"detached",timeout:3500});
 
@@ -134,8 +137,8 @@ async function sendDraft(frame, title) {
     await player.goto(owl+"/room/test?role=player");
     await player.locator("#archives-tool").click();
     const playerHost=player.frameLocator("#viewer");
-    await playerHost.getByText("Le Salon Live n’est pas encore ouvert.",{exact:false}).waitFor({timeout:5000});
-    assert.equal(await playerHost.locator("#app").isVisible(),false);
+    await editorOf(player).getByText("Chargement des éléments révélés…",{exact:true}).waitFor({timeout:5000});
+    assert.match(await playerHost.locator("#app").getAttribute("src"), /ro=1.*owl-view=1/);
     assert.equal(await room.evaluate(key=>window.fixture.metadata[key]||"",liveKey),"");
 
     // An actual save failure must keep the draft recoverable and must not close the editor.

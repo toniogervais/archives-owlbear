@@ -4,6 +4,7 @@ on:
     paths:
       - 'src/v55/**'
       - 'src/v56/**'
+      - 'src/v57/**'
       - 'assets/owlbear-transfer-sdk-v55.*'
       - 'assets/peerjs-1.5.2.*'
       - 'archives-host-v55.html'
@@ -20,6 +21,8 @@ on:
       - 'tests/visual-v54.test.cjs'
       - 'tests/browser-v55.cjs'
       - 'tests/browser-v56.cjs'
+      - 'tests/browser-v57.cjs'
+      - 'tests/room-v57.test.mjs'
       - 'tests/fallback-v56.test.mjs'
       - '.github/workflows/test-v55.yml'
   workflow_dispatch:
@@ -32,8 +35,9 @@ jobs:
         with:
           node-version: '22'
       - run: npm ci
-      - run: node --test tests/fallback-v56.test.mjs tests/transfer-v55.test.cjs tests/bridge-v55.test.cjs tests/visual-v54.test.cjs tests/bridge-v53.test.cjs tests/bridge-v52.test.cjs tests/security-v52.test.cjs
+      - run: node --test tests/room-v57.test.mjs tests/fallback-v56.test.mjs tests/transfer-v55.test.cjs tests/bridge-v55.test.cjs tests/visual-v54.test.cjs tests/bridge-v53.test.cjs tests/bridge-v52.test.cjs tests/security-v52.test.cjs
       - run: node tests/syntax.cjs
       - run: npx playwright install --with-deps chromium
       - run: node tests/browser-v55.cjs
       - run: node tests/browser-v56.cjs
+      - run: node tests/browser-v57.cjs
