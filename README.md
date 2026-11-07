@@ -1,4 +1,4 @@
-# Les Archives de l’Imaginaire — Owlbear V4.16
+# Les Archives de l’Imaginaire — Owlbear V4.16.1
 
 ## Une salle, un onglet par personne
 
@@ -34,3 +34,13 @@ L’ancienne connexion cloud des Archives reste une fonction séparée. Cette mi
 ## Vérification
 
 Les tests de projection vérifient que les secrets restent exclus. Les essais Chromium utilisent des contextes MJ et joueurs distincts et une salle Owlbear simulée : connexion native, un onglet par personne, sauvegarde, invitations, personnages, documents, PDF, tokens, déplacements, rechargement, changement de scène et perte du rôle MJ. La validation finale dans une salle réelle reste nécessaire pour les dialogues de stockage natifs.
+
+## Paramètres et accès joueur — V4.16.1
+
+Dans Owlbear, les paramètres du MJ sont regroupés en **Apparence**, **Sons** et **Sauvegardes**. Les exports partiels, l’impression et l’accès aux anciennes campagnes cloud restent disponibles dans **Options avancées**. Les commandes de connexion de l’ancien Salon Live et la mise à jour par fichier HTML sont retirées du menu intégré.
+
+Les joueurs demandent à rejoindre la salle Owlbear ; le MJ accepte leur entrée. Aucun second code Archives n’est nécessaire. Leur vue ne propose pas d’écran titre, de comptes, de campagnes ni de paramètres MJ, et ne restaure aucune connexion cloud. Le bouton de retour mène à la carte Owlbear. La protection des données repose sur le contrôle du rôle par l’hôte et le filtrage avant transmission, indépendamment des menus affichés.
+
+La sauvegarde complète du scénario et du journal MJ reste disponible. Cette mise à jour n’ajoute pas de verrou par mot de passe pour une personne utilisant physiquement le même profil de navigateur que le MJ.
+
+Pour la suite : étendre la bibliothèque avec des documents, audios et vidéos. Préserver les départs depuis la bibliothèque et les cellules, le choix document/token quand le format convient et la révélation explicite. La prise en charge de nouveaux médias n’est pas incluse dans cette version.

@@ -1,4 +1,4 @@
-import { localRoom, roomChannel, roomMembers, snapshotReader, validSnapshot } from "./room.mjs?v=4160";
+import { localRoom, roomChannel, roomMembers, snapshotReader, validSnapshot } from "./room.mjs?v=4161";
 import { openScenario } from "./storage.mjs";
 import { validSession } from "../v56/link.mjs";
 

@@ -1,7 +1,7 @@
 import OBR from "../../assets/owlbear-transfer-sdk-v55.mjs";
 import { installArtworkTransfers } from "../v58/transfers.mjs";
-import { archivesUrl, screenUrl } from "../v57/room.mjs?v=4160";
-import { installRoomPlay } from "../v57/room-background.mjs?v=4160";
+import { archivesUrl, screenUrl } from "../v57/room.mjs?v=4161";
+import { installRoomPlay } from "../v57/room-background.mjs?v=4161";
 import { trustedOwlbearSdk } from "../v56/link.mjs";
 const channel="fr.archives-imaginaire.bridge/screen-v55";
 const viewer="fr.archives-imaginaire.bridge/archives-viewer";
