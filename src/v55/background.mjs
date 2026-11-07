@@ -1,10 +1,12 @@
 import OBR from "../../assets/owlbear-transfer-sdk-v55.mjs";
-import { watchTransfers } from "./transfer-receiver.mjs";
-import { archivesUrl, screenUrl } from "../v57/room.mjs";
-import { installRoomPlay } from "../v57/room-background.mjs";
+import { installArtworkTransfers } from "../v58/transfers.mjs";
+import { archivesUrl, screenUrl } from "../v57/room.mjs?v=4160";
+import { installRoomPlay } from "../v57/room-background.mjs?v=4160";
+import { trustedOwlbearSdk } from "../v56/link.mjs";
 const channel="fr.archives-imaginaire.bridge/screen-v55";
 const viewer="fr.archives-imaginaire.bridge/archives-viewer";
 const invite="fr.archives-imaginaire.bridge/screen-invite-v55";
+if (!trustedOwlbearSdk()) throw Error("Ouvre cette extension dans une salle Owlbear.");
 await new Promise(resolve=>OBR.onReady(resolve));
 await OBR.tool.create({
   id:"fr.archives-imaginaire.bridge/archives",
@@ -26,5 +28,5 @@ OBR.broadcast.onMessage(channel,async event=>{
   try{await OBR.modal.close(invite);}catch{}
   await OBR.modal.open({id:invite,url:screenUrl(data.target,false),fullScreen:true,hideBackdrop:true,hidePaper:true});
 });
-watchTransfers();
+void installArtworkTransfers().catch(console.warn);
 void installRoomPlay(OBR).catch(console.warn);

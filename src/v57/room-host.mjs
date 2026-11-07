@@ -1,4 +1,4 @@
-import { localRoom, roomChannel, roomMembers, snapshotReader, validSnapshot } from "./room.mjs";
+import { localRoom, roomChannel, roomMembers, snapshotReader, validSnapshot } from "./room.mjs?v=4160";
 import { openScenario } from "./storage.mjs";
 import { validSession } from "../v56/link.mjs";
 
@@ -8,6 +8,7 @@ export async function makeEditorHost(OBR, post, canEdit) {
   let snapshot = await store.load();
   let queue = Promise.resolve();
   let announced = false, closed = false, publicView;
+  const transfers = new Set();
   function roster(players) {
     if (!closed && canEdit()) post("owl-editor-roster", {
       players:players.filter(player => player.role === "PLAYER").map(player => ({
@@ -27,6 +28,10 @@ export async function makeEditorHost(OBR, post, canEdit) {
     if (!announced) { announced = true; showScreen("ARCHIVES"); }
   }
   channel.onmessage = event => {
+    if (!closed && canEdit() && event.data?.type === "artwork-result" && transfers.delete(event.data.id)) {
+      const {id, safe, result, message} = event.data;
+      post("owl-transfer-result", {id, safe:safe === true, result, message});
+    }
     if (!closed && canEdit() && announced && event.data?.type === "room-ready") {
       channel.postMessage({type:"published", payload:publicView});
       showScreen("ARCHIVES");
@@ -35,7 +40,12 @@ export async function makeEditorHost(OBR, post, canEdit) {
   return {
     receive(data) {
       if (!canEdit() || closed) return;
-      if (data.type === "owl-editor-ready") {
+      if (data.type === "owl-transfer-command" && validSession(data.id) && transfers.size < 8) {
+        transfers.add(data.id);
+        channel.postMessage({type:"artwork-command", id:data.id, command:data.command});
+        setTimeout(() => transfers.delete(data.id), 185000);
+      }
+      else if (data.type === "owl-editor-ready") {
         post("owl-editor-init", {snapshot});
         void OBR.party.getPlayers().then(roster).catch(console.warn);
       }
@@ -59,6 +69,7 @@ export async function makeEditorHost(OBR, post, canEdit) {
     dispose() {
       if (closed) return;
       closed = true;
+      transfers.clear();
       offParty?.();
       void queue.finally(() => { store.close(); channel.close(); });
     }

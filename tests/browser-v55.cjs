@@ -11,7 +11,8 @@ const server=http.createServer((req,res)=>{
 });
 (async()=>{
  await new Promise(resolve=>server.listen(0,"127.0.0.1",resolve));
- const browser=await chromium.launch({headless:true});
+ const options=process.env.ARCHIVES_CHROMIUM_OPTIONS;
+ const browser=await chromium.launch({headless:true,...(options?JSON.parse(options):{})});
  try{
   const context=await browser.newContext({viewport:{width:800,height:1280},deviceScaleFactor:2,isMobile:true,hasTouch:true});
   await context.route("**/*",route=>{

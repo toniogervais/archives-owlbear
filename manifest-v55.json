@@ -1,14 +1,14 @@
 {
   "name": "Archives Imaginaire",
-  "version": "4.15.3",
+  "version": "4.16.0",
   "manifest_version": 1,
-  "description": "Archives et carte dans le même onglet Owlbear. Vue joueur synchronisée.",
-  "background_url": "https://toniogervais.github.io/archives-owlbear/background-v55.html?v=4153",
+  "description": "Campagne privée du MJ, vue joueur synchronisée et transferts de tokens et documents avec révélation choisie.",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/background-v55.html?v=4160",
   "action": {
     "title": "Les Archives",
     "icon": "https://toniogervais.github.io/archives-owlbear/icon-archives-v43.svg",
-    "popover": "https://toniogervais.github.io/archives-owlbear/index-v55.html?v=4153",
+    "popover": "https://toniogervais.github.io/archives-owlbear/index-v55.html?v=4160",
     "width": 360,
-    "height": 440
+    "height": 240
   }
 }
