@@ -18,21 +18,32 @@ export function artworkBlob(art) {
   const bytes = Uint8Array.from(atob(encoded), ch => ch.charCodeAt(0));
   return new Blob([bytes], {type:art.mime});
 }
+export async function blobDigest(blob) {
+  return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",await blob.arrayBuffer())),byte => byte.toString(16).padStart(2,"0")).join("");
+}
 
 export async function privateArtworkStore(room, owner) {
   const db = await new Promise((resolve, reject) => {
-    const open = indexedDB.open("archives-imaginaire-private-artwork", 1);
+    let blocked = false;
+    const open = indexedDB.open("archives-imaginaire-private-artwork", 2);
     open.onupgradeneeded = () => {
-      const store = open.result.createObjectStore("artwork");
-      store.createIndex("scope", "scope");
+      if (!open.result.objectStoreNames.contains("artwork")) {
+        const store = open.result.createObjectStore("artwork");store.createIndex("scope", "scope");
+      }
+      if (!open.result.objectStoreNames.contains("assets")) open.result.createObjectStore("assets");
+      if (!open.result.objectStoreNames.contains("presets")) open.result.createObjectStore("presets");
     };
-    open.onsuccess = () => resolve(open.result);
+    open.onblocked = () => { blocked = true;reject(Error("Ferme les anciennes vues des Archives, puis rouvre le transfert.")); };
+    open.onsuccess = () => {
+      if (blocked) { open.result.close();return; }
+      open.result.onversionchange = () => open.result.close();resolve(open.result);
+    };
     open.onerror = () => reject(open.error);
   });
   const key = id => [room, owner, id];
-  const transact = (mode, operation) => new Promise((resolve, reject) => {
-    const tx = db.transaction("artwork", mode);
-    const request = operation(tx.objectStore("artwork"));
+  const transact = (mode, operation, name = "artwork") => new Promise((resolve, reject) => {
+    const tx = db.transaction(name, mode);
+    const request = operation(tx.objectStore(name));
     tx.oncomplete = () => resolve(request.result);
     tx.onabort = () => reject(tx.error || Error("Sauvegarde du transfert impossible."));
     tx.onerror = () => {};
@@ -42,6 +53,10 @@ export async function privateArtworkStore(room, owner) {
     remove: id => transact("readwrite", store => store.delete(key(id))),
     get: id => transact("readonly", store => store.get(key(id))),
     put: record => transact("readwrite", store => store.put({...record, scope:[room, owner, record.scene]}, key(record.id))),
+    asset: hash => transact("readonly", store => store.get(key(hash)),"assets"),
+    putAsset: (hash,image) => transact("readwrite", store => store.put(image,key(hash)),"assets"),
+    preset: source => transact("readonly", store => store.get(key(source)),"presets"),
+    putPreset: (source,preset) => transact("readwrite", store => store.put(preset,key(source)),"presets"),
     close: () => db.close()
   };
 }

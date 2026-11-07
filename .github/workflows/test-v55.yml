@@ -8,6 +8,9 @@ on:
       - 'src/v58/**'
       - 'src/v59/**'
       - 'src/v60/**'
+      - 'src/v61/**'
+      - 'tests/crop-v61.test.mjs'
+      - 'tests/browser-v61.cjs'
       - 'media-view-v60.html'
       - 'tests/files-v60.test.mjs'
       - 'tests/browser-v60.cjs'
@@ -47,7 +50,7 @@ jobs:
         with:
           node-version: '22'
       - run: npm ci
-      - run: node --test tests/files-v60.test.mjs tests/security-v58.test.cjs tests/room-v57.test.mjs tests/fallback-v56.test.mjs tests/transfer-v55.test.cjs tests/bridge-v55.test.cjs tests/visual-v54.test.cjs tests/bridge-v53.test.cjs tests/bridge-v52.test.cjs tests/security-v52.test.cjs
+      - run: node --test tests/crop-v61.test.mjs tests/files-v60.test.mjs tests/security-v58.test.cjs tests/room-v57.test.mjs tests/fallback-v56.test.mjs tests/transfer-v55.test.cjs tests/bridge-v55.test.cjs tests/visual-v54.test.cjs tests/bridge-v53.test.cjs tests/bridge-v52.test.cjs tests/security-v52.test.cjs
       - run: node tests/syntax.cjs
       - run: node --test tests/settings-v59.test.cjs
       - run: npx playwright install --with-deps chromium
@@ -57,3 +60,4 @@ jobs:
       - run: node tests/browser-v58.cjs
       - run: node tests/browser-v59.cjs
       - run: node tests/browser-v60.cjs
+      - run: node tests/browser-v61.cjs

@@ -1,4 +1,4 @@
-import { localRoom, roomChannel, roomMembers, snapshotReader, validSnapshot } from "./room.mjs?v=4171";
+import { localRoom, roomChannel, roomMembers, snapshotReader, validSnapshot } from "./room.mjs?v=4180";
 import { openScenario } from "./storage.mjs";
 import { validSession } from "../v56/link.mjs";
 
@@ -29,6 +29,9 @@ export async function makeEditorHost(OBR, post, canEdit) {
     if (!announced) { announced = true; showScreen("ARCHIVES"); }
   }
   channel.onmessage = event => {
+    if (!closed && canEdit() && event.data?.type === "artwork-progress" && transfers.has(event.data.id)) {
+      post("owl-transfer-progress",{id:event.data.id,message:String(event.data.message || "").slice(0,400)});
+    }
     if (!closed && canEdit() && event.data?.type === "library-result" && fileCommands.delete(event.data.id)) {
       const {id,safe,result,message} = event.data;
       post("owl-file-result",{id,safe:safe === true,result,message});

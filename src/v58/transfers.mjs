@@ -1,7 +1,8 @@
 import OBR, { buildImage, buildImageUpload } from "../../assets/owlbear-transfer-sdk-v55.mjs";
-import { localRoom } from "../v57/room.mjs?v=4171";
+import { localRoom } from "../v57/room.mjs?v=4180";
 import { validSession } from "../v56/link.mjs";
-import { artworkBlob, assetKey, privateArtworkStore, sceneKey, validArtwork } from "./model.mjs";
+import { artworkBlob,assetKey,blobDigest,privateArtworkStore,sceneKey,validArtwork } from "./model.mjs?v=4180";
+import { normalizeCrop } from "../v61/token-crop.mjs";
 
 // Only the GM talks to this local channel. Unrevealed artwork never enters a
 // shared item, broadcast, room metadata, public bucket, or player snapshot.
@@ -128,28 +129,39 @@ export async function installArtworkTransfers() {
     await store.put(record);
     await refresh();
   }
-  async function nativeImage(command) {
-    const name = command.title.trim() + " · " + command.art.version.slice(0,8);
-    const upload = buildImageUpload(new File([artworkBlob(command.art)],name + (command.art.mime === "image/webp" ? ".webp" : command.art.mime === "image/jpeg" ? ".jpg" : ".png"),{type:command.art.mime}))
+  async function nativeImage(command,progress) {
+    const blob = artworkBlob(command.art),hash = await blobDigest(blob);
+    const cached = command.forceImport === true ? null : await store.asset(hash);
+    if (cached && cached.width === command.art.width && cached.height === command.art.height &&
+        ["image/png","image/jpeg","image/webp"].includes(cached.mime) && typeof cached.url === "string" && cached.url.startsWith("https://")) {
+      progress("Cadrage déjà importé : placement direct dans Owlbear…");
+      return {image:{url:cached.url,mime:cached.mime,width:cached.width,height:cached.height},reused:true};
+    }
+    // Neutral asset names avoid leaking an earlier private title when reusing
+    // the same selected pixels for another character or scene.
+    const name = "Archives · " + hash.slice(0,12);
+    const upload = buildImageUpload(new File([blob],name + (command.art.mime === "image/webp" ? ".webp" : command.art.mime === "image/jpeg" ? ".jpg" : ".png"),{type:command.art.mime}))
       .name(name).grid(grid(command.kind,command.art)).visible(false).build();
     const type = command.kind === "TOKEN" ? "CHARACTER" : "PROP";
+    progress("Première importation de ce cadrage : choisis un dossier dans Owlbear.");
     await OBR.assets.uploadImages([upload],type);
     await requireGM(command.scene);
+    progress("Sélectionne l’image « " + name + " » dans Owlbear pour terminer. Ce cadrage sera ensuite réutilisable sans réimportation.");
     const selected = await OBR.assets.downloadImages(false,name,type);
     await requireGM(command.scene);
     if (!selected?.length) throw Error("Transfert annulé : aucune image sélectionnée dans Owlbear.");
-    const asset = selected[0];
-    const image = asset.image;
+    const asset = selected[0],image = asset.image;
     if (asset.name !== name || !image || typeof image.url !== "string" || !image.url.startsWith("https://") ||
         !["image/png","image/jpeg","image/webp"].includes(image.mime) ||
         image.width !== command.art.width || image.height !== command.art.height)
       throw Error("Sélectionne l’image « " + name + " » qui vient d’être ajoutée dans Owlbear, puis réessaie.");
-    // Allowlist fields. Never persist a file, URL, or title from another asset.
-    return {url:image.url,mime:image.mime,width:image.width,height:image.height};
+    const safe = {url:image.url,mime:image.mime,width:image.width,height:image.height};
+    await store.putAsset(hash,safe);
+    return {image:safe,reused:false};
   }
-  async function execute(command) {
+  async function execute(command,progress = () => {}) {
     const currentScene = await requireGM(command.scene);
-    if (command.action === "context") return {scene:currentScene};
+    if (command.action === "context") return {scene:currentScene,preset:typeof command.sourceKey === "string" && command.sourceKey.length <= 300 ? await store.preset(command.sourceKey) : null};
     if (command.action === "list") {
       await refresh();
       return {scene:currentScene,records:records.map(record => ({id:record.id,title:record.title,
@@ -171,7 +183,7 @@ export async function installArtworkTransfers() {
         typeof command.sourceKey !== "string" || !command.sourceKey || command.sourceKey.length > 300 ||
         typeof command.title !== "string" || !command.title.trim() || command.title.length > 120 ||
         !validArtwork(command.art)) throw Error("Le transfert n’est pas valide.");
-    const image = await nativeImage(command);
+    const {image,reused} = await nativeImage(command,progress);
     await refresh();
     const previous = records.find(entry => entry.sourceKey === command.sourceKey && entry.kind === command.kind);
     const position = previous?.position || await centre();
@@ -181,15 +193,23 @@ export async function installArtworkTransfers() {
       revealed:false};
     // Private, durable record first. Sharing is a separate, explicit operation.
     await store.put(record);
+    const framing = command.framing;
+    if (framing && typeof framing.identity === "string" && /^[a-f0-9]{64}$/.test(framing.identity)) {
+      await store.putPreset(command.sourceKey,{identity:framing.identity,kind:command.kind,
+        page:Number.isInteger(framing.page) && framing.page > 0 && framing.page <= 10000 ? framing.page : 1,
+        crop:normalizeCrop(framing.crop)});
+    }
     await visibility(record,command.reveal === true);
-    return {title:record.title,revealed:record.revealed,assetId:record.id};
+    return {title:record.title,revealed:record.revealed,assetId:record.id,reused};
   }
   channel.addEventListener("message",event => {
     const data = event.data;
     if (data?.type !== "artwork-command" || role !== "GM" || closed || !validSession(data.id)) return;
     commands = commands.then(async () => {
       try {
-        const result = await execute(data.command || {});
+        const result = await execute(data.command || {},message => {
+          if (!closed && role === "GM") channel.postMessage({type:"artwork-progress",id:data.id,message});
+        });
         if (!closed) channel.postMessage({type:"artwork-result",id:data.id,safe:true,result});
       } catch (error) {
         if (!closed) channel.postMessage({type:"artwork-result",id:data.id,safe:false,

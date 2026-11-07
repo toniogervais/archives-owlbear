@@ -44,7 +44,7 @@ async function present(page,title,publicTitle){
  let gm;
  try{
   const fixtureHub=hub(),gc=await browser.newContext(),pc=await browser.newContext({viewport:{width:820,height:1180},isMobile:true,hasTouch:true}),lc=await browser.newContext();
-  await Promise.all([gc,pc,lc].map(context=>configure(context,fixtureHub,{sceneReady:true})));
+  await Promise.all([gc,pc,lc].map(context=>configure(context,fixtureHub,{sceneReady:true,inviteReadyDelay:200})));
   gm=await gc.newPage();const player=await pc.newPage(),errors=[];
   gm.on('pageerror',error=>errors.push(error.message));player.on('pageerror',error=>errors.push(error.message));
   await gm.goto(owl+'/room/one');await player.goto(owl+'/room/one?joueur=Alix');await gm.locator('#archives-tool').click();
@@ -124,11 +124,11 @@ async function present(page,title,publicTitle){
   await library(gm).getByRole('button',{name:'Voir toute la bibliothèque',exact:true}).click();
   await card(gm,'DOCUMENT_PRIVE_833').getByRole('button',{name:'Aperçu et transfert…',exact:true}).click();
   const transfer=editor(gm).locator('#archives-owl-transfer');await transfer.locator('[data-submit]:not([disabled])').waitFor();
-  await transfer.locator('[data-kind]').selectOption('TOKEN');await transfer.locator('[data-reveal]').check();
-  await transfer.getByRole('button',{name:'Transférer et révéler',exact:true}).click();
-  await transfer.locator('.record').filter({hasText:'DOCUMENT_PRIVE_833'}).getByRole('button',{name:'Cacher',exact:true}).waitFor();
+  await transfer.locator('[data-kind]').selectOption('TOKEN');
+  await transfer.getByRole('button',{name:'Placer et révéler',exact:true}).click();
+  await transfer.waitFor({state:'detached'});
   const item=(await gm.evaluate(()=>window.fixture.scene())).items[0];assert.equal(item.layer,'CHARACTER');assert.equal(item.image.width,512);
-  await transfer.getByRole('button',{name:'Fermer le transfert'}).click();
+
   await app(gm).evaluate(()=>window.ArchivesFileLibrary.open());
   // Produce a real VP8 WebM in the browser, not a fake video placeholder.
   debug('recording video');

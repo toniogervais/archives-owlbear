@@ -1,4 +1,4 @@
-# Les Archives de l’Imaginaire — Owlbear V4.17.1
+# Les Archives de l’Imaginaire — Owlbear V4.18.0
 
 ## Une salle, un onglet par personne
 
@@ -16,10 +16,12 @@ Le scénario complet est sauvegardé dans le navigateur du MJ, séparément pour
 
 Dans le menu d’une cellule ou d’une image de la bibliothèque, choisis **Envoyer vers Owlbear…**. Le réglage de la cellule contient aussi ce bouton. Dans la bibliothèque, **Owlbear : fichiers et transferts…** permet d’ajouter un fichier et de retrouver les éléments déjà préparés pour la scène.
 
-1. Vérifie le nom et l’aperçu. Un personnage devient un **token rond** par défaut. Tout autre document ou image peut aussi devenir un token en changeant le format.
-2. Choisis **Document** pour garder une image ou une page de document entière. Formats : PNG, JPG, WebP, PDF et TXT, 25 Mo maximum. Pour un PDF, choisis la page à transférer. Exporte les autres formats en PDF.
-3. Laisse **Révéler aux joueurs maintenant** décoché pour préparer un élément caché, ou coche-le pour le partager immédiatement.
-4. Valide le transfert. Le rangement natif d’Owlbear demande un dossier, puis un choix d’image : sélectionne l’image dont le nom et le suffixe sont indiqués dans le message. Ces dialogues concernent uniquement le MJ.
+1. Vérifie le nom et l’aperçu. Un personnage devient un **token rond** par défaut. Tout document ou image peut aussi devenir un token en choisissant ce format.
+2. Le cadrage proposé est centré. Pour l’ajuster, **zoome ou dézoome**, puis **attrape et déplace l’image dans le token**, à la souris ou au doigt. Le zoom fonctionne avec la molette, le curseur ou deux doigts. L’image garde ses proportions. Aucun autre réglage de cadrage n’est nécessaire.
+3. Clique directement sur **Placer caché** ou **Placer et révéler**. L’aperçu se ferme après le placement. Le dernier cadrage transféré est mémorisé pour cette source ; remplacer son image rétablit une proposition centrée.
+4. Lors de la première importation d’un nouveau rendu, Owlbear demande encore un dossier puis la sélection de l’image **Archives · …** indiquée à l’écran. Le même rendu déjà importé est ensuite réutilisé directement, même sur une autre scène ou après rechargement, dans le même navigateur et compte MJ.
+
+Le format **Document** conserve une image entière ou la page PDF choisie. Formats : PNG, JPG, WebP, PDF et TXT, 25 Mo maximum. Exporte les autres formats en PDF. Le format et la page PDF du dernier transfert sont également retrouvés à la réouverture.
 
 Un élément caché est placé dans la vue locale du MJ : il peut le déplacer avant de le révéler. Dans **Éléments déjà transférés**, les boutons **Révéler**, **Cacher** et **Retirer** agissent sur la scène courante. Un nouvel envoi de la même source dans le même format met à jour son élément et garde sa position.
 
@@ -27,13 +29,13 @@ Un élément caché est placé dans la vue locale du MJ : il peut le déplacer a
 
 Le scénario complet, les cellules non révélées, les indices secrets et le journal MJ ne sont pas envoyés aux joueurs. La vue des Archives est filtrée avant transmission. Les commandes de transfert, les changements de scène et le rôle MJ sont contrôlés dans l’hôte Owlbear.
 
-Les nouveaux transferts utilisent le stockage natif du compte Owlbear du MJ, sans bucket public Supabase. Un élément jamais révélé n’entre pas dans la scène partagée, ses métadonnées ou les messages de la salle. Lors d’une révélation, seuls le nom et le rendu validés deviennent un élément natif de la scène. Cacher un élément déjà révélé ne retire pas les copies que les joueurs auraient conservées.
+Les nouveaux transferts utilisent le stockage natif du compte Owlbear du MJ, sans bucket public Supabase. Un élément jamais révélé n’entre pas dans la scène partagée, ses métadonnées ou les messages de la salle. Lors d’une révélation, seuls le nom et le rendu validés deviennent un élément natif de la scène. Pour un token, seuls les pixels visibles à l’intérieur du cercle sont exportés ; l’image originale et les réglages de cadrage restent privés. Les cadrages et les références des rendus déjà importés sont conservés séparément pour chaque salle et compte MJ dans le navigateur. Cacher un élément déjà révélé ne retire pas les copies que les joueurs auraient conservées.
 
 L’ancienne connexion cloud des Archives reste une fonction séparée. Cette mise à jour ne modifie pas les politiques du projet Supabase existant et ne retire pas d’anciens fichiers déjà publiés par les versions précédentes. Le script `sql/security-audit-readonly-v47.sql` permet d’en vérifier les règles et les buckets.
 
 ## Vérification
 
-Les tests de projection vérifient que les secrets restent exclus. Les essais Chromium utilisent des contextes MJ et joueurs distincts et une salle Owlbear simulée : connexion native, un onglet par personne, sauvegarde, invitations, personnages, documents, PDF, tokens, déplacements, rechargement, changement de scène et perte du rôle MJ. La validation finale dans une salle réelle reste nécessaire pour les dialogues de stockage natifs.
+Les tests de projection vérifient que les secrets restent exclus. Les essais Chromium utilisent des contextes MJ et joueurs distincts et une salle Owlbear simulée : connexion native, un onglet par personne, sauvegarde, invitations, personnages, documents, PDF, tokens, déplacements, rechargement, changement de scène et perte du rôle MJ. Les essais de cadrage vérifient aussi les vrais gestes souris, molette et deux doigts, l’égalité exacte entre l’aperçu et le fichier exporté, la conservation des anciens transferts et la réutilisation après changement de scène et rechargement. La validation finale dans une salle réelle reste nécessaire pour les dialogues de stockage natifs.
 
 ## Paramètres et accès joueur — V4.16.1
 

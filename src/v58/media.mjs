@@ -1,4 +1,5 @@
-import { maxImageBytes } from "./model.mjs";
+import { blobDigest,maxImageBytes } from "./model.mjs?v=4180";
+import { drawToken } from "../v61/token-crop.mjs";
 
 const rasterTypes = ["image/png","image/jpeg","image/webp"];
 const maxFileBytes = 25 * 1024 * 1024;
@@ -23,6 +24,7 @@ export async function prepareSource(input) {
   }
   if (file) {
     if (!file.size || file.size > maxFileBytes) throw Error("Choisis un fichier de moins de 25 Mo.");
+    source.identity = await blobDigest(file);
     if (file.type === "application/pdf" || /\.pdf$/i.test(file.name || "")) {
       const pdfjs = await import("../../assets/pdfjs-4.10.38/pdf.mjs");
       pdfjs.GlobalWorkerOptions.workerSrc = new URL("../../assets/pdfjs-4.10.38/pdf.worker.mjs",import.meta.url).href;
@@ -42,7 +44,9 @@ export async function prepareSource(input) {
       }
     }
   }
-  source.release = () => { source.bitmap?.close(); void source.pdf?.destroy(); };
+  source.identity ||= await blobDigest(new Blob([source.title + "\n" + source.text]));
+  source.pictureCache = new Map();
+  source.release = () => { source.bitmap?.close();source.pictureCache.clear(); void source.pdf?.destroy(); };
   return source;
 }
 function canvas(width,height) {
@@ -68,31 +72,31 @@ function wrap(ctx,text,width) {
   }
   return lines;
 }
-export async function renderSource(source,{kind,title,text,page = 1,includeText = false}) {
-  let picture = source.bitmap;
-  if (source.pdf) {
-    const pdfPage = await source.pdf.getPage(page);
-    const original = pdfPage.getViewport({scale:1});
-    const scale = Math.min(2,2200 / original.width,2800 / original.height);
-    const viewport = pdfPage.getViewport({scale});
-    picture = canvas(viewport.width,viewport.height);
-    await pdfPage.render({canvasContext:picture.getContext("2d"),viewport,background:"white"}).promise;
-    pdfPage.cleanup();
+export async function sourcePicture(source,page = 1) {
+  if (!source.pdf) return source.bitmap;
+  if (!source.pictureCache.has(page)) {
+    const pending = (async () => {
+      const pdfPage = await source.pdf.getPage(page);
+      const original = pdfPage.getViewport({scale:1});
+      const scale = Math.min(2,2200 / original.width,2800 / original.height);
+      const viewport = pdfPage.getViewport({scale});
+      const picture = canvas(viewport.width,viewport.height);
+      await pdfPage.render({canvasContext:picture.getContext("2d"),viewport,background:"white"}).promise;
+      pdfPage.cleanup();
+      return picture;
+    })();
+    source.pictureCache.set(page,pending);
+    if (source.pictureCache.size > 2) source.pictureCache.delete(source.pictureCache.keys().next().value);
+    pending.catch(() => { if (source.pictureCache.get(page) === pending) source.pictureCache.delete(page); });
   }
+  return source.pictureCache.get(page);
+}
+export async function renderSource(source,{kind,title,text,page = 1,includeText = false,crop}) {
+  const picture = await sourcePicture(source,page);
   let out;
   if (kind === "TOKEN") {
     out = canvas(512,512);
-    const ctx = out.getContext("2d");
-    ctx.save();ctx.beginPath();ctx.arc(256,256,248,0,Math.PI * 2);ctx.clip();
-    ctx.fillStyle = "#302139";ctx.fillRect(0,0,512,512);
-    if (picture) {
-      const width = picture.width, height = picture.height, side = Math.min(width,height);
-      ctx.drawImage(picture,(width - side) / 2,(height - side) / 2,side,side,0,0,512,512);
-    } else {
-      ctx.fillStyle = "#ffe3a0";ctx.font = "bold 132px serif";ctx.textAlign = "center";ctx.textBaseline = "middle";
-      ctx.fillText(title.trim().split(/\s+/).slice(0,2).map(word => word[0]).join("").toLocaleUpperCase("fr"),256,256);
-    }
-    ctx.restore();ctx.strokeStyle = "#d8b76b";ctx.lineWidth = 12;ctx.beginPath();ctx.arc(256,256,248,0,Math.PI * 2);ctx.stroke();
+    drawToken(out.getContext("2d"),picture,title,crop);
   } else {
     const docText = includeText ? String(text || "").trim() : "";
     if (!picture && !docText) throw Error("Ajoute le texte du document ou choisis un fichier.");

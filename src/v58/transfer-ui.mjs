@@ -1,5 +1,6 @@
 import { isPacket, packet } from "../v56/link.mjs";
-import { prepareSource, renderSource } from "./media.mjs";
+import { prepareSource,renderSource,sourcePicture } from "./media.mjs?v=4180";
+import { installCropEditor } from "../v61/token-crop.mjs";
 
 const pending = new Map();
 const $ = id => document.getElementById(id);
@@ -9,7 +10,7 @@ function gmState() {
   if (!state || state.playerMode || state.strictReadOnly) throw Error("Le transfert est réservé au MJ.");
   return state;
 }
-function request(command) {
+function request(command,report) {
   gmState();
   const params = new URLSearchParams(location.search);
   if (window.parent === window || !params.has("owl-editor"))
@@ -17,15 +18,16 @@ function request(command) {
   const id = crypto.randomUUID();
   return new Promise((resolve,reject) => {
     const timer = setTimeout(() => { pending.delete(id);reject(Error("Le transfert n’a pas été confirmé. Vérifie la scène avant de réessayer.")); },180000);
-    pending.set(id,{resolve,reject,timer});
+    pending.set(id,{resolve,reject,timer,report});
     window.parent.postMessage(packet("owl-transfer-command",{id,command}),location.origin);
   });
 }
 window.addEventListener("message",event => {
   if (event.source !== window.parent || event.origin !== location.origin || !isPacket(event.data) ||
-      event.data.type !== "owl-transfer-result") return;
+      !["owl-transfer-result","owl-transfer-progress"].includes(event.data.type)) return;
   const entry = pending.get(event.data.id);
   if (!entry) return;
+  if (event.data.type === "owl-transfer-progress") { entry.report?.(String(event.data.message || ""));return; }
   pending.delete(event.data.id);clearTimeout(entry.timer);
   if (event.data.safe) entry.resolve(event.data.result);
   else entry.reject(Error(event.data.message || "Le transfert n’a pas abouti."));
@@ -54,37 +56,46 @@ function buildDialog() {
   #archives-owl-transfer .fields label{display:block;margin:12px 0}#archives-owl-transfer .fields input:not([type=checkbox]),#archives-owl-transfer select,#archives-owl-transfer textarea{display:block;width:100%;margin-top:5px}
   #archives-owl-transfer input[type=checkbox]{width:20px;height:20px;vertical-align:middle;margin:0 7px 0 0}
   #archives-owl-transfer .layout{display:grid;grid-template-columns:minmax(220px,1fr) minmax(230px,1fr);gap:20px;margin-top:12px}
-  #archives-owl-transfer figure{position:relative;margin:0;background:#0d0a11;border:1px solid #514334;border-radius:9px;display:grid;place-items:center;min-height:260px;max-height:57dvh;overflow:auto;padding:12px}
+  #archives-owl-transfer figure{position:relative;margin:0;background:#0d0a11;border:1px solid #514334;border-radius:9px;display:grid;place-items:center;min-height:260px;max-height:46dvh;overflow:auto;padding:12px}
   #archives-owl-transfer [data-preview-status]{position:absolute;inset:0;display:grid;place-items:center;padding:20px;background:#0d0a11e8;text-align:center}
   #archives-owl-transfer img{display:block;max-width:100%;max-height:50dvh;object-fit:contain}
+  #archives-owl-transfer [data-crop-stage]{position:relative;width:min(320px,100%,36dvh);aspect-ratio:1}
+  #archives-owl-transfer [data-crop]{display:block;width:100%;height:100%;touch-action:none;cursor:grab;outline-offset:3px}
+  #archives-owl-transfer [data-crop].dragging{cursor:grabbing}
+  #archives-owl-transfer [data-crop]:focus-visible{outline:2px solid #e8c575}
+  #archives-owl-transfer [data-crop-tools]{margin-top:10px}
+  #archives-owl-transfer .zoom-row{display:flex;gap:10px;align-items:center}
+  #archives-owl-transfer [data-zoom]{flex:1;min-width:0;padding:0;accent-color:#d2b273;min-height:36px;border:0;background:transparent}
+  #archives-owl-transfer [data-zoom-value]{min-width:54px;text-align:right}
   #archives-owl-transfer .actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}#archives-owl-transfer .hint{color:#d7c5a7;font-size:13px}
   #archives-owl-transfer .record{border-top:1px solid #59452e;padding:12px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}#archives-owl-transfer .record span{flex:1;min-width:150px}#archives-owl-transfer .status{white-space:pre-wrap}
-  @media(max-width:620px){#archives-owl-transfer{padding:13px}.layout{display:block!important}#archives-owl-transfer figure{min-height:150px;max-height:35dvh}#archives-owl-transfer img{max-height:30dvh}}
-  </style><header><h2>Transfert vers Owlbear</h2><button type="button" data-close aria-label="Fermer le transfert">✕</button></header>
+  @media(max-width:620px){#archives-owl-transfer{padding:13px}.layout{display:block!important}#archives-owl-transfer figure{min-height:150px;max-height:35dvh}#archives-owl-transfer img{max-height:30dvh}#archives-owl-transfer [data-crop-stage]{width:min(280px,100%,27dvh)}}
+  </style><header><h2 data-heading>Transfert vers Owlbear</h2><button type="button" data-close aria-label="Fermer le transfert">✕</button></header>
   <p class="hint">Un élément caché reste réservé au MJ. Révéler partage uniquement le rendu choisi et son nom.</p>
   <section data-edit hidden><div class="layout"><div class="fields">
     <label>Nom dans Owlbear<input data-title maxlength="120" required></label>
     <label>Format<select data-kind><option value="TOKEN">Token rond</option><option value="DOCUMENT">Document</option></select></label>
     <label data-page-label hidden>Page du PDF<input data-page type="number" min="1" value="1"></label>
     <div data-text-box hidden><label><input data-include type="checkbox">Ajouter ce texte au document</label><label>Texte à montrer<textarea data-text rows="5" maxlength="12000"></textarea></label></div>
-    <label><input data-reveal type="checkbox">Révéler aux joueurs maintenant</label>
-    <p class="hint">Sans cette case, l’élément est placé dans ta vue privée. Tu pourras le déplacer puis le révéler.</p>
-    </div><figure aria-label="Aperçu du rendu transféré"><img data-preview alt="Aperçu du transfert" hidden><span data-preview-status>Préparation de l’aperçu…</span></figure></div>
-    <div class="actions"><button type="button" class="primary" data-submit disabled>Transférer en gardant caché</button><button type="button" data-list>Éléments déjà transférés</button></div>
+    <p class="hint">« Placer caché » garde l’élément dans ta vue MJ. « Placer et révéler » le montre aux joueurs.</p>
+    </div><div class="preview-column"><figure aria-label="Aperçu du rendu transféré"><img data-preview alt="Aperçu du document" hidden><div data-crop-stage hidden><canvas data-crop width="512" height="512" tabindex="0" role="img" aria-label="Image dans le token : glisser pour déplacer, zoomer ou dézoomer" aria-describedby="archives-crop-help"></canvas></div><span data-preview-status>Préparation de l’aperçu…</span></figure>
+    <div data-crop-tools hidden><div class="zoom-row"><label for="archives-token-zoom">Zoom</label><input id="archives-token-zoom" data-zoom type="range" min="15" max="800" step="1" value="100"><output data-zoom-value for="archives-token-zoom">100 %</output></div><p id="archives-crop-help" class="hint">Glisse l’image dans le token. Zoome avec la molette, le curseur ou deux doigts.</p></div></div></div>
+    <div class="actions"><button type="button" class="primary" data-submit disabled>Placer caché</button><button type="button" data-share disabled>Placer et révéler</button><button type="button" data-list>Éléments déjà transférés</button></div>
   </section>
   <section data-manager hidden><h3>Éléments de cette scène</h3><div data-records></div><div class="actions"><button type="button" data-file>Ajouter un fichier</button><button type="button" data-back hidden>Revenir à l’aperçu</button></div></section>
   <p class="status" data-status role="status" aria-live="polite">Connexion à la scène Owlbear…</p>`;
   document.body.append(dialog);dialog.showModal();activeDialog = dialog;
   const ui = selector => dialog.querySelector("[data-" + selector + "]");
-  let busy = false, dispose = () => {};
+  let busy = false, dispose = () => {},busyHook = () => {};
   const setBusy = value => {
     busy = value;
     dialog.querySelectorAll("button,input,select,textarea").forEach(el => { el.disabled = value; });
+    busyHook(value);
   };
   dialog.addEventListener("cancel",event => { if (busy) event.preventDefault(); });
   ui("close").onclick = () => { if (!busy) dialog.close(); };
   dialog.addEventListener("close",() => { dispose();dialog.remove();if (activeDialog === dialog) activeDialog = null; },{once:true});
-  return {dialog,ui,setBusy,setDispose:fn => { dispose = fn; }};
+  return {dialog,ui,setBusy,setDispose:fn => { dispose = fn; },setBusyHook:fn => { busyHook = fn; }};
 }
 async function manager(view,context,back) {
   const {ui,dialog,setBusy} = view;
@@ -126,72 +137,91 @@ async function showManager() {
   } catch (error) { notify(error.message); }
 }
 async function openSource(input,report = notify) {
-  let source,view;
+  let source,view,crop;
   try {
-    gmState();const context = await request({action:"context"});
+    gmState();const context = await request({action:"context",sourceKey:input.key});
     view = buildDialog();const {ui,dialog,setBusy} = view;
     setBusy(true);source = await prepareSource(input);
     if (!dialog.open) { source.release();return; }
-    view.setDispose(() => source.release());setBusy(false);
-    ui("edit").hidden = false;ui("title").value = source.title;
-    ui("kind").value = source.kind || "DOCUMENT";
+    let rendering = Promise.resolve(),latest = 0,ready = false,working = false,renderError,lastInputSignature;
+    const preset = context.preset?.identity === source.identity ? context.preset : null;
+    let presetCrop = preset?.crop;
+    crop = installCropEditor({canvas:ui("crop"),range:ui("zoom"),output:ui("zoom-value")});
+    view.setDispose(() => { crop.dispose();source.release(); });
+    view.setBusyHook(value => {
+      working = value;crop.setDisabled(value);
+      ui("submit").disabled = ui("share").disabled = value || !ready;
+    });
+    setBusy(false);ui("edit").hidden = false;ui("title").value = source.title;
+    ui("kind").value = ["TOKEN","DOCUMENT"].includes(preset?.kind) ? preset.kind : source.kind || "DOCUMENT";
     ui("text").value = source.text;
-    ui("text-box").hidden = !source.text;
     ui("include").checked = !source.bitmap && !source.pdf && !!source.text;
     if (source.pages) {
       ui("page-label").hidden = false;ui("page").max = source.pages;
+      ui("page").value = Number.isInteger(preset?.page) && preset.page > 0 && preset.page <= source.pages ? preset.page : 1;
       ui("page-label").firstChild.textContent = "Page du PDF (1 à " + source.pages + ")";
     }
-    let rendering = Promise.resolve(), latest = 0, art, renderError, lastInputSignature;
     function render() {
       const signature = JSON.stringify([ui("title").value,ui("kind").value,ui("text").value,ui("page").value,ui("include").checked]);
       if (signature === lastInputSignature) return rendering;
-      lastInputSignature = signature;
-      const version = ++latest;
-      ui("submit").disabled = true;
+      lastInputSignature = signature;const version = ++latest;ready = false;
+      ui("submit").disabled = ui("share").disabled = true;
       rendering = rendering.catch(() => {}).then(async () => {
         if (version !== latest || !dialog.open) return;
         ui("preview-status").hidden = false;ui("preview-status").textContent = "Préparation de l’aperçu…";
         try {
-          const title = ui("title").value.trim();
+          const title = ui("title").value.trim(),token = ui("kind").value === "TOKEN",page = Number(ui("page").value);
           if (!title) throw Error("Donne un nom à cet élément.");
-          const page = Number(ui("page").value);
           if (source.pages && (!Number.isInteger(page) || page < 1 || page > source.pages)) throw Error("Choisis une page existante du PDF.");
-          const result = await renderSource(source,{title,kind:ui("kind").value,text:ui("text").value,
-            includeText:ui("include").checked,page});
-          if (version !== latest || !dialog.open) return;
-          art = result;renderError = null;
-          ui("preview").src = art.data;ui("preview").hidden = false;ui("preview-status").hidden = true;
-          ui("status").textContent = "Vérifie le rendu. Seuls ce rendu et son nom seront transférés.";
-          ui("submit").disabled = false;
+          ui("heading").textContent = token ? "Préparer le token" : "Transférer un document";
+          ui("text-box").hidden = !source.text || token;
+          if (token) {
+            const picture = await sourcePicture(source,page);
+            if (version !== latest || !dialog.open) return;
+            crop.setPicture(picture,title,presetCrop);presetCrop = null;
+            ui("preview").hidden = true;ui("crop-stage").hidden = false;ui("crop-tools").hidden = !picture;
+          } else {
+            const art = await renderSource(source,{kind:"DOCUMENT",title,page,text:ui("text").value,includeText:ui("include").checked});
+            if (version !== latest || !dialog.open) return;
+            ui("preview").src = art.data;ui("preview").hidden = false;ui("crop-stage").hidden = true;ui("crop-tools").hidden = true;
+          }
+          renderError = null;ready = true;ui("preview-status").hidden = true;
+          ui("status").textContent = token ? "Ajuste librement l’image dans le token, puis choisis de le placer caché ou de le révéler." : "Seuls le rendu de l’aperçu et son nom seront transférés.";
+          ui("submit").disabled = ui("share").disabled = working;
         } catch (error) {
           if (version !== latest || !dialog.open) return;
-          art = null;renderError = error;ui("preview").hidden = true;ui("preview-status").textContent = error.message;
-          ui("status").textContent = error.message;
+          ready = false;renderError = error;ui("preview").hidden = true;ui("crop-stage").hidden = true;ui("crop-tools").hidden = true;
+          ui("preview-status").textContent = error.message;ui("status").textContent = error.message;
         }
       });
       return rendering;
     }
     for (const field of ["title","kind","text","page","include"]) ui(field).addEventListener(["title","text","page"].includes(field) ? "input" : "change",() => { void render(); });
-    ui("reveal").onchange = () => { ui("submit").textContent = ui("reveal").checked ? "Transférer et révéler" : "Transférer en gardant caché"; };
     ui("list").onclick = () => { void manager(view,context,true); };
-    ui("submit").onclick = async () => {
-      await rendering;
-      if (!art || renderError) return;
-      setBusy(true);
-      ui("status").textContent = "Dans Owlbear, choisis le dossier de rangement. Sélectionne ensuite l’image « " + ui("title").value.trim() + " · " + art.version.slice(0,8) + " » pour terminer le transfert.";
+    async function transfer(reveal) {
+      await rendering;if (!ready || renderError || working) return;
+      setBusy(true);ui("status").textContent = "Préparation du placement dans Owlbear…";
       try {
-        const result = await request({action:"transfer",scene:context.scene,sourceKey:source.key,kind:ui("kind").value,
-          title:ui("title").value.trim(),reveal:ui("reveal").checked,art});
+        const kind = ui("kind").value,title = ui("title").value.trim(),page = Number(ui("page").value);
+        const framing = {identity:source.identity,crop:crop.getState(),page};
+        const art = await renderSource(source,{kind,title,page,text:ui("text").value,includeText:ui("include").checked,crop:framing.crop});
+        gmState();
+        const result = await request({action:"transfer",scene:context.scene,sourceKey:source.key,kind,title,reveal,art,framing},message => {
+          if (dialog.open) ui("status").textContent = message;
+        });
         if (!dialog.open) return;
-        await manager(view,context,true);
-        const message = result.revealed ? "Transfert terminé : « " + result.title + " » est visible par les joueurs." : "Transfert terminé : « " + result.title + " » est caché et visible seulement dans ta vue MJ.";
-        ui("status").textContent = message;report(message);
-      } catch (error) { ui("status").textContent = error.message; }
+        const message = result.revealed ? "« " + result.title + " » placé et révélé dans Owlbear." : "« " + result.title + " » placé dans ta vue MJ, caché aux joueurs.";
+        dialog.close();report(message);
+      } catch (error) { if (dialog.open) ui("status").textContent = error.message; }
       finally { setBusy(false); }
-    };
+    }
+    ui("submit").onclick = () => { void transfer(false); };
+    ui("share").onclick = () => { void transfer(true); };
     await render();
-  } catch (error) { if (view?.dialog.open) { view.ui("status").textContent = error.message;view.setBusy(false); }else report(error.message); }
+  } catch (error) {
+    if (view?.dialog.open) { view.ui("status").textContent = error.message;view.setBusy(false); }
+    else report(error.message);
+  }
 }
 function cellSource(node,boardId) {
   return {key:"cell:" + String(boardId || "bibliotheque") + ":" + String(node.id),title:node.title,

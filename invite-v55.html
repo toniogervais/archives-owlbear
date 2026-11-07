@@ -7,10 +7,10 @@ h1{margin:0 0 25px;font-size:clamp(20px,4vw,27px);line-height:1.35}
 button{width:100%;min-height:72px;padding:16px;border:2px solid #f0d697;border-radius:12px;background:#735523;color:white;font:700 clamp(17px,4vw,21px) system-ui;touch-action:manipulation;cursor:pointer}
 button:focus-visible{outline:3px solid white;outline-offset:4px}#error{display:none;margin:15px 0 0;color:#ffd3d3;font-size:14px}
 </style></head><body><main id="veil" role="dialog" aria-modal="true" aria-label="Invitation du maître de jeu"><div class="card">
-<h1 id="title">Le maître de jeu change d’espace</h1><button id="accept" type="button">Rejoindre</button><p id="error" role="alert"></p>
+<h1 id="title">Le maître de jeu change d’espace</h1><button id="accept" type="button" disabled>Rejoindre</button><p id="error" role="alert"></p>
 </div></main><script type="module">
 import { O as OBR } from "./assets/index-BfJgTiPE.js";
-import { archivesUrl } from "./src/v57/room.mjs";
+import { archivesUrl } from "./src/v57/room.mjs?v=4180";
 const [target, source]=location.hash.slice(1).split("&");
 const archives=target==="ARCHIVES";
 const native=source==="room=1";
@@ -30,5 +30,5 @@ button.onclick=async()=>{
   await OBR.modal.close(invite);
  }catch(e){error.textContent="Changement impossible. Vérifie la connexion, puis réessaie.";error.style.display="block";button.disabled=false;console.error(e);}
 };
-button.focus();
+button.disabled=false;button.focus();
 </script></body></html>

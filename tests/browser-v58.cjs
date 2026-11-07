@@ -54,10 +54,12 @@ async function openCharacter(page){
   });
   await openCharacter(gm);
   assert.equal(await dialog(gm).locator('[data-kind]').inputValue(),'TOKEN');
-  assert.equal(await dialog(gm).locator('[data-reveal]').isChecked(),false);
-  assert.deepEqual(await dialog(gm).locator('[data-preview]').evaluate(el=>({width:el.naturalWidth,height:el.naturalHeight})),{width:512,height:512});
+  assert.equal(await dialog(gm).getByRole('button',{name:'Placer caché',exact:true}).count(),1);
+  assert.deepEqual(await dialog(gm).locator('[data-crop]').evaluate(el=>({width:el.width,height:el.height})),{width:512,height:512});
   assert.ok(!(await dialog(gm).textContent()).includes('528-secret'));
-  await dialog(gm).getByRole('button',{name:'Transférer en gardant caché',exact:true}).click();
+  await dialog(gm).getByRole('button',{name:'Placer caché',exact:true}).click();
+  await dialog(gm).waitFor({state:'detached'});
+  await frame(gm).evaluate(()=>window.ArchivesCellTransfer.showManager());
   await managerRow(gm,'Personnage secret').getByRole('button',{name:'Révéler',exact:true}).waitFor();
   await waitLocal(gm,1);await waitShared(gm,0);
   const hidden=await gm.evaluate(()=>window.fixture.local()[0]);
@@ -84,7 +86,9 @@ async function openCharacter(page){
   // A changed transfer stays private by default, updates the same item, and keeps placement.
   await frame(gm).evaluate(()=>{const node=window.DuneApp.getState().nodes.find(n=>n.id==='hidden-character');node.bgImg='';node.title='Nouvelle identité cachée'});
   await openCharacter(gm);
-  await dialog(gm).getByRole('button',{name:'Transférer en gardant caché',exact:true}).click();
+  await dialog(gm).getByRole('button',{name:'Placer caché',exact:true}).click();
+  await dialog(gm).waitFor({state:'detached'});
+  await frame(gm).evaluate(()=>window.ArchivesCellTransfer.showManager());
   await managerRow(gm,'Nouvelle identité cachée').getByRole('button',{name:'Révéler',exact:true}).waitFor();
   await waitShared(gm,0);await waitLocal(gm,1);
   assert.equal((await gm.evaluate(()=>window.fixture.local()[0])).id,item.id);
@@ -96,14 +100,18 @@ async function openCharacter(page){
   await frame(gm).evaluate(async()=>{const c=document.createElement('canvas');c.width=300;c.height=500;c.getContext('2d').fillRect(0,0,300,500);await window.ArchivesCellTransfer.sendImage({id:'object-library',name:'Document devenu pion',category:'objet',data:c.toDataURL()})});
   await dialog(gm).locator('[data-submit]:not([disabled])').waitFor();assert.equal(await dialog(gm).locator('[data-kind]').inputValue(),'DOCUMENT');
   await dialog(gm).locator('[data-kind]').selectOption('TOKEN');
-  await dialog(gm).locator('[data-reveal]').check();
-  await dialog(gm).getByRole('button',{name:'Transférer et révéler',exact:true}).click();
+
+  await dialog(gm).getByRole('button',{name:'Placer et révéler',exact:true}).click();
+  await dialog(gm).waitFor({state:'detached'});
+  await frame(gm).evaluate(()=>window.ArchivesCellTransfer.showManager());
   await managerRow(gm,'Document devenu pion').getByRole('button',{name:'Cacher',exact:true}).waitFor();await waitShared(gm,2);
   item=(await gm.evaluate(()=>window.fixture.scene())).items.find(item=>item.name==='Document devenu pion');assert.equal(item.layer,'CHARACTER');assert.equal(item.image.width,512);await closeDialog(gm);
   // Text document is rasterized; only its chosen representation enters Owlbear.
   await frame(gm).evaluate(()=>window.ArchivesCellTransfer.sendFile(new File(['Rapport destiné aux joueurs.'],'rapport.txt',{type:'text/plain'}),'Rapport publié'));
   await dialog(gm).locator('[data-submit]:not([disabled])').waitFor();assert.equal(await dialog(gm).locator('[data-include]').isChecked(),true);
-  await dialog(gm).locator('[data-reveal]').check();await dialog(gm).getByRole('button',{name:'Transférer et révéler',exact:true}).click();
+  await dialog(gm).getByRole('button',{name:'Placer et révéler',exact:true}).click();
+  await dialog(gm).waitFor({state:'detached'});
+  await frame(gm).evaluate(()=>window.ArchivesCellTransfer.showManager());
   await managerRow(gm,'Rapport publié').getByRole('button',{name:'Cacher',exact:true}).waitFor();await waitShared(gm,3);
   item=(await gm.evaluate(()=>window.fixture.scene())).items.find(item=>item.name==='Rapport publié');assert.equal(item.layer,'PROP');assert.equal(item.image.width,1200);await closeDialog(gm);
   // Actual PDF.js worker, selected second page, no original PDF sharing.
@@ -115,14 +123,16 @@ async function openCharacter(page){
   await dialog(gm).locator('[data-submit]:not([disabled])').waitFor();
   assert.notEqual(await dialog(gm).locator('[data-preview]').getAttribute('src'),firstPage);
   await dialog(gm).screenshot({path:'/tmp/archives-transfer-pdf-v58.png'});
-  await dialog(gm).locator('[data-reveal]').check();await dialog(gm).getByRole('button',{name:'Transférer et révéler',exact:true}).click();
+  await dialog(gm).getByRole('button',{name:'Placer et révéler',exact:true}).click();
+  await dialog(gm).waitFor({state:'detached'});
+  await frame(gm).evaluate(()=>window.ArchivesCellTransfer.showManager());
   await managerRow(gm,'Page publique').getByRole('button',{name:'Cacher',exact:true}).waitFor();await waitShared(gm,4);
   wire=await player.evaluate(()=>window.fixture.wire());assert.ok(!JSON.stringify(wire).includes('PAGE ONE PRIVATE'));assert.ok(!JSON.stringify(wire).includes('528-secret'));
   await managerRow(gm,'Page publique').getByRole('button',{name:'Cacher',exact:true}).click();await waitShared(gm,3);await waitLocal(gm,1);await closeDialog(gm);
   // Scene changes invalidate an already-open transfer, before any new upload.
   await openCharacter(gm);const uploadsBefore=(await gm.evaluate(()=>window.fixture.uploads())).length;
   await gm.evaluate(()=>window.fixture.setScene());
-  await dialog(gm).getByRole('button',{name:'Transférer en gardant caché',exact:true}).click();
+  await dialog(gm).getByRole('button',{name:'Placer caché',exact:true}).click();
   await dialog(gm).locator('[data-status]').filter({hasText:'La scène a changé'}).waitFor();
   assert.equal((await gm.evaluate(()=>window.fixture.uploads())).length,uploadsBefore);await closeDialog(gm);
   // Players cannot forge a transfer command to their host, even by bypassing UI.

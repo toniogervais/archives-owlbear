@@ -3,7 +3,7 @@ const {JSDOM}=require("jsdom"),{EventEmitter}=require("node:events");
 const read=p=>fs.readFileSync(p,"utf8");
 test("V4.15 URLs, syntax, secret-guarded bridge and previous graphics",()=>{
  const m=JSON.parse(read("manifest-v55.json"));
- assert.equal(m.version,"4.17.1");
+ assert.equal(m.version,"4.18.0");
  assert.match(read("archives.html"),/archives-app-v64-v55\.html/);
  assert.match(read("src/v55/host.mjs"),/archives-app-v64-v55\.html/);
  assert.match(read("archives-app-v64-v55.html"),/src\/v56\/relay\.mjs/);
@@ -76,4 +76,18 @@ test("Only fully revealed arrows animate, player secrets stay private",()=>{
  assert.match(html,/state\.playerMode && !visibleForPlayers/);
  assert.match(html,/if \(!state\.strictReadOnly && !state\.playerMode\)/);
  assert.match(read("src/v55/background.mjs"),/p\.role==="GM"&&p\.connectionId===event\.connectionId/);
+});
+test("A screen invitation accepts the first click only after the Owlbear SDK is ready",async()=>{
+ const html=read('invite-v55.html'),dom=new JSDOM(html,{url:'https://archives.test/invite-v55.html#OWLBEAR&room=1',runScripts:'outside-only'});
+ const w=dom.window,closed=[];let ready;
+ w.testOBR={onReady:fn=>{ready=fn},modal:{close:async id=>{closed.push(id)}}};
+ const source=html.match(/<script type="module">([\s\S]*?)<\/script>/)[1].replace(/^import .*;$/gm,'');
+ try{
+  const startup=w.eval('(async()=>{const OBR=window.testOBR,archivesUrl=()=>"/archives-host-v55.html";'+source+'})()');
+  const button=w.document.getElementById('accept');
+  assert.equal(button.disabled,true);button.click();assert.deepEqual(closed,[]);
+  ready();await startup;assert.equal(button.disabled,false);
+  button.click();await new Promise(setImmediate);
+  assert.deepEqual(closed,['fr.archives-imaginaire.bridge/archives-viewer','fr.archives-imaginaire.bridge/screen-invite-v55']);
+ }finally{w.close()}
 });

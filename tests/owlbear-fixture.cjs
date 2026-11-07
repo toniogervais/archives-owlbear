@@ -4,7 +4,7 @@ const path=require("node:path");
 const archives="https://archives.test",owl="https://www.owlbear.rodeo";
 const viewerId="fr.archives-imaginaire.bridge/archives-viewer",inviteId="fr.archives-imaginaire.bridge/screen-invite-v55";
 
-function fixture({sceneReady=false}={}) {
+function fixture({sceneReady=false,inviteReadyDelay=0}={}) {
  return `<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Salle Owlbear</title>
  <button id="archives-tool" disabled>Afficher les Archives</button><script>
  const archives=${JSON.stringify(archives)},viewerId=${JSON.stringify(viewerId)},inviteId=${JSON.stringify(inviteId)};
@@ -13,8 +13,8 @@ function fixture({sceneReady=false}={}) {
  const name=params.get("joueur")||"MJ",connectionId="fixture-"+name;
  const player={role,name,connectionId};
  const ref=btoa(location.origin+" fixture-single-room"),listeners=new Map();
- let localItems=[];const uploads=[];let cancelPick=false;
- function post(frame,id,data){frame?.contentWindow.postMessage({id,data},archives)}
+ let localItems=[];const uploads=[],pickers={upload:0,download:0};let cancelPick=false;
+ function post(frame,id,data){frame?.contentWindow?.postMessage({id,data},archives)}
  function allPost(id,data){for(const frame of document.querySelectorAll("iframe"))post(frame,id,data)}
  function modalFrame(id){return document.getElementById(id===viewerId?"viewer":id===inviteId?"invite":id)}
  function addFrame(url,id){
@@ -22,7 +22,10 @@ function fixture({sceneReady=false}={}) {
   frame.id=id===viewerId?"viewer":id===inviteId?"invite":id;
   frame.sandbox="allow-same-origin allow-scripts allow-downloads allow-forms";
   frame.style.cssText=id==="background"?"display:none":"position:fixed;inset:0;width:100%;height:100%;border:0";
-  frame.addEventListener("load",()=>post(frame,"OBR_READY",{ref:frame.id,userId:connectionId}));
+  frame.addEventListener("load",()=>{
+   const ready=()=>post(frame,"OBR_READY",{ref:frame.id,userId:connectionId});
+   if(id===inviteId&&${inviteReadyDelay}>0)setTimeout(ready,${inviteReadyDelay});else ready();
+  });
   frame.src=target.href;document.body.append(frame);return frame;
  }
  window.fixture={
@@ -34,7 +37,7 @@ function fixture({sceneReady=false}={}) {
   changeRole(value){role=value;player.role=value;allPost("OBR_PLAYER_EVENT_CHANGE",{player});fixtureHub("role",value)},
   moveLocal(id,position){localItems=localItems.map(item=>item.id===id?{...item,position}:item);allPost("OBR_SCENE_LOCAL_EVENT_CHANGE",{items:localItems})},
   injectLocal(item){localItems.push(item);allPost("OBR_SCENE_LOCAL_EVENT_CHANGE",{items:localItems})},
-  local:()=>localItems,uploads:()=>uploads,cancelPick:()=>{cancelPick=true},
+  local:()=>localItems,uploads:()=>uploads,pickers:()=>pickers,cancelPick:()=>{cancelPick=true},
   scene:()=>fixtureHub("scene"),wire:()=>fixtureHub("wire"),setScene:()=>fixtureHub("newScene"),
   moveShared:(id,position)=>fixtureHub("updateItems",{updates:[{id,position}]})
  };
@@ -61,9 +64,15 @@ function fixture({sceneReady=false}={}) {
    case "OBR_VIEWPORT_GET_HEIGHT":reply={height:800};break;
    case "OBR_VIEWPORT_INVERSE_TRANSFORM_POINT":reply={point:data.point};break;
    case "OBR_ASSETS_UPLOAD_IMAGES":
-    for(const upload of data.images){const bitmap=await createImageBitmap(upload.file);uploads.push({name:upload.name,image:{url:"https://images.owlbear.test/"+crypto.randomUUID()+".png",mime:upload.file.type,width:bitmap.width,height:bitmap.height},typeHint:data.typeHint});bitmap.close()}
+    pickers.upload++;
+    for(const upload of data.images){
+     const bitmap=await createImageBitmap(upload.file),canvas=document.createElement("canvas");canvas.width=bitmap.width;canvas.height=bitmap.height;
+     const ctx=canvas.getContext("2d");ctx.drawImage(bitmap,0,0);
+     const hash=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",await upload.file.arrayBuffer())),n=>n.toString(16).padStart(2,"0")).join("");
+     uploads.push({name:upload.name,hash,pixels:[...ctx.getImageData(Math.floor(bitmap.width/2),Math.floor(bitmap.height/2),1,1).data],corner:[...ctx.getImageData(0,0,1,1).data],image:{url:"https://images.owlbear.test/"+crypto.randomUUID()+".png",mime:upload.file.type,width:bitmap.width,height:bitmap.height},typeHint:data.typeHint});bitmap.close()
+    }
     break;
-   case "OBR_ASSETS_DOWNLOAD_IMAGES":reply={images:cancelPick?[]:uploads.filter(x=>x.name===data.defaultSearch).slice(-1)};cancelPick=false;break;
+   case "OBR_ASSETS_DOWNLOAD_IMAGES":pickers.download++;reply={images:cancelPick?[]:uploads.filter(x=>x.name===data.defaultSearch).slice(-1)};cancelPick=false;break;
    case "OBR_PARTY_GET_PLAYERS":reply={players:await fixtureHub("party")};break;
    case "OBR_ROOM_GET_METADATA":reply={metadata:await fixtureHub("metadata")};break;
    case "OBR_ROOM_SET_METADATA":await fixtureHub("setMetadata",data.update);break;
@@ -74,7 +83,7 @@ function fixture({sceneReady=false}={}) {
    case "OBR_MODAL_CLOSE":setTimeout(()=>modalFrame(data.id)?.remove(),0);break;
   }if(nonce)event.source.postMessage({id:id+"_RESPONSE"+nonce,data:reply},archives)})().catch(console.error);
  });
- fixtureHub("join",player).then(()=>addFrame(archives+"/background-v55.html?v=4160","background"));
+ fixtureHub("join",player).then(()=>addFrame(archives+"/background-v55.html?v=4180","background"));
  </script>`;
 }
 function hub(){
