@@ -236,6 +236,7 @@ async function sendSelected() {
 }
 window.ArchivesCellTransfer = {
   sendSelected,openFiles,showManager,
+  sendLibraryFile:({id,file,title}) => openSource({key:"documents:" + id,file,title,kind:"DOCUMENT"}),
   sendCell:(node,boardId) => openSource(cellSource(node,boardId)),
   sendImage:item => openSource({key:"library:" + item.id,title:item.name,data:item.data,
     kind:item.category === "personnage" ? "TOKEN" : "DOCUMENT"}),

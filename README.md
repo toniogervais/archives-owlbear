@@ -1,4 +1,4 @@
-# Les Archives de l’Imaginaire — Owlbear V4.16.1
+# Les Archives de l’Imaginaire — Owlbear V4.17
 
 ## Une salle, un onglet par personne
 
@@ -43,4 +43,20 @@ Les joueurs demandent à rejoindre la salle Owlbear ; le MJ accepte leur entrée
 
 La sauvegarde complète du scénario et du journal MJ reste disponible. Cette mise à jour n’ajoute pas de verrou par mot de passe pour une personne utilisant physiquement le même profil de navigateur que le MJ.
 
-Pour la suite : étendre la bibliothèque avec des documents, audios et vidéos. Préserver les départs depuis la bibliothèque et les cellules, le choix document/token quand le format convient et la révélation explicite. La prise en charge de nouveaux médias n’est pas incluse dans cette version.
+## Documents et autres — V4.17
+
+Dans le catalogue, ouvre **Documents et autres** puis **Ajouter des fichiers**. Les PDF, TXT et images peuvent peser jusqu’à 25 Mo ; les sons et vidéos jusqu’à 8 Mo par fichier. Formats audio : MP3, WAV, OGG et M4A ; vidéo : MP4, WebM et OGV, selon les codecs lisibles par le navigateur.
+
+La bibliothèque conserve les originaux sur l’appareil du MJ, séparément pour chaque salle et compte Owlbear. L’ajout, la recherche, le renommage et la consultation restent privés. **Enregistrer l’original** permet de récupérer un fichier. Les sauvegardes JSON du scénario ne contiennent pas cette bibliothèque : garde les fichiers d’origine pour changer d’appareil.
+
+Le menu d’une cellule et son réglage proposent **Documents liés…**. Tu peux importer un document pour cette cellule ou choisir un fichier déjà présent dans la bibliothèque. Ces liens restent uniquement côté MJ. Le bouton **Voir toute la bibliothèque** permet de retrouver les fichiers qui ne sont pas liés à la cellule.
+
+Pour un document ou une image, **Aperçu et transfert…** conserve le choix entre document entier, page PDF et token rond, avec révélation volontaire. Les personnages gardent leur transfert direct en token depuis la cellule ou la bibliothèque d’images.
+
+Pour un son ou une vidéo, **Aperçu et présentation…** ouvre un lecteur privé. Laisse **Révéler aux joueurs maintenant** décoché pour garder le fichier privé. En le cochant puis en cliquant sur **Présenter aux joueurs**, tu partages uniquement le fichier et le nom vérifiés. Les joueurs disposent d’un lecteur dans leur onglet Owlbear et cliquent sur **Lire** ; la lecture n’est pas synchronisée entre les appareils. Aucun code supplémentaire ni compte Archives n’est nécessaire.
+
+**Arrêter la présentation** ferme les lecteurs de la salle. Une bascule du MJ rend également la place au bouton de changement d’écran habituel. Les joueurs qui ont déjà reçu le média peuvent en conserver une copie. Une nouvelle présentation reste possible depuis la bibliothèque.
+
+Les médias sont transmis aux membres de la salle par messages Owlbear découpés sous la limite de 16 Ko, avec contrôle du rôle de l’émetteur, de la taille et de l’intégrité du fichier reçu. Les originaux non révélés, les noms de fichiers privés, les liens vers les cellules et le reste de la bibliothèque ne sont jamais inclus dans ces messages. Aucun hébergement public de fichier n’est ajouté. La réception des joueurs reste en mémoire et n’ouvre pas la bibliothèque privée du MJ.
+
+Les tests de cette version couvrent les limites de taille, les fichiers déguisés, l’intégrité, les commandes forgées par un joueur, la persistance et les liens privés, le PDF transformé en token, la lecture réelle d’un WAV et d’un WebM et l’arrivée d’un joueur après le début d’une présentation dans une salle simulée. L’intégration Soundshow demeure séparée de ce lecteur de médias.

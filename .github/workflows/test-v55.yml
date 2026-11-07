@@ -1,4 +1,4 @@
-name: Tests Archives V4.16 — accès et transferts
+name: Tests Archives — accès, transferts et médias
 on:
   push:
     paths:
@@ -7,6 +7,10 @@ on:
       - 'src/v57/**'
       - 'src/v58/**'
       - 'src/v59/**'
+      - 'src/v60/**'
+      - 'media-view-v60.html'
+      - 'tests/files-v60.test.mjs'
+      - 'tests/browser-v60.cjs'
       - 'tests/settings-v59.test.cjs'
       - 'tests/browser-v59.cjs'
       - 'assets/pdfjs-4.10.38/**'
@@ -43,7 +47,7 @@ jobs:
         with:
           node-version: '22'
       - run: npm ci
-      - run: node --test tests/security-v58.test.cjs tests/room-v57.test.mjs tests/fallback-v56.test.mjs tests/transfer-v55.test.cjs tests/bridge-v55.test.cjs tests/visual-v54.test.cjs tests/bridge-v53.test.cjs tests/bridge-v52.test.cjs tests/security-v52.test.cjs
+      - run: node --test tests/files-v60.test.mjs tests/security-v58.test.cjs tests/room-v57.test.mjs tests/fallback-v56.test.mjs tests/transfer-v55.test.cjs tests/bridge-v55.test.cjs tests/visual-v54.test.cjs tests/bridge-v53.test.cjs tests/bridge-v52.test.cjs tests/security-v52.test.cjs
       - run: node tests/syntax.cjs
       - run: node --test tests/settings-v59.test.cjs
       - run: npx playwright install --with-deps chromium
@@ -52,3 +56,4 @@ jobs:
       - run: node tests/browser-v57.cjs
       - run: node tests/browser-v58.cjs
       - run: node tests/browser-v59.cjs
+      - run: node tests/browser-v60.cjs

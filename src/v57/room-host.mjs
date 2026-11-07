@@ -1,4 +1,4 @@
-import { localRoom, roomChannel, roomMembers, snapshotReader, validSnapshot } from "./room.mjs?v=4161";
+import { localRoom, roomChannel, roomMembers, snapshotReader, validSnapshot } from "./room.mjs?v=4170";
 import { openScenario } from "./storage.mjs";
 import { validSession } from "../v56/link.mjs";
 
@@ -9,6 +9,7 @@ export async function makeEditorHost(OBR, post, canEdit) {
   let queue = Promise.resolve();
   let announced = false, closed = false, publicView;
   const transfers = new Set();
+  const fileCommands = new Set();
   function roster(players) {
     if (!closed && canEdit()) post("owl-editor-roster", {
       players:players.filter(player => player.role === "PLAYER").map(player => ({
@@ -28,6 +29,10 @@ export async function makeEditorHost(OBR, post, canEdit) {
     if (!announced) { announced = true; showScreen("ARCHIVES"); }
   }
   channel.onmessage = event => {
+    if (!closed && canEdit() && event.data?.type === "library-result" && fileCommands.delete(event.data.id)) {
+      const {id,safe,result,message} = event.data;
+      post("owl-file-result",{id,safe:safe === true,result,message});
+    }
     if (!closed && canEdit() && event.data?.type === "artwork-result" && transfers.delete(event.data.id)) {
       const {id, safe, result, message} = event.data;
       post("owl-transfer-result", {id, safe:safe === true, result, message});
@@ -40,7 +45,12 @@ export async function makeEditorHost(OBR, post, canEdit) {
   return {
     receive(data) {
       if (!canEdit() || closed) return;
-      if (data.type === "owl-transfer-command" && validSession(data.id) && transfers.size < 8) {
+      if (data.type === "owl-file-command" && validSession(data.id) && fileCommands.size < 8) {
+        fileCommands.add(data.id);
+        channel.postMessage({type:"library-command",id:data.id,command:data.command});
+        setTimeout(() => fileCommands.delete(data.id),25000);
+      }
+      else if (data.type === "owl-transfer-command" && validSession(data.id) && transfers.size < 8) {
         transfers.add(data.id);
         channel.postMessage({type:"artwork-command", id:data.id, command:data.command});
         setTimeout(() => transfers.delete(data.id), 185000);
@@ -70,6 +80,7 @@ export async function makeEditorHost(OBR, post, canEdit) {
       if (closed) return;
       closed = true;
       transfers.clear();
+      fileCommands.clear();
       offParty?.();
       void queue.finally(() => { store.close(); channel.close(); });
     }

@@ -1,5 +1,5 @@
 import { liveRoomKey, validSession, viewerId } from "../v56/link.mjs";
-import { inviteId, localRoom, roomChannel, roomMembers, screenUrl, snapshotChunks, validSnapshot } from "./room.mjs?v=4161";
+import { inviteId, localRoom, roomChannel, roomMembers, screenUrl, snapshotChunks, validSnapshot } from "./room.mjs?v=4170";
 
 export async function installRoomPlay(OBR) {
   const {channel, connectionId:initialConnection} = await localRoom(OBR);
