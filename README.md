@@ -1,4 +1,4 @@
-# Les Archives de l’Imaginaire — Owlbear V4.17
+# Les Archives de l’Imaginaire — Owlbear V4.17.1
 
 ## Une salle, un onglet par personne
 
@@ -60,3 +60,5 @@ Pour un son ou une vidéo, **Aperçu et présentation…** ouvre un lecteur priv
 Les médias sont transmis aux membres de la salle par messages Owlbear découpés sous la limite de 16 Ko, avec contrôle du rôle de l’émetteur, de la taille et de l’intégrité du fichier reçu. Les originaux non révélés, les noms de fichiers privés, les liens vers les cellules et le reste de la bibliothèque ne sont jamais inclus dans ces messages. Aucun hébergement public de fichier n’est ajouté. La réception des joueurs reste en mémoire et n’ouvre pas la bibliothèque privée du MJ.
 
 Les tests de cette version couvrent les limites de taille, les fichiers déguisés, l’intégrité, les commandes forgées par un joueur, la persistance et les liens privés, le PDF transformé en token, la lecture réelle d’un WAV et d’un WebM et l’arrivée d’un joueur après le début d’une présentation dans une salle simulée. L’intégration Soundshow demeure séparée de ce lecteur de médias.
+
+La V4.17.1 purge aussi les éléments locaux de l’extension après un changement de scène ou de rôle, y compris lorsqu’une création native se termine tardivement. Les tests vérifient ce cas avec un élément privé absent du suivi en mémoire.

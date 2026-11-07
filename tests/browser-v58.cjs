@@ -132,6 +132,12 @@ async function openCharacter(page){
   await pf().evaluate(()=>window.parent.postMessage({protocol:'archives:owlbear:v56',type:'owl-transfer-command',id:crypto.randomUUID(),command:{action:'context'}},location.origin));
   assert.equal((await player.evaluate(()=>window.fixture.uploads())).length,0);await waitShared(player,0);
   assert.equal(await pf().evaluate(()=>window.DuneApp.getState().strictReadOnly),true);
+  // A late native add can leave an owned item outside the renderer's tracking
+  // map. Revocation must scrub the real local scene, not only known map IDs.
+  await gm.evaluate(item=>{
+    const id=crypto.randomUUID(),key='fr.archives-imaginaire.bridge/artwork-v58';
+    window.fixture.injectLocal({...item,id,metadata:{[key]:{id,version:crypto.randomUUID()}}});
+  },hidden);
   await gm.evaluate(()=>window.fixture.changeRole('PLAYER'));
   await gm.frameLocator('#viewer').locator('#app').waitFor({state:'hidden'});
   assert.equal(await gm.frameLocator('#viewer').locator('#app').getAttribute('src'),null);await waitLocal(gm,0);

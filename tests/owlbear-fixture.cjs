@@ -33,6 +33,7 @@ function fixture({sceneReady=false}={}) {
   sceneItems:items=>allPost("OBR_SCENE_ITEMS_EVENT_CHANGE",{items}),
   changeRole(value){role=value;player.role=value;allPost("OBR_PLAYER_EVENT_CHANGE",{player});fixtureHub("role",value)},
   moveLocal(id,position){localItems=localItems.map(item=>item.id===id?{...item,position}:item);allPost("OBR_SCENE_LOCAL_EVENT_CHANGE",{items:localItems})},
+  injectLocal(item){localItems.push(item);allPost("OBR_SCENE_LOCAL_EVENT_CHANGE",{items:localItems})},
   local:()=>localItems,uploads:()=>uploads,cancelPick:()=>{cancelPick=true},
   scene:()=>fixtureHub("scene"),wire:()=>fixtureHub("wire"),setScene:()=>fixtureHub("newScene"),
   moveShared:(id,position)=>fixtureHub("updateItems",{updates:[{id,position}]})

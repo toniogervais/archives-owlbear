@@ -1,6 +1,6 @@
 import OBR from "../../assets/owlbear-transfer-sdk-v55.mjs";
 import { trustedOwlbearSdk } from "../v56/link.mjs";
-import { localRoom } from "../v57/room.mjs?v=4170";
+import { localRoom } from "../v57/room.mjs?v=4171";
 import { validId,validPublication,mediaModal } from "./files.mjs";
 const $ = id => document.getElementById(id);
 let channel,media,url,readyTimer,closed = false,received = false;

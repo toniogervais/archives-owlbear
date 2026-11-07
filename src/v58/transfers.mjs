@@ -1,5 +1,5 @@
 import OBR, { buildImage, buildImageUpload } from "../../assets/owlbear-transfer-sdk-v55.mjs";
-import { localRoom } from "../v57/room.mjs?v=4170";
+import { localRoom } from "../v57/room.mjs?v=4171";
 import { validSession } from "../v56/link.mjs";
 import { artworkBlob, assetKey, privateArtworkStore, sceneKey, validArtwork } from "./model.mjs";
 
@@ -60,16 +60,31 @@ export async function installArtworkTransfers() {
       const existing = locals.get(record.id);
       const item = makeItem(record,true);
       if (!existing) {
-        await OBR.scene.local.addItems([item]);
         locals.set(record.id,item);
+        try { await OBR.scene.local.addItems([item]); }
+        catch (error) { if (locals.get(record.id) === item) locals.delete(record.id);throw error; }
       } else if (JSON.stringify(item) !== JSON.stringify(existing)) {
         await OBR.scene.local.updateItems([record.id],draft => { Object.assign(draft[0],item); });
         locals.set(record.id,item);
+      }
+      if (active !== generation || closed || role !== "GM") {
+        await OBR.scene.local.deleteItems([record.id]);locals.delete(record.id);return;
       }
     }
   }
   function queueRender() {
     renders = renders.then(render).catch(error => console.warn("Affichage privé Owlbear",error));
+    return renders;
+  }
+  function queuePurge() {
+    // Read the actual local scene after older renders finish. An add operation
+    // can have completed while a scene change invalidated its tracking map.
+    renders = renders.catch(() => {}).then(async () => {
+      if (!await OBR.scene.isReady()) { locals.clear();return; }
+      const owned = await OBR.scene.local.getItems(item => item.metadata?.[assetKey]?.id === item.id);
+      if (owned.length) await OBR.scene.local.deleteItems(owned.map(item => item.id));
+      locals.clear();
+    }).catch(error => console.warn("Nettoyage privé Owlbear",error));
     return renders;
   }
   function refresh() {
@@ -88,8 +103,8 @@ export async function installArtworkTransfers() {
     if (closed) return;
     if (key !== scene) {
       generation++;
-      if (locals.size) await OBR.scene.local.deleteItems(Array.from(locals.keys()));
-      locals.clear();
+      records = [];
+      await queuePurge();
     }
     scene = key;
     items = currentItems;
@@ -200,7 +215,7 @@ export async function installArtworkTransfers() {
     role = player.role;
     generation++;
     records = [];
-    void queueRender();
+    void queuePurge();
     void refresh().catch(console.warn);
   }));
   window.addEventListener("pagehide",() => {
@@ -211,5 +226,6 @@ export async function installArtworkTransfers() {
     channel.close();
     void commands.finally(() => store?.close());
   },{once:true});
+  await queuePurge();
   await refresh();
 }
