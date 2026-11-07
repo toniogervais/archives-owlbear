@@ -1,6 +1,6 @@
 import { validSession } from "../v56/link.mjs";
 
-export const release = "4200";
+export const release = "4210";
 export const roomChannel = "fr.archives-imaginaire.bridge/room-v57";
 export const inviteId = "fr.archives-imaginaire.bridge/screen-invite-v55";
 export const localViewer = "owl-view";
@@ -21,10 +21,12 @@ export async function localRoom(OBR) {
   return {connectionId, channel:new BroadcastChannel(scope + ":" + tab)};
 }
 
-export function screenUrl(target, native = true) {
+export function screenUrl(target, native = true, options = {}) {
   const url = new URL("../../invite-v55.html", import.meta.url);
   url.searchParams.set("v", release);
   url.hash = target + (native ? "&room=1" : "");
+  if (options.required) url.hash += '&required=1';
+  if (validSession(options.id)) url.hash += '&id='+options.id;
   return url.href;
 }
 

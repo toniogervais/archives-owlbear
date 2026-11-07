@@ -150,7 +150,7 @@ async function present(page,title,publicTitle){
   assert.ok((await mediaFrame(player).evaluate(()=>document.querySelector('video').videoWidth))>0);
   // A screen switch removes the media window and keeps the normal central invitation.
   await library(gm).getByRole('button',{name:'Fermer la bibliothèque de documents'}).click();
-  await gm.frameLocator('#viewer').getByRole('button',{name:'Retour à Owlbear'}).click();
+  await editor(gm).getByRole('button',{name:'Owlbear — afficher la carte'}).click();
   await player.locator('[id="'+mediaId+'"]').waitFor({state:'detached'});
   await player.frameLocator('#invite').getByRole('button',{name:'Afficher la carte Owlbear',exact:true}).click();
   await player.locator('#viewer').waitFor({state:'detached'});

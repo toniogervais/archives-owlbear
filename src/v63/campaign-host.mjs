@@ -1,4 +1,4 @@
-import {validSnapshot} from '../v57/room.mjs?v=4200';
+import {validSnapshot} from '../v57/room.mjs?v=4210';
 import {captureCampaign,packBackup,inspectBackup,recoveryCopy,restoreCampaign} from './backup.mjs';
 export function campaignHost({OBR,store,canEdit,snapshot,replace,post,beforeRestore = async () => {}}) {
   const candidates = new Map();let closed = false;

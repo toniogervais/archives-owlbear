@@ -1,0 +1,101 @@
+import {button,element,isGM,sheet} from '../v63/ui.mjs';
+import {pictureFrame,frameFields,frameTransform} from './picture-model.mjs';
+
+const pointers=new Map();let active=false,gesture,node,frame,flushTimer;
+const state=()=>window.DuneApp?.getState?.();
+const selected=()=>{const s=state();return s&&!s.selectedLinkId?s.nodes.find(item=>item.id===s.selectedId):null;};
+const commit=(id,fields)=>window.DuneApp.commitCellPicture(id,fields);
+function chooseLibrary(id,items) {
+  if(!isGM())return;const view=sheet('archives-cell-image-library','Choisir une image','Bibliothèque des Archives');
+  const search=element('input'),grid=element('div',null,'studio-grid');search.type='search';search.placeholder='Rechercher une image…';search.setAttribute('aria-label','Rechercher une image de la bibliothèque');view.content.append(search,grid);
+  function render(){
+    grid.replaceChildren();const query=search.value.toLocaleLowerCase('fr');
+    for(const item of items.filter(item=>String(item.name).toLocaleLowerCase('fr').includes(query))){
+      const card=element('article',null,'studio-card'),image=element('img');image.src=item.data;image.alt=item.name;image.loading='lazy';
+      card.append(image,element('h3',item.name),button('Utiliser cette image',()=>{commit(id,{bgImg:item.data,bgZoom:1,bgOffsetX:0,bgOffsetY:0,bgFit:'cover'});view.dialog.close();}));grid.append(card);
+    }
+    if(!grid.children.length)grid.append(element('p','Aucune image dans cette sélection.','studio-hint'));
+  }
+  search.oninput=render;render();
+}
+function chooseSource() {
+  const current=selected();if(!isGM()||!current)return;
+  const id=current.id,view=sheet('archives-cell-image-source','Ajouter une image','Cellule : '+(current.title||'Sans titre'));
+  const actions=element('div',null,'studio-actions'),online=element('div');online.hidden=true;
+  const url=element('input');url.type='url';url.placeholder='https://…/image.jpg';url.setAttribute('aria-label','Adresse directe de l’image');
+  const apply=button('Utiliser cette image',()=>{
+    let address;try{address=new URL(url.value);if(address.protocol!=='https:'||address.username||address.password)throw Error();}
+    catch{view.status.textContent='Colle l’adresse HTTPS du fichier image.';return;}
+    const image=new Image();view.busy(true);
+    image.onload=()=>{commit(id,{bgImg:address.href,bgZoom:1,bgOffsetX:0,bgOffsetY:0,bgFit:'cover'});view.dialog.close();};
+    image.onerror=()=>{view.status.textContent='Cette adresse ne fournit pas une image accessible. Tu peux importer son fichier depuis ton ordinateur.';view.busy(false);};image.src=address.href;
+  });
+  online.append(element('p','Dans Google Images, ouvre l’image choisie puis copie son adresse directe ici.','studio-hint'),url,apply);
+  actions.append(button('Rechercher sur Google',()=>{
+    online.hidden=false;
+    window.open('https://www.google.com/search?tbm=isch&q='+encodeURIComponent(current.title||'JDR illustration'),'_blank','noopener,noreferrer');url.focus();
+  }),button('Choisir sur l’ordinateur',()=>{
+    const input=element('input');input.type='file';input.accept='image/png,image/jpeg,image/webp';
+    input.onchange=()=>{
+      const file=input.files?.[0];if(!file)return;
+      if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>25*1024*1024){view.status.textContent='Choisis une image PNG, JPG ou WebP de moins de 25 Mo.';return;}
+      const reader=new FileReader();reader.onload=()=>{commit(id,{bgImg:reader.result,bgZoom:1,bgOffsetX:0,bgOffsetY:0,bgFit:'cover'});view.dialog.close();};reader.onerror=()=>{view.status.textContent='Le fichier ne peut pas être lu.';};reader.readAsDataURL(file);
+    };input.click();
+  }),button('Bibliothèque des Archives',()=>{view.dialog.close();window.ArchivesImageLibrary.pickForCell(id);}));
+  view.content.append(element('p','Choisis la source de l’image. Tu pourras ensuite zoomer et la déplacer dans l’aperçu.','studio-hint'),actions,online);
+}
+function install() {
+  if(!isGM())return;
+  const stage=document.getElementById('active-editor-preview-stage');if(!stage)return;
+  const tools=element('div',null,'cell-picture-tools'),label=element('label','Zoom de l’image'),range=element('input'),output=element('output'),hint=element('p','Attrape l’image pour la déplacer. Zoome avec la molette, le curseur ou deux doigts.','studio-hint');
+  range.type='range';range.id='archives-cell-image-zoom';range.min='15';range.max='800';range.value='100';range.setAttribute('aria-label','Zoom de l’image dans la cellule');label.htmlFor=range.id;
+  tools.append(label,range,output);stage.after(tools,hint);stage.style.touchAction='none';
+  function draw(){
+    const current=node||selected();if(!current?.bgImg)return;
+    const value=frame||pictureFrame(current);
+    for(const cell of document.querySelectorAll('#world .node-cell,#active-editor-preview-stage .node-cell')){
+      if(cell.closest('#world')&&cell.dataset.id!==current.id)continue;
+      const image=cell.querySelector('.cell-bg-img-layer');if(!image)continue;
+      image.style.backgroundSize=current.bgFit==='contain'?'contain':'cover';image.style.backgroundPosition='50% 50%';image.style.transform=frameTransform(value);
+    }
+    range.value=String(Math.round(value.zoom*100));output.value=range.value+' %';
+  }
+  function finish(){
+    if(!active)return;active=false;pointers.clear();gesture=null;stage.classList.remove('picture-dragging');
+    if(node&&frame)commit(node.id,{...frameFields(frame),bgFit:node.bgFit==='contain'?'contain':'cover'});
+    node=frame=null;
+  }
+  function begin(){
+    const current=selected();if(!current?.bgImg)return false;
+    clearTimeout(flushTimer);node=current;frame=pictureFrame(current);active=true;return true;
+  }
+  function geometry(){const rect=stage.querySelector('.node-cell')?.getBoundingClientRect()||stage.getBoundingClientRect();return rect;}
+  function baseline(){
+    const values=[...pointers.values()],rect=geometry();
+    gesture={frame:{...frame},rect,point:values[0],distance:values.length>1?Math.hypot(values[1].x-values[0].x,values[1].y-values[0].y):0,
+      centre:values.length>1?{x:(values[0].x+values[1].x)/2,y:(values[0].y+values[1].y)/2}:values[0]};
+  }
+  stage.addEventListener('pointerdown',event=>{
+    if(event.button!==0||(!active&&!begin()))return;
+    clearTimeout(flushTimer);
+    event.preventDefault();pointers.set(event.pointerId,{x:event.clientX,y:event.clientY});stage.setPointerCapture(event.pointerId);stage.classList.add('picture-dragging');baseline();
+  });
+  stage.addEventListener('pointermove',event=>{
+    if(!active||!pointers.has(event.pointerId))return;event.preventDefault();pointers.set(event.pointerId,{x:event.clientX,y:event.clientY});
+    const values=[...pointers.values()],centre=values.length>1?{x:(values[0].x+values[1].x)/2,y:(values[0].y+values[1].y)/2}:values[0];
+    frame=pictureFrame({bgZoom:values.length>1&&gesture.distance?gesture.frame.zoom*Math.hypot(values[1].x-values[0].x,values[1].y-values[0].y)/gesture.distance:gesture.frame.zoom,
+      bgOffsetX:gesture.frame.x+(centre.x-gesture.centre.x)/gesture.rect.width,bgOffsetY:gesture.frame.y+(centre.y-gesture.centre.y)/gesture.rect.height});draw();
+  });
+  function up(event){if(!pointers.delete(event.pointerId))return;if(!pointers.size)finish();else baseline();}
+  stage.addEventListener('pointerup',up);stage.addEventListener('pointercancel',up);stage.addEventListener('lostpointercapture',up);
+  range.oninput=()=>{if(!active&&!begin())return;frame.zoom=Number(range.value)/100;draw();clearTimeout(flushTimer);flushTimer=setTimeout(finish,180);};
+  stage.addEventListener('wheel',event=>{if(!selected()?.bgImg)return;event.preventDefault();if(!active&&!begin())return;frame.zoom=Math.max(.15,Math.min(8,frame.zoom*Math.exp(-event.deltaY*.0015)));draw();clearTimeout(flushTimer);flushTimer=setTimeout(finish,180);},{passive:false});
+  stage.addEventListener('dblclick',event=>{if(!selected()?.bgImg){event.preventDefault();chooseSource();}});
+  const observer=new MutationObserver(()=>{
+    if(active)return;const current=selected();tools.hidden=hint.hidden=!current?.bgImg;stage.classList.toggle('picture-editable',!!current?.bgImg);
+    if(current?.bgImg){const value=pictureFrame(current);range.value=String(Math.round(value.zoom*100));output.value=range.value+' %';}
+  });observer.observe(stage,{childList:true});
+  window.addEventListener('blur',finish);document.getElementById('active-editor-modal')?.addEventListener('transitionend',()=>{if(!document.getElementById('active-editor-modal').classList.contains('open'))finish();});
+  window.ArchivesCellPicture={get isInteracting(){return active;},chooseSource,chooseLibrary};tools.hidden=hint.hidden=true;
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();

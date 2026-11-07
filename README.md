@@ -1,4 +1,4 @@
-# Les Archives de l’Imaginaire — Owlbear V4.20.0
+# Les Archives de l’Imaginaire — Owlbear V4.21.0
 
 ## Une salle, un onglet par personne
 
@@ -6,13 +6,15 @@ Installe ou actualise l’extension avec cette adresse :
 
 https://toniogervais.github.io/archives-owlbear/manifest-v55.json
 
-Le MJ et les joueurs commencent dans la même salle Owlbear. Le MJ utilise le livre pour ouvrir les Archives, puis **Retour à Owlbear** pour afficher la carte. Chaque changement du MJ propose aux joueurs un bouton au centre de leur écran. Le joueur suit ce bouton dans son onglet ; il peut aussi fermer l’invitation.
+Le MJ et les joueurs commencent dans la même salle Owlbear. Le MJ utilise le livre pour ouvrir les Archives, puis le **bouton Owlbear en bas au centre** pour afficher la carte. Les deux autres boutons de retour ont été retirés du canevas intégré. À chaque bascule du MJ, une petite fenêtre demande ce que font les joueurs : **Les joueurs restent**, **Inviter à suivre** ou **Suivi obligatoire**. Maintiens son en-tête pour la déplacer ; sa position est mémorisée pour cette salle et ce compte MJ et reste accessible après un changement de taille de fenêtre.
+
+Une invitation simple présente le bouton central de bascule et **Rester sur cet écran** ; elle peut aussi être fermée par Échap ou par un clic sur le fond. Le suivi obligatoire garde le bouton central affiché, sans option de refus, jusqu’à ce que le joueur valide la bascule. Le MJ ne déplace pas automatiquement le navigateur du joueur. Il peut demander ces changements à une seule personne dans **Joueurs et écrans**, en choisissant la destination puis **Inviter** ou **Imposer la bascule**. Les autres joueurs gardent leur écran.
 
 Aucun code de Salon Live, compte Archives ou paramétrage Supabase n’est nécessaire pour ce parcours. Un joueur doit garder le rôle **Joueur** dans Owlbear. La salle doit avoir l’extension activée.
 
 Le scénario complet est sauvegardé dans le navigateur du MJ, séparément pour chaque salle et compte Owlbear. Lors de la première ouverture, importe ton scénario JSON ou commence un nouveau scénario. Pour reprendre un scénario de l’application autonome, exporte-le d’abord depuis https://toniogervais.github.io/archives-owlbear/archives.html. Dans Owlbear, utilise la sauvegarde complète `.archives` pour changer d’appareil ou de navigateur. Les anciens scénarios JSON restent importables.
 
-## Interface et commandes — V4.20
+## Interface et commandes — V4.21
 
 La barre en haut à gauche regroupe des icônes homogènes, des onglets d’actes plus lisibles et des infobulles. La suppression reste à l’écart de la sauvegarde. Les fenêtres, catalogues, aperçus et images s’ouvrent et se ferment avec des fondus courts. La fermeture rend immédiatement les aperçus natifs inactifs, puis retire leur affichage après le fondu. Les transitions et animations ajoutées respectent **FX : OFF** et la préférence système de réduction des animations.
 
@@ -24,9 +26,19 @@ La barre en haut à gauche regroupe des icônes homogènes, des onglets d’acte
 | Préparer plusieurs transferts | Préparer jusqu’à 20 éléments ensemble |
 | Joueurs et écrans | Voir Archives, Owlbear, invitation en attente ou déconnexion |
 
-Les commandes de campagne, de transfert et de suivi restent réservées au MJ. En haut à gauche, les joueurs gardent seulement **Dossier des joueurs**, **Mes notes** et les actes révélés. Les commandes de sauvegarde, de catalogue, de suppression et d’édition des actes sont retirées, y compris si un ancien composant tente de les réinsérer.
+Les commandes de campagne, de transfert et de suivi restent réservées au MJ. En haut à gauche, les joueurs gardent **Dossier des joueurs**, **Journal des révélations**, **Mes notes** et les actes révélés. Le journal retrouve ses trois parties : **Notes & #Tags**, **Fil des Révélations** et **Récit continu**. Le fil et le récit sont construits à partir des informations explicitement révélées et se mettent à jour sans fermer le journal. Le journal privé du MJ n’est jamais envoyé aux joueurs. Les notes de session personnelles et le carnet **Mes notes** sont conservés séparément, pour chaque salle et compte, dans ce navigateur. Les commandes de sauvegarde de campagne, de catalogue, de suppression et d’édition des actes restent retirées de la barre des joueurs.
 
 **Mes notes** ouvre un carnet personnel enregistré automatiquement dans ce navigateur, séparément pour chaque salle et compte Owlbear. Les mises à jour du MJ ne l’écrasent pas. Son contenu n’est envoyé ni au MJ, ni aux autres joueurs, ni dans les sauvegardes de campagne. **Enregistrer une copie** télécharge un fichier texte ; conserver cette copie permet de changer d’appareil.
+
+## Disposition personnelle et gestes tactiles
+
+Pour redimensionner une cellule, maintiens le doigt ou le clic sur sa petite flèche en bas à droite, puis glisse sans relâcher. La zone tactile est agrandie. Le geste reste actif en sortant de la flèche et s’arrête au relâchement ou à l’annulation du pointeur. Les flèches du clavier permettent aussi d’ajuster la taille quand la poignée a le focus.
+
+Chaque joueur garde sa propre position, sa propre taille et ses regroupements de cellules. Les mises à jour de contenu continuent d’arriver, tandis que les déplacements et dimensions du canevas MJ ne remplacent pas les siens, même sur une cellule qu’il n’a pas encore déplacée. Ces préférences et ses notes de journal sont retrouvées au rechargement, pour cette salle et ce compte sur cet appareil. Les mises à jour reçues pendant un redimensionnement sont appliquées après le geste.
+
+Dans les réglages d’une cellule, l’**aperçu en direct** permet de zoomer/dézoomer avec le curseur, la molette ou deux doigts, puis d’attraper l’image pour la déplacer. L’image garde ses proportions et le fichier original est conservé. Double-clique sur un aperçu sans image pour choisir **Rechercher sur Google**, **Choisir sur l’ordinateur** ou **Bibliothèque des Archives**. Google s’ouvre dans son onglet ; l’adresse directe de l’image peut ensuite être appliquée à la cellule.
+
+La roue crantée affiche **Stockage des Archives** : espace disponible, espace utilisé et capacité estimée pour ce navigateur et cet appareil. La valeur est actualisée à l’ouverture, pendant l’affichage et avec **Actualiser**. Elle ne représente pas le quota du compte Owlbear. Si le navigateur ne fournit pas l’estimation, l’interface le signale sans inventer une capacité restante.
 
 ## Sauvegarde complète de campagne
 
@@ -40,7 +52,7 @@ Le format vérifie l’intégrité du descriptif et de chaque original, refuse l
 
 ## Retrouver un élément, préparer un lot et suivre les joueurs
 
-Après un transfert, **Voir dans Owlbear**, dans les réglages de la cellule ou son menu contextuel, centre uniquement la vue du MJ sur l’élément de la scène ouverte puis retourne à la carte dans le même onglet. Cela ne révèle pas un élément caché. La bascule propose aux joueurs le bouton central habituel.
+Après un transfert, **Voir dans Owlbear**, dans les réglages de la cellule ou son menu contextuel, centre uniquement la vue du MJ sur l’élément de la scène ouverte puis prépare le retour à la carte dans le même onglet. Cela ne révèle pas un élément caché. La fenêtre de bascule laisse le MJ décider du suivi des joueurs.
 
 **Préparer plusieurs transferts** réunit les cellules du scénario, la bibliothèque d’images et les documents privés de cette salle. Sélectionne jusqu’à 20 éléments, puis ajuste le nom, le format et le cadrage de chaque aperçu. Les PDF permettent le choix d’une page. **Placer le lot caché** ou **Placer le lot et révéler** détermine la visibilité de tout le lot. Les nouveaux éléments sont espacés sur la carte ; un élément déjà transféré garde sa position. Les rendus du lot sont limités à 30 Mo au total.
 

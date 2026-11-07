@@ -6,33 +6,47 @@
 h1{margin:0 0 25px;font-size:clamp(20px,4vw,27px);line-height:1.35}
 button{width:100%;min-height:72px;padding:16px;border:2px solid #f0d697;border-radius:12px;background:#735523;color:white;font:700 clamp(17px,4vw,21px) system-ui;touch-action:manipulation;cursor:pointer}
 button:focus-visible{outline:3px solid white;outline-offset:4px}#error{display:none;margin:15px 0 0;color:#ffd3d3;font-size:14px}
+#dismiss{min-height:44px;margin-top:12px;border:1px solid #b7a27b66;background:transparent;font:500 14px system-ui;color:#d5c9b5}#instruction{font-size:14px;line-height:1.55;color:#d5c9b5;margin:0 0 20px}[hidden]{display:none!important}
 </style></head><body><main id="veil" role="dialog" aria-modal="true" aria-label="Invitation du maître de jeu"><div class="card">
-<h1 id="title">Le maître de jeu change d’espace</h1><button id="accept" type="button" disabled>Rejoindre</button><p id="error" role="alert"></p>
+<h1 id="title">Le maître de jeu change d’espace</h1><p id="instruction"></p><button id="accept" type="button" disabled>Rejoindre</button><button id="dismiss" type="button" disabled>Rester sur cet écran</button><p id="error" role="alert"></p>
 </div></main><script type="module">
 import { O as OBR } from "./assets/index-BfJgTiPE.js";
-import { archivesUrl,localRoom } from "./src/v57/room.mjs?v=4200";
-const [target, source]=location.hash.slice(1).split("&");
+import { archivesUrl,localRoom } from "./src/v57/room.mjs?v=4210";
+const [target,...parts]=location.hash.slice(1).split("&"),flags=new URLSearchParams(parts.join('&'));
 const archives=target==="ARCHIVES";
-const native=source==="room=1";
+const native=flags.get('room')==='1',required=flags.get('required')==='1',requestId=flags.get('id')||'';
 const title=document.getElementById("title"),button=document.getElementById("accept"),error=document.getElementById("error");
 title.textContent=archives?"Le maître de jeu vous invite dans les Archives":"Le maître de jeu vous invite sur la carte";
+if(required)title.textContent=archives?'Le maître de jeu demande les Archives':'Le maître de jeu demande la carte Owlbear';
+document.getElementById('instruction').textContent=required?'Valide le bouton central pour rejoindre l’écran demandé.':'Tu peux accepter ou rester sur ton écran actuel.';
+document.getElementById('dismiss').hidden=required;
 button.textContent=archives?"Afficher les Archives":"Afficher la carte Owlbear";
-await new Promise(resolve=>OBR.onReady(resolve));
-const presence=native?await localRoom(OBR):null;
-const presenceMessage=type=>presence?.channel.postMessage({type,target:archives?'ARCHIVES':'OWLBEAR'});
-window.addEventListener('pagehide',()=>presence?.channel.close(),{once:true});
+let presence;
+const ready=(async()=>{await new Promise(resolve=>OBR.onReady(resolve));presence=native?await localRoom(OBR):null;})();
+const presenceMessage=type=>presence?.channel.postMessage({type,id:requestId,target:archives?'ARCHIVES':'OWLBEAR'});
+let accepted=false,dismissed=false;
+window.addEventListener('pagehide',()=>{if(!accepted&&!dismissed)presenceMessage('screen-invite-closed');presence?.channel.close();},{once:true});
 const invite="fr.archives-imaginaire.bridge/screen-invite-v55";
-const dismiss=()=>{presenceMessage('screen-invite-dismissed');void OBR.modal.close(invite).catch(console.warn);};
+const dismiss=async()=>{
+ if(required||dismissed)return;dismissed=true;
+ try{await ready;presenceMessage('screen-invite-dismissed');await OBR.modal.close(invite);}
+ catch(e){dismissed=false;error.textContent='La fermeture n’a pas été confirmée. Réessaie.';error.style.display='block';console.warn(e);}
+};
+document.getElementById('dismiss').onclick=dismiss;
 document.getElementById("veil").addEventListener("click",event=>{if(event.target===event.currentTarget)dismiss();});
-document.addEventListener("keydown",event=>{if(event.key==="Escape")dismiss();});
+document.addEventListener("keydown",event=>{if(event.key==="Escape"){event.preventDefault();event.stopImmediatePropagation();dismiss();}},true);
 button.onclick=async()=>{
  button.disabled=true;error.style.display="none";
  try{
+  await ready;
   if(archives)await OBR.modal.open({id:"fr.archives-imaginaire.bridge/archives-viewer",url:archivesUrl(native),fullScreen:true,hideBackdrop:true,hidePaper:true});
   else await OBR.modal.close("fr.archives-imaginaire.bridge/archives-viewer");
-  presenceMessage('screen-invite-accepted');
+  accepted=true;presenceMessage('screen-invite-accepted');
   await OBR.modal.close(invite);
  }catch(e){error.textContent="Changement impossible. Vérifie la connexion, puis réessaie.";error.style.display="block";button.disabled=false;console.error(e);}
 };
-button.disabled=false;button.focus();
+await ready;
+// Let the newly mounted frame reach the compositor before accepting its first input.
+await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+button.disabled=false;button.focus({preventScroll:true});document.getElementById('dismiss').disabled=false;
 </script></body></html>

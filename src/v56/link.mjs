@@ -71,7 +71,8 @@ export function createNotice() {
   panel.append(text, action, secondary);
   document.body.append(panel);
   window.addEventListener("keydown", event => {
-    if (!panel.hidden && !panel.contains(event.target)) {
+    if (!panel.hidden && !panel.contains(event.target) &&
+      !event.target.closest?.('#canvas-integrations-dock .canvas-integration-item:first-child,.studio-screen-choice')) {
       event.preventDefault();
       event.stopImmediatePropagation();
     }

@@ -13,7 +13,7 @@ function fixture({sceneReady=false,inviteReadyDelay=0}={}) {
  const name=params.get("joueur")||"MJ",connectionId="fixture-"+name;
  const player={role,name,connectionId};
  const ref=btoa(location.origin+" fixture-single-room"),listeners=new Map();
- let localItems=[];const uploads=[],focus=[],pickers={upload:0,download:0};let cancelPick=false;
+ let localItems=[];const uploads=[],focus=[],modals=[],pickers={upload:0,download:0};let cancelPick=false,modalLayer=100;
  function post(frame,id,data){frame?.contentWindow?.postMessage({id,data},archives)}
  function allPost(id,data){for(const frame of document.querySelectorAll("iframe"))post(frame,id,data)}
  function modalFrame(id){return document.getElementById(id===viewerId?"viewer":id===inviteId?"invite":id)}
@@ -22,6 +22,7 @@ function fixture({sceneReady=false,inviteReadyDelay=0}={}) {
   frame.id=id===viewerId?"viewer":id===inviteId?"invite":id;
   frame.sandbox="allow-same-origin allow-scripts allow-downloads allow-forms";
   frame.style.cssText=id==="background"?"display:none":"position:fixed;inset:0;width:100%;height:100%;border:0";
+  if(id!=='background')frame.style.zIndex=String(++modalLayer);
   frame.addEventListener("load",()=>{
    const ready=()=>post(frame,"OBR_READY",{ref:frame.id,userId:connectionId});
    if(id===inviteId&&${inviteReadyDelay}>0)setTimeout(ready,${inviteReadyDelay});else ready();
@@ -37,7 +38,7 @@ function fixture({sceneReady=false,inviteReadyDelay=0}={}) {
   changeRole(value){role=value;player.role=value;allPost("OBR_PLAYER_EVENT_CHANGE",{player});fixtureHub("role",value)},
   moveLocal(id,position){localItems=localItems.map(item=>item.id===id?{...item,position}:item);allPost("OBR_SCENE_LOCAL_EVENT_CHANGE",{items:localItems})},
   injectLocal(item){localItems.push(item);allPost("OBR_SCENE_LOCAL_EVENT_CHANGE",{items:localItems})},
-  local:()=>localItems,uploads:()=>uploads,pickers:()=>pickers,focus:()=>focus,cancelPick:()=>{cancelPick=true},
+  local:()=>localItems,uploads:()=>uploads,pickers:()=>pickers,focus:()=>focus,modals:()=>modals,cancelPick:()=>{cancelPick=true},
   scene:()=>fixtureHub("scene"),wire:()=>fixtureHub("wire"),setScene:()=>fixtureHub("newScene"),
   moveShared:(id,position)=>fixtureHub("updateItems",{updates:[{id,position}]})
  };
@@ -84,11 +85,11 @@ function fixture({sceneReady=false,inviteReadyDelay=0}={}) {
    case "OBR_BROADCAST_SUBSCRIBE":if(!listeners.has(event.source))listeners.set(event.source,new Set());listeners.get(event.source).add(data.channel);break;
    case "OBR_BROADCAST_UNSUBSCRIBE":listeners.get(event.source)?.delete(data.channel);break;
    case "OBR_BROADCAST_SEND_MESSAGE":await fixtureHub("broadcast",data);break;
-   case "OBR_MODAL_OPEN":addFrame(data.url,data.id);break;
-   case "OBR_MODAL_CLOSE":setTimeout(()=>modalFrame(data.id)?.remove(),0);break;
+   case "OBR_MODAL_OPEN":modals.push({action:'open',...data});addFrame(data.url,data.id);break;
+   case "OBR_MODAL_CLOSE":modals.push({action:'close',...data});setTimeout(()=>modalFrame(data.id)?.remove(),0);break;
   }if(nonce)event.source.postMessage({id:id+"_RESPONSE"+nonce,data:reply},archives)})().catch(console.error);
  });
- fixtureHub("join",player).then(()=>addFrame(archives+"/background-v55.html?v=4200","background"));
+ fixtureHub("join",player).then(()=>addFrame(archives+"/background-v55.html?v=4210","background"));
  </script>`;
 }
 function hub(){
@@ -125,6 +126,7 @@ function hub(){
  };
 }
 async function configure(context,fixtureHub,options={}){
+ if(options.autoScreenChoice!==false)await autoScreenChoice(context);
  await context.exposeBinding("fixtureHub",fixtureHub);
  context.on('page',page=>page.on('close',()=>{void fixtureHub({page},'leave')}));
  await context.route("**/*",route=>{
@@ -137,4 +139,16 @@ async function configure(context,fixtureHub,options={}){
   return route.fulfill({path:file,contentType:[".mjs",".js"].includes(ext)?"text/javascript":ext===".css"?"text/css":ext===".svg"?"image/svg+xml":"text/html"});
  });
 }
-module.exports={archives,owl,viewerId,inviteId,fixture,hub,configure};
+// Older journeys focus on transfers/media. Simulate the GM explicitly choosing
+// optional invitations; the dedicated screen journey exercises every choice.
+async function autoScreenChoice(context){
+ await context.addInitScript(()=>{
+  const handled=new WeakSet();
+  function choose(){for(const panel of document.querySelectorAll('#archives-screen-choice')){
+   const control=panel.querySelector('[data-screen-policy="OPTIONAL"]');if(!control||handled.has(panel))continue;
+   handled.add(panel);control.click();
+  }}
+  new MutationObserver(choose).observe(document,{childList:true,subtree:true});
+ });
+}
+module.exports={archives,owl,viewerId,inviteId,fixture,hub,configure,autoScreenChoice};

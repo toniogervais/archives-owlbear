@@ -42,7 +42,7 @@ const scenario={
     await editor(gm).getByText("Témoin caché",{exact:false}).first().waitFor({timeout:10000});
     const invite=prompt(player).getByRole("button",{name:"Afficher les Archives"});
     await invite.waitFor({timeout:12000});
-    assert.equal(await prompt(player).getByRole("button").count(),1);
+    assert.equal(await prompt(player).getByRole("button").count(),2);
     assert.ok((await prompt(player).locator("#veil").evaluate(el=>getComputedStyle(el).backdropFilter)).includes("blur"));
     assert.equal(await player.locator("#viewer").count(),0,"no automatic switch");
     await invite.tap();
@@ -72,7 +72,7 @@ const scenario={
       {type:"screen",target:"OWLBEAR",id:crypto.randomUUID()}),channel);
     assert.equal(await player.locator("#invite").count(),0);
 
-    await host(gm).getByRole("button",{name:"Retour à Owlbear"}).click();
+    await editor(gm).getByRole("button",{name:"Owlbear — afficher la carte"}).click();
     await gm.locator("#viewer").waitFor({state:"detached"});
     const toMap=prompt(player).getByRole("button",{name:"Afficher la carte Owlbear"});
     await toMap.waitFor({timeout:10000});

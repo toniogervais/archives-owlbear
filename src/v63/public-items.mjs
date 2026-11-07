@@ -1,4 +1,4 @@
-import {assetKey} from '../v58/model.mjs?v=4200';
+import {assetKey} from '../v58/model.mjs?v=4210';
 export function publicArtwork(items) {
   return items.filter(item => item?.visible === true && item.metadata?.[assetKey]?.id === item.id &&
     typeof item.image?.url === 'string' && item.image.url.startsWith('https://') &&

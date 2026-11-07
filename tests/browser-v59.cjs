@@ -36,7 +36,8 @@ const scenario={activeBoardId:"one",boards:[{id:"one",name:"Plan secret",links:[
   })),{titles:["Rapport montré"],journal:[],cloudClients:0,cloudBridge:false});
   for(const id of ["archives-title-screen","archives-gm-choice-modal","archives-cloud-panel","settings-modal","settings-fab"])
    assert.equal(await editor(player).locator("#"+id).count(),0,id+" is absent from player UI");
-  assert.equal(await editor(player).locator("#archives-home-fab").getAttribute("aria-label"),"Retour à Owlbear");
+  assert.equal(await editor(player).locator("#archives-home-fab").count(),0);
+  assert.equal(await editor(player).getByRole('button',{name:'Owlbear — afficher la carte'}).isVisible(),true);
   await pf.evaluate(()=>{
    for(const type of ["owl-editor-ready","owl-editor-save"])window.parent.postMessage({
     protocol:"archives:owlbear:v56",type,id:crypto.randomUUID(),snapshot:{boards:[]}

@@ -5,9 +5,9 @@ const editor=page=>page.frameLocator('#viewer').frameLocator('#app');
 const app=page=>page.frames().find(frame=>/owl-(?:editor|view)=1/.test(frame.url()));
 const pane=(page,id)=>editor(page).locator('#'+id+'[open]');
 async function closePane(page,id){await pane(page,id).locator('header button').click();await pane(page,id).waitFor({state:'detached'})}
-async function notes(page){await editor(page).getByRole('button',{name:'Mes notes',exact:true}).click();return pane(page,'archives-player-notebook').getByRole('textbox',{name:'Mes notes personnelles'})}
+async function notes(page){await page.bringToFront();await editor(page).getByRole('button',{name:'Mes notes',exact:true}).click();return pane(page,'archives-player-notebook').getByRole('textbox',{name:'Mes notes personnelles'})}
 (async()=>{
- const browser=await chromium.launch({headless:true,...JSON.parse(process.env.ARCHIVES_CHROMIUM_OPTIONS||'{}')});let gm,player;
+ const browser=await chromium.launch({headless:true,...JSON.parse(process.env.ARCHIVES_CHROMIUM_OPTIONS||'{}')});let gm,player,bobPage;
  try{
   const fixtureHub=hub(),gc=await browser.newContext({viewport:{width:1440,height:1000}}),pc=await browser.newContext({viewport:{width:820,height:1180},isMobile:true,hasTouch:true});
   await Promise.all([gc,pc].map(context=>configure(context,fixtureHub,{sceneReady:true})));
@@ -63,7 +63,7 @@ async function notes(page){await editor(page).getByRole('button',{name:'Mes note
   await player.frameLocator('#invite').getByRole('button',{name:'Afficher les Archives',exact:true}).click();
   await editor(player).locator('.cell-title-txt').filter({hasText:'Document connu'}).waitFor();
   const top=editor(player).locator('#top-hud .hud-row>.top-group:first-child');
-  assert.deepEqual(await top.locator(':scope>button').evaluateAll(items=>items.map(x=>x.id).sort()),['archives-dossier-open','quick-player-journal']);
+  assert.deepEqual(await top.locator(':scope>button').evaluateAll(items=>items.map(x=>x.id).sort()),['archives-dossier-open','quick-player-journal','quick-player-notes']);
   assert.equal(await top.locator('#tabs-bar button:not(.tab-btn)').count(),0);
   for(const id of ['canvas-save-icon','cell-catalog-icon','clear-act-button','archives-batch-open','archives-roster-open'])assert.equal(await editor(player).locator('#'+id).count(),0);
   await app(player).evaluate(()=>{const button=document.createElement('button');button.id='late-gm-button';document.querySelector('#top-hud .top-group').append(button)});
@@ -79,13 +79,13 @@ async function notes(page){await editor(page).getByRole('button',{name:'Mes note
   await player.reload();await player.frameLocator('#invite').getByRole('button',{name:'Afficher les Archives',exact:true}).click();
   await editor(player).getByRole('button',{name:'Mes notes',exact:true}).waitFor();
   assert.equal(await (await notes(player)).inputValue(),'NOTE_PERSONNELLE_ALIX_624','own notes survive a reload');
-  const bob=await pc.newPage();await bob.goto(owl+'/room/one?joueur=Bob');await bob.frameLocator('#invite').getByRole('button',{name:'Afficher les Archives',exact:true}).click();
+  const bob=await pc.newPage();bobPage=bob;await bob.goto(owl+'/room/one?joueur=Bob');await bob.bringToFront();await bob.frameLocator('#invite').getByRole('button',{name:'Afficher les Archives',exact:true}).click();
   await editor(bob).getByRole('button',{name:'Mes notes',exact:true}).waitFor();
   assert.equal(await (await notes(bob)).inputValue(),'','another player on the same browser has a separate notebook');
   const wire=JSON.stringify(await gm.evaluate(()=>window.fixture.wire()));
   for(const secret of ['NOTE_PERSONNELLE_ALIX_624','DESCRIPTION_MJ_856','SECRET_MJ_663','JOURNAL_MJ_273','ACTE_SECRET_902',image])assert.ok(!wire.includes(secret),'private content never sent: '+secret.slice(0,30));
   assert.deepEqual(errors,[]);
   console.log('V64 Chromium: direct character placement, crop reuse, player toolbar allowlist, scoped personal notes and privacy passed.');
- }catch(error){if(gm)await gm.screenshot({path:'/tmp/archives-gm-failure-v64.png'}).catch(()=>{});if(player)await player.screenshot({path:'/tmp/archives-player-failure-v64.png'}).catch(()=>{});throw error}
+ }catch(error){if(gm)await gm.screenshot({path:'/tmp/archives-gm-failure-v64.png'}).catch(()=>{});if(player)await player.screenshot({path:'/tmp/archives-player-failure-v64.png'}).catch(()=>{});if(bobPage){await bobPage.screenshot({path:'/tmp/archives-bob-failure-v64.png'}).catch(()=>{});for(const frame of bobPage.frames())console.error('Bob frame',frame.url(),await frame.evaluate(()=>document.body.innerText.slice(0,700)).catch(()=>''));}throw error}
  finally{await browser.close()}
 })().catch(error=>{console.error(error);process.exitCode=1});

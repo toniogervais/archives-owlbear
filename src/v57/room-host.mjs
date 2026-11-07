@@ -1,7 +1,7 @@
-import { localRoom, roomChannel, roomMembers, snapshotReader, validSnapshot } from "./room.mjs?v=4200";
+import { localRoom, roomChannel, roomMembers, snapshotReader, validSnapshot } from "./room.mjs?v=4210";
 import { openScenario } from "./storage.mjs";
 import { validSession } from "../v56/link.mjs";
-import {campaignHost} from '../v63/campaign-host.mjs?v=4200';
+import {campaignHost} from '../v63/campaign-host.mjs?v=4210';
 import {publicItems} from '../v63/public-items.mjs';
 
 export async function makeEditorHost(OBR, post, canEdit) {
@@ -27,6 +27,7 @@ export async function makeEditorHost(OBR, post, canEdit) {
     replace:value => { snapshot = value; },post,beforeRestore:stopPresentation});
   const transfers = new Set();
   const fileCommands = new Set();
+  const screenCommands = new Set();
   function roster(players) {
     if (!closed && canEdit()) post("owl-editor-roster", {
       players:players.filter(player => player.role === "PLAYER").map(player => ({
@@ -36,7 +37,7 @@ export async function makeEditorHost(OBR, post, canEdit) {
   }
   const offParty = OBR.party.onChange(roster);
   function showScreen(target) {
-    channel.postMessage({type:"gm-screen", target});
+    channel.postMessage({type:"gm-screen-presence", target});
   }
   function publish(payload) {
     if (validSnapshot(payload)) {
@@ -48,6 +49,9 @@ export async function makeEditorHost(OBR, post, canEdit) {
   channel.onmessage = event => {
     if (!closed && canEdit() && event.data?.type === 'player-status' && Array.isArray(event.data.players)) {
       post('owl-editor-roster',{players:event.data.players});
+    }
+    if (!closed && canEdit() && event.data?.type === 'screen-command-result' && screenCommands.delete(event.data.id)) {
+      const {id,safe,result,message}=event.data;post('owl-screen-result',{id,safe:safe===true,result,message});
     }
     if (!closed && canEdit() && event.data?.type === "artwork-progress" && transfers.has(event.data.id)) {
       post("owl-transfer-progress",{id:event.data.id,message:String(event.data.message || "").slice(0,400)});
@@ -69,6 +73,10 @@ export async function makeEditorHost(OBR, post, canEdit) {
     receive(data) {
       if (!canEdit() || closed) return;
       if (data.type === 'owl-roster-request') channel.postMessage({type:'roster-request'});
+      else if (data.type === 'owl-screen-command' && validSession(data.id) && screenCommands.size < 8) {
+        screenCommands.add(data.id);channel.postMessage({type:'gm-screen-command',id:data.id,command:data.command});
+        setTimeout(() => screenCommands.delete(data.id),15000);
+      }
       else if (data.type === 'owl-campaign-command' && validSession(data.id)) {
         queue = queue.then(() => campaign.receive(data)).catch(console.warn);
       }
@@ -86,7 +94,7 @@ export async function makeEditorHost(OBR, post, canEdit) {
         setTimeout(() => transfers.delete(data.id), 185000);
       }
       else if (data.type === "owl-editor-ready") {
-        post("owl-editor-init", {snapshot});
+        post("owl-editor-init", {snapshot,scope:JSON.stringify([OBR.room.id,OBR.player.id])});
         void OBR.party.getPlayers().then(roster).catch(console.warn);
         channel.postMessage({type:'roster-request'});
       }
@@ -112,6 +120,7 @@ export async function makeEditorHost(OBR, post, canEdit) {
       closed = true;
       transfers.clear();
       fileCommands.clear();
+      screenCommands.clear();
       campaign.dispose();
       offParty?.();
       void queue.finally(() => { store.close(); channel.close(); });

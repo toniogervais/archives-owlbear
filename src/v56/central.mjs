@@ -1,7 +1,7 @@
 import {
   createNotice, editEvent, isPacket, localWire, packet, pairingKey, randomHex, readLocal,
   roomUrlKey, validPairing, validRoomId, validSession, writeLocal
-} from "./link.mjs";
+} from "./link.mjs?v=4210";
 import { listenForFallback } from "./peer.mjs";
 
 const centralTabKey = pairingKey + ":central";

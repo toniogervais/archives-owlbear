@@ -1,8 +1,10 @@
-import { createNotice, editEvent, isPacket, packet } from "../v56/link.mjs";
-import { installOwlPlayerInterface, installOwlSettings } from "../v59/settings.mjs?v=4200";
-import { installPlayerNotebook } from '../v64/player-notebook.mjs?v=4200';
+import { createNotice, editEvent, isPacket, packet } from "../v56/link.mjs?v=4210";
+import { installOwlPlayerInterface, installOwlSettings } from "../v59/settings.mjs?v=4210";
+import { installPlayerNotebook } from '../v64/player-notebook.mjs?v=4210';
+import {installScreenControls} from '../v65/screens.mjs?v=4210';
 
 export function installOwlEditor(api) {
+  installScreenControls();
   installOwlSettings();
   const notice = createNotice();
   const parent = window.parent;
@@ -86,6 +88,7 @@ export function installOwlEditor(api) {
 }
 
 export function installOwlPlayer(api) {
+  installScreenControls();
   installOwlPlayerInterface();
   installPlayerNotebook();
   const notice = createNotice();
@@ -96,7 +99,9 @@ export function installOwlPlayer(api) {
   window.addEventListener("message", event => {
     if (event.source !== parent || event.origin !== location.origin || !isPacket(event.data)) return;
     const data = event.data;
-    if (data.type === "owl-player-snapshot") {
+    if (data.type === 'owl-player-identity') {
+      api.setPlayerScope(data.scope);
+    } else if (data.type === "owl-player-snapshot") {
       try { api.apply(data.snapshot); received = true; notice.hide();window.dispatchEvent(new CustomEvent('archives:public-view')); }
       catch { if (!received) notice.show("La vue joueur n’a pas pu s’afficher.", "Réessayer", retry); }
     } else if (!received && data.type === "owl-player-status") {

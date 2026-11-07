@@ -1,6 +1,7 @@
 import { liveRoomKey, validSession, viewerId } from "../v56/link.mjs";
-import { inviteId, localRoom, roomChannel, roomMembers, screenUrl, snapshotChunks, validSnapshot } from "./room.mjs?v=4200";
-import {createPresence} from '../v63/presence.mjs?v=4200';
+import { inviteId, localRoom, roomChannel, roomMembers, screenUrl, snapshotChunks, validSnapshot } from "./room.mjs?v=4210";
+import {createPresence} from '../v63/presence.mjs?v=4210';
+import {screenCommand} from '../v65/screen-model.mjs';
 
 export async function installRoomPlay(OBR) {
   const {channel, connectionId:initialConnection} = await localRoom(OBR);
@@ -10,6 +11,8 @@ export async function installRoomPlay(OBR) {
   let screen, latest, serial = 0, timer, sending = false, sendAgain = false;
   let playerView = "", lastInvite = "";
   let pendingTarget = '',lastPresenceRequest = 0;
+  let pendingInvite;
+  let screenQueue=Promise.resolve();
   const presence = createPresence();
   const emitPresence = () => { if (role === 'GM') channel.postMessage({type:'player-status',players:presence.list()}); };
   const announcePresence = () => {
@@ -30,9 +33,9 @@ export async function installRoomPlay(OBR) {
     lastInvite = data.id;
     await closeInvite();
     if (lastInvite !== data.id) return;
-    if ((data.target === "ARCHIVES") === Boolean(playerView)) { pendingTarget = '';announcePresence();return; }
-    pendingTarget = data.target;
-    await OBR.modal.open({id:inviteId, url:screenUrl(data.target),
+    if ((data.target === "ARCHIVES") === Boolean(playerView)) { pendingInvite=null;pendingTarget = '';announcePresence();return; }
+    pendingTarget = data.target;pendingInvite = data;
+    await OBR.modal.open({id:inviteId, url:screenUrl(data.target,true,data),
       fullScreen:true, hideBackdrop:true, hidePaper:true});
     announcePresence();
   }
@@ -64,13 +67,20 @@ export async function installRoomPlay(OBR) {
     }
   }
 
-  function changeScreen(target) {
-    if (screen?.target === target) return;
-    screen = {type:"screen", target, id:newId()};
-    const message = screen;
-    // Any old Salon Live code in this Owlbear room belonged to the separate-window path.
-    if (target === "ARCHIVES") void OBR.room.setMetadata({[liveRoomKey]:""}).catch(console.warn);
-    void send(message).catch(console.warn);
+  async function changeScreen(value) {
+    const command=screenCommand(value),party=await OBR.party.getPlayers();
+    if (role!=='GM' || await OBR.player.getRole()!=='GM') throw Error('Commande réservée au MJ.');
+    const connected=party.filter(player=>player.role==='PLAYER').map(player=>player.connectionId);
+    if (command.recipients?.some(id=>!connected.includes(id))) throw Error('Ce joueur est déconnecté. Actualise la liste.');
+    if (command.target==='ARCHIVES') await OBR.room.setMetadata({[liveRoomKey]:''});
+    if (command.policy==='STAY') {
+      screen=null;await send({type:'screen-clear',id:newId()});return {count:0,policy:command.policy,target:command.target};
+    }
+    const message={type:'screen',target:command.target,id:newId(),required:command.policy==='REQUIRED'};
+    if (command.recipients) {
+      for (const to of command.recipients) await send({...message,to});
+    } else { screen=message;await send(message); }
+    return {count:command.recipients?.length ?? connected.length,policy:command.policy,target:command.target};
   }
 
   channel.onmessage = event => {
@@ -82,17 +92,25 @@ export async function installRoomPlay(OBR) {
       } else if (data?.type === "published" && validSnapshot(data.payload)) {
         latest = {payload:data.payload, revision:newId()};
         queueSnapshot();
-      } else if (data?.type === "gm-screen" && ["ARCHIVES","OWLBEAR"].includes(data.target)) {
-        changeScreen(data.target);
+      } else if (data?.type==='gm-screen-command' && validSession(data.id)) {
+        screenQueue=screenQueue.catch(()=>{}).then(()=>changeScreen(data.command));
+        void screenQueue.then(result=>channel.postMessage({type:'screen-command-result',id:data.id,safe:true,result}))
+          .catch(error=>channel.postMessage({type:'screen-command-result',id:data.id,safe:false,message:error.message}));
+      } else if (data?.type==='gm-screen-presence' && ['ARCHIVES','OWLBEAR'].includes(data.target)) {
+        if(screen && screen.target!==data.target)screen=null;
       }
     } else if (data?.type === "viewer-open" && validSession(data.id)) {
       playerView = data.id;
-      pendingTarget = '';announcePresence();
+      pendingInvite=null;pendingTarget = '';announcePresence();
       void closeInvite();
     } else if (data?.type === "viewer-closed" && data.id === playerView) { playerView = '';announcePresence(); }
-    else if (data?.type === 'screen-invite-accepted' && ['ARCHIVES','OWLBEAR'].includes(data.target)) {
-      pendingTarget = '';if (data.target === 'OWLBEAR') playerView = '';announcePresence();
-    } else if (data?.type === 'screen-invite-dismissed') { pendingTarget = '';announcePresence(); }
+    else if (data?.type === 'screen-invite-accepted' && ['ARCHIVES','OWLBEAR'].includes(data.target) && (!pendingInvite || pendingInvite.id===data.id)) {
+      pendingInvite=null;pendingTarget = '';if (data.target === 'OWLBEAR') playerView = '';announcePresence();
+    } else if (data?.type === 'screen-invite-dismissed' && pendingInvite?.id===data.id && !pendingInvite.required) { pendingInvite=null;pendingTarget = '';announcePresence(); }
+    else if (data?.type==='screen-invite-closed' && pendingInvite?.id===data.id && pendingInvite.required) {
+      const current=pendingInvite;
+      setTimeout(()=>{if(role==='PLAYER' && pendingInvite===current)void OBR.modal.open({id:inviteId,url:screenUrl(current.target,true,current),fullScreen:true,hideBackdrop:true,hidePaper:true}).catch(console.warn);},250);
+    }
   };
 
   async function receive(event) {
@@ -114,6 +132,7 @@ export async function installRoomPlay(OBR) {
     } else if (await isMember(event.connectionId,'GM') && role === 'PLAYER') {
       if (data.type === 'player-state-request') announcePresence();
       else if (data.type === 'screen' && ['ARCHIVES','OWLBEAR'].includes(data.target)) await applyScreen(data);
+      else if (data.type==='screen-clear' && (!data.to || data.to===connectionId)) { pendingInvite=null;pendingTarget='';lastInvite='';await closeInvite();announcePresence(); }
     }
   }
 
@@ -131,7 +150,7 @@ export async function installRoomPlay(OBR) {
     latest = screen = null;
     readers.clear();
     playerView = lastInvite = "";
-    pendingTarget = '';announcePresence();
+    pendingInvite=null;pendingTarget = '';announcePresence();
     clearTimeout(timer);
     requestScreen();
   });

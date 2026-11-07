@@ -39,7 +39,8 @@ function openMap(url,change=false){
 function onMapClick(event){
   if(window.parent!==window){
     event.preventDefault();event.stopImmediatePropagation();
-    window.parent.postMessage(packet("go-map"),location.origin);
+    if (window.ArchivesScreenControl) void window.ArchivesScreenControl.leaveToMap();
+    else window.parent.postMessage(packet("go-map"),location.origin);
     return;
   }
   if(document.body.classList.contains("player-mode")||document.body.classList.contains("strict-readonly"))return;

@@ -27,7 +27,7 @@ export function installPlayerNotebook() {
     textarea.focus();
   }
   function bind() {
-    const control = document.getElementById('quick-player-journal');if (!control) return;
+    const control = document.getElementById('quick-player-notes');if (!control) return;
     control.title = 'Mes notes';control.setAttribute('aria-label','Mes notes');control.disabled = !scope;
     control.onclick = open;
   }

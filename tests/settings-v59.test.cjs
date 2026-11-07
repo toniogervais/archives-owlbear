@@ -28,13 +28,14 @@ test("A player only keeps the dossier, personal notes and revealed act navigatio
  for(const id of ["archives-title-screen","archives-gm-choice-modal","archives-cloud-panel","settings-modal","settings-fab","canvas-save-icon","cell-catalog-icon","clear-act-button"])assert.equal(d.getElementById(id),null);
  assert.equal(d.getElementById("archives-home-fab").getAttribute("aria-label"),"Retour à Owlbear");
  const group=d.querySelector('#top-hud .hud-row>.top-group:first-child');
- assert.equal(group.querySelector('#quick-player-journal').getAttribute('aria-label'),'Mes notes');
+ assert.equal(group.querySelector('#quick-player-journal').getAttribute('aria-label'),'Journal des révélations');
+ assert.equal(group.querySelector('#quick-player-notes').getAttribute('aria-label'),'Mes notes');
  const dossier=d.createElement('button');dossier.id='archives-dossier-open';group.prepend(dossier);
  const intruder=d.createElement('button');intruder.id='late-gm-control';group.append(intruder);
  const edit=d.createElement('button');edit.textContent='＋ Acte';d.getElementById('tabs-bar').append(edit);
  const act=d.createElement('button');act.className='tab-btn';act.textContent='Acte révélé';d.getElementById('tabs-bar').append(act);
  await new Promise(resolve=>w.setTimeout(resolve,0));
- assert.deepEqual(Array.from(group.children,x=>x.id),['archives-dossier-open','quick-player-journal','tabs-bar']);
+ assert.deepEqual(Array.from(group.children,x=>x.id),['archives-dossier-open','quick-player-journal','quick-player-notes','tabs-bar']);
  assert.equal(d.getElementById('late-gm-control'),null);assert.deepEqual(Array.from(d.querySelectorAll('#tabs-bar button'),x=>x.textContent),['Acte révélé']);
  w.close();
 });

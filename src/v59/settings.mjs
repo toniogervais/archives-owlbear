@@ -6,6 +6,8 @@ const ready = callback => document.readyState === "loading"
 function returnButton() {
   const button = $("archives-home-fab");
   if (!button) return;
+  const params=new URLSearchParams(location.search);
+  if(params.has('owl-editor') || params.has('owl-view')){button.remove();return;}
   button.textContent = "←";
   button.title = "Retour à Owlbear";
   button.setAttribute("aria-label", "Retour à Owlbear");
@@ -20,13 +22,16 @@ export function installOwlPlayerInterface() {
     const group = document.querySelector('#top-hud .hud-row>.top-group:first-child');
     const tabs = $('tabs-bar'),journal = $('quick-player-journal');
     if (group && journal) {
-      journal.classList.add('studio-command');journal.title = 'Mes notes';
-      journal.setAttribute('aria-label',journal.title);group.insertBefore(journal,tabs);
+      const notes = journal.cloneNode(true);notes.id = 'quick-player-notes';notes.removeAttribute('onclick');
+      notes.innerHTML='<svg class="quick-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5 5 5M4 20l4-1 12-12a2 2 0 0 0-5-5L3 14zM3 21h18"/></svg>';
+      notes.classList.add('studio-command');notes.title = 'Mes notes';notes.setAttribute('aria-label',notes.title);
+      journal.classList.add('studio-command');journal.title = 'Journal des révélations';
+      journal.setAttribute('aria-label',journal.title);group.insertBefore(journal,tabs);group.insertBefore(notes,tabs);
     }
     function essentials() {
       if (!group) return;
       for (const control of Array.from(group.children))
-        if (!['archives-dossier-open','quick-player-journal','tabs-bar'].includes(control.id)) control.remove();
+        if (!['archives-dossier-open','quick-player-journal','quick-player-notes','tabs-bar'].includes(control.id)) control.remove();
       tabs?.querySelectorAll('button:not(.tab-btn)').forEach(control => control.remove());
     }
     essentials();

@@ -1,5 +1,6 @@
 import {button,element,isGM,nativeEditor,notice,request,requireGM,sheet} from './ui.mjs';
 import {packet,editEvent} from '../v56/link.mjs';
+import {sendScreenCommand,leaveToMap} from '../v65/screens.mjs?v=4210';
 let players = [];
 const paths = {
   batch:'<rect x="3" y="4" width="13" height="13" rx="2"/><path d="M8 20h11a2 2 0 0 0 2-2V9M7 13l3-3 3 3M7 8h.01"/>',
@@ -26,15 +27,27 @@ function stateLabel(player) {
 function openRoster() {
   requireGM();const view = sheet('archives-room-roster','Joueurs et écrans','Salle Owlbear');
   if (nativeEditor()) window.parent.postMessage(packet('owl-roster-request'),location.origin);
-  const hint = element('p','Chaque joueur garde la main sur le bouton de bascule. L’indicateur confirme l’écran affiché et signale une invitation en attente.','studio-hint'),list = element('div',null,'studio-grid');
+  const hint = element('p','Choisis l’écran de destination pour un joueur. Une invitation peut être refusée ; le suivi obligatoire garde le bouton central affiché jusqu’à la bascule.','studio-hint'),list = element('div',null,'studio-grid');
+  const destinations=new Map();
   view.content.append(hint,list);
   function render() {
     list.replaceChildren();
     if (!players.length) list.append(element('p','Aucun joueur présent pour le moment.','studio-hint'));
     for (const player of players) {
-      const row = element('article',null,'studio-card');row.dataset.player = player.id;
+      const row = element('article',null,'studio-card');row.dataset.player = player.id;row.dataset.connected=String(player.connected);
       const [state,label] = stateLabel(player),chip = element('span',label,'studio-chip');chip.dataset.state = state;
-      row.append(element('h3',player.name),chip);list.append(row);
+      row.append(element('h3',player.name),chip);
+      const target=element('select');target.setAttribute('aria-label','Écran pour '+player.name);
+      for(const [value,label] of [['ARCHIVES','Archives'],['OWLBEAR','Carte Owlbear']]){const option=element('option',label);option.value=value;target.append(option);}
+      target.value=destinations.get(player.id)||(player.screen==='ARCHIVES'?'OWLBEAR':'ARCHIVES');target.onchange=()=>destinations.set(player.id,target.value);
+      const actions=element('div',null,'studio-actions');
+      for(const [policy,label] of [['OPTIONAL','Inviter'],['REQUIRED','Imposer la bascule']]) {
+        const control=button(label,async()=>{
+          try {view.busy(true);await sendScreenCommand({target:target.value,policy,recipients:[player.id]});view.status.textContent=(policy==='REQUIRED'?'Bascule obligatoire demandée à ':'Invitation envoyée à ')+player.name+'.';}
+          catch(error){view.status.textContent=error.message;}finally{view.busy(false);view.dialog.querySelectorAll('[data-connected="false"] button,[data-connected="false"] select').forEach(el=>{el.disabled=true;});}
+        });control.disabled=!player.connected;actions.append(control);
+      }
+      target.disabled=!player.connected;row.append(target,actions);list.append(row);
     }
     view.status.textContent = players.filter(player => player.connected).length+' joueur(s) connecté(s).';
   }
@@ -101,7 +114,7 @@ async function focusSelected() {
     requireGM();const state = window.DuneApp.getState(),node = state.nodes.find(node => node.id === state.selectedId);
     if (!node) throw Error('Sélectionne une cellule pour retrouver son élément Owlbear.');
     await window.ArchivesCellTransfer.request({action:'focus',sourceKey:'cell:'+state.activeBoardId+':'+node.id});
-    window.parent.postMessage(packet('go-map'),location.origin);
+    await leaveToMap();
   } catch (error) { notice(error.message); }
 }
 window.ArchivesWorkbench = {openBackup,openBatch,openDossier,openRoster,focusSelected};

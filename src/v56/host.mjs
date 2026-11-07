@@ -3,8 +3,8 @@ import {
   isPacket, liveRoomKey, packet, pairingKey, readLocal, screenChannel, trustedOwlbearSdk,
   validLiveRoom, validPairing, viewerId, writeLocal
 } from "./link.mjs";
-import { localEditor, localViewer, release } from "../v57/room.mjs?v=4200";
-import { makeEditorHost, makePlayerHost } from "../v57/room-host.mjs?v=4200";
+import { localEditor, localViewer, release } from "../v57/room.mjs?v=4210";
+import { makeEditorHost, makePlayerHost } from "../v57/room-host.mjs?v=4210";
 
 const $ = id => document.getElementById(id);
 const frame = $("app"), message = $("message"), button = $("return");
@@ -135,6 +135,7 @@ async function start() {
     frame.hidden = true;
     manual.hidden = true;
     fail("Ton rôle a changé. Ferme cette vue puis rouvre les Archives.");
+    button.hidden=false;
   });
   form.addEventListener("submit", event => {
     event.preventDefault();

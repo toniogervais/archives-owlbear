@@ -2,6 +2,7 @@ const assert=require("node:assert/strict");
 const fs=require("node:fs");
 const path=require("node:path");
 const {chromium}=require("playwright");
+const {autoScreenChoice}=require('./owlbear-fixture.cjs');
 
 const archives="https://archives.test";
 const owl="https://www.owlbear.rodeo";
@@ -82,6 +83,7 @@ async function sendDraft(frame, title) {
   const browser=await chromium.launch({headless:true,...(env?JSON.parse(env):{})});
   try {
     const context=await browser.newContext();
+    await autoScreenChoice(context);
     await context.route("**/*",async route=>{
       const url=new URL(route.request().url());
       if(url.origin===owl)return route.fulfill({contentType:"text/html",body:roomFixture()});
@@ -94,7 +96,7 @@ async function sendDraft(frame, title) {
     });
     const main=await context.newPage();
     await main.goto(archives+"/archives.html?resume=1");
-    await main.waitForURL(archives+app+"?resume=1&v=4200");
+    await main.waitForURL(archives+app+"?resume=1&v=4210");
     const mapButton=main.getByRole("button",{name:"Owlbear — afficher la carte"});
     main.once("dialog",async dialog=>{assert.equal(dialog.type(),"prompt");await dialog.accept(owl+"/room/test");});
     const [room]=await Promise.all([main.waitForEvent("popup"),mapButton.click()]);
@@ -109,7 +111,7 @@ async function sendDraft(frame, title) {
     assert.equal(await frameOf(room).evaluate(()=>window.ArchivesRelay.current().boards[0].nodes[0].title),expectedTitle);
     await sendDraft(frameOf(room),"Modification testée");
     await main.waitForFunction(()=>localStorage.getItem("jdr_architect_save_v12").includes("Modification testée"));
-    await host.getByRole("button",{name:"Retour à Owlbear"}).click();
+    await host.frameLocator("#app").getByRole("button",{name:"Owlbear — afficher la carte"}).click();
     await room.locator("#viewer").waitFor({state:"detached"});
     await main.locator(".archives-bridge-notice").waitFor({state:"hidden"});
     assert.equal(context.pages().length,2);
@@ -119,7 +121,7 @@ async function sendDraft(frame, title) {
     await tool.click();
     await waitForRemote(room);
     assert.equal(await frameOf(room).evaluate(()=>window.ArchivesRelay.current().boards[0].nodes[0].title),"Modification testée");
-    await host.getByRole("button",{name:"Retour à Owlbear"}).click();
+    await host.frameLocator("#app").getByRole("button",{name:"Owlbear — afficher la carte"}).click();
     await room.locator("#viewer").waitFor({state:"detached"});
     await mapButton.click();
     assert.equal(context.pages().length,2,"the existing Owlbear tab is reused");
@@ -129,7 +131,7 @@ async function sendDraft(frame, title) {
     await separate.goto(owl+"/room/isolated");
     await separate.locator("#archives-tool").click();
     await editorOf(separate).getByRole("button",{name:"Importer un scénario"}).waitFor({timeout:6000});
-    await separate.frameLocator("#viewer").getByRole("button",{name:"Retour à Owlbear"}).click();
+    await separate.frameLocator("#viewer").frameLocator("#app").getByRole("button",{name:"Owlbear — afficher la carte"}).click();
     await separate.locator("#viewer").waitFor({state:"detached",timeout:3500});
 
     // A player in Owlbear does not get the private editor or the fallback key.
@@ -153,7 +155,7 @@ async function sendDraft(frame, title) {
     });
     await sendDraft(frameOf(room),"Brouillon non enregistré");
     await editorOf(room).getByRole("button",{name:"Télécharger les modifications"}).waitFor({timeout:5000});
-    await host.getByRole("button",{name:"Retour à Owlbear"}).click();
+    await host.frameLocator("#app").getByRole("button",{name:"Owlbear — afficher la carte"}).click();
     await host.getByText("Enregistrement non confirmé.",{exact:false}).waitFor({timeout:5500});
     assert.ok(await main.evaluate(()=>localStorage.getItem("jdr_architect_save_v12").includes("Modification testée")));
     assert.ok(await frameOf(room).evaluate(()=>window.DuneApp.getState().nodes[0].title==="Brouillon non enregistré"));
