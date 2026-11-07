@@ -1,5 +1,5 @@
 import { isPacket, packet } from "../v56/link.mjs";
-import { prepareSource,renderSource,sourcePicture } from "./media.mjs?v=4180";
+import { prepareSource,renderSource,sourcePicture } from "./media.mjs?v=4190";
 import { installCropEditor } from "../v61/token-crop.mjs";
 
 const pending = new Map();
@@ -44,6 +44,7 @@ function notify(message) {
 }
 function buildDialog() {
   activeDialog?.close();
+  document.querySelectorAll('#archives-owl-transfer:not([open])').forEach(old => old.remove());
   const dialog = document.createElement("dialog");dialog.id = "archives-owl-transfer";
   dialog.innerHTML = `<style>
   #archives-owl-transfer{color-scheme:dark;box-sizing:border-box;width:min(880px,96vw);max-height:94dvh;overflow:auto;margin:auto;padding:20px;border:1px solid #b99b60;border-radius:14px;background:#19131f;color:#f3e6cb;font:15px/1.45 system-ui,sans-serif}
@@ -94,7 +95,7 @@ function buildDialog() {
   };
   dialog.addEventListener("cancel",event => { if (busy) event.preventDefault(); });
   ui("close").onclick = () => { if (!busy) dialog.close(); };
-  dialog.addEventListener("close",() => { dispose();dialog.remove();if (activeDialog === dialog) activeDialog = null; },{once:true});
+  dialog.addEventListener("close",() => { dispose();if (!window.ArchivesAppearance?.retire(dialog)) dialog.remove();if (activeDialog === dialog) activeDialog = null; },{once:true});
   return {dialog,ui,setBusy,setDispose:fn => { dispose = fn; },setBusyHook:fn => { busyHook = fn; }};
 }
 async function manager(view,context,back) {
@@ -246,7 +247,7 @@ function openFiles() {
 function install() {
   const state = window.DuneApp?.getState?.();
   if (!state || state.playerMode || state.strictReadOnly) return;
-  const reveal = document.querySelector('#active-editor-modal button[onclick="DuneApp.toggleSelectedReveal()"]');
+  const reveal = document.querySelector('#pin-block-cell-actions button[onclick="DuneApp.toggleSelectedReveal()"]');
   if (reveal && !$("archives-v45-transfer-button")) {
     const button = document.createElement("button");button.id = "archives-v45-transfer-button";button.type = "button";
     button.className = "btn";button.textContent = "Envoyer vers Owlbear…";
@@ -265,7 +266,7 @@ async function sendSelected() {
   catch (error) { notify(error.message); }
 }
 window.ArchivesCellTransfer = {
-  sendSelected,openFiles,showManager,
+  sendSelected,openFiles,showManager,request,
   sendLibraryFile:({id,file,title}) => openSource({key:"documents:" + id,file,title,kind:"DOCUMENT"}),
   sendCell:(node,boardId) => openSource(cellSource(node,boardId)),
   sendImage:item => openSource({key:"library:" + item.id,title:item.name,data:item.data,

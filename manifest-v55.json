@@ -1,13 +1,13 @@
 {
   "name": "Archives Imaginaire",
-  "version": "4.18.0",
+  "version": "4.19.0",
   "manifest_version": 1,
   "description": "Archives privées du MJ, vue joueur et bibliothèque de documents, sons et vidéos avec révélation choisie.",
-  "background_url": "https://toniogervais.github.io/archives-owlbear/background-v55.html?v=4180",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/background-v55.html?v=4190",
   "action": {
     "title": "Les Archives",
     "icon": "https://toniogervais.github.io/archives-owlbear/icon-archives-v43.svg",
-    "popover": "https://toniogervais.github.io/archives-owlbear/index-v55.html?v=4180",
+    "popover": "https://toniogervais.github.io/archives-owlbear/index-v55.html?v=4190",
     "width": 360,
     "height": 240
   }

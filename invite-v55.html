@@ -10,7 +10,7 @@ button:focus-visible{outline:3px solid white;outline-offset:4px}#error{display:n
 <h1 id="title">Le maître de jeu change d’espace</h1><button id="accept" type="button" disabled>Rejoindre</button><p id="error" role="alert"></p>
 </div></main><script type="module">
 import { O as OBR } from "./assets/index-BfJgTiPE.js";
-import { archivesUrl } from "./src/v57/room.mjs?v=4180";
+import { archivesUrl,localRoom } from "./src/v57/room.mjs?v=4190";
 const [target, source]=location.hash.slice(1).split("&");
 const archives=target==="ARCHIVES";
 const native=source==="room=1";
@@ -18,8 +18,11 @@ const title=document.getElementById("title"),button=document.getElementById("acc
 title.textContent=archives?"Le maître de jeu vous invite dans les Archives":"Le maître de jeu vous invite sur la carte";
 button.textContent=archives?"Afficher les Archives":"Afficher la carte Owlbear";
 await new Promise(resolve=>OBR.onReady(resolve));
+const presence=native?await localRoom(OBR):null;
+const presenceMessage=type=>presence?.channel.postMessage({type,target:archives?'ARCHIVES':'OWLBEAR'});
+window.addEventListener('pagehide',()=>presence?.channel.close(),{once:true});
 const invite="fr.archives-imaginaire.bridge/screen-invite-v55";
-const dismiss=()=>void OBR.modal.close(invite).catch(console.warn);
+const dismiss=()=>{presenceMessage('screen-invite-dismissed');void OBR.modal.close(invite).catch(console.warn);};
 document.getElementById("veil").addEventListener("click",event=>{if(event.target===event.currentTarget)dismiss();});
 document.addEventListener("keydown",event=>{if(event.key==="Escape")dismiss();});
 button.onclick=async()=>{
@@ -27,6 +30,7 @@ button.onclick=async()=>{
  try{
   if(archives)await OBR.modal.open({id:"fr.archives-imaginaire.bridge/archives-viewer",url:archivesUrl(native),fullScreen:true,hideBackdrop:true,hidePaper:true});
   else await OBR.modal.close("fr.archives-imaginaire.bridge/archives-viewer");
+  presenceMessage('screen-invite-accepted');
   await OBR.modal.close(invite);
  }catch(e){error.textContent="Changement impossible. Vérifie la connexion, puis réessaie.";error.style.display="block";button.disabled=false;console.error(e);}
 };

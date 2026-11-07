@@ -9,9 +9,13 @@
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden}
 body{display:flex;flex-direction:column}
-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 13px;background:#19131e;border-bottom:1px solid #b89a55}
-strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-button{min-height:40px;background:#342716;border:1px solid #c1a15a;border-radius:7px;color:#ffe0a1;padding:8px 12px;font-weight:700;cursor:pointer}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 15px;background:linear-gradient(105deg,#201a28,#15121d);border-bottom:1px solid #d9ba7a2b;box-shadow:0 3px 15px #0002}
+strong{display:flex;align-items:center;gap:10px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px;font-weight:600;letter-spacing:.005em}
+strong img{width:26px;height:26px;flex:none}
+button{min-height:38px;background:#d2ab6410;border:1px solid #d9ba7a40;border-radius:10px;color:#ecd4a7;padding:8px 13px;font-weight:600;cursor:pointer;transition:background-color 150ms,border-color 150ms}
+#return{display:flex;align-items:center;gap:8px;flex:none}#return svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+@media(hover:hover){button:hover{background:#d2ab641c;border-color:#d9ba7a75}}
+@media(prefers-reduced-motion:reduce){button{transition:none}}
 button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid #f5d98c;outline-offset:3px}
 button:disabled{opacity:.65}
 iframe{width:100%;flex:1;min-height:0;border:0}
@@ -23,10 +27,10 @@ form{display:grid;justify-items:center;gap:8px;padding-top:10px}
 input{width:min(460px,100%);color:inherit;background:#130f19;border:1px solid #a98d50;border-radius:6px;padding:9px}
 @media(max-width:550px){strong,button{font-size:12px}}
 </style>
-<script type="module" src="./src/v56/host.mjs?v=4180"></script>
+<script type="module" src="./src/v56/host.mjs?v=4190"></script>
 </head>
 <body>
-<header><strong>✦ Les Archives de l’Imaginaire</strong><button id="return" type="button">← Retour à Owlbear</button></header>
+<header><strong><img src="./icon-archives-v43.svg" alt="" aria-hidden="true">Les Archives de l’Imaginaire</strong><button id="return" type="button" aria-label="Retour à Owlbear"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 5-7 7 7 7M3 12h18"/></svg><span>Retour à Owlbear</span></button></header>
 <div id="message" role="status">Ouverture des Archives…</div>
 <details id="manual" hidden>
 <summary id="manual-label">Connexion de secours</summary>

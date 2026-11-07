@@ -1,0 +1,131 @@
+import {button,element,isGM,nativeEditor,notice,request,requireGM,sheet} from './ui.mjs';
+import {packet,editEvent} from '../v56/link.mjs';
+let players = [];
+const paths = {
+  batch:'<rect x="3" y="4" width="13" height="13" rx="2"/><path d="M8 20h11a2 2 0 0 0 2-2V9M7 13l3-3 3 3M7 8h.01"/>',
+  roster:'<circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M17 5a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 4v2"/>',
+  dossier:'<path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M8 12h8M8 16h5"/>'
+};
+function command(id,label,path,handler) {
+  const control = button('',handler,'studio-command');control.id = id;control.title = label;control.setAttribute('aria-label',label);
+  control.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">'+path+'</svg>';return control;
+}
+async function openBackup() {
+  try { requireGM();const module = await import('./backup-ui.mjs');module.openBackup(); }
+  catch (error) { notice(error.message); }
+}
+async function openBatch() {
+  try { requireGM();const module = await import('./batch.mjs');await module.openBatch(); }
+  catch (error) { notice(error.message); }
+}
+function stateLabel(player) {
+  if (!player.connected) return ['OFFLINE','Déconnecté'];
+  if (player.pending) return ['PENDING','Invitation en attente'];
+  return player.screen === 'ARCHIVES' ? ['ARCHIVES','Archives'] : player.screen === 'OWLBEAR' ? ['OWLBEAR','Owlbear'] : ['UNKNOWN','Connexion…'];
+}
+function openRoster() {
+  requireGM();const view = sheet('archives-room-roster','Joueurs et écrans','Salle Owlbear');
+  if (nativeEditor()) window.parent.postMessage(packet('owl-roster-request'),location.origin);
+  const hint = element('p','Chaque joueur garde la main sur le bouton de bascule. L’indicateur confirme l’écran affiché et signale une invitation en attente.','studio-hint'),list = element('div',null,'studio-grid');
+  view.content.append(hint,list);
+  function render() {
+    list.replaceChildren();
+    if (!players.length) list.append(element('p','Aucun joueur présent pour le moment.','studio-hint'));
+    for (const player of players) {
+      const row = element('article',null,'studio-card');row.dataset.player = player.id;
+      const [state,label] = stateLabel(player),chip = element('span',label,'studio-chip');chip.dataset.state = state;
+      row.append(element('h3',player.name),chip);list.append(row);
+    }
+    view.status.textContent = players.filter(player => player.connected).length+' joueur(s) connecté(s).';
+  }
+  render();window.addEventListener('archives:roster',render);view.cleanup(() => window.removeEventListener('archives:roster',render));
+}
+function publicNodes() {
+  // Use the same sender-side projection as the player connection, even for the GM preview.
+  const projected = window.ArchivesRelay?.publicView?.();
+  return (projected?.boards || []).flatMap(board => board.nodes.filter(node => node.revealed === true).map(node => ({
+    id:'cell:'+board.id+':'+node.id,title:node.title || 'Sans titre',category:node.category || '',description:node.desc || '',
+    image:node.bgImg || '',clues:(node.clues || []).filter(clue => clue.revealed === true).map(clue => clue.text || '')
+  })));
+}
+function detail(record) {
+  const view = sheet('archives-dossier-detail',record.title,'Dossier des joueurs');
+  if (record.image) { const image = element('img');image.src = record.image;image.alt = record.title;image.referrerPolicy = 'no-referrer';image.style.cssText = 'display:block;width:100%;max-height:60dvh;object-fit:contain;border-radius:12px;background:#09080e';view.content.append(image); }
+  if (record.description) view.content.append(element('p',record.description));
+  for (const clue of record.clues || []) view.content.append(element('p','✦ '+clue,'studio-card'));
+}
+function openDossier() {
+  const view = sheet('archives-player-dossier','Dossier des joueurs','Éléments révélés');
+  const tools = element('div',null,'studio-tools'),search = element('input'),grid = element('div',null,'studio-grid');
+  search.type = 'search';search.placeholder = 'Rechercher un personnage, un document ou un indice…';search.setAttribute('aria-label','Rechercher dans le dossier des joueurs');
+  const filter = element('select');filter.setAttribute('aria-label','Filtrer le dossier');
+  for (const [value,label] of [['','Tout'],['personnage','Personnages'],['document','Documents Owlbear'],['indices','Avec des indices']]) { const option = element('option',label);option.value = value;filter.append(option); }
+  tools.append(search,filter);view.content.append(element('p','Retrouve les informations révélées de la campagne et les documents actuellement partagés dans cette scène Owlbear.','studio-hint'),tools,grid);
+  let documents = [],documentSignature = '',closed = false,fetching = false;
+  function render() {
+    if (closed) return;
+    const query = search.value.toLocaleLowerCase('fr'),kind = filter.value;
+    const records = [...publicNodes(),...documents],filtered = records.filter(record => (!kind ||
+      kind === 'indices' && record.clues?.length || kind === 'document' && record.category === 'document' || kind === 'personnage' && record.category === 'personnage') &&
+      (record.title+' '+(record.description || '')+' '+(record.clues || []).join(' ')).toLocaleLowerCase('fr').includes(query));
+    grid.replaceChildren();
+    for (const record of filtered) {
+      const card = element('article',null,'studio-card');card.dataset.dossierId = record.id;
+      if (record.image) { const image = element('img');image.src = record.image;image.alt = record.title;image.loading = 'lazy';image.referrerPolicy = 'no-referrer';card.append(image); }
+      card.append(element('h3',record.title));
+      if (record.description) card.append(element('p',record.description.slice(0,170)+(record.description.length > 170 ? '…' : ''),'studio-hint'));
+      if (record.clues?.length) card.append(element('p',record.clues.length+' indice(s) révélé(s)','studio-hint'));
+      card.append(button('Consulter',() => detail(record)));grid.append(card);
+    }
+    if (!filtered.length) grid.append(element('p',query ? 'Aucun élément révélé pour cette recherche.' : 'Le MJ n’a encore partagé aucun élément correspondant.','studio-hint'));
+    view.status.textContent = filtered.length+' élément(s) disponible(s).';
+  }
+  async function refreshDocuments() {
+    if (closed || fetching || window.parent === window) return;
+    fetching = true;
+    try {
+      const result = await request('public');if (closed) return;
+      const next = (result.items || []).map(item => ({id:'owl:'+item.id,title:item.title,image:item.image.url,description:'',clues:[],category:item.kind === 'TOKEN' ? 'personnage' : 'document'}));
+      const signature = JSON.stringify(next);
+      if (signature !== documentSignature) { documentSignature = signature;documents = next;render(); }
+    } catch (error) { if (!closed && !documents.length) view.status.textContent = error.message; }
+    finally { fetching = false; }
+  }
+  search.oninput = filter.onchange = render;render();void refreshDocuments();
+  const timer = setInterval(() => { void refreshDocuments(); },4000);
+  window.addEventListener('archives:public-view',render);window.addEventListener(editEvent,render);
+  view.cleanup(() => { closed = true;clearInterval(timer);window.removeEventListener('archives:public-view',render);window.removeEventListener(editEvent,render); });
+}
+async function focusSelected() {
+  try {
+    requireGM();const state = window.DuneApp.getState(),node = state.nodes.find(node => node.id === state.selectedId);
+    if (!node) throw Error('Sélectionne une cellule pour retrouver son élément Owlbear.');
+    await window.ArchivesCellTransfer.request({action:'focus',sourceKey:'cell:'+state.activeBoardId+':'+node.id});
+    window.parent.postMessage(packet('go-map'),location.origin);
+  } catch (error) { notice(error.message); }
+}
+window.ArchivesWorkbench = {openBackup,openBatch,openDossier,openRoster,focusSelected};
+window.addEventListener('archives:roster',event => {
+  players = (event.detail || []).map(player => ({id:player.id,name:player.name,connected:!!player.connected,screen:player.screen,pending:!!player.pending}));
+  const roster = document.getElementById('archives-roster-open');
+  if (roster) { const count = players.filter(player => player.connected).length;roster.setAttribute('aria-label','Joueurs et écrans : '+count+' connecté(s)');roster.dataset.studioLabel = 'Joueurs et écrans : '+count+' connecté(s)'; }
+});
+function install() {
+  const group = document.querySelector('#top-hud .hud-row>.top-group');if (!group) return;
+  const tabs = document.getElementById('tabs-bar'),add = control => group.insertBefore(control,tabs);
+  add(command('archives-dossier-open','Dossier des joueurs',paths.dossier,openDossier));
+  if (isGM() && nativeEditor()) {
+    const caption = document.getElementById('archives-sync-diag-caption');if (caption) { caption.textContent = 'Salle Owlbear';caption.parentElement.title = 'Diagnostic avancé de la salle'; }
+    add(command('archives-batch-open','Préparer plusieurs transferts',paths.batch,() => { void openBatch(); }));
+    add(command('archives-roster-open','Joueurs et écrans',paths.roster,openRoster));
+    const save = document.getElementById('canvas-save-icon');if (save) { save.onclick = () => { void openBackup(); };save.title = 'Sauvegarder toute la campagne';save.setAttribute('aria-label',save.title); }
+    const backups = document.querySelector('#owl-settings-backups .owl-settings-body');
+    if (backups) backups.prepend(button('Campagne complète : sauvegarder ou restaurer…',() => { void openBackup(); },'btn btn-gold'));
+    const controls = document.querySelector('#pin-block-cell-actions button[onclick="DuneApp.toggleSelectedReveal()"]')?.parentElement;
+    if (controls) { const focus = button('Voir dans Owlbear',() => { void focusSelected(); },'btn');focus.id = 'archives-focus-selected';controls.append(focus); }
+    const context = document.getElementById('ctx-send-to-owlbear');
+    if (context) { const focus = button('Voir dans Owlbear',() => { window.DuneApp.closeContextMenus();void focusSelected(); });focus.id = 'archives-focus-owlbear';context.insertAdjacentElement('afterend',focus); }
+  }
+}
+install();
+window.addEventListener('archives:campaign-restored',() => { Promise.resolve(window.ArchivesImageLibrary?.refresh?.()).catch(() => {}); });

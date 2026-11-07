@@ -1,5 +1,6 @@
 import { liveRoomKey, validSession, viewerId } from "../v56/link.mjs";
-import { inviteId, localRoom, roomChannel, roomMembers, screenUrl, snapshotChunks, validSnapshot } from "./room.mjs?v=4180";
+import { inviteId, localRoom, roomChannel, roomMembers, screenUrl, snapshotChunks, validSnapshot } from "./room.mjs?v=4190";
+import {createPresence} from '../v63/presence.mjs?v=4190';
 
 export async function installRoomPlay(OBR) {
   const {channel, connectionId:initialConnection} = await localRoom(OBR);
@@ -8,6 +9,12 @@ export async function installRoomPlay(OBR) {
   let role = await OBR.player.getRole();
   let screen, latest, serial = 0, timer, sending = false, sendAgain = false;
   let playerView = "", lastInvite = "";
+  let pendingTarget = '',lastPresenceRequest = 0;
+  const presence = createPresence();
+  const emitPresence = () => { if (role === 'GM') channel.postMessage({type:'player-status',players:presence.list()}); };
+  const announcePresence = () => {
+    if (role === 'PLAYER') void send({type:'player-screen-state',id:newId(),screen:playerView ? 'ARCHIVES' : 'OWLBEAR',pending:!!pendingTarget}).catch(() => {});
+  };
   const readers = new Set();
   const send = data => OBR.broadcast.sendMessage(roomChannel, data);
   const newId = () => crypto.randomUUID();
@@ -23,9 +30,11 @@ export async function installRoomPlay(OBR) {
     lastInvite = data.id;
     await closeInvite();
     if (lastInvite !== data.id) return;
-    if ((data.target === "ARCHIVES") === Boolean(playerView)) return;
+    if ((data.target === "ARCHIVES") === Boolean(playerView)) { pendingTarget = '';announcePresence();return; }
+    pendingTarget = data.target;
     await OBR.modal.open({id:inviteId, url:screenUrl(data.target),
       fullScreen:true, hideBackdrop:true, hidePaper:true});
+    announcePresence();
   }
 
   function queueSnapshot() {
@@ -67,7 +76,10 @@ export async function installRoomPlay(OBR) {
   channel.onmessage = event => {
     const data = event.data;
     if (role === "GM") {
-      if (data?.type === "published" && validSnapshot(data.payload)) {
+      if (data?.type === 'roster-request') {
+        emitPresence();
+        if (Date.now() - lastPresenceRequest > 1000) { lastPresenceRequest = Date.now();void send({type:'player-state-request',id:newId()}).catch(() => {}); }
+      } else if (data?.type === "published" && validSnapshot(data.payload)) {
         latest = {payload:data.payload, revision:newId()};
         queueSnapshot();
       } else if (data?.type === "gm-screen" && ["ARCHIVES","OWLBEAR"].includes(data.target)) {
@@ -75,17 +87,23 @@ export async function installRoomPlay(OBR) {
       }
     } else if (data?.type === "viewer-open" && validSession(data.id)) {
       playerView = data.id;
+      pendingTarget = '';announcePresence();
       void closeInvite();
-    } else if (data?.type === "viewer-closed" && data.id === playerView) playerView = "";
+    } else if (data?.type === "viewer-closed" && data.id === playerView) { playerView = '';announcePresence(); }
+    else if (data?.type === 'screen-invite-accepted' && ['ARCHIVES','OWLBEAR'].includes(data.target)) {
+      pendingTarget = '';if (data.target === 'OWLBEAR') playerView = '';announcePresence();
+    } else if (data?.type === 'screen-invite-dismissed') { pendingTarget = '';announcePresence(); }
   };
 
   async function receive(event) {
     const data = event.data;
     if (!data || !validSession(data.id)) return;
     if (role === "GM") {
-      if (!["screen-request","snapshot-request","snapshot-stop"].includes(data.type) ||
+      if (!["screen-request","snapshot-request","snapshot-stop","player-screen-state"].includes(data.type) ||
           !await isMember(event.connectionId, "PLAYER") || role !== "GM") return;
-      if (data.type === "screen-request") {
+      if (data.type === 'player-screen-state') {
+        if (presence.report(event.connectionId,data)) emitPresence();
+      } else if (data.type === "screen-request") {
         if (screen?.target === "ARCHIVES") await send({...screen, to:event.connectionId});
       } else if (data.type === "snapshot-stop") readers.delete(event.connectionId);
       else {
@@ -93,12 +111,15 @@ export async function installRoomPlay(OBR) {
         if (!latest) await send({type:"waiting", id:newId(), to:event.connectionId});
         else if (data.have !== latest.revision) queueSnapshot();
       }
-    } else if (data.type === "screen" && ["ARCHIVES","OWLBEAR"].includes(data.target) &&
-        await isMember(event.connectionId, "GM") && role === "PLAYER") await applyScreen(data);
+    } else if (await isMember(event.connectionId,'GM') && role === 'PLAYER') {
+      if (data.type === 'player-state-request') announcePresence();
+      else if (data.type === 'screen' && ['ARCHIVES','OWLBEAR'].includes(data.target)) await applyScreen(data);
+    }
   }
 
   OBR.broadcast.onMessage(roomChannel, event => { void receive(event).catch(console.warn); });
   OBR.party.onChange(players => {
+    presence.party(players);emitPresence();
     const present = new Set(players.filter(player => player.role === "PLAYER").map(player => player.connectionId));
     for (const id of readers) if (!present.has(id)) readers.delete(id);
   });
@@ -110,10 +131,14 @@ export async function installRoomPlay(OBR) {
     latest = screen = null;
     readers.clear();
     playerView = lastInvite = "";
+    pendingTarget = '';announcePresence();
     clearTimeout(timer);
     requestScreen();
   });
   channel.postMessage({type:"room-ready"});
+  presence.party(await OBR.party.getPlayers());emitPresence();announcePresence();
+  const presenceTimer = setInterval(announcePresence,15000);
+  window.addEventListener('pagehide',() => clearInterval(presenceTimer),{once:true});
   requestScreen();
   if (role === "PLAYER") setTimeout(requestScreen, 2500);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) requestScreen(); });

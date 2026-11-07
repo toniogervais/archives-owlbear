@@ -1,7 +1,7 @@
 import OBR, { buildImage, buildImageUpload } from "../../assets/owlbear-transfer-sdk-v55.mjs";
-import { localRoom } from "../v57/room.mjs?v=4180";
+import { localRoom } from "../v57/room.mjs?v=4190";
 import { validSession } from "../v56/link.mjs";
-import { artworkBlob,assetKey,blobDigest,privateArtworkStore,sceneKey,validArtwork } from "./model.mjs?v=4180";
+import { artworkBlob,assetKey,blobDigest,privateArtworkStore,sceneKey,validArtwork } from "./model.mjs?v=4190";
 import { normalizeCrop } from "../v61/token-crop.mjs";
 
 // Only the GM talks to this local channel. Unrevealed artwork never enters a
@@ -129,39 +129,85 @@ export async function installArtworkTransfers() {
     await store.put(record);
     await refresh();
   }
-  async function nativeImage(command,progress) {
-    const blob = artworkBlob(command.art),hash = await blobDigest(blob);
-    const cached = command.forceImport === true ? null : await store.asset(hash);
-    if (cached && cached.width === command.art.width && cached.height === command.art.height &&
-        ["image/png","image/jpeg","image/webp"].includes(cached.mime) && typeof cached.url === "string" && cached.url.startsWith("https://")) {
-      progress("Cadrage déjà importé : placement direct dans Owlbear…");
-      return {image:{url:cached.url,mime:cached.mime,width:cached.width,height:cached.height},reused:true};
+  const safeImage = (image,art) => image && image.width === art.width && image.height === art.height &&
+    ['image/png','image/jpeg','image/webp'].includes(image.mime) && typeof image.url === 'string' && image.url.startsWith('https://');
+  const imageFields = image => ({url:image.url,mime:image.mime,width:image.width,height:image.height});
+  const validTransfer = command => command && ['TOKEN','DOCUMENT'].includes(command.kind) &&
+    typeof command.sourceKey === 'string' && !!command.sourceKey && command.sourceKey.length <= 300 &&
+    typeof command.title === 'string' && !!command.title.trim() && command.title.length <= 120 && validArtwork(command.art);
+  async function nativeImages(batch,progress) {
+    const entries = [],missing = new Map();
+    for (const command of batch) {
+      const blob = artworkBlob(command.art),hash = await blobDigest(blob),cached = command.forceImport === true ? null : await store.asset(hash);
+      const entry = {command,hash,blob,name:'Archives · '+hash.slice(0,12),reused:safeImage(cached,command.art)};
+      if (entry.reused) entry.image = imageFields(cached);else missing.set(hash,entry);
+      entries.push(entry);
     }
-    // Neutral asset names avoid leaking an earlier private title when reusing
-    // the same selected pixels for another character or scene.
-    const name = "Archives · " + hash.slice(0,12);
-    const upload = buildImageUpload(new File([blob],name + (command.art.mime === "image/webp" ? ".webp" : command.art.mime === "image/jpeg" ? ".jpg" : ".png"),{type:command.art.mime}))
-      .name(name).grid(grid(command.kind,command.art)).visible(false).build();
-    const type = command.kind === "TOKEN" ? "CHARACTER" : "PROP";
-    progress("Première importation de ce cadrage : choisis un dossier dans Owlbear.");
-    await OBR.assets.uploadImages([upload],type);
-    await requireGM(command.scene);
-    progress("Sélectionne l’image « " + name + " » dans Owlbear pour terminer. Ce cadrage sera ensuite réutilisable sans réimportation.");
-    const selected = await OBR.assets.downloadImages(false,name,type);
-    await requireGM(command.scene);
-    if (!selected?.length) throw Error("Transfert annulé : aucune image sélectionnée dans Owlbear.");
-    const asset = selected[0],image = asset.image;
-    if (asset.name !== name || !image || typeof image.url !== "string" || !image.url.startsWith("https://") ||
-        !["image/png","image/jpeg","image/webp"].includes(image.mime) ||
-        image.width !== command.art.width || image.height !== command.art.height)
-      throw Error("Sélectionne l’image « " + name + " » qui vient d’être ajoutée dans Owlbear, puis réessaie.");
-    const safe = {url:image.url,mime:image.mime,width:image.width,height:image.height};
-    await store.putAsset(hash,safe);
-    return {image:safe,reused:false};
+    if (missing.size) {
+      const uploads = Array.from(missing.values(),entry => buildImageUpload(new File([entry.blob],entry.name+
+        (entry.command.art.mime === 'image/webp' ? '.webp' : entry.command.art.mime === 'image/jpeg' ? '.jpg' : '.png'),{type:entry.command.art.mime}))
+        .name(entry.name).grid(grid(entry.command.kind,entry.command.art)).visible(false).build());
+      const allTokens = batch.every(command => command.kind === 'TOKEN'),allDocuments = batch.every(command => command.kind === 'DOCUMENT');
+      const type = allTokens ? 'CHARACTER' : allDocuments ? 'PROP' : undefined;
+      progress(missing.size === 1 ? 'Première importation de ce cadrage : choisis un dossier dans Owlbear.' : 'Choisis un dossier Owlbear pour les '+missing.size+' nouveaux rendus.');
+      await OBR.assets.uploadImages(uploads,type);await requireGM(batch[0].scene);
+      const search = missing.size === 1 ? missing.values().next().value.name : 'Archives ·';
+      progress(missing.size === 1 ? 'Sélectionne l’image « '+search+' » pour terminer. Ce cadrage sera ensuite réutilisable sans réimportation.' :
+        'Sélectionne les '+missing.size+' images « Archives · … » qui viennent d’être ajoutées, puis valide une seule fois.');
+      const selected = await OBR.assets.downloadImages(missing.size > 1,search,type);await requireGM(batch[0].scene);
+      if (!selected?.length) throw Error('Transfert annulé : aucune image sélectionnée dans Owlbear.');
+      // Validate every selection before placing anything, especially for a revealed batch.
+      for (const entry of missing.values()) {
+        const asset = selected.find(asset => asset.name === entry.name);
+        if (!asset || !safeImage(asset.image,entry.command.art)) throw Error('Sélectionne toutes les images indiquées, dont « '+entry.name+' ». Aucun élément du lot n’a été placé.');
+        entry.image = imageFields(asset.image);
+      }
+      for (const entry of missing.values()) await store.putAsset(entry.hash,entry.image);
+      for (const entry of entries) if (!entry.image) entry.image = missing.get(entry.hash).image;
+    } else progress('Cadrages déjà importés : placement direct dans Owlbear…');
+    return entries.map(entry => ({image:entry.image,reused:!!entry.reused}));
+  }
+  async function place(command,{image,reused},currentScene,position) {
+    await requireGM(currentScene);await refresh();
+    const previous = records.find(entry => entry.sourceKey === command.sourceKey && entry.kind === command.kind);
+    const record = {...previous,id:previous?.id || command.art.id,version:command.art.version,scene:currentScene,
+      sourceKey:command.sourceKey,title:command.title.trim(),kind:command.kind,image,grid:grid(command.kind,image),
+      position:previous?.position || position || await centre(),scale:previous?.scale || {x:1,y:1},rotation:previous?.rotation || 0,locked:previous?.locked || false,revealed:false};
+    await store.put(record);
+    const framing = command.framing;
+    if (framing && typeof framing.identity === 'string' && /^[a-f0-9]{64}$/.test(framing.identity))
+      await store.putPreset(command.sourceKey,{identity:framing.identity,kind:command.kind,page:Number.isInteger(framing.page) && framing.page > 0 && framing.page <= 10000 ? framing.page : 1,crop:normalizeCrop(framing.crop)});
+    await visibility(record,command.reveal === true);
+    return {title:record.title,revealed:record.revealed,assetId:record.id,reused};
   }
   async function execute(command,progress = () => {}) {
     const currentScene = await requireGM(command.scene);
-    if (command.action === "context") return {scene:currentScene,preset:typeof command.sourceKey === "string" && command.sourceKey.length <= 300 ? await store.preset(command.sourceKey) : null};
+    if (command.action === 'context') {
+      const keys = Array.isArray(command.sourceKeys) ? command.sourceKeys.filter(key => typeof key === 'string' && key.length <= 300).slice(0,20) : [];
+      const presets = [];for (const source of keys) presets.push({source,value:await store.preset(source)});
+      return {scene:currentScene,preset:typeof command.sourceKey === 'string' && command.sourceKey.length <= 300 ? await store.preset(command.sourceKey) : null,presets};
+    }
+    if (command.action === 'focus') {
+      await refresh();const record = records.find(entry => entry.sourceKey === command.sourceKey);
+      if (!record) throw Error('Transfère d’abord cette cellule dans la scène Owlbear ouverte.');
+      const bounds = await (shared(record.id) ? OBR.scene.items : OBR.scene.local).getItemBounds([record.id]);
+      await requireGM(currentScene);await OBR.viewport.animateToBounds(bounds);return {focused:true};
+    }
+    if (command.action === 'batch') {
+      const batch = command.commands;
+      if (!Array.isArray(batch) || !batch.length || batch.length > 20 || !batch.every(validTransfer) ||
+          new Set(batch.map(entry => entry.sourceKey+':'+entry.kind)).size !== batch.length ||
+          batch.reduce((total,entry) => total+entry.art.data.length,0) > 40 * 1024 * 1024) throw Error('Prépare un lot de 1 à 20 éléments, limité à 30 Mo de rendus.');
+      const scoped = batch.map(entry => ({...entry,scene:currentScene,reveal:command.reveal === true}));
+      const images = await nativeImages(scoped,progress),origin = await centre(),results = [];
+      try {
+        for (let i = 0;i < scoped.length;i++) {
+          progress('Placement '+(i+1)+' / '+scoped.length+'…');
+          results.push(await place(scoped[i],images[i],currentScene,{x:origin.x+(i%4)*180,y:origin.y+Math.floor(i/4)*180}));
+        }
+      } catch (error) { throw Error(results.length+' élément(s) placé(s) avant l’interruption. '+error.message); }
+      return {results,count:results.length,revealed:command.reveal === true};
+    }
     if (command.action === "list") {
       await refresh();
       return {scene:currentScene,records:records.map(record => ({id:record.id,title:record.title,
@@ -179,28 +225,9 @@ export async function installArtworkTransfers() {
       }
       return {title:record.title,revealed:record.revealed};
     }
-    if (command.action !== "transfer" || !["TOKEN","DOCUMENT"].includes(command.kind) ||
-        typeof command.sourceKey !== "string" || !command.sourceKey || command.sourceKey.length > 300 ||
-        typeof command.title !== "string" || !command.title.trim() || command.title.length > 120 ||
-        !validArtwork(command.art)) throw Error("Le transfert n’est pas valide.");
-    const {image,reused} = await nativeImage(command,progress);
-    await refresh();
-    const previous = records.find(entry => entry.sourceKey === command.sourceKey && entry.kind === command.kind);
-    const position = previous?.position || await centre();
-    const record = {...previous,id:previous?.id || command.art.id,version:command.art.version,scene:currentScene,
-      sourceKey:command.sourceKey,title:command.title.trim(),kind:command.kind,image,grid:grid(command.kind,image),
-      position,scale:previous?.scale || {x:1,y:1},rotation:previous?.rotation || 0,locked:previous?.locked || false,
-      revealed:false};
-    // Private, durable record first. Sharing is a separate, explicit operation.
-    await store.put(record);
-    const framing = command.framing;
-    if (framing && typeof framing.identity === "string" && /^[a-f0-9]{64}$/.test(framing.identity)) {
-      await store.putPreset(command.sourceKey,{identity:framing.identity,kind:command.kind,
-        page:Number.isInteger(framing.page) && framing.page > 0 && framing.page <= 10000 ? framing.page : 1,
-        crop:normalizeCrop(framing.crop)});
-    }
-    await visibility(record,command.reveal === true);
-    return {title:record.title,revealed:record.revealed,assetId:record.id,reused};
+    if (command.action !== 'transfer' || !validTransfer(command)) throw Error('Le transfert n’est pas valide.');
+    const [image] = await nativeImages([{...command,scene:currentScene}],progress);
+    return place(command,image,currentScene);
   }
   channel.addEventListener("message",event => {
     const data = event.data;

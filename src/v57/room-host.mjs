@@ -1,6 +1,8 @@
-import { localRoom, roomChannel, roomMembers, snapshotReader, validSnapshot } from "./room.mjs?v=4180";
+import { localRoom, roomChannel, roomMembers, snapshotReader, validSnapshot } from "./room.mjs?v=4190";
 import { openScenario } from "./storage.mjs";
 import { validSession } from "../v56/link.mjs";
+import {campaignHost} from '../v63/campaign-host.mjs?v=4190';
+import {publicItems} from '../v63/public-items.mjs';
 
 export async function makeEditorHost(OBR, post, canEdit) {
   const {channel} = await localRoom(OBR);
@@ -8,6 +10,21 @@ export async function makeEditorHost(OBR, post, canEdit) {
   let snapshot = await store.load();
   let queue = Promise.resolve();
   let announced = false, closed = false, publicView;
+  function stopPresentation() {
+    return new Promise((resolve,reject) => {
+      const id = crypto.randomUUID();
+      const finish = () => { clearTimeout(timer);channel.removeEventListener('message',receive); };
+      const receive = event => {
+        if (event.data?.type !== 'library-result' || event.data.id !== id) return;
+        finish();
+        if (event.data.safe && !closed && canEdit()) resolve();else reject(Error(event.data.message || 'La présentation ne peut pas être arrêtée.'));
+      };
+      const timer = setTimeout(() => { finish();reject(Error('La bibliothèque ne répond pas. Aucune restauration n’a été faite.')); },8000);
+      channel.addEventListener('message',receive);channel.postMessage({type:'library-command',id,command:{action:'stop'}});
+    });
+  }
+  const campaign = campaignHost({OBR,store,canEdit:() => !closed && canEdit(),snapshot:() => snapshot,
+    replace:value => { snapshot = value; },post,beforeRestore:stopPresentation});
   const transfers = new Set();
   const fileCommands = new Set();
   function roster(players) {
@@ -29,6 +46,9 @@ export async function makeEditorHost(OBR, post, canEdit) {
     if (!announced) { announced = true; showScreen("ARCHIVES"); }
   }
   channel.onmessage = event => {
+    if (!closed && canEdit() && event.data?.type === 'player-status' && Array.isArray(event.data.players)) {
+      post('owl-editor-roster',{players:event.data.players});
+    }
     if (!closed && canEdit() && event.data?.type === "artwork-progress" && transfers.has(event.data.id)) {
       post("owl-transfer-progress",{id:event.data.id,message:String(event.data.message || "").slice(0,400)});
     }
@@ -48,7 +68,14 @@ export async function makeEditorHost(OBR, post, canEdit) {
   return {
     receive(data) {
       if (!canEdit() || closed) return;
-      if (data.type === "owl-file-command" && validSession(data.id) && fileCommands.size < 8) {
+      if (data.type === 'owl-roster-request') channel.postMessage({type:'roster-request'});
+      else if (data.type === 'owl-campaign-command' && validSession(data.id)) {
+        queue = queue.then(() => campaign.receive(data)).catch(console.warn);
+      }
+      else if (data.type === 'owl-public-items-request' && validSession(data.id)) {
+        void publicItems(OBR).then(items => { if (!closed && canEdit()) post('owl-public-items-result',{id:data.id,safe:true,result:{items}}); }).catch(() => {});
+      }
+      else if (data.type === "owl-file-command" && validSession(data.id) && fileCommands.size < 8) {
         fileCommands.add(data.id);
         channel.postMessage({type:"library-command",id:data.id,command:data.command});
         setTimeout(() => fileCommands.delete(data.id),25000);
@@ -61,6 +88,7 @@ export async function makeEditorHost(OBR, post, canEdit) {
       else if (data.type === "owl-editor-ready") {
         post("owl-editor-init", {snapshot});
         void OBR.party.getPlayers().then(roster).catch(console.warn);
+        channel.postMessage({type:'roster-request'});
       }
       else if (data.type === "owl-editor-published" && snapshot) publish(data.payload);
       else if (data.type === "owl-editor-save" && validSession(data.id) && validSnapshot(data.snapshot)) {
@@ -84,6 +112,7 @@ export async function makeEditorHost(OBR, post, canEdit) {
       closed = true;
       transfers.clear();
       fileCommands.clear();
+      campaign.dispose();
       offParty?.();
       void queue.finally(() => { store.close(); channel.close(); });
     }
@@ -142,6 +171,10 @@ export async function makePlayerHost(OBR, post, canRead) {
   window.addEventListener("focus", request);
   return {
     receive(data) {
+      if (data.type === 'owl-public-items-request' && validSession(data.id) && !disposed && canRead()) {
+        void publicItems(OBR).then(items => { if (!disposed && canRead()) post('owl-public-items-result',{id:data.id,safe:true,result:{items}}); }).catch(() => {});
+        return;
+      }
       if (data.type === "owl-player-ready" && !ready) {
         ready = true;
         interval = setInterval(request, 5000);

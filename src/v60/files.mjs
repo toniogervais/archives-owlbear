@@ -88,7 +88,7 @@ export async function openFileLibrary(room,owner) {
       request.result.createObjectStore("entries").createIndex("scope","scope");
       request.result.createObjectStore("files");
     };
-    request.onsuccess = () => resolve(request.result);request.onerror = () => reject(request.error);
+    request.onsuccess = () => { request.result.onversionchange = () => request.result.close();resolve(request.result); };request.onerror = () => reject(request.error);
   });
   const key = id => [room,owner,id],scope = [room,owner];
   function transaction(names,mode,fn) {
@@ -108,6 +108,10 @@ export async function openFileLibrary(room,owner) {
       return get("entries").put({...entry,scope},key(entry.id));
     }),
     remove:id => transaction(["entries","files"],"readwrite",get => { get("files").delete(key(id));return get("entries").delete(key(id)); }),
+    restore:(records,replace = false) => transaction(['entries','files'],'readwrite',get => {
+      if (replace) for (const name of ['entries','files']) get(name).delete(IDBKeyRange.bound([room,owner],[room,owner,[]]));
+      for (const {entry,blob} of records) { get('files').put(blob,key(entry.id));get('entries').put({...entry,scope},key(entry.id)); }
+    }),
     close:() => db.close()
   };
 }

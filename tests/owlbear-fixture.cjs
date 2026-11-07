@@ -13,7 +13,7 @@ function fixture({sceneReady=false,inviteReadyDelay=0}={}) {
  const name=params.get("joueur")||"MJ",connectionId="fixture-"+name;
  const player={role,name,connectionId};
  const ref=btoa(location.origin+" fixture-single-room"),listeners=new Map();
- let localItems=[];const uploads=[],pickers={upload:0,download:0};let cancelPick=false;
+ let localItems=[];const uploads=[],focus=[],pickers={upload:0,download:0};let cancelPick=false;
  function post(frame,id,data){frame?.contentWindow?.postMessage({id,data},archives)}
  function allPost(id,data){for(const frame of document.querySelectorAll("iframe"))post(frame,id,data)}
  function modalFrame(id){return document.getElementById(id===viewerId?"viewer":id===inviteId?"invite":id)}
@@ -37,7 +37,7 @@ function fixture({sceneReady=false,inviteReadyDelay=0}={}) {
   changeRole(value){role=value;player.role=value;allPost("OBR_PLAYER_EVENT_CHANGE",{player});fixtureHub("role",value)},
   moveLocal(id,position){localItems=localItems.map(item=>item.id===id?{...item,position}:item);allPost("OBR_SCENE_LOCAL_EVENT_CHANGE",{items:localItems})},
   injectLocal(item){localItems.push(item);allPost("OBR_SCENE_LOCAL_EVENT_CHANGE",{items:localItems})},
-  local:()=>localItems,uploads:()=>uploads,pickers:()=>pickers,cancelPick:()=>{cancelPick=true},
+  local:()=>localItems,uploads:()=>uploads,pickers:()=>pickers,focus:()=>focus,cancelPick:()=>{cancelPick=true},
   scene:()=>fixtureHub("scene"),wire:()=>fixtureHub("wire"),setScene:()=>fixtureHub("newScene"),
   moveShared:(id,position)=>fixtureHub("updateItems",{updates:[{id,position}]})
  };
@@ -63,6 +63,11 @@ function fixture({sceneReady=false,inviteReadyDelay=0}={}) {
    case "OBR_VIEWPORT_GET_WIDTH":reply={width:1000};break;
    case "OBR_VIEWPORT_GET_HEIGHT":reply={height:800};break;
    case "OBR_VIEWPORT_INVERSE_TRANSFORM_POINT":reply={point:data.point};break;
+   case "OBR_SCENE_ITEMS_GET_ITEM_BOUNDS":case "OBR_SCENE_LOCAL_GET_ITEM_BOUNDS":{
+    const values=id.includes('LOCAL')?localItems:(await fixtureHub('scene')).items,item=values.find(item=>data.ids.includes(item.id));
+    const point=item?.position||{x:0,y:0};reply={bounds:{min:{x:point.x-75,y:point.y-75},max:{x:point.x+75,y:point.y+75},center:point,width:150,height:150}};break;
+   }
+   case "OBR_VIEWPORT_ANIMATE_TO_BOUNDS":focus.push(data.bounds);break;
    case "OBR_ASSETS_UPLOAD_IMAGES":
     pickers.upload++;
     for(const upload of data.images){
@@ -72,7 +77,7 @@ function fixture({sceneReady=false,inviteReadyDelay=0}={}) {
      uploads.push({name:upload.name,hash,pixels:[...ctx.getImageData(Math.floor(bitmap.width/2),Math.floor(bitmap.height/2),1,1).data],corner:[...ctx.getImageData(0,0,1,1).data],image:{url:"https://images.owlbear.test/"+crypto.randomUUID()+".png",mime:upload.file.type,width:bitmap.width,height:bitmap.height},typeHint:data.typeHint});bitmap.close()
     }
     break;
-   case "OBR_ASSETS_DOWNLOAD_IMAGES":pickers.download++;reply={images:cancelPick?[]:uploads.filter(x=>x.name===data.defaultSearch).slice(-1)};cancelPick=false;break;
+   case "OBR_ASSETS_DOWNLOAD_IMAGES":pickers.download++;reply={images:cancelPick?[]:data.multiple?Array.from(new Map(uploads.filter(x=>x.name.startsWith(data.defaultSearch)).map(x=>[x.name,x])).values()):uploads.filter(x=>x.name===data.defaultSearch).slice(-1)};cancelPick=false;break;
    case "OBR_PARTY_GET_PLAYERS":reply={players:await fixtureHub("party")};break;
    case "OBR_ROOM_GET_METADATA":reply={metadata:await fixtureHub("metadata")};break;
    case "OBR_ROOM_SET_METADATA":await fixtureHub("setMetadata",data.update);break;
@@ -83,7 +88,7 @@ function fixture({sceneReady=false,inviteReadyDelay=0}={}) {
    case "OBR_MODAL_CLOSE":setTimeout(()=>modalFrame(data.id)?.remove(),0);break;
   }if(nonce)event.source.postMessage({id:id+"_RESPONSE"+nonce,data:reply},archives)})().catch(console.error);
  });
- fixtureHub("join",player).then(()=>addFrame(archives+"/background-v55.html?v=4180","background"));
+ fixtureHub("join",player).then(()=>addFrame(archives+"/background-v55.html?v=4190","background"));
  </script>`;
 }
 function hub(){
@@ -95,6 +100,7 @@ function hub(){
  const notifyMetadata=()=>Promise.allSettled(alive().map(page=>page.evaluate(metadata=>window.fixture.sceneMetadata(metadata),sceneMetadata)));
  return async({page},op,value)=>{
   if(op==="join"){pages.set(page,value);void notify();return}
+  if(op==='leave'){pages.delete(page);void notify();return}
   if(op==="party")return players(page);
   if(op==="role"){pages.get(page).role=value;void notify();return}
   if(op==="metadata")return metadata;
@@ -120,6 +126,7 @@ function hub(){
 }
 async function configure(context,fixtureHub,options={}){
  await context.exposeBinding("fixtureHub",fixtureHub);
+ context.on('page',page=>page.on('close',()=>{void fixtureHub({page},'leave')}));
  await context.route("**/*",route=>{
   const url=new URL(route.request().url());
   if(url.origin===owl)return route.fulfill({contentType:"text/html",body:fixture(options)});

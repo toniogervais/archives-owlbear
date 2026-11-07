@@ -5,10 +5,10 @@ export function installOwlEditor(api) {
   installOwlSettings();
   const notice = createNotice();
   const parent = window.parent;
-  let ready = false, dirty = false, saveTimer, latest, returning = false, finalId;
+  let ready = false, dirty = false, saveTimer, latest, returning = false, finalId,restoring = false;
   const post = (type, fields) => parent.postMessage(packet(type, fields), location.origin);
   function save(final = false) {
-    if (!ready) return;
+    if (!ready || restoring) return;
     clearTimeout(saveTimer);
     saveTimer = null;
     if (final && !dirty) { returning = false; post("return-result", {safe:true}); return; }
@@ -25,10 +25,15 @@ export function installOwlEditor(api) {
       "Nouveau scénario", () => { notice.hide(); window.DuneApp.startNewScenario(false); });
   }
   window.addEventListener(editEvent, () => {
-    if (!ready) return;
+    if (!ready || restoring) return;
     dirty = true;
     clearTimeout(saveTimer);
     saveTimer = setTimeout(save, 160);
+  });
+  window.addEventListener('archives:restore-begin',() => { restoring = true;clearTimeout(saveTimer);saveTimer = null; });
+  window.addEventListener('archives:restore-end',event => {
+    restoring = false;
+    if (!event.detail?.safe && dirty) saveTimer = setTimeout(save,160);
   });
   window.addEventListener("message", event => {
     if (event.source !== parent || event.origin !== location.origin || !isPacket(event.data)) return;
@@ -53,6 +58,11 @@ export function installOwlEditor(api) {
       save(true);
     } else if (data.type === "owl-editor-roster" && ready && Array.isArray(data.players)) {
       api.setOwlPlayers(data.players);
+      window.dispatchEvent(new CustomEvent('archives:roster',{detail:data.players}));
+    } else if (data.type === 'owl-campaign-restored' && ready) {
+      clearTimeout(saveTimer);saveTimer = null;latest = finalId = null;dirty = returning = false;
+      api.apply(data.snapshot);post('owl-editor-published',{payload:api.publicView()});
+      window.dispatchEvent(new CustomEvent('archives:campaign-restored'));
     } else if (data.type === "owl-editor-saved" && data.id === latest) {
       if (data.safe) {
         if (!saveTimer) dirty = false;
@@ -85,7 +95,7 @@ export function installOwlPlayer(api) {
     if (event.source !== parent || event.origin !== location.origin || !isPacket(event.data)) return;
     const data = event.data;
     if (data.type === "owl-player-snapshot") {
-      try { api.apply(data.snapshot); received = true; notice.hide(); }
+      try { api.apply(data.snapshot); received = true; notice.hide();window.dispatchEvent(new CustomEvent('archives:public-view')); }
       catch { if (!received) notice.show("La vue joueur n’a pas pu s’afficher.", "Réessayer", retry); }
     } else if (!received && data.type === "owl-player-status") {
       notice.show(data.message, "Réessayer", retry);

@@ -57,6 +57,20 @@ export async function privateArtworkStore(room, owner) {
     putAsset: (hash,image) => transact("readwrite", store => store.put(image,key(hash)),"assets"),
     preset: source => transact("readonly", store => store.get(key(source)),"presets"),
     putPreset: (source,preset) => transact("readwrite", store => store.put(preset,key(source)),"presets"),
+    exportPresets: () => new Promise((resolve,reject) => {
+      const tx = db.transaction('presets'),request = tx.objectStore('presets').openCursor(IDBKeyRange.bound([room,owner],[room,owner,[]])),entries = [];
+      request.onsuccess = () => { const cursor = request.result;if (cursor) { entries.push({source:cursor.key[2],value:cursor.value});cursor.continue(); } };
+      tx.oncomplete = () => resolve(entries);tx.onabort = () => reject(tx.error);
+    }),
+    restorePresets: (entries,replace = false) => new Promise((resolve,reject) => {
+      const tx = db.transaction('presets','readwrite'),store = tx.objectStore('presets');
+      const write = () => { for (const entry of entries) store.put(entry.value,key(entry.source)); };
+      if (!replace) write();else {
+        const request = store.openCursor(IDBKeyRange.bound([room,owner],[room,owner,[]]));
+        request.onsuccess = () => { const cursor = request.result;if (cursor) { cursor.delete();cursor.continue(); }else write(); };
+      }
+      tx.oncomplete = resolve;tx.onabort = () => reject(tx.error || Error('Restauration des cadrages impossible.'));tx.onerror = () => {};
+    }),
     close: () => db.close()
   };
 }

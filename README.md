@@ -1,4 +1,4 @@
-# Les Archives de l’Imaginaire — Owlbear V4.18.0
+# Les Archives de l’Imaginaire — Owlbear V4.19.0
 
 ## Une salle, un onglet par personne
 
@@ -10,7 +10,43 @@ Le MJ et les joueurs commencent dans la même salle Owlbear. Le MJ utilise le li
 
 Aucun code de Salon Live, compte Archives ou paramétrage Supabase n’est nécessaire pour ce parcours. Un joueur doit garder le rôle **Joueur** dans Owlbear. La salle doit avoir l’extension activée.
 
-Le scénario complet est sauvegardé dans le navigateur du MJ, séparément pour chaque salle et compte Owlbear. Lors de la première ouverture, importe ton scénario JSON ou commence un nouveau scénario. Pour reprendre un scénario de l’application autonome, exporte-le d’abord depuis https://toniogervais.github.io/archives-owlbear/archives.html. Garde des sauvegardes JSON pour changer d’appareil ou de navigateur.
+Le scénario complet est sauvegardé dans le navigateur du MJ, séparément pour chaque salle et compte Owlbear. Lors de la première ouverture, importe ton scénario JSON ou commence un nouveau scénario. Pour reprendre un scénario de l’application autonome, exporte-le d’abord depuis https://toniogervais.github.io/archives-owlbear/archives.html. Dans Owlbear, utilise la sauvegarde complète `.archives` pour changer d’appareil ou de navigateur. Les anciens scénarios JSON restent importables.
+
+## Interface et commandes — V4.19
+
+La barre en haut à gauche regroupe des icônes homogènes, des onglets d’actes plus lisibles et des infobulles. La suppression reste à l’écart de la sauvegarde. Les fenêtres, catalogues, aperçus et images s’ouvrent et se ferment avec des fondus courts. La fermeture rend immédiatement les aperçus natifs inactifs, puis retire leur affichage après le fondu. Les transitions et animations ajoutées respectent **FX : OFF** et la préférence système de réduction des animations.
+
+| Commande | Action |
+| --- | --- |
+| Sauvegarde | Enregistrer ou restaurer la campagne complète |
+| Catalogue | Retrouver les cellules et les bibliothèques existantes |
+| Dossier des joueurs | Consulter les éléments explicitement révélés |
+| Préparer plusieurs transferts | Préparer jusqu’à 20 éléments ensemble |
+| Joueurs et écrans | Voir Archives, Owlbear, invitation en attente ou déconnexion |
+
+Les commandes de campagne, de transfert et de suivi restent réservées au MJ. Le dossier des joueurs reste accessible dans leur vue.
+
+## Sauvegarde complète de campagne
+
+Dans la salle Owlbear, le bouton de sauvegarde en haut à gauche, ou **Paramètres → Sauvegardes → Campagne complète**, ouvre l’export et la restauration. **Enregistrer la campagne** produit un seul fichier `.archives` contenant le scénario complet, le journal MJ, la bibliothèque d’images de cet appareil, les fichiers originaux de **Documents et autres** de cette salle et de ce compte MJ, leurs liens et les cadrages de tokens. Le classement des images est également conservé. Les scènes, cartes et placements natifs d’Owlbear se conservent séparément dans Owlbear.
+
+**Restaurer une campagne…** vérifie le fichier avant toute écriture et affiche les nombres d’actes, de cellules, de documents et d’images. **Restaurer cette campagne** arrête d’abord les présentations audio et vidéo en cours, puis remplace le scénario et fusionne les bibliothèques et les cadrages. Les fichiers récents absents de la copie sont conservés. L’état de révélation du scénario est conservé ; les originaux de la bibliothèque ne sont pas automatiquement présentés aux joueurs.
+
+Avant la restauration, une copie de récupération de la campagne actuelle est enregistrée sur cet appareil pour cette salle et ce compte. **Récupérer une version précédente** permet de vérifier puis de restaurer cette copie. En cas d’échec d’écriture pendant la restauration des bibliothèques, les données antérieures sont rétablies. Si un autre onglet a modifié le scénario, le contrôle de version existant refuse son remplacement.
+
+Le format vérifie l’intégrité du descriptif et de chaque original, refuse les fichiers tronqués et conserve les fichiers binaires sans les convertir en texte. Limites : 512 Mo par sauvegarde, dont 64 Mo pour le scénario et la bibliothèque d’images. Les limites habituelles de chaque document et média restent applicables. Cette sauvegarde contient les secrets du MJ et doit rester privée. Aucun fichier de campagne n’est publié dans le dépôt GitHub ni envoyé aux joueurs par cette fonction.
+
+## Retrouver un élément, préparer un lot et suivre les joueurs
+
+Après un transfert, **Voir dans Owlbear**, dans les réglages de la cellule ou son menu contextuel, centre uniquement la vue du MJ sur l’élément de la scène ouverte puis retourne à la carte dans le même onglet. Cela ne révèle pas un élément caché. La bascule propose aux joueurs le bouton central habituel.
+
+**Préparer plusieurs transferts** réunit les cellules du scénario, la bibliothèque d’images et les documents privés de cette salle. Sélectionne jusqu’à 20 éléments, puis ajuste le nom, le format et le cadrage de chaque aperçu. Les PDF permettent le choix d’une page. **Placer le lot caché** ou **Placer le lot et révéler** détermine la visibilité de tout le lot. Les nouveaux éléments sont espacés sur la carte ; un élément déjà transféré garde sa position. Les rendus du lot sont limités à 30 Mo au total.
+
+Les nouveaux rendus sont rangés ensemble dans un seul choix de dossier Owlbear, puis sélectionnés ensemble dans son sélecteur d’images. Les choix natifs restent nécessaires pour une première importation. Tous les rendus déjà importés sont réutilisés directement. Chaque sélection est vérifiée avant de placer les éléments du lot. Si la scène ou le rôle change pendant le placement, l’opération s’arrête et indique le nombre d’éléments déjà placés.
+
+**Joueurs et écrans** indique l’écran annoncé par chaque joueur de la salle, signale une invitation en attente et garde les déconnexions visibles pendant la session. Une confirmation de changement d’écran ne contient que l’écran et l’état d’invitation, sans donnée de campagne. L’identité et le rôle du participant sont vérifiés par l’hôte Owlbear.
+
+Le **Dossier des joueurs** rassemble les cellules et indices déjà révélés, ainsi que les tokens et documents actuellement partagés dans la scène Owlbear. Une recherche et des filtres permettent de les retrouver et de les consulter en grand. Le MJ dispose du même dossier filtré pour vérifier ce qui est disponible. Les cellules masquées, indices secrets, journaux MJ, originaux privés et références internes ne sont pas inclus. Les médias audio et vidéo conservent leur lecteur de présentation existant.
 
 ## Personnages, documents et tokens
 
@@ -35,7 +71,7 @@ L’ancienne connexion cloud des Archives reste une fonction séparée. Cette mi
 
 ## Vérification
 
-Les tests de projection vérifient que les secrets restent exclus. Les essais Chromium utilisent des contextes MJ et joueurs distincts et une salle Owlbear simulée : connexion native, un onglet par personne, sauvegarde, invitations, personnages, documents, PDF, tokens, déplacements, rechargement, changement de scène et perte du rôle MJ. Les essais de cadrage vérifient aussi les vrais gestes souris, molette et deux doigts, l’égalité exacte entre l’aperçu et le fichier exporté, la conservation des anciens transferts et la réutilisation après changement de scène et rechargement. La validation finale dans une salle réelle reste nécessaire pour les dialogues de stockage natifs.
+Les tests de projection vérifient que les secrets restent exclus. Les essais Chromium utilisent des contextes MJ et joueurs distincts et une salle Owlbear simulée : connexion native, un onglet par personne, sauvegarde, invitations, personnages, documents, PDF, tokens, déplacements, rechargement, changement de scène et perte du rôle MJ. Les essais de cadrage vérifient aussi les vrais gestes souris, molette et deux doigts, l’égalité exacte entre l’aperçu et le fichier exporté, la conservation des anciens transferts et la réutilisation après changement de scène et rechargement. Les nouveaux essais vérifient aussi les écritures interrompues avec retour aux données précédentes, la copie de récupération, les imports groupés, le dossier filtré, les états des joueurs et les fondus avec mouvement réduit. La validation finale dans une salle réelle reste nécessaire pour les dialogues de stockage natifs.
 
 ## Paramètres et accès joueur — V4.16.1
 
@@ -49,7 +85,7 @@ La sauvegarde complète du scénario et du journal MJ reste disponible. Cette mi
 
 Dans le catalogue, ouvre **Documents et autres** puis **Ajouter des fichiers**. Les PDF, TXT et images peuvent peser jusqu’à 25 Mo ; les sons et vidéos jusqu’à 8 Mo par fichier. Formats audio : MP3, WAV, OGG et M4A ; vidéo : MP4, WebM et OGV, selon les codecs lisibles par le navigateur.
 
-La bibliothèque conserve les originaux sur l’appareil du MJ, séparément pour chaque salle et compte Owlbear. L’ajout, la recherche, le renommage et la consultation restent privés. **Enregistrer l’original** permet de récupérer un fichier. Les sauvegardes JSON du scénario ne contiennent pas cette bibliothèque : garde les fichiers d’origine pour changer d’appareil.
+La bibliothèque conserve les originaux sur l’appareil du MJ, séparément pour chaque salle et compte Owlbear. L’ajout, la recherche, le renommage et la consultation restent privés. **Enregistrer l’original** permet de récupérer un fichier. Les sauvegardes JSON du scénario ne contiennent pas cette bibliothèque ; la sauvegarde complète `.archives` ajoutée en V4.19 conserve aussi ses originaux.
 
 Le menu d’une cellule et son réglage proposent **Documents liés…**. Tu peux importer un document pour cette cellule ou choisir un fichier déjà présent dans la bibliothèque. Ces liens restent uniquement côté MJ. Le bouton **Voir toute la bibliothèque** permet de retrouver les fichiers qui ne sont pas liés à la cellule.
 

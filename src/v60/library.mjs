@@ -16,6 +16,7 @@ export async function openLibrary(context = {}) {
   try { requireEditor(); }
   catch (error) { notify(error.message);return; }
   active?.close();
+  document.querySelectorAll('#archives-file-library:not([open])').forEach(old => old.remove());
   const dialog = document.createElement("dialog");dialog.id = "archives-file-library";
   dialog.innerHTML = `<style>
   #archives-file-library{box-sizing:border-box;color-scheme:dark;width:min(1050px,96vw);height:min(900px,92dvh);padding:20px;border:1px solid #bda05d;border-radius:14px;background:#17111e;color:#f1e5cf;font:15px/1.45 system-ui,sans-serif;overflow:auto}
@@ -49,7 +50,7 @@ export async function openLibrary(context = {}) {
     if (objectUrl) URL.revokeObjectURL(objectUrl);objectUrl = null;ui("player").replaceChildren();
   }
   dialog.addEventListener("cancel",event => { if (busy) event.preventDefault(); });
-  dialog.addEventListener("close",() => { releaseMedia();dialog.remove();if (active === dialog) active = null; },{once:true});
+  dialog.addEventListener("close",() => { releaseMedia();if (!window.ArchivesAppearance?.retire(dialog)) dialog.remove();if (active === dialog) active = null; },{once:true});
   ui("close").onclick = () => { if (!busy) dialog.close(); };
   if (context.cellKey) {
     ui("cell").hidden = false;ui("cell").textContent = "Documents liés à « " + (context.title || "cette cellule") + " »";ui("all").hidden = false;
