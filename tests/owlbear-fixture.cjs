@@ -88,7 +88,7 @@ function fixture({sceneReady=false,inviteReadyDelay=0}={}) {
    case "OBR_MODAL_CLOSE":setTimeout(()=>modalFrame(data.id)?.remove(),0);break;
   }if(nonce)event.source.postMessage({id:id+"_RESPONSE"+nonce,data:reply},archives)})().catch(console.error);
  });
- fixtureHub("join",player).then(()=>addFrame(archives+"/background-v55.html?v=4190","background"));
+ fixtureHub("join",player).then(()=>addFrame(archives+"/background-v55.html?v=4200","background"));
  </script>`;
 }
 function hub(){

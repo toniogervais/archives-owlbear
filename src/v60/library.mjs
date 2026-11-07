@@ -73,6 +73,8 @@ export async function openLibrary(context = {}) {
     return new File([result.blob],result.entry.name,{type:result.entry.mime,lastModified:result.entry.created});
   }
   async function preview(entry) {
+    // Clear the previous opt-in before loading another file asynchronously.
+    ui('reveal').checked = false;ui('present').onclick = null;
     setBusy(true);status("Ouverture de « " + entry.title + " »…");
     try {
       const file = await read(entry);if (!dialog.open) return;

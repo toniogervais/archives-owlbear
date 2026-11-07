@@ -1,5 +1,5 @@
 import { O as OBR } from "../../assets/index-BfJgTiPE.js";
-import { archivesUrl } from "../v57/room.mjs?v=4190";
+import { archivesUrl } from "../v57/room.mjs?v=4200";
 await new Promise(resolve=>OBR.onReady(resolve));
 const hint=document.getElementById("access-hint");
 if(hint)hint.textContent=await OBR.player.getRole()==="GM" ?

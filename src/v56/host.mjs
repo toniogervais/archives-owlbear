@@ -3,8 +3,8 @@ import {
   isPacket, liveRoomKey, packet, pairingKey, readLocal, screenChannel, trustedOwlbearSdk,
   validLiveRoom, validPairing, viewerId, writeLocal
 } from "./link.mjs";
-import { localEditor, localViewer, release } from "../v57/room.mjs?v=4190";
-import { makeEditorHost, makePlayerHost } from "../v57/room-host.mjs?v=4190";
+import { localEditor, localViewer, release } from "../v57/room.mjs?v=4200";
+import { makeEditorHost, makePlayerHost } from "../v57/room-host.mjs?v=4200";
 
 const $ = id => document.getElementById(id);
 const frame = $("app"), message = $("message"), button = $("return");

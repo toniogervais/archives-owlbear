@@ -79,3 +79,11 @@ dialog[id^="archives-"][open]::backdrop{opacity:1}
 @media(prefers-reduced-motion:reduce){#archives-catalogue-modal,#archives-catalogue-modal .catalogue-card,#archives-library-popout,#archives-image-full-preview{transition:none!important;animation:none!important}}
 body.fx-disabled .modal-overlay,body.fx-disabled .modal-overlay .modal-card,body.fx-disabled #player-cell-detail,body.fx-disabled .pcd-image-viewer,body.fx-disabled dialog[id^="archives-"],body.fx-disabled dialog[id^="archives-"]::backdrop,body.fx-disabled #top-hud *,body.fx-disabled .studio-tooltip{animation:none!important;transition:none!important}
 body.fx-disabled #archives-catalogue-modal,body.fx-disabled #archives-catalogue-modal .catalogue-card,body.fx-disabled #archives-library-popout,body.fx-disabled #archives-image-full-preview{transition:none!important;animation:none!important}
+/* Player controls are an allowlist, independent of later visual overrides. */
+body.player-mode #top-hud .top-group:first-child>button:not(#archives-dossier-open):not(#quick-player-journal),
+body.strict-readonly #top-hud .top-group:first-child>button:not(#archives-dossier-open):not(#quick-player-journal),
+body.player-mode #tabs-bar>button:not(.tab-btn),body.strict-readonly #tabs-bar>button:not(.tab-btn){display:none!important}
+#pin-block-cell-actions .field-row{flex-wrap:wrap}
+#pin-block-cell-actions .field-row>button{flex:1 1 110px;min-width:0}
+.archives-transfer-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:12px;padding-top:12px;border-top:1px solid #cbb48226}
+.archives-transfer-actions>button{min-width:0;white-space:normal;overflow-wrap:anywhere}

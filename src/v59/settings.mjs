@@ -15,7 +15,22 @@ export function installOwlPlayerInterface() {
   ready(() => {
     // Cloud initialisation is separately blocked before reading any session.
     for (const id of ["archives-title-screen", "archives-gm-choice-modal", "archives-home-confirm",
-      "archives-cloud-panel", "accounts-campaigns-setting", "settings-modal", "settings-fab"]) $(id)?.remove();
+      "archives-cloud-panel", "accounts-campaigns-setting", "settings-modal", "settings-fab",
+      "canvas-save-icon", "cell-catalog-icon", "clear-act-button", "archives-batch-open", "archives-roster-open"]) $(id)?.remove();
+    const group = document.querySelector('#top-hud .hud-row>.top-group:first-child');
+    const tabs = $('tabs-bar'),journal = $('quick-player-journal');
+    if (group && journal) {
+      journal.classList.add('studio-command');journal.title = 'Mes notes';
+      journal.setAttribute('aria-label',journal.title);group.insertBefore(journal,tabs);
+    }
+    function essentials() {
+      if (!group) return;
+      for (const control of Array.from(group.children))
+        if (!['archives-dossier-open','quick-player-journal','tabs-bar'].includes(control.id)) control.remove();
+      tabs?.querySelectorAll('button:not(.tab-btn)').forEach(control => control.remove());
+    }
+    essentials();
+    if (group) new MutationObserver(essentials).observe(group,{childList:true,subtree:true});
     returnButton();
   });
 }

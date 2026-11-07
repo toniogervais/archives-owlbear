@@ -1,5 +1,6 @@
 import { createNotice, editEvent, isPacket, packet } from "../v56/link.mjs";
-import { installOwlPlayerInterface, installOwlSettings } from "../v59/settings.mjs?v=4161";
+import { installOwlPlayerInterface, installOwlSettings } from "../v59/settings.mjs?v=4200";
+import { installPlayerNotebook } from '../v64/player-notebook.mjs?v=4200';
 
 export function installOwlEditor(api) {
   installOwlSettings();
@@ -86,6 +87,7 @@ export function installOwlEditor(api) {
 
 export function installOwlPlayer(api) {
   installOwlPlayerInterface();
+  installPlayerNotebook();
   const notice = createNotice();
   const parent = window.parent;
   const post = type => parent.postMessage(packet(type), location.origin);

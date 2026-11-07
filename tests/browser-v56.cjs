@@ -94,7 +94,7 @@ async function sendDraft(frame, title) {
     });
     const main=await context.newPage();
     await main.goto(archives+"/archives.html?resume=1");
-    await main.waitForURL(archives+app+"?resume=1&v=4190");
+    await main.waitForURL(archives+app+"?resume=1&v=4200");
     const mapButton=main.getByRole("button",{name:"Owlbear — afficher la carte"});
     main.once("dialog",async dialog=>{assert.equal(dialog.type(),"prompt");await dialog.accept(owl+"/room/test");});
     const [room]=await Promise.all([main.waitForEvent("popup"),mapButton.click()]);

@@ -1,10 +1,11 @@
 import { isPacket, packet } from "../v56/link.mjs";
-import { prepareSource,renderSource,sourcePicture } from "./media.mjs?v=4190";
+import { prepareSource,renderSource,sourcePicture } from "./media.mjs?v=4200";
 import { installCropEditor } from "../v61/token-crop.mjs";
 
 const pending = new Map();
 const $ = id => document.getElementById(id);
 let activeDialog;
+const directTransfers = new Set();
 function gmState() {
   const state = window.DuneApp?.getState?.();
   if (!state || state.playerMode || state.strictReadOnly) throw Error("Le transfert est réservé au MJ.");
@@ -228,10 +229,41 @@ function cellSource(node,boardId) {
   return {key:"cell:" + String(boardId || "bibliotheque") + ":" + String(node.id),title:node.title,
     kind:node.category === "personnage" ? "TOKEN" : "DOCUMENT",data:node.bgImg || node.image || node.imageData || "",text:node.desc || ""};
 }
+function imageSource(item) {
+  return {key:'library:'+item.id,title:item.name,data:item.data,
+    kind:(item.category || 'personnage') === 'personnage' ? 'TOKEN' : 'DOCUMENT'};
+}
 function selectedCell() {
   const state = gmState(),node = (state.nodes || []).find(node => node.id === state.selectedId);
   if (!node) throw Error("Sélectionne une cellule du canevas.");
   return cellSource(node,state.activeBoardId);
+}
+async function placeSource(input,reveal = false) {
+  // Documents retain their preview, including explicit PDF page/text choices.
+  if (input.kind !== 'TOKEN') return openSource(input);
+  if (directTransfers.has(input.key)) return;
+  directTransfers.add(input.key);
+  const controls = document.querySelectorAll('[data-direct-transfer]');
+  controls.forEach(control => { control.disabled = true; });
+  let source;
+  try {
+    gmState();notify('Préparation du token…');
+    const context = await request({action:'context',sourceKey:input.key});
+    source = await prepareSource(input);
+    const preset = context.preset?.identity === source.identity ? context.preset : null;
+    const framing = {identity:source.identity,crop:preset?.crop,page:1};
+    const art = await renderSource(source,{kind:'TOKEN',title:source.title,crop:framing.crop});
+    gmState();
+    const result = await request({action:'transfer',scene:context.scene,sourceKey:source.key,
+      kind:'TOKEN',title:source.title,reveal:reveal === true,art,framing},notify);
+    notify(result.revealed ? '« '+result.title+' » placé et révélé dans Owlbear.' :
+      '« '+result.title+' » placé dans ta vue MJ, caché aux joueurs.');
+  } catch (error) { notify(error.message); }
+  finally { source?.release();directTransfers.delete(input.key);controls.forEach(control => { control.disabled = false; }); }
+}
+async function placeSelected(reveal = false) {
+  try { await placeSource(selectedCell(),reveal); }
+  catch (error) { notify(error.message); }
 }
 function openFiles() {
   try { gmState(); }
@@ -250,10 +282,30 @@ function install() {
   const reveal = document.querySelector('#pin-block-cell-actions button[onclick="DuneApp.toggleSelectedReveal()"]');
   if (reveal && !$("archives-v45-transfer-button")) {
     const button = document.createElement("button");button.id = "archives-v45-transfer-button";button.type = "button";
-    button.className = "btn";button.textContent = "Envoyer vers Owlbear…";
-    button.onclick = () => { void sendSelected(); };reveal.parentElement.append(button);
+    button.className = "btn";button.textContent = "Owlbear · Placer caché";button.dataset.directTransfer = '1';
+    button.onclick = () => { void placeSelected(false); };
+    const share = document.createElement('button');share.type = 'button';share.className = 'btn';
+    share.id = 'archives-owl-direct-reveal';share.dataset.directTransfer = '1';share.textContent = 'Owlbear · Placer et révéler';
+    share.onclick = () => { void placeSelected(true); };
+    const frame = document.createElement('button');frame.type = 'button';frame.className = 'btn';
+    frame.id = 'archives-owl-frame';frame.textContent = 'Cadrer / préparer…';frame.onclick = () => { void sendSelected(); };
+    const actions = document.createElement('div');actions.className = 'archives-transfer-actions';
+    actions.setAttribute('role','group');actions.setAttribute('aria-label','Transfert vers Owlbear');
+    actions.append(button,share,frame);reveal.parentElement.after(actions);
   }
-  $("ctx-send-to-owlbear")?.addEventListener("click",() => { window.DuneApp.closeContextMenus();void sendSelected(); });
+  const context = $('ctx-send-to-owlbear');
+  if (context) {
+    context.textContent = 'Owlbear · Placer caché';context.dataset.directTransfer = '1';
+    context.addEventListener('click',() => { window.DuneApp.closeContextMenus();void placeSelected(false); });
+    for (const [id,label,handler] of [
+      ['archives-ctx-owl-reveal','Owlbear · Placer et révéler',() => placeSelected(true)],
+      ['archives-ctx-owl-frame','Owlbear · Cadrer / préparer…',sendSelected]
+    ]) {
+      const control = document.createElement('button');control.id = id;control.type = 'button';control.className = 'ctx-item';
+      control.textContent = label;control.style.cssText = context.style.cssText;
+      control.onclick = () => { window.DuneApp.closeContextMenus();void handler(); };context.before(control);
+    }
+  }
   const library = $("archives-image-library-files");
   if (library && !$("archives-owl-files")) {
     const button = document.createElement("button");button.type = "button";button.id = "archives-owl-files";
@@ -266,11 +318,11 @@ async function sendSelected() {
   catch (error) { notify(error.message); }
 }
 window.ArchivesCellTransfer = {
-  sendSelected,openFiles,showManager,request,
+  sendSelected,placeSelected,placeCell:(node,boardId,reveal = false) => placeSource(cellSource(node,boardId),reveal),openFiles,showManager,request,
   sendLibraryFile:({id,file,title}) => openSource({key:"documents:" + id,file,title,kind:"DOCUMENT"}),
   sendCell:(node,boardId) => openSource(cellSource(node,boardId)),
-  sendImage:item => openSource({key:"library:" + item.id,title:item.name,data:item.data,
-    kind:item.category === "personnage" ? "TOKEN" : "DOCUMENT"}),
+  sendImage:item => openSource(imageSource(item)),
+  placeImage:(item,reveal = false) => placeSource(imageSource(item),reveal),
   sendFile:(file,title,placement,report) => openSource({key:"file:" + file.name + ":" + file.size + ":" + file.lastModified,
     title,file,kind:"DOCUMENT"},report)
 };

@@ -1,4 +1,4 @@
-# Les Archives de l’Imaginaire — Owlbear V4.19.0
+# Les Archives de l’Imaginaire — Owlbear V4.20.0
 
 ## Une salle, un onglet par personne
 
@@ -12,7 +12,7 @@ Aucun code de Salon Live, compte Archives ou paramétrage Supabase n’est néce
 
 Le scénario complet est sauvegardé dans le navigateur du MJ, séparément pour chaque salle et compte Owlbear. Lors de la première ouverture, importe ton scénario JSON ou commence un nouveau scénario. Pour reprendre un scénario de l’application autonome, exporte-le d’abord depuis https://toniogervais.github.io/archives-owlbear/archives.html. Dans Owlbear, utilise la sauvegarde complète `.archives` pour changer d’appareil ou de navigateur. Les anciens scénarios JSON restent importables.
 
-## Interface et commandes — V4.19
+## Interface et commandes — V4.20
 
 La barre en haut à gauche regroupe des icônes homogènes, des onglets d’actes plus lisibles et des infobulles. La suppression reste à l’écart de la sauvegarde. Les fenêtres, catalogues, aperçus et images s’ouvrent et se ferment avec des fondus courts. La fermeture rend immédiatement les aperçus natifs inactifs, puis retire leur affichage après le fondu. Les transitions et animations ajoutées respectent **FX : OFF** et la préférence système de réduction des animations.
 
@@ -24,7 +24,9 @@ La barre en haut à gauche regroupe des icônes homogènes, des onglets d’acte
 | Préparer plusieurs transferts | Préparer jusqu’à 20 éléments ensemble |
 | Joueurs et écrans | Voir Archives, Owlbear, invitation en attente ou déconnexion |
 
-Les commandes de campagne, de transfert et de suivi restent réservées au MJ. Le dossier des joueurs reste accessible dans leur vue.
+Les commandes de campagne, de transfert et de suivi restent réservées au MJ. En haut à gauche, les joueurs gardent seulement **Dossier des joueurs**, **Mes notes** et les actes révélés. Les commandes de sauvegarde, de catalogue, de suppression et d’édition des actes sont retirées, y compris si un ancien composant tente de les réinsérer.
+
+**Mes notes** ouvre un carnet personnel enregistré automatiquement dans ce navigateur, séparément pour chaque salle et compte Owlbear. Les mises à jour du MJ ne l’écrasent pas. Son contenu n’est envoyé ni au MJ, ni aux autres joueurs, ni dans les sauvegardes de campagne. **Enregistrer une copie** télécharge un fichier texte ; conserver cette copie permet de changer d’appareil.
 
 ## Sauvegarde complète de campagne
 
@@ -50,7 +52,9 @@ Le **Dossier des joueurs** rassemble les cellules et indices déjà révélés, 
 
 ## Personnages, documents et tokens
 
-Dans le menu d’une cellule ou d’une image de la bibliothèque, choisis **Envoyer vers Owlbear…**. Le réglage de la cellule contient aussi ce bouton. Dans la bibliothèque, **Owlbear : fichiers et transferts…** permet d’ajouter un fichier et de retrouver les éléments déjà préparés pour la scène.
+Pour un **personnage**, les réglages de cellule et le menu contextuel proposent directement **Owlbear · Placer caché** et **Owlbear · Placer et révéler**. Ces actions placent le token sans ouvrir d’aperçu à valider, sans demander de revenir sur la carte et sans ajouter de doublon. Elles reprennent le dernier cadrage de cette image, ou un cadrage centré si elle est nouvelle. **Cadrer / préparer…** reste disponible pour ajuster le zoom et déplacer l’image avant le placement. Les documents conservent leur aperçu pour choisir le texte et la page à transférer.
+
+La bibliothèque d’images propose également **Placer caché** et **Placer et révéler** directement sur les portraits de personnages. Le clic droit donne accès à **Cadrer le token…**. Les autres images gardent **Vers Owlbear**, avec le choix du format dans l’aperçu. **Owlbear : fichiers et transferts…** permet d’ajouter un fichier et de retrouver les éléments déjà préparés pour la scène.
 
 1. Vérifie le nom et l’aperçu. Un personnage devient un **token rond** par défaut. Tout document ou image peut aussi devenir un token en choisissant ce format.
 2. Le cadrage proposé est centré. Pour l’ajuster, **zoome ou dézoome**, puis **attrape et déplace l’image dans le token**, à la souris ou au doigt. Le zoom fonctionne avec la molette, le curseur ou deux doigts. L’image garde ses proportions. Aucun autre réglage de cadrage n’est nécessaire.

@@ -11,6 +11,8 @@ on:
       - 'src/v61/**'
       - 'src/v62/**'
       - 'src/v63/**'
+      - 'src/v64/**'
+      - 'tests/browser-v64.cjs'
       - 'tests/campaign-v63.test.mjs'
       - 'tests/browser-v62.cjs'
       - 'tests/browser-v63.cjs'
@@ -68,3 +70,4 @@ jobs:
       - run: node tests/browser-v61.cjs
       - run: node tests/browser-v62.cjs
       - run: node tests/browser-v63.cjs
+      - run: node tests/browser-v64.cjs

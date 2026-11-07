@@ -1,4 +1,4 @@
-import { localRoom,roomMembers,roomChannel,release } from "../v57/room.mjs?v=4190";
+import { localRoom,roomMembers,roomChannel,release } from "../v57/room.mjs?v=4200";
 import { openFileLibrary,validateFile,validId,validPublication,publicFile,digest,fileChunks,fileReceiver,mediaChannel,mediaModal } from "./files.mjs";
 
 export async function installFileLibrary(OBR) {

@@ -1,6 +1,6 @@
 import {button,element,notice,requireGM,sheet} from './ui.mjs';
 import {libraryRequest} from '../v60/request.mjs';
-import {prepareSource,renderSource,sourcePicture} from '../v58/media.mjs?v=4190';
+import {prepareSource,renderSource,sourcePicture} from '../v58/media.mjs?v=4200';
 import {installCropEditor} from '../v61/token-crop.mjs';
 async function catalogImages() {
   return new Promise((resolve,reject) => {

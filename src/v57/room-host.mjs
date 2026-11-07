@@ -1,7 +1,7 @@
-import { localRoom, roomChannel, roomMembers, snapshotReader, validSnapshot } from "./room.mjs?v=4190";
+import { localRoom, roomChannel, roomMembers, snapshotReader, validSnapshot } from "./room.mjs?v=4200";
 import { openScenario } from "./storage.mjs";
 import { validSession } from "../v56/link.mjs";
-import {campaignHost} from '../v63/campaign-host.mjs?v=4190';
+import {campaignHost} from '../v63/campaign-host.mjs?v=4200';
 import {publicItems} from '../v63/public-items.mjs';
 
 export async function makeEditorHost(OBR, post, canEdit) {
@@ -176,7 +176,9 @@ export async function makePlayerHost(OBR, post, canRead) {
         return;
       }
       if (data.type === "owl-player-ready" && !ready) {
+        if (disposed || !canRead()) return;
         ready = true;
+        post('owl-player-identity',{scope:JSON.stringify([OBR.room.id,OBR.player.id])});
         interval = setInterval(request, 5000);
         initialTimer = setTimeout(() => {
           if (!snapshot) post("owl-player-status", {message:"En attente du maître de jeu. La vue s’affichera quand il ouvrira les Archives."});

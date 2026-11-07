@@ -22,11 +22,20 @@ test("Owlbear settings preserve controls and exports while removing redundant co
  assert.equal(d.querySelector('#owl-settings-backups [onclick="DuneApp.exportJson()"]').textContent,"Sauvegarder le scénario");
  w.close();
 });
-test("A player has no title, account or MJ settings controls",()=>{
+test("A player only keeps the dossier, personal notes and revealed act navigation",async()=>{
  const dom=page(),w=dom.window,d=w.document;
  w.installOwlPlayerInterface();d.dispatchEvent(new w.Event("DOMContentLoaded"));
- for(const id of ["archives-title-screen","archives-gm-choice-modal","archives-cloud-panel","settings-modal","settings-fab"])assert.equal(d.getElementById(id),null);
+ for(const id of ["archives-title-screen","archives-gm-choice-modal","archives-cloud-panel","settings-modal","settings-fab","canvas-save-icon","cell-catalog-icon","clear-act-button"])assert.equal(d.getElementById(id),null);
  assert.equal(d.getElementById("archives-home-fab").getAttribute("aria-label"),"Retour à Owlbear");
+ const group=d.querySelector('#top-hud .hud-row>.top-group:first-child');
+ assert.equal(group.querySelector('#quick-player-journal').getAttribute('aria-label'),'Mes notes');
+ const dossier=d.createElement('button');dossier.id='archives-dossier-open';group.prepend(dossier);
+ const intruder=d.createElement('button');intruder.id='late-gm-control';group.append(intruder);
+ const edit=d.createElement('button');edit.textContent='＋ Acte';d.getElementById('tabs-bar').append(edit);
+ const act=d.createElement('button');act.className='tab-btn';act.textContent='Acte révélé';d.getElementById('tabs-bar').append(act);
+ await new Promise(resolve=>w.setTimeout(resolve,0));
+ assert.deepEqual(Array.from(group.children,x=>x.id),['archives-dossier-open','quick-player-journal','tabs-bar']);
+ assert.equal(d.getElementById('late-gm-control'),null);assert.deepEqual(Array.from(d.querySelectorAll('#tabs-bar button'),x=>x.textContent),['Acte révélé']);
  w.close();
 });
 test("Player cloud integration exits before restoring any account or campaign session",()=>{

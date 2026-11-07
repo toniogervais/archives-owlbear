@@ -1,6 +1,6 @@
-import {validSnapshot} from '../v57/room.mjs?v=4190';
-import {openFileLibrary,validateFile,digest,validId} from '../v60/files.mjs?v=4190';
-import {privateArtworkStore} from '../v58/model.mjs?v=4190';
+import {validSnapshot} from '../v57/room.mjs?v=4200';
+import {openFileLibrary,validateFile,digest,validId} from '../v60/files.mjs?v=4200';
+import {privateArtworkStore} from '../v58/model.mjs?v=4200';
 import {normalizeCrop} from '../v61/token-crop.mjs';
 
 const signature = new TextEncoder().encode('ARCHIVES-CAMPAGNE/1\n');
