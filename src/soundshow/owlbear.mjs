@@ -1,6 +1,6 @@
 import {localRoom,roomMembers} from '../v57/room.mjs';
 import {validSession,sameSession,soundShowChannel,soundShowModal} from './protocol.mjs';
-import {SoundShowConnection} from './connection.mjs';
+import {SoundShowConnection} from './connection.mjs?v=012';
 import {isPacket,packet} from '../v56/link.mjs';
 export async function installSoundShow(OBR) {
   const {channel,connectionId:initial}=await localRoom(OBR),member=roomMembers(OBR);
