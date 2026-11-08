@@ -25,7 +25,7 @@ export class SoundShowConnection {
     try {
       await loadPeer();if(this.epoch!==epoch)return;
       const peer=new Peer(undefined,{config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]},...window.ArchivesSoundShowPeerOptions});this.peer=peer;
-      const fail=()=>{if(this.epoch!==epoch)return;this.drop();this.onStream(null);this.onStatus('Liaison vidéo interrompue. Reconnexion…');if(this.retries++<6)this.timer=setTimeout(()=>void this.connect(),Math.min(1000*2**this.retries,15000));};
+      const fail=()=>{if(this.epoch!==epoch)return;this.drop();this.onStream(null);this.onStatus('Liaison vidéo interrompue. Reconnexion…');if(this.retries++<6)this.timer=setTimeout(()=>void this.connect(),Math.min(1000*2**this.retries,15000));else this.onStatus('Connexion impossible après plusieurs essais. Appuie sur Réessayer la connexion.');};
       this.timeout=setTimeout(fail,20000);
       peer.on('open',()=>{
         if(this.epoch!==epoch)return;
