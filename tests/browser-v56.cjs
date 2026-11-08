@@ -110,6 +110,7 @@ async function sendDraft(frame, title) {
     await room.waitForURL(owl+"/room/test");
     await room.waitForFunction(()=>window.fixture.events.some(event=>event.id==='OBR_BROADCAST_SEND_MESSAGE'&&event.data.channel==='fr.archives-imaginaire.bridge/soundshow-v1'&&event.data.data.session?.peer==='test-main-12345678'));
     await main.evaluate(()=>window.ArchivesSoundShow.open());
+    await main.locator('#archives-soundshow details').evaluate(el=>{el.open=true;});
     await main.getByRole('button',{name:'Déconnecter',exact:true}).click();
     await main.getByText('Diffusion SoundShow déconnectée.',{exact:true}).waitFor();
     await main.locator('#archives-soundshow .studio-close').click();
