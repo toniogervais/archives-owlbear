@@ -8,6 +8,8 @@ const channel='fr.archives-imaginaire.bridge/soundshow-v1';
   const context=await browser.newContext();await configure(context,hub(),{sceneReady:true,autoScreenChoice:false});
   await context.addInitScript(()=>{
    window.__soundshowConnections=[];
+   window.__soundshowTrace=[];
+   addEventListener('message',event=>{const value=event.data;if(String(value?.id||'').includes('BROADCAST_MESSAGE')&&value.data?.data)window.__soundshowTrace.push({type:value.data.data.type,to:value.data.data.to,sender:value.data.connectionId,peer:value.data.data.session?.peer});});
    class Emitter{constructor(){this.handlers={};}on(type,fn){(this.handlers[type]||=[]).push(fn);return this;}emit(type,...args){for(const fn of this.handlers[type]||[])fn(...args);}}
    window.Peer=class extends Emitter{
     constructor(){super();this.id=crypto.randomUUID();setTimeout(()=>this.emit('open',this.id),0);}
@@ -34,9 +36,14 @@ const channel='fr.archives-imaginaire.bridge/soundshow-v1';
   await alix.evaluate(({channel,session})=>window.fixture.publish(channel,{type:'session',session:{...session,peer:'forged-host-12345678'}}),{channel,session});
   await bob.waitForTimeout(100);assert.deepEqual(await background(bob).evaluate(()=>window.__soundshowConnections),[session.peer]);
   // A newly joined player can ask the GM for the current session.
-  const late=await context.newPage();await late.goto(owl+'/room/one?joueur=Charlie');await late.locator('#archives-tool').waitFor({state:'attached'});
+  const late=await context.newPage();late.on('pageerror',error=>errors.push(error.message));await late.goto(owl+'/room/one?joueur=Charlie');await late.locator('#archives-tool').waitFor({state:'attached'});
   await late.waitForFunction(()=>[...document.querySelectorAll('iframe')].some(f=>f.id==='background'));
-  await background(late).waitForFunction(peer=>window.__soundshowConnections.includes(peer),session.peer);
+  try{await background(late).waitForFunction(peer=>window.__soundshowConnections.includes(peer),session.peer);}
+  catch(error){
+   for(const [label,page]of[['GM',gm],['Alix',alix],['Charlie',late]])console.log(label,await background(page).evaluate(()=>({connections:window.__soundshowConnections,trace:window.__soundshowTrace})));
+   console.log('Wire',await gm.evaluate(channel=>window.fixture.wire().then(wire=>wire.filter(x=>x.value?.channel===channel).map(x=>({type:x.value.data.type,to:x.value.data.to,peer:x.value.data.session?.peer}))),channel));
+   console.log('Errors',errors);throw error;
+  }
   await app.getByRole('button',{name:'Déconnecter',exact:true}).click();
   await app.getByText('Diffusion SoundShow déconnectée.',{exact:true}).waitFor();
   assert.ok(!errors.length,errors.join('\n'));
