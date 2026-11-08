@@ -18,7 +18,7 @@ export function mountPlayer({container=document.body,onPlayback=()=>{},onStatus=
   async function play() {
     if(!video.srcObject||!playback.active||!playback.playing)return;
     if(document.hidden||root.hidden){video.muted=true;return;}
-    try{await video.play();allow.hidden=true;if(!waitingForFrame)status.textContent='';}
+    try{await video.play();allow.hidden=true;if(!waitingForFrame&&!announcedAt)status.textContent='';}
     catch{allow.hidden=false;status.textContent='Touche le bouton pour autoriser la vidéo avec le son.';video.muted=true;try{await video.play();}catch{}}
   }
   allow.onclick=async()=>{video.muted=playback.muted;try{await video.play();allow.hidden=true;status.textContent='';}catch{status.textContent='La lecture reste bloquée par le navigateur. Réessaie dans Chrome.';}};
