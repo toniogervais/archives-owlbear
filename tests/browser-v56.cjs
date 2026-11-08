@@ -96,12 +96,13 @@ async function sendDraft(frame, title) {
     });
     const main=await context.newPage();
     await main.goto(archives+"/archives.html?resume=1");
-    await main.waitForURL(archives+app+"?resume=1&v=4220");
+    await main.waitForURL(new RegExp("/archives-app-v64-v55\\.html\\?resume=1&v=\\d+"));
     await main.waitForFunction(()=>window.ArchivesSoundShow&&window.ArchivesOwlbearBridge);
     await main.evaluate(()=>window.ArchivesSoundShow.open());
+    await main.locator('#archives-soundshow details').evaluate(el=>{el.open=true;});
     await main.getByLabel('Code de connexion SoundShow',{exact:true}).fill('SS2.test-main-12345678.'+'a'.repeat(64));
     await main.getByRole('button',{name:'Relier les joueurs',exact:true}).click();
-    await main.getByText('Code transmis. Les vidéos associées se présenteront quand tu les lanceras dans SoundShow.',{exact:true}).waitFor();
+    await main.getByText('SoundShow relié. Lance maintenant tes vidéos dans SoundShow.',{exact:true}).waitFor();
     await main.locator('#archives-soundshow .studio-close').click();
     const mapButton=main.getByRole("button",{name:"Owlbear — afficher la carte"});
     main.once("dialog",async dialog=>{assert.equal(dialog.type(),"prompt");await dialog.accept(owl+"/room/test");});
