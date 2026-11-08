@@ -1,6 +1,6 @@
 import {button,element,isGM,notice,requireGM,sheet} from '../v63/ui.mjs';
 import {isPacket,packet} from '../v56/link.mjs';
-import {decodeSession,encodeSession,validSession,autoLinkProtocol,validLocalBridgeOrigin} from './protocol.mjs';
+import {decodeSession,encodeSession,validSession,autoLinkProtocol,validLocalBridgeOrigin} from './protocol.mjs?v=015';
 let session=null,player,liveSession=null,infoView=null;const pending=new Map(),roomFrames=new Map();
 const embedded=window.parent!==window;
 let pendingAutoLink=null,autoLinkBusy=false,autoLinkTimer=null,linkInfoView=null;
@@ -54,7 +54,7 @@ function open() {
     requireGM();const view=sheet('archives-soundshow','SoundShow · vidéos des joueurs');
     view.content.append(element('p','Une seule fois au démarrage, dans le connecteur SoundShow sur ton PC, clique sur « Ouvrir Les Archives et relier les joueurs ». Ensuite, lance les vidéos directement dans SoundShow.','studio-hint'));
     const simpleStatus=element('p',session?'SoundShow relié. Les prochaines vidéos s’ouvriront dans une fenêtre des Archives ou d’Owlbear.':'En attente du connecteur SoundShow. Aucun code à recopier.','studio-status');simpleStatus.setAttribute('role','status');linkInfoView=simpleStatus;view.content.append(simpleStatus);
-    const download=element('a','Télécharger le connecteur Windows');download.href='https://github.com/toniogervais/archives-owlbear/releases/download/soundshow-bridge-v0.1.3/Archives-SoundShow-Connecteur.exe';download.target='_blank';download.rel='noopener';view.content.append(download);
+    const download=element('a','Télécharger le connecteur Windows');download.href='https://github.com/toniogervais/archives-owlbear/releases/download/soundshow-bridge-v0.2.0/Archives-SoundShow-Connecteur.exe';download.target='_blank';download.rel='noopener';view.content.append(download);
     const advanced=element('details');const summary=element('summary','Dépannage : connexion manuelle avec un code');advanced.append(summary);
     const label=element('label','Code de connexion SoundShow'),input=element('input');input.type='password';input.autocomplete='off';input.placeholder='SS2.…';input.setAttribute('aria-label','Code de connexion SoundShow');input.value=session?encodeSession(session):'';label.append(input);advanced.append(label);
     const info=element('p',null,'studio-hint');info.id='soundshow-room-status';info.setAttribute('role','status');infoView=info;
