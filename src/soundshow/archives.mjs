@@ -59,7 +59,7 @@ window.addEventListener('message',event=>{
 window.addEventListener('archives:soundshow-session',event=>{
   if(isGM()||embedded)return;
   const value=event.detail?.session;if(value!==null&&!validSession(value))return;liveSession=value;
-  void(async()=>{if(!player){const {mountPlayer}=await import('./player.mjs');player=mountPlayer();}await player.use(document.hidden?null:value);})().catch(error=>notice(error.message));
+  void(async()=>{if(!player){const {mountPlayer}=await import('./player.mjs?v=012');player=mountPlayer();}await player.use(document.hidden?null:value);})().catch(error=>notice(error.message));
 });
 document.addEventListener('visibilitychange',()=>{if(!isGM()&&!embedded&&player)void player.use(document.hidden?null:liveSession).catch(error=>notice(error.message));});
 const control=document.querySelector('.canvas-integration-icon[aria-label^="Sound Show"]');
