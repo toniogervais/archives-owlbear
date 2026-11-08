@@ -1,5 +1,5 @@
 import {localRoom,roomMembers} from '../v57/room.mjs';
-import {validSession,sameSession,soundShowChannel,soundShowModal} from './protocol.mjs';
+import {validSession,sameSession,soundShowChannel,soundShowModal,validLocalBridgeOrigin,owlbearLinkProtocol} from './protocol.mjs?v=016';
 import {SoundShowConnection} from './connection.mjs?v=014';
 import {isPacket,packet} from '../v56/link.mjs';
 export async function installSoundShow(OBR) {
@@ -8,8 +8,52 @@ export async function installSoundShow(OBR) {
   let requestTimer,requestSerial=0,requestAttempts=0;
   let mainWindow,mainTimer,mainAttempts=0;
   let viewOpen=false,viewToken='',modalQueue=Promise.resolve(),sessionEpoch=0;
+  let localConnector=null,localChallenge=crypto.randomUUID(),localTimer=null,localLinkReady=false;
   const receivers=new Map();
   const send=data=>OBR.broadcast.sendMessage(soundShowChannel,data);
+  function getLocalConnector(){
+    try{
+      // Only a tab that Owlbear itself was opened from may offer the local bridge.
+      const opener=window.top.opener;
+      if(!opener||opener.closed)return null;
+      return opener;
+    }catch{return null;}
+  }
+  async function linkLocalSession(value){
+    if(closed||role!=='GM'||await OBR.player.getRole()!=='GM'||!validSession(value))return false;
+    session={version:1,peer:value.peer,secret:value.secret};
+    receivers.clear();
+    await send({type:'session',session,reopen:true});
+    await notifyRoom();
+    channel.postMessage({type:'soundshow-room-session',session});
+    return true;
+  }
+  function tryLocalConnector(){
+    if(closed||role!=='GM'||localLinkReady)return;
+    const opener=getLocalConnector();if(!opener)return;
+    localConnector=opener;
+    try{opener.postMessage({protocol:owlbearLinkProtocol,type:'request',challenge:localChallenge},'*');}
+    catch{}
+  }
+  function receiveLocalConnector(event){
+    const data=event.data;
+    if(closed||role!=='GM'||data?.protocol!==owlbearLinkProtocol||
+       data.type!=='offer'||event.source!==localConnector||!validLocalBridgeOrigin(event.origin)||
+       data.challenge!==localChallenge||!validSession(data.session))return;
+    void(async()=>{
+      if(!await linkLocalSession(data.session))return;
+      localLinkReady=true;clearInterval(localTimer);localTimer=null;
+      event.source.postMessage({protocol:owlbearLinkProtocol,type:'accepted',challenge:localChallenge},event.origin);
+      void OBR.notification.show('SoundShow relié à Owlbear. Lance tes vidéos normalement.','SUCCESS').catch(console.warn);
+    })().catch(error=>console.warn('SoundShow : connexion automatique refusée',error));
+  }
+  window.addEventListener('message',receiveLocalConnector);
+  // The connector knows only the Owlbear tab; the installed Archives background
+  // asks for the session from that tab's opener, never via a public room code.
+  if(role==='GM'){
+    tryLocalConnector();
+    localTimer=setInterval(tryLocalConnector,1200);
+  }
   const viewerSession=()=>channel.postMessage({type:'soundshow-viewer-session',session});
   const playerReport=state=>{if(role==='PLAYER'&&session)void send({type:'player-status',peer:session.peer,state}).catch(console.warn);};
   async function roomStats(){
@@ -98,7 +142,14 @@ export async function installSoundShow(OBR) {
     }
   })().catch(console.warn);});
   const offParty=OBR.party.onChange(players=>{if(role==='GM')void notifyRoom().catch(console.warn);if(role==='PLAYER'&&owner&&!players.some(player=>player.connectionId===owner&&player.role==='GM'))void receiveSession(null);});
-  const offRole=OBR.player.onChange(player=>{if(player.connectionId)connectionId=player.connectionId;if(role===player.role)return;role=player.role;receivers.clear();requestSerial++;requestAttempts=0;clearTimeout(requestTimer);void receiveSession(null);void request().catch(console.warn);});
+  const offRole=OBR.player.onChange(player=>{
+    if(player.connectionId)connectionId=player.connectionId;
+    if(role===player.role)return;
+    role=player.role;receivers.clear();requestSerial++;requestAttempts=0;clearTimeout(requestTimer);
+    localLinkReady=false;clearInterval(localTimer);localTimer=null;
+    if(role==='GM'){tryLocalConnector();localTimer=setInterval(tryLocalConnector,1200);}
+    void receiveSession(null);void request().catch(console.warn);
+  });
   const refresh=()=>{requestAttempts=0;void request().catch(console.warn);};window.addEventListener('online',refresh);window.addEventListener('focus',refresh);
   function askMain(){
     if(closed||role!=='GM')return;
@@ -117,6 +168,12 @@ export async function installSoundShow(OBR) {
     void(async()=>{if(await OBR.player.getRole()!=='GM'||closed)return;session=data.session;receivers.clear();await send({type:'session',session,reopen:true});await notifyRoom();})().catch(console.warn);
   }
   window.addEventListener('message',fromMain);askMain();
-  window.addEventListener('pagehide',()=>{closed=true;clearTimeout(requestTimer);clearTimeout(mainTimer);watcher?.stop();member.dispose();offBroadcast?.();offParty?.();offRole?.();channel.close();window.removeEventListener('message',fromMain);window.removeEventListener('online',refresh);window.removeEventListener('focus',refresh);},{once:true});
+  window.addEventListener('pagehide',()=>{
+    closed=true;clearTimeout(requestTimer);clearTimeout(mainTimer);clearInterval(localTimer);
+    watcher?.stop();member.dispose();offBroadcast?.();offParty?.();offRole?.();channel.close();
+    window.removeEventListener('message',fromMain);
+    window.removeEventListener('message',receiveLocalConnector);
+    window.removeEventListener('online',refresh);window.removeEventListener('focus',refresh);
+  },{once:true});
   await request();
 }
