@@ -51,7 +51,7 @@ export class SoundShowConnection {
     };
     try {
       await loadPeer();if(this.epoch!==epoch)return;
-      const peer=new Peer(undefined,{config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]},...window.ArchivesSoundShowPeerOptions});this.peer=peer;
+      const peer=new Peer(undefined,{config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}],iceCandidatePoolSize:2},...window.ArchivesSoundShowPeerOptions});this.peer=peer;
       this.timeout=setTimeout(()=>fail('timeout'),20000);
       peer.on('open',()=>{
         if(this.epoch!==epoch)return;
