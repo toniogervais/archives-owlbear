@@ -4,6 +4,7 @@ import {localRoom} from '../v57/room.mjs';
 import {soundShowModal,validSession} from './protocol.mjs';
 import {mountPlayer} from './player.mjs?v=014';
 if(trustedOwlbearSdk()){
+  document.documentElement.classList.add('soundshow-obr-frame');
   await new Promise(resolve=>OBR.onReady(resolve));
   if(await OBR.player.getRole()==='PLAYER'){
     const {channel}=await localRoom(OBR);
