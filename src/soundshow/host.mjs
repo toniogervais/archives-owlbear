@@ -5,7 +5,7 @@ export async function forwardSoundShow(OBR,data,post) {
   if(await OBR.player.getRole()!=='GM')throw Error('Commande réservée au maître de jeu.');
   if(typeof data.id!=='string'||data.id.length>100)throw Error('Demande SoundShow invalide.');
   if(data.type==='owl-soundshow-command'&&data.session!==null&&!validSession(data.session))throw Error('Code SoundShow invalide.');
-  if(!hosts.has(OBR))hosts.set(OBR,localRoom(OBR));
+  if(!hosts.has(OBR))hosts.set(OBR,localRoom(OBR).then(room=>{room.channel.addEventListener('message',event=>{if(event.data?.type==='soundshow-room-status')post('owl-soundshow-status',event.data);});return room;}));
   const {channel}=await hosts.get(OBR);
   const result=await new Promise((resolve,reject)=>{
     const timer=setTimeout(()=>finish(null,Error('Le module SoundShow ne répond pas. Recharge la salle.')),10000);
