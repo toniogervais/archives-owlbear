@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
 import {decodeSession,encodeSession,validSession,publicPlayback} from '../src/soundshow/protocol.mjs';
 test('SoundShow pairing accepts only a versioned peer and a strong secret',()=>{
   const session={version:1,peer:'host-12345678',secret:'a'.repeat(64)};
@@ -12,4 +14,12 @@ test('Only playback metadata intended for players passes through',()=>{
   assert.equal(data.volume,1);assert.equal(data.playing,true);assert.ok(!JSON.stringify(data).includes('PRIVATE'));
   assert.equal(publicPlayback({type:'playback',active:true}),null);
   assert.deepEqual(publicPlayback({type:'playback',active:false,private:'PRIVATE'}),{type:'playback',active:false});
+});
+test('The active Archives application still parses after the SoundShow live-session hooks',()=>{
+  const html=fs.readFileSync(new URL('../archives-app-v64-v55.html',import.meta.url),'utf8');let count=0;
+  for(const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)){
+    if(/\bsrc\s*=|\btype\s*=\s*["']module/.test(match[1]))continue;
+    new vm.Script(match[2],{filename:'Archives-inline-'+(++count)});
+  }
+  assert.ok(count>5);
 });

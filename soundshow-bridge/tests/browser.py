@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+import time
 import uuid
 from pathlib import Path
 
@@ -18,6 +19,16 @@ REPO=BASE.parent
 spec=importlib.util.spec_from_file_location('bridge',BASE/'bridge.py')
 bridge=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(bridge)
+
+
+async def wait_expression(page, expression, timeout=20000):
+    # Playwright's wait_for_function uses eval(), which our production CSP rejects.
+    # Evaluate the predicate via the debugger without weakening that CSP.
+    deadline=time.monotonic()+timeout/1000
+    while time.monotonic()<deadline:
+        if await page.evaluate(expression):return
+        await asyncio.sleep(.05)
+    raise AssertionError('Browser condition did not become true: '+expression)
 
 
 class FakeShow:
@@ -102,6 +113,7 @@ async def main():
                     context=await browser.new_context()
                     await context.add_init_script('window.ArchivesSoundShowPeerOptions='+json.dumps(options)+';window.showOpenFilePicker=undefined;')
                     host=await context.new_page();host.on('pageerror',lambda error:errors.append(str(error)))
+                    host.on('console',lambda msg:print('Browser console: '+msg.text,flush=True) if msg.type=='error' else None)
                     await host.goto(str(server.make_url('/'))+'#key=browser-test-admin')
                     await host.locator('#address').fill(str(soundshow.make_url('/ws')).replace('http:','ws:'))
                     await host.locator('#password').fill('native-password')
@@ -111,19 +123,19 @@ async def main():
                         await host.get_by_role('button',name='Choisir la vidéo',exact=True).click()
                     await (await picker.value).set_files(str(video))
                     await host.get_by_role('button',name='Préparer la diffusion',exact=True).click()
-                    await host.wait_for_function("document.getElementById('pair-code').value.startsWith('SS2.')")
+                    await wait_expression(host,"document.getElementById('pair-code').value.startsWith('SS2.')")
                     code=await host.locator('#pair-code').input_value()
                     player_context=await browser.new_context(viewport={'width':800,'height':1100},has_touch=True)
                     await player_context.add_init_script('window.ArchivesSoundShowPeerOptions='+json.dumps(options))
                     tablet=await player_context.new_page();tablet.on('pageerror',lambda error:errors.append(str(error)))
                     await tablet.goto(str(server.make_url('/test/player')))
-                    await tablet.wait_for_function('!!window.attach')
+                    await wait_expression(tablet,'!!window.attach')
                     await tablet.evaluate('code=>window.attach(code)',code)
                     await host.get_by_text('1 lecteur(s) connecté(s).',exact=True).wait_for()
                     print('Native connection and paired tablet: OK',flush=True)
                     await fake.emit(playing=True)
-                    await tablet.wait_for_function('document.querySelector("video").videoWidth>0',timeout=20000)
-                    await tablet.wait_for_function('document.querySelector("video").currentTime>0')
+                    await wait_expression(tablet,'document.querySelector("video").videoWidth>0')
+                    await wait_expression(tablet,'document.querySelector("video").currentTime>0')
                     assert await host.locator('#source').evaluate('(video)=>video.muted')
                     assert await tablet.locator('video').evaluate('(video)=>video.srcObject.getAudioTracks().length')==1
                     # A tablet with blocked autoplay gets a real, working authorisation button.
@@ -133,13 +145,13 @@ async def main():
                     assert audio_peak>.001, f'The real received audio is silent: {audio_peak}'
                     print('Real picture and audible media over WebRTC: OK',flush=True)
                     await fake.emit(playing=False,position=2,volume=35)
-                    await tablet.wait_for_function('document.querySelector("video").paused && Math.abs(document.querySelector("video").volume-.35)<.01')
+                    await wait_expression(tablet,'document.querySelector("video").paused && Math.abs(document.querySelector("video").volume-.35)<.01')
                     await fake.emit(playing=True,position=8,volume=60)
-                    await host.wait_for_function('document.getElementById("source").currentTime>=8')
-                    await tablet.wait_for_function('!document.querySelector("video").paused')
+                    await wait_expression(host,'document.getElementById("source").currentTime>=8')
+                    await wait_expression(tablet,'!document.querySelector("video").paused')
                     await tablet.screenshot(path='/tmp/archives-soundshow-tablet.png')
                     await fake.emit(stop=True)
-                    await tablet.wait_for_function('document.querySelector(".soundshow-view").hidden')
+                    await wait_expression(tablet,'document.querySelector(".soundshow-view").hidden')
                     print('Pause, volume, seek, resume, stop: OK',flush=True)
                     # No old video or launch is replayed by a local dashboard reload.
                     await host.reload()
