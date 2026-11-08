@@ -1,3 +1,10 @@
+export const autoLinkProtocol = 'archives:soundshow:link-v1';
+export function validLocalBridgeOrigin(origin) {
+  try {
+    const value=new URL(origin);
+    return value.protocol==='http:' && ['127.0.0.1','localhost'].includes(value.hostname) && !!value.port && !value.username && !value.password;
+  } catch { return false; }
+}
 export const soundShowChannel = 'fr.archives-imaginaire.bridge/soundshow-v1';
 export const soundShowModal = soundShowChannel + '/player';
 export function validSession(value) {
