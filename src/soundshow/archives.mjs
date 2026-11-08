@@ -1,7 +1,7 @@
 import {button,element,isGM,notice,requireGM,sheet} from '../v63/ui.mjs';
 import {isPacket,packet} from '../v56/link.mjs';
 import {decodeSession,encodeSession,validSession} from './protocol.mjs';
-let session=null,player,liveSession=null;const pending=new Map(),roomFrames=new Map();
+let session=null,player,liveSession=null,infoView=null;const pending=new Map(),roomFrames=new Map();
 const embedded=window.parent!==window;
 async function request(type,value) {
   const id=crypto.randomUUID();
@@ -28,9 +28,9 @@ function open() {
     view.content.append(element('p','Lance le connecteur sur ton PC, associe tes vidéos puis colle son code ici. Pendant la partie, déclenche les vidéos directement dans SoundShow.','studio-hint'));
     const download=element('a','Télécharger le connecteur Windows');download.href='https://github.com/toniogervais/archives-owlbear/releases/download/soundshow-bridge-v0.1.1/Archives-SoundShow-Connecteur.exe';download.target='_blank';download.rel='noopener';view.content.append(download);
     const label=element('label','Code de connexion SoundShow'),input=element('input');input.type='password';input.autocomplete='off';input.placeholder='SS2.…';input.setAttribute('aria-label','Code de connexion SoundShow');input.value=session?encodeSession(session):'';label.append(input);view.content.append(label);
-    const info=element('p',null,'studio-hint');info.id='soundshow-room-status';info.setAttribute('role','status');
+    const info=element('p',null,'studio-hint');info.id='soundshow-room-status';info.setAttribute('role','status');infoView=info;
     function connectionInfo(result){
-      if(Number.isInteger(result?.players))info.textContent=result.players+' joueur(s) détecté(s) dans cette salle Owlbear.'+(result.players===0?' La tablette doit rejoindre cette salle avec le rôle Joueur.':' Le lecteur doit s’ouvrir sur leur écran dès la réception du code.');
+      if(Number.isInteger(result?.players))info.textContent=result.players+' joueur(s) dans cette salle Owlbear · '+(result.ready||0)+' lecteur(s) relié(s) au connecteur.'+(result.players===0?' La tablette doit rejoindre cette salle avec le rôle Joueur.':result.ready===result.players?' Connexion confirmée ; vérifie la lecture de la vidéo.':result.error?' '+result.error+' lecteur(s) signale(nt) une erreur. Vérifie le message sur la tablette.':' Si le nombre ne progresse pas, vérifie le message sur la tablette.');
       else if(Number.isInteger(result?.rooms))info.textContent=result.rooms+' salle(s) Owlbear reliée(s) aux Archives principales.'+(result.rooms===0?' Pour cet essai, ouvre les Archives depuis le livre de ta salle Owlbear et relie SoundShow dans cette vue.':'');
     }
     const actions=element('div',null,'studio-actions');
@@ -50,7 +50,9 @@ window.addEventListener('message',event=>{
     else if(data.session===null||validSession(data.session))void publish(data.session).catch(error=>notice(error.message));
     return;
   }
-  if(event.source!==window.parent||event.origin!==location.origin||!isPacket(event.data)||event.data.type!=='owl-soundshow-result')return;
+  if(event.source!==window.parent||event.origin!==location.origin||!isPacket(event.data))return;
+  if(event.data.type==='owl-soundshow-status'){if(infoView?.isConnected&&Number.isInteger(event.data.players)){const data=event.data;infoView.textContent=data.players+' joueur(s) dans cette salle Owlbear · '+(data.ready||0)+' lecteur(s) relié(s) au connecteur.'+(data.players===0?' La tablette doit rejoindre la salle avec le rôle Joueur.':data.ready===data.players?' Connexion confirmée ; vérifie la lecture de la vidéo.':data.error?' '+data.error+' lecteur(s) signale(nt) une erreur. Vérifie la tablette.':' Si le nombre ne progresse pas, vérifie le message sur la tablette.');}return;}
+  if(event.data.type!=='owl-soundshow-result')return;
   const entry=pending.get(event.data.id);if(!entry)return;pending.delete(event.data.id);clearTimeout(entry.timer);
   if(event.data.safe&&(event.data.session===null||validSession(event.data.session)))entry.resolve(event.data);else entry.reject(Error(event.data.message||'La connexion SoundShow a échoué.'));
 });
