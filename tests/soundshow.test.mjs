@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import {decodeSession,encodeSession,validSession,publicPlayback} from '../src/soundshow/protocol.mjs';
+import {explainConnectionFailure} from '../src/soundshow/connection.mjs';
 test('SoundShow pairing accepts only a versioned peer and a strong secret',()=>{
   const session={version:1,peer:'host-12345678',secret:'a'.repeat(64)};
   assert.deepEqual(decodeSession(encodeSession(session)),session);
@@ -22,4 +23,12 @@ test('The active Archives application still parses after the SoundShow live-sess
     new vm.Script(match[2],{filename:'Archives-inline-'+(++count)});
   }
   assert.ok(count>5);
+});
+
+test('SoundShow player provides useful diagnostics without exposing codes',()=>{
+  assert.match(explainConnectionFailure('peer-unavailable','peer'),/code SoundShow peut être périmé/);
+  assert.match(explainConnectionFailure('webrtc','peer'),/pare-feu Windows/);
+  assert.match(explainConnectionFailure('network','signal'),/Serveur de mise en relation/);
+  assert.match(explainConnectionFailure('timeout','handshake'),/PC n’a pas confirmé/);
+  assert.doesNotMatch(explainConnectionFailure('peer-unavailable','peer'),/SS2\.|secret|password/);
 });
