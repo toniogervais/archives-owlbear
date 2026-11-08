@@ -1,5 +1,12 @@
 # Les Archives de l’Imaginaire — Owlbear V4.21.0
 
+## Correctif de réception SoundShow 4.22.1
+
+Dans Owlbear, le lecteur joueur s’ouvre dès la transmission du code SoundShow, avec un état visible de connexion, même avant le lancement d’une vidéo. La connexion directe du lecteur ne dépend plus de la réussite de la connexion de surveillance dans l’arrière-plan caché. L’attente initiale reste affichée, puis la fin d’une vidéo ferme le lecteur. Une nouvelle vidéo peut l’ouvrir à nouveau après un retour volontaire au jeu. Une nouvelle action **Relier les joueurs** peut aussi rouvrir un lecteur fermé. Les ouvertures et fermetures sont ordonnées ; la fermeture d’une ancienne fenêtre ne ferme pas la suivante.
+
+Le panneau MJ indique le nombre de participants ayant effectivement le rôle Joueur dans la salle Owlbear, ou le nombre de salles reliées lorsque le code est transmis depuis les Archives principales. Ce nombre ne prouve pas la réception du flux : le lecteur indique son propre état de connexion. L’origine de la panne signalée sur la tablette réelle reste à confirmer par cet état. Le connecteur Windows 0.1.1 déjà installé reste compatible.
+
+
 ## Correctif de démarrage 4.21.1
 
 La commande des Archives démarre indépendamment du chargement des transferts, des documents et de la synchronisation des joueurs. Un échec de création de l’outil est retenté sans bloquer les autres fonctions ; les tentatives sont bornées. Le menu affiche une erreur et un accès au diagnostic si le SDK ou un fichier ne répond pas, au lieu de rester sans indication. Le bouton reste désactivé hors d’une salle Owlbear et ne peut plus ouvrir par défaut une application autonome avec le rôle MJ. Les vérifications d’origine, de rôle et d’accès sont conservées.

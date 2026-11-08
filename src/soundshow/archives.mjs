@@ -12,27 +12,33 @@ async function request(type,value) {
 }
 async function publish(value) {
   requireGM();
-  if(embedded){const result=await request('owl-soundshow-command',value);session=result.session;}
+  if(embedded){const result=await request('owl-soundshow-command',value);session=result.session;return result;}
   else{
     session=value;window.ArchivesLiveInvitations?.publishSoundShow(value);
     for(const [frame,roomId] of roomFrames){
       if(window.ArchivesOwlbearBridge?.authorizeSoundShowFrame(frame,roomId))frame.postMessage(packet('soundshow-main-session',{session,roomId}),location.origin);
       else roomFrames.delete(frame);
     }
+    return {rooms:roomFrames.size};
   }
 }
 function open() {
   try {
     requireGM();const view=sheet('archives-soundshow','SoundShow · vidéos des joueurs');
     view.content.append(element('p','Lance le connecteur sur ton PC, associe tes vidéos puis colle son code ici. Pendant la partie, déclenche les vidéos directement dans SoundShow.','studio-hint'));
-    const download=element('a','Télécharger le connecteur Windows');download.href='https://github.com/toniogervais/archives-owlbear/releases/tag/soundshow-bridge-v0.1.0';download.target='_blank';download.rel='noopener';view.content.append(download);
+    const download=element('a','Télécharger le connecteur Windows');download.href='https://github.com/toniogervais/archives-owlbear/releases/download/soundshow-bridge-v0.1.1/Archives-SoundShow-Connecteur.exe';download.target='_blank';download.rel='noopener';view.content.append(download);
     const label=element('label','Code de connexion SoundShow'),input=element('input');input.type='password';input.autocomplete='off';input.placeholder='SS2.…';input.setAttribute('aria-label','Code de connexion SoundShow');input.value=session?encodeSession(session):'';label.append(input);view.content.append(label);
+    const info=element('p',null,'studio-hint');info.id='soundshow-room-status';info.setAttribute('role','status');
+    function connectionInfo(result){
+      if(Number.isInteger(result?.players))info.textContent=result.players+' joueur(s) détecté(s) dans cette salle Owlbear.'+(result.players===0?' La tablette doit rejoindre cette salle avec le rôle Joueur.':' Le lecteur doit s’ouvrir sur leur écran dès la réception du code.');
+      else if(Number.isInteger(result?.rooms))info.textContent=result.rooms+' salle(s) Owlbear reliée(s) aux Archives principales.'+(result.rooms===0?' Pour cet essai, ouvre les Archives depuis le livre de ta salle Owlbear et relie SoundShow dans cette vue.':'');
+    }
     const actions=element('div',null,'studio-actions');
-    actions.append(button('Relier les joueurs',async()=>{try{view.busy(true);await publish(decodeSession(input.value));view.status.textContent='Code transmis. Les vidéos associées se présenteront quand tu les lanceras dans SoundShow.';}catch(error){view.status.textContent=error.message;}finally{view.busy(false);}}),
+    actions.append(button('Relier les joueurs',async()=>{try{view.busy(true);const result=await publish(decodeSession(input.value));connectionInfo(result);view.status.textContent='Code transmis. Les vidéos associées se présenteront quand tu les lanceras dans SoundShow.';}catch(error){view.status.textContent=error.message;}finally{view.busy(false);}}),
       button('Déconnecter',async()=>{try{view.busy(true);await publish(null);input.value='';view.status.textContent='Diffusion SoundShow déconnectée.';}catch(error){view.status.textContent=error.message;}finally{view.busy(false);}}));
-    view.content.append(actions,element('p','Le lecteur peut demander aux joueurs d’autoriser l’image et le son. Le connecteur et son onglet doivent rester ouverts.','studio-hint'));
+    view.content.append(actions,info,element('p','Le lecteur s’ouvre d’abord avec son état de connexion. Il peut demander aux joueurs d’autoriser l’image et le son. Le connecteur et son onglet doivent rester ouverts.','studio-hint'));
     let edited=false;input.addEventListener('input',()=>{edited=true;});
-    if(embedded)void request('owl-soundshow-query').then(result=>{if(!edited){session=result.session;if(view.dialog.isConnected)input.value=session?encodeSession(session):'';}}).catch(error=>{if(view.dialog.isConnected)view.status.textContent=error.message;});
+    if(embedded)void request('owl-soundshow-query').then(result=>{if(view.dialog.isConnected){connectionInfo(result);if(!edited){session=result.session;input.value=session?encodeSession(session):'';}}}).catch(error=>{if(view.dialog.isConnected)view.status.textContent=error.message;});
   }catch(error){notice(error.message);}
 }
 window.addEventListener('message',event=>{

@@ -94,7 +94,7 @@ async def main():
     async def player_html(request):
         return web.Response(text='<!doctype html><meta name="viewport" content="width=device-width"><script src="/peerjs.min.js" defer></script><script type="module" src="/test/player.mjs"></script>',content_type='text/html')
     async def player_script(request):
-        return web.Response(text="import {mountPlayer} from '/test/src/player.mjs';import{decodeSession}from'/test/src/protocol.mjs';window.player=mountPlayer();window.attach=code=>player.use(decodeSession(code));",content_type='text/javascript')
+        return web.Response(text="import {mountPlayer} from '/test/src/player.mjs';import{decodeSession}from'/test/src/protocol.mjs';window.player=mountPlayer();window.attach=code=>player.use(decodeSession(code));window.waitingReader=()=>{player.destroy();window.player=mountPlayer({showWaiting:true});};",content_type='text/javascript')
     app.router.add_get('/test/src/{name}',source)
     app.router.add_get('/test/player',player_html)
     app.router.add_get('/test/player.mjs',player_script)
@@ -131,7 +131,13 @@ async def main():
                     await tablet.goto(str(server.make_url('/test/player')))
                     await wait_expression(tablet,'!!window.attach')
                     await tablet.evaluate('code=>window.attach(code)',code)
-                    await host.get_by_text('1 lecteur(s) connecté(s).',exact=True).wait_for()
+                    try:
+                        await host.get_by_text('1 lecteur(s) connecté(s).',exact=True).wait_for()
+                    except Exception:
+                        print('Host connection status:',await host.locator('#peer-status').text_content(),flush=True)
+                        print('Receiver connection status:',await tablet.locator('.soundshow-view footer').text_content(),flush=True)
+                        print('Receiver transport:',await tablet.evaluate('''()=>{const c=window.player.connection,p=c.connection?.peerConnection;return{peerOpen:c.peer?.open,peerDisconnected:c.peer?.disconnected,dataOpen:c.connection?.open,rtc:p?.connectionState,ice:p?.iceConnectionState,gathering:p?.iceGatheringState};}'''),flush=True)
+                        raise
                     print('Native connection and paired tablet: OK',flush=True)
                     await fake.emit(playing=True)
                     await wait_expression(tablet,'document.querySelector("video").videoWidth>0')
@@ -161,6 +167,17 @@ async def main():
                     await fake.emit(stop=True)
                     await wait_expression(tablet,'document.querySelector(".soundshow-view").hidden')
                     print('Pause, volume, seek, resume, stop: OK',flush=True)
+                    # The Owlbear waiting mode shows connection status before a cue
+                    # and still receives real video when the source starts later.
+                    await tablet.evaluate('()=>window.waitingReader()')
+                    await tablet.evaluate('code=>window.attach(code)',code)
+                    await tablet.get_by_text('Prêt — en attente d’une vidéo du MJ.',exact=True).wait_for()
+                    assert not await tablet.locator('.soundshow-view').evaluate('(view)=>view.hidden')
+                    await fake.emit(playing=True)
+                    await wait_expression(tablet,'document.querySelector("video").videoWidth>0 && document.querySelector("video").currentTime>0')
+                    await fake.emit(stop=True)
+                    await tablet.get_by_text('Prêt — en attente d’une vidéo du MJ.',exact=True).wait_for()
+                    print('Visible waiting reader and real media after later source start: OK',flush=True)
                     # No old video or launch is replayed by a local dashboard reload.
                     await host.reload()
                     await host.get_by_text('SoundShow connecté — les raccourcis sont suivis.',exact=True).wait_for()
