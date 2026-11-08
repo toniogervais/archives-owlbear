@@ -1,4 +1,14 @@
-# Les Archives de l’Imaginaire — Owlbear V4.22.4
+# Les Archives de l’Imaginaire — Owlbear V4.23.0
+
+## Vidéos SoundShow — une seule connexion, dans Les Archives ou Owlbear
+
+Le connecteur Windows 0.2.0 **prépare la diffusion automatiquement** dès que SoundShow est connecté. Il peut reprendre sans intervention les fichiers vidéo dont Chrome possède toujours l'autorisation. Un bouton principal **Ouvrir Les Archives et relier les joueurs** ouvre l'application et transmet la session au MJ en toute sécurité : plus de code SS2 à copier-coller ni de page de test à ouvrir. L'autorisation s'appuie sur une requête ponctuelle du programme local, un identifiant aléatoire d'ouverture et la vérification du rôle MJ. La session est ensuite propagée vers Owlbear et le Salon Live.
+
+Les vidéos se présentent dans une **fenêtre intégrée**, et non dans une page séparée ni systématiquement en plein écran. Dans Owlbear, le lecteur utilise un modal de 780 × 500 pixels ; dans Les Archives, un panneau flottant adapté à la largeur de l'écran. L'utilisateur conserve le bouton **Revenir au jeu** et peut autoriser le son si nécessaire. Les anciens codes restent disponibles sous **Dépannage**.
+
+Pour des raisons de sécurité, la première association du fichier vidéo sur le PC et la connexion au serveur SoundShow local restent nécessaires. La nouvelle liaison automatique nécessite le connecteur 0.2.0, qui doit être construit et installé une fois. Les connexions WebRTC sur un réseau réel restent à confirmer ; cette modification ne transforme pas le navigateur du joueur en contrôleur SoundShow. La télécommande SoundShow depuis Les Archives sera traitée ensuite.
+
+
 
 ## Démarrage des vidéos en boucle 4.22.4
 
