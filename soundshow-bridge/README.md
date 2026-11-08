@@ -30,7 +30,7 @@ Dans la page du connecteur, déplier **Essayer avant l’installation de SoundSh
 
 ## Ce qui est suivi
 
-Lecture, pause, reprise, déplacement dans la vidéo, volume, silence et arrêt du lecteur. Une vidéo non associée n’est pas diffusée. Si plusieurs vidéos sont lancées simultanément, le lecteur suit la plus récente ; cette première version affiche une vidéo à la fois. Si la connexion à SoundShow disparaît, la diffusion est arrêtée pendant la reconnexion. Le connecteur n’envoie aucune commande de déclenchement à SoundShow, y compris après reconnexion.
+Lecture, pause, reprise, déplacement dans la vidéo, volume, silence et arrêt du lecteur. Une vidéo non associée n’est pas diffusée. Cette première version affiche une vidéo à la fois. Si la connexion à SoundShow disparaît, la diffusion est arrêtée pendant la reconnexion. Le connecteur n’envoie aucune commande de déclenchement à SoundShow, y compris après reconnexion.
 
 La diffusion est une lecture de la **vidéo source** synchronisée avec l’état de SoundShow. Les effets, calques, transitions visuelles et mixages de sortie de SoundShow ne sont pas capturés. Il existe un délai de transmission ; ce n’est pas une synchronisation image par image entre appareils. Commencer par un MP4 H.264 avec son AAC, lisible par Chrome. Un format accepté par SoundShow n’est pas forcément accepté par le navigateur du PC.
 

@@ -15,7 +15,7 @@ import webbrowser
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from aiohttp import ClientSession, ClientTimeout, WSMsgType, web
+from aiohttp import ClientSession, ClientTimeout, WSServerHandshakeError, WSMsgType, web
 
 VERSION = '0.1.0'
 ROOT = Path(getattr(sys, '_MEIPASS', Path(__file__).resolve().parent))
@@ -164,6 +164,19 @@ class Bridge:
                                 raise ConnectionError('SoundShow disconnected')
             except asyncio.CancelledError:
                 raise
+            except WSServerHandshakeError as exc:
+                self.model = ShowState()
+                if exc.status == 403:
+                    self.status, self.message = 'rejected', 'Accès refusé : vérifie que SoundShow 2 Pro est activé sur ce PC.'
+                    await self.publish()
+                    return
+                if exc.status == 429:
+                    try:
+                        delay = max(60, min(600, int((exc.headers or {}).get('Retry-After', '60'))))
+                    except ValueError:
+                        delay = 60
+                self.status, self.message = 'disconnected', 'Serveur SoundShow indisponible. Reconnexion différée.'
+                await self.publish()
             except Exception:
                 self.model = ShowState()
                 self.status = 'disconnected'

@@ -128,5 +128,20 @@ class ServerTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(self.bridge.status,'rejected')
             self.assertEqual(len(calls),1)
 
+    async def test_pro_access_refusal_stops_instead_of_reconnecting(self):
+        calls=[]
+        async def fake(request):
+            calls.append(1)
+            raise web.HTTPForbidden()
+        app=web.Application();app.router.add_get('/ws',fake)
+        async with TestServer(app,host='127.0.0.1') as server:
+            await self.bridge.connect(str(server.make_url('/ws')).replace('http:','ws:'),'password')
+            for _ in range(100):
+                if self.bridge.status=='rejected':break
+                await asyncio.sleep(.01)
+            await asyncio.sleep(.1)
+            self.assertEqual(self.bridge.status,'rejected')
+            self.assertEqual(len(calls),1)
+
 
 if __name__=='__main__':unittest.main()

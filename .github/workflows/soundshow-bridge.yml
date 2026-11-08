@@ -53,6 +53,7 @@ jobs:
           --add-data "../assets/peerjs-1.5.2.min.js;assets"
           --add-data "../assets/peerjs-1.5.2.LICENSE;assets"
           --add-data "LICENSE;."
+          --recursive-copy-metadata aiohttp
           bridge.py
       - name: Vérifier le programme Windows
         run: python soundshow-bridge/tests/smoke_executable.py soundshow-bridge/dist/Archives-SoundShow-Connecteur.exe

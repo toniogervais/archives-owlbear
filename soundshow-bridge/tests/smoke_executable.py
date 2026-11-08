@@ -4,7 +4,7 @@ import sys
 import urllib.error
 import urllib.request
 
-process=subprocess.Popen([sys.argv[1],'--no-browser'],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
+process=subprocess.Popen([sys.argv[1],'--no-browser'],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,encoding='utf-8',errors='replace')
 try:
     for _ in range(20):
         line=process.stdout.readline()
