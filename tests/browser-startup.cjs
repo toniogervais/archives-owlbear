@@ -21,7 +21,7 @@ async function loaded(page){await page.frameLocator('#viewer').frameLocator('#ap
  const browser=await chromium.launch({headless:true,...JSON.parse(process.env.ARCHIVES_CHROMIUM_OPTIONS||'{}')});
  try{
   // Each service download may fail without preventing navigation or the editor.
-  for(const failed of ['v58/transfers.mjs','v57/room-background.mjs','v60/background.mjs']){
+  for(const failed of ['v58/transfers.mjs','v57/room-background.mjs','v60/background.mjs','soundshow/owlbear.mjs']){
    const context=await browser.newContext();await configure(context,hub(),{autoScreenChoice:false,sceneReady:true});
    await context.route('**/src/'+failed+'?*',route=>route.abort());
    const page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
@@ -95,3 +95,4 @@ async function loaded(page){await page.frameLocator('#viewer').frameLocator('#ap
   console.log('Chromium : échecs de modules isolés, reprise limitée de l’outil, action indépendante, erreur lisible, SDK tardif, accès hors salle refusé et diagnostic sans lecture de campagne validés.');
  }finally{await browser.close()}
 })().catch(error=>{console.error(error);process.exitCode=1});
+
