@@ -90,10 +90,14 @@ function clearSource() {
   if(objectUrl)URL.revokeObjectURL(objectUrl);objectUrl=null;
   playback={type:'playback',active:false};broadcast(playback);
 }
-function desiredPosition(item) {
-  let target=item.position+(item.playing?Math.max(0,(Date.now()-item.observedAt)/1000):0);
-  if(item.loop && item.stop>item.start && target>item.stop) target=item.start+(target-item.start)%(item.stop-item.start);
-  return Math.max(item.start || 0,target);
+function desiredPosition(item, mediaDuration = Infinity) {
+  const start = Math.max(0, item.start || 0);
+  const stop = item.stop > start ? item.stop : (Number.isFinite(mediaDuration) && mediaDuration > start ? mediaDuration : Infinity);
+  let target = Math.max(start, item.position + (item.playing ? Math.max(0, (Date.now()-item.observedAt)/1000) : 0));
+  // A video loop with no explicit stop boundary still wraps at the source duration.
+  if(item.loop && Number.isFinite(stop) && stop>start)
+    target = start + ((target-start) % (stop-start));
+  return Number.isFinite(stop) ? Math.min(target,Math.max(start,stop-.05)) : target;
 }
 async function follow() {
   if (!show) return;
@@ -108,7 +112,8 @@ async function follow() {
     current={id:item.id,file,seen:new Set(candidates.map(x=>x.id)),pending:true};
     const info=show.videos.find(video=>video.id===item.source);
     playback={type:'playback',active:true,id:crypto.randomUUID(),title:info?.name || 'Vidéo du MJ',playing:item.playing,volume:item.volume,muted:item.muted};
-    objectUrl=URL.createObjectURL(file);source.src=objectUrl;source.muted=true;
+    objectUrl=URL.createObjectURL(file);source.loop=item.loop;source.src=objectUrl;source.muted=true;
+    text('stream-status','Ouverture du fichier vidéo sur le PC…');
     try {
       await new Promise((resolve,reject)=>{
         const timeout=setTimeout(()=>finish(Error('Le navigateur ne parvient pas à lire cette vidéo. Essaie un MP4 H.264 avec audio AAC.')),15000);
@@ -118,7 +123,7 @@ async function follow() {
       });
       if(mine!==generation)return;
       if(typeof source.captureStream!=='function')throw Error('Ouvre le connecteur dans Chrome sur ton PC pour diffuser cette vidéo.');
-      source.currentTime=Math.min(desiredPosition(item),Math.max(0,source.duration-.05));
+      source.currentTime=desiredPosition(item,source.duration);
       await source.play();if(mine!==generation)return;
       stream=source.captureStream();if(!item.playing)source.pause();current.pending=false;
       if (!stream.getVideoTracks().length) throw Error('La capture de cette vidéo ne fournit aucune image.');
@@ -128,7 +133,7 @@ async function follow() {
     return;
   }
   if(current.pending)return;
-  const target=Math.min(desiredPosition(item),Math.max(0,source.duration-.05));
+  const target=desiredPosition(item,source.duration);
   if(Math.abs(source.currentTime-target)>.65)source.currentTime=target;
   source.loop=item.loop;
   if(item.playing && source.paused) {try{await source.play();}catch{ text('stream-status','Clique dans cet onglet pour autoriser la lecture.'); }}
