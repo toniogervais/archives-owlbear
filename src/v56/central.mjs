@@ -199,6 +199,15 @@ export function installCentral(api) {
   } catch {}
 
   window.ArchivesOwlbearBridge = {
+    authorizeSoundShowFrame(source, roomId) {
+      if (!canEdit() || !validRoomId(roomId)) return false;
+      try {
+        const url = new URL(source.location.href);
+        return source !== window && source.top !== source && url.origin === location.origin &&
+          /\/background-v55\.html$/.test(url.pathname) &&
+          (source.top === mapTab || (source.top.opener === window && pairing.roomId === roomId));
+      } catch { return false; }
+    },
     focusMap() {
       if (!mapTab || mapTab.closed) return false;
       try { mapTab.focus(); return true; } catch { return false; }
@@ -222,3 +231,4 @@ export function installCentral(api) {
     }
   };
 }
+

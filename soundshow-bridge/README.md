@@ -24,6 +24,8 @@ Aucun outil ni abonnement vidéo payant supplémentaire. Le connecteur utilise d
 
 Le code autorise la réception des vidéos de la session. Le partager uniquement avec les joueurs. **Terminer la diffusion** dans le connecteur invalide ce code. Les lecteurs ne peuvent pas piloter SoundShow ni parcourir les fichiers du PC.
 
+Quand Owlbear est ouvert depuis les Archives principales, la connexion SoundShow est transmise automatiquement à cette salle. Une modification faite dans l’éditeur intégré revient également aux Archives principales. Le transfert vérifie l’origine et la fenêtre de salle ouverte par le MJ. Sur la tablette, le lecteur autonome des Archives se coupe quand son onglet passe à l’arrière-plan pour éviter de doubler le son pendant la bascule vers Owlbear.
+
 ## Essayer avant d’avoir SoundShow
 
 Dans la page du connecteur, déplier **Essayer avant l’installation de SoundShow**, puis **Activer la simulation**. Associer un fichier au bouton de démonstration, préparer la diffusion et utiliser les commandes de simulation. Elles ne commandent aucun SoundShow réel.

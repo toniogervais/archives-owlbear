@@ -1,7 +1,7 @@
 import {button,element,isGM,notice,requireGM,sheet} from '../v63/ui.mjs';
 import {isPacket,packet} from '../v56/link.mjs';
 import {decodeSession,encodeSession,validSession} from './protocol.mjs';
-let session=null,player;const pending=new Map();
+let session=null,player,liveSession=null;const pending=new Map(),roomFrames=new Map();
 const embedded=window.parent!==window;
 async function request(type,value) {
   const id=crypto.randomUUID();
@@ -13,7 +13,13 @@ async function request(type,value) {
 async function publish(value) {
   requireGM();
   if(embedded){const result=await request('owl-soundshow-command',value);session=result.session;}
-  else{session=value;window.ArchivesLiveInvitations?.publishSoundShow(value);}
+  else{
+    session=value;window.ArchivesLiveInvitations?.publishSoundShow(value);
+    for(const [frame,roomId] of roomFrames){
+      if(window.ArchivesOwlbearBridge?.authorizeSoundShowFrame(frame,roomId))frame.postMessage(packet('soundshow-main-session',{session,roomId}),location.origin);
+      else roomFrames.delete(frame);
+    }
+  }
 }
 function open() {
   try {
@@ -30,15 +36,24 @@ function open() {
   }catch(error){notice(error.message);}
 }
 window.addEventListener('message',event=>{
+  if(!embedded&&isGM()&&event.origin===location.origin&&isPacket(event.data)&&['soundshow-main-request','soundshow-main-update'].includes(event.data.type)){
+    const data=event.data;
+    if(!window.ArchivesOwlbearBridge?.authorizeSoundShowFrame(event.source,data.roomId))return;
+    roomFrames.set(event.source,data.roomId);
+    if(data.type==='soundshow-main-request')event.source.postMessage(packet('soundshow-main-session',{session,roomId:data.roomId}),location.origin);
+    else if(data.session===null||validSession(data.session))void publish(data.session).catch(error=>notice(error.message));
+    return;
+  }
   if(event.source!==window.parent||event.origin!==location.origin||!isPacket(event.data)||event.data.type!=='owl-soundshow-result')return;
   const entry=pending.get(event.data.id);if(!entry)return;pending.delete(event.data.id);clearTimeout(entry.timer);
   if(event.data.safe&&(event.data.session===null||validSession(event.data.session)))entry.resolve(event.data);else entry.reject(Error(event.data.message||'La connexion SoundShow a échoué.'));
 });
 window.addEventListener('archives:soundshow-session',event=>{
   if(isGM()||embedded)return;
-  const value=event.detail?.session;if(value!==null&&!validSession(value))return;
-  void(async()=>{if(!player){const {mountPlayer}=await import('./player.mjs');player=mountPlayer();}await player.use(value);})().catch(error=>notice(error.message));
+  const value=event.detail?.session;if(value!==null&&!validSession(value))return;liveSession=value;
+  void(async()=>{if(!player){const {mountPlayer}=await import('./player.mjs');player=mountPlayer();}await player.use(document.hidden?null:value);})().catch(error=>notice(error.message));
 });
+document.addEventListener('visibilitychange',()=>{if(!isGM()&&!embedded&&player)void player.use(document.hidden?null:liveSession).catch(error=>notice(error.message));});
 const control=document.querySelector('.canvas-integration-icon[aria-label^="Sound Show"]');
 if(control){
   control.disabled=false;control.id='archives-soundshow-open';control.setAttribute('aria-label','SoundShow : diffuser les vidéos');control.parentElement.title='SoundShow : connexion et vidéos des joueurs';control.onclick=open;
