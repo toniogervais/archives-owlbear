@@ -1,6 +1,6 @@
 # SoundShow 2 → tablettes des joueurs
 
-Version d’essai 0.1.0. SoundShow reste le déclencheur : ses boutons, ses raccourcis clavier et sa télécommande lancent les vidéos. Le connecteur suit leur lecture et un onglet Chrome sur le PC diffuse la vidéo source aux lecteurs des Archives et d’Owlbear.
+Version d’essai 0.1.1. SoundShow reste le déclencheur : ses boutons, ses raccourcis clavier et sa télécommande lancent les vidéos. Le connecteur suit leur lecture et un onglet Chrome sur le PC diffuse la vidéo source aux lecteurs des Archives et d’Owlbear.
 
 ## Ce qu’il faut
 
@@ -11,12 +11,14 @@ Version d’essai 0.1.0. SoundShow reste le déclencheur : ses boutons, ses racc
 
 Aucun outil ni abonnement vidéo payant supplémentaire. Le connecteur utilise des composants libres. Les flux passent directement entre navigateurs ; aucun fichier vidéo n’est déposé sur GitHub, Supabase ou le serveur de signalisation. Il n’y a pas de relais TURN payant. Certains réseaux isolés pourront empêcher la connexion ; cette version ne promet pas la diffusion sur Internet à travers tous les routeurs.
 
+La version 0.1.1 corrige le refus des adresses privées comme `192.168.x.x` annoncées par SoundShow. Elle garde le serveur du connecteur accessible uniquement sur ce PC, exige sa clé administrateur et refuse les adresses publiques, les domaines externes et les redirections avant tout envoi du mot de passe. Un serveur injoignable affiche désormais une erreur d’adresse/port explicite.
+
 ## Première installation sur le PC
 
-1. Télécharger **Archives-SoundShow-Connecteur.exe** depuis la [version d’essai](https://github.com/toniogervais/archives-owlbear/releases/tag/soundshow-bridge-v0.1.0).
+1. Télécharger **Archives-SoundShow-Connecteur.exe** depuis la [version d’essai](https://github.com/toniogervais/archives-owlbear/releases/tag/soundshow-bridge-v0.1.1).
 2. Lancer ce programme. Il ouvre une page locale. Garder sa fenêtre et cet onglet ouverts. Python et Node.js ne sont pas nécessaires avec cet exécutable.
-3. Dans SoundShow : **Options → Intégrations → Serveur distant**. Définir un mot de passe puis démarrer le serveur. Le connecteur appelle uniquement le SoundShow de ce PC ; l’option « Autoriser les origines externes » n’est pas nécessaire pour cette liaison native.
-4. Dans la page du connecteur, entrer l’adresse `ws://127.0.0.1:8080/ws` (adapter le port si nécessaire) et ce mot de passe. Le mot de passe reste en mémoire sur le PC et n’est jamais transmis aux joueurs.
+3. Dans SoundShow : **Options → Intégrations → Serveur distant**. Définir un mot de passe puis démarrer le serveur. Le connecteur accepte SoundShow sur ce PC ou à une adresse IPv4 privée du réseau local ; l’option « Autoriser les origines externes » n’est pas nécessaire pour cette liaison native.
+4. Dans la page du connecteur, coller l’adresse affichée par SoundShow, par exemple `http://192.168.1.20:8080/`, et ce mot de passe. Une adresse WebSocket telle que `ws://127.0.0.1:8080/ws` reste acceptée. Le lien HTTP est converti automatiquement en point d’accès WebSocket `/ws` ; le port indiqué est conservé. Le mot de passe reste en mémoire sur le PC et n’est jamais transmis aux joueurs.
 5. Pour chaque bouton vidéo à diffuser, cliquer sur **Choisir la vidéo** et choisir le même fichier que dans SoundShow. Cela ne crée pas une deuxième copie du fichier. Dans Chrome, l’autorisation du fichier peut être mémorisée ; au prochain lancement, utiliser **Autoriser les vidéos mémorisées**. Un navigateur sans cette fonction demandera de rechoisir les fichiers à chaque session.
 6. Cliquer sur **Préparer la diffusion**, puis **Copier le code**.
 7. Dans les Archives, ouvrir le bouton **SoundShow**, coller le code puis choisir **Relier les joueurs**. Dans Owlbear, les joueurs de la salle reçoivent la connexion automatiquement. Dans le Salon Live autonome, les joueurs déjà présents et les nouveaux arrivants la reçoivent par leur liaison avec le MJ.

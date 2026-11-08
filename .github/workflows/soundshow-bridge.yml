@@ -78,7 +78,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          if ! gh release view soundshow-bridge-v0.1.0 > /dev/null 2>&1; then
-            gh release create soundshow-bridge-v0.1.0 --target "$GITHUB_SHA" --prerelease --title "Connecteur SoundShow — essai 0.1.0" --notes "Connecteur Windows autonome. Déclenchement depuis SoundShow 2 Pro, fichier source unique sur le PC, lecture dans les navigateurs joueurs. Validation avec SoundShow et tablettes réels encore nécessaire."
+          if ! gh release view soundshow-bridge-v0.1.1 > /dev/null 2>&1; then
+            gh release create soundshow-bridge-v0.1.1 --target "$GITHUB_SHA" --prerelease --title "Connecteur SoundShow — essai 0.1.1" --notes "Corrige la connexion aux adresses réseau annoncées par SoundShow. Le lien HTTP peut être collé directement ; conversion automatique en WebSocket. Programme Windows autonome. Validation avec SoundShow et tablettes réels encore nécessaire."
           fi
-          gh release upload soundshow-bridge-v0.1.0 windows/Archives-SoundShow-Connecteur.exe --clobber
+          gh release upload soundshow-bridge-v0.1.1 windows/Archives-SoundShow-Connecteur.exe --clobber

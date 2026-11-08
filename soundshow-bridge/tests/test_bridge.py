@@ -4,6 +4,7 @@ import json
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import AsyncMock, patch
 
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
@@ -37,11 +38,31 @@ class StateTests(unittest.TestCase):
         self.assertEqual(bridge.finite(True),0)
         self.assertEqual(bridge.finite(-5),0)
 
-    def test_only_the_soundshow_instance_on_this_pc_can_be_contacted(self):
-        self.assertEqual(bridge.local_soundshow_url('ws://127.0.0.1:8080/ws'),'ws://127.0.0.1:8080/ws')
-        self.assertEqual(bridge.local_soundshow_url('ws://localhost:8080/ws'),'ws://localhost:8080/ws')
-        for url in ['ws://192.168.1.3:8080/ws','ws://evil.test:8080/ws','http://127.0.0.1:8080/ws',
-                    'ws://user:password@127.0.0.1:8080/ws','ws://127.0.0.1:8080/ws?file=secret','ws://127.0.0.1:8080/other']:
+    def test_soundshow_links_accept_loopback_and_private_lan_and_preserve_the_port(self):
+        cases = {
+            'ws://127.0.0.1:8080/ws':'ws://127.0.0.1:8080/ws',
+            'ws://localhost:8080/ws':'ws://localhost:8080/ws',
+            'http://192.168.1.9:8080/':'ws://192.168.1.9:8080/ws',
+            '  http://192.168.1.20:9080/  ':'ws://192.168.1.20:9080/ws',
+            'http://127.0.0.1:8081':'ws://127.0.0.1:8081/ws',
+            'http://localhost:8080/ws':'ws://localhost:8080/ws',
+            'ws://192.168.1.3:8080/ws':'ws://192.168.1.3:8080/ws',
+            'http://10.0.0.20:8080/':'ws://10.0.0.20:8080/ws',
+            'http://172.16.0.2:8080/':'ws://172.16.0.2:8080/ws',
+            'http://172.31.255.254:8080/':'ws://172.31.255.254:8080/ws',
+            'http://[::1]:8080/':'ws://[::1]:8080/ws',
+        }
+        for value, expected in cases.items():
+            with self.subTest(value=value):self.assertEqual(bridge.local_soundshow_url(value),expected)
+
+    def test_nonlocal_addresses_credentials_and_unexpected_url_parts_are_refused(self):
+        for url in ['ws://evil.test:8080/ws','ws://8.8.8.8:8080/ws','http://169.254.169.254:8080/',
+                    'http://172.15.0.1:8080/','http://172.32.0.1:8080/','http://0.0.0.0:8080/',
+                    'http://255.255.255.255:8080/','http://[fe80::1]:8080/','http://[::1%25eth0]:8080/',
+                    'https://192.168.1.20:8080/','ws://localhost/ws','ws://localhost:0/ws','http://localhost:65536/',
+                    'ws://user:password@127.0.0.1:8080/ws','http://@192.168.1.20:8080/',
+                    'ws://127.0.0.1:8080/ws?file=secret','ws://127.0.0.1:8080/other','http://192.168.1.20:8080/#password',
+                    'http://192.168.\n1.20:8080/']:
             with self.subTest(url=url),self.assertRaises(ValueError):bridge.local_soundshow_url(url)
 
 
@@ -98,7 +119,8 @@ class ServerTests(unittest.IsolatedAsyncioTestCase):
             return ws
         app=web.Application();app.router.add_get('/ws',fake)
         async with TestServer(app,host='127.0.0.1') as server:
-            url=str(server.make_url('/ws')).replace('http:','ws:',1)
+            # Paste the HTTP remote link exactly as SoundShow displays it.
+            url=str(server.make_url('/'))
             response=await self.client.post('/api/connect',json={'url':url,'password':'SENSITIVE_PASSWORD'},headers=self.headers)
             self.assertEqual(response.status,200)
             for _ in range(100):
@@ -112,6 +134,42 @@ class ServerTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(received[0]['features'],['runtime_snapshots'])
             self.assertFalse(any(item.get('type','').startswith('play') for item in received))
             await self.bridge.cancel()
+
+    async def test_authenticated_http_lan_link_is_normalized_before_native_connection(self):
+        with patch.object(self.bridge,'connect',new_callable=AsyncMock) as connect:
+            response=await self.client.post('/api/connect',json={'url':'http://192.168.1.9:8080/','password':'SENSITIVE_PASSWORD'},headers=self.headers)
+            self.assertEqual(response.status,200)
+            connect.assert_awaited_once_with('ws://192.168.1.9:8080/ws','SENSITIVE_PASSWORD')
+            self.assertNotIn('SENSITIVE_PASSWORD',await response.text())
+
+    async def test_redirect_is_refused_before_password_can_be_sent_to_another_endpoint(self):
+        received=[]
+        async def redirect(request):
+            raise web.HTTPFound('/redirected')
+        async def destination(request):
+            received.append(1)
+            return web.Response()
+        app=web.Application();app.router.add_get('/ws',redirect);app.router.add_get('/redirected',destination)
+        async with TestServer(app,host='127.0.0.1') as server:
+            await self.bridge.connect(str(server.make_url('/ws')).replace('http:','ws:'),'SENSITIVE_PASSWORD')
+            for _ in range(100):
+                if self.bridge.status=='rejected':break
+                await asyncio.sleep(.01)
+            self.assertEqual(self.bridge.status,'rejected')
+            self.assertIn('redirige',self.bridge.message)
+            self.assertEqual(received,[])
+            self.assertNotIn('SENSITIVE_PASSWORD',json.dumps(self.bridge.packet()))
+
+    async def test_closed_server_reports_an_address_and_port_failure(self):
+        server=TestServer(web.Application(),host='127.0.0.1');await server.start_server()
+        url=str(server.make_url('/ws')).replace('http:','ws:');await server.close()
+        await self.bridge.connect(url,'SENSITIVE_PASSWORD')
+        for _ in range(100):
+            if self.bridge.status=='disconnected' and 'Impossible de joindre' in self.bridge.message:break
+            await asyncio.sleep(.01)
+        self.assertEqual(self.bridge.status,'disconnected')
+        self.assertIn('adresse et le port',self.bridge.message)
+        self.assertNotIn('SENSITIVE_PASSWORD',json.dumps(self.bridge.packet()))
 
     async def test_wrong_soundshow_password_does_not_retry(self):
         calls=[]
@@ -141,6 +199,22 @@ class ServerTests(unittest.IsolatedAsyncioTestCase):
                 await asyncio.sleep(.01)
             await asyncio.sleep(.1)
             self.assertEqual(self.bridge.status,'rejected')
+            self.assertEqual(len(calls),1)
+
+    async def test_missing_v2_endpoint_reports_the_version_and_stops_retrying(self):
+        calls=[]
+        async def fake(request):
+            calls.append(1)
+            raise web.HTTPNotFound()
+        app=web.Application();app.router.add_get('/ws',fake)
+        async with TestServer(app,host='127.0.0.1') as server:
+            await self.bridge.connect(str(server.make_url('/ws')).replace('http:','ws:'),'password')
+            for _ in range(100):
+                if self.bridge.status=='rejected':break
+                await asyncio.sleep(.01)
+            await asyncio.sleep(.1)
+            self.assertEqual(self.bridge.status,'rejected')
+            self.assertIn('API SoundShow 2',self.bridge.message)
             self.assertEqual(len(calls),1)
 
 

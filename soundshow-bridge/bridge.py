@@ -15,9 +15,9 @@ import webbrowser
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from aiohttp import ClientSession, ClientTimeout, WSServerHandshakeError, WSMsgType, web
+from aiohttp import ClientConnectorError, ClientSession, ClientTimeout, TraceConfig, WSServerHandshakeError, WSMsgType, web
 
-VERSION = '0.1.0'
+VERSION = '0.1.1'
 ROOT = Path(getattr(sys, '_MEIPASS', Path(__file__).resolve().parent))
 REPO = Path(__file__).resolve().parent.parent
 
@@ -80,19 +80,37 @@ class ShowState:
         return {'project':str(project.get('name') or '')[:160], 'videos':videos, 'players':players}
 
 
+class SoundShowRedirectError(ValueError):
+    pass
+
+
+async def reject_redirect(session, context, params):
+    # The remote password must only reach the address explicitly chosen by the MJ.
+    raise SoundShowRedirectError('Unexpected SoundShow redirect')
+
+
 def local_soundshow_url(value):
     if not isinstance(value, str) or len(value) > 200:
         raise ValueError('Adresse SoundShow invalide.')
-    url = urlsplit(value)
+    value = value.strip()
+    message = 'Colle l’adresse affichée par SoundShow, par exemple http://192.168.1.20:8080/, ou son adresse ws://…/ws.'
     try:
-        local = url.hostname == 'localhost' or ipaddress.ip_address(url.hostname or '').is_loopback
+        if any(char.isspace() or ord(char) < 32 for char in value):
+            raise ValueError(message)
+        url = urlsplit(value)
+        host = url.hostname or ''
+        address = None if host == 'localhost' else ipaddress.ip_address(host)
+        local = host == 'localhost' or address.is_loopback or (
+            isinstance(address, ipaddress.IPv4Address) and any(address in network for network in (
+                ipaddress.ip_network('10.0.0.0/8'), ipaddress.ip_network('172.16.0.0/12'), ipaddress.ip_network('192.168.0.0/16'))))
         port = url.port
-    except ValueError:
-        local = False
-        port = None
-    if not local or url.scheme != 'ws' or not port or url.path != '/ws' or url.query or url.fragment or url.username or url.password:
-        raise ValueError('Utilise SoundShow sur ce PC : ws://127.0.0.1:8080/ws.')
-    return value
+        if not local or '%' in host or url.scheme not in ('http', 'ws') or not port or url.path not in ('', '/', '/ws') or url.query or url.fragment or url.username is not None or url.password is not None:
+            raise ValueError(message)
+    except ValueError as exc:
+        raise ValueError(message) from exc
+    if isinstance(address, ipaddress.IPv6Address):
+        host = '[' + address.compressed + ']'
+    return f'ws://{host}:{port}/ws'
 
 
 class Bridge:
@@ -138,7 +156,9 @@ class Bridge:
             self.status, self.message = 'connecting', 'Connexion à SoundShow…'
             await self.publish()
             try:
-                async with ClientSession(timeout=ClientTimeout(total=None, sock_connect=5)) as client:
+                trace = TraceConfig()
+                trace.on_request_redirect.append(reject_redirect)
+                async with ClientSession(timeout=ClientTimeout(total=None, sock_connect=5), trace_configs=[trace]) as client:
                     async with client.ws_connect(url, max_msg_size=8*1024*1024) as ws:
                         await ws.send_json({'type':'hello', 'version':2, 'password':password, 'features':['runtime_snapshots']})
                         hello = await ws.receive_json(timeout=10)
@@ -164,10 +184,19 @@ class Bridge:
                                 raise ConnectionError('SoundShow disconnected')
             except asyncio.CancelledError:
                 raise
+            except SoundShowRedirectError:
+                self.model = ShowState()
+                self.status, self.message = 'rejected', 'Cette adresse redirige vers un autre service. Recopie l’adresse du serveur distant de SoundShow 2.'
+                await self.publish()
+                return
             except WSServerHandshakeError as exc:
                 self.model = ShowState()
                 if exc.status == 403:
-                    self.status, self.message = 'rejected', 'Accès refusé : vérifie que SoundShow 2 Pro est activé sur ce PC.'
+                    self.status, self.message = 'rejected', 'Accès refusé : vérifie que SoundShow 2 Pro est activé sur l’ordinateur qui héberge SoundShow.'
+                    await self.publish()
+                    return
+                if exc.status == 404:
+                    self.status, self.message = 'rejected', 'L’API SoundShow 2 est introuvable à cette adresse. Vérifie l’adresse du serveur distant et la version 2 du logiciel.'
                     await self.publish()
                     return
                 if exc.status == 429:
@@ -176,6 +205,11 @@ class Bridge:
                     except ValueError:
                         delay = 60
                 self.status, self.message = 'disconnected', 'Serveur SoundShow indisponible. Reconnexion différée.'
+                await self.publish()
+            except (ClientConnectorError, asyncio.TimeoutError):
+                self.model = ShowState()
+                self.status = 'disconnected'
+                self.message = 'Impossible de joindre SoundShow à cette adresse. Vérifie l’adresse et le port affichés dans SoundShow, puis que son serveur distant est démarré. Nouvelle tentative automatique.'
                 await self.publish()
             except Exception:
                 self.model = ShowState()

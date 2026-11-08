@@ -115,7 +115,7 @@ async def main():
                     host=await context.new_page();host.on('pageerror',lambda error:errors.append(str(error)))
                     host.on('console',lambda msg:print('Browser console: '+msg.text,flush=True) if msg.type=='error' else None)
                     await host.goto(str(server.make_url('/'))+'#key=browser-test-admin')
-                    await host.locator('#address').fill(str(soundshow.make_url('/ws')).replace('http:','ws:'))
+                    await host.locator('#address').fill(str(soundshow.make_url('/')))
                     await host.locator('#password').fill('native-password')
                     await host.get_by_role('button',name='Connecter SoundShow',exact=True).click()
                     await host.get_by_text('SoundShow connecté — les raccourcis sont suivis.',exact=True).wait_for()
