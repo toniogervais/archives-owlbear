@@ -28,14 +28,15 @@ const channel='fr.archives-imaginaire.bridge/soundshow-v1';
   const frame=()=>gm.frames().find(f=>f.url().includes('archives-app-v64-v55.html'));
   await frame().evaluate(()=>window.ArchivesSoundShow.open());
   await app.locator('#archives-soundshow').waitFor();
+  await app.locator('#archives-soundshow details').evaluate(el=>{el.open=true;});
   const session={version:1,peer:'test-host-12345678',secret:'a'.repeat(64)},code='SS2.'+session.peer+'.'+session.secret;
   const background=page=>page.frames().find(f=>f.url().includes('background-v55.html'));
   // A hidden watcher failure must not prevent the visible receiving frame.
   await background(alix).evaluate(()=>{window.__soundshowPeerFailure=true;});
   await app.getByLabel('Code de connexion SoundShow',{exact:true}).fill(code);
   await app.getByRole('button',{name:'Relier les joueurs',exact:true}).click();
-  await app.getByText('Code transmis. Les vidéos associées se présenteront quand tu les lanceras dans SoundShow.',{exact:true}).waitFor();
-  await app.locator('#soundshow-room-status').filter({hasText:'2 joueur(s) détecté(s)'}).waitFor();
+  await app.getByText('SoundShow relié. Lance maintenant tes vidéos dans SoundShow.',{exact:true}).waitFor();
+  await app.locator('#soundshow-room-status').filter({hasText:'2 joueur(s) dans cette salle Owlbear'}).waitFor();
   const modal=page=>page.locator('iframe[id="fr.archives-imaginaire.bridge/soundshow-v1/player"]');
   const videoFrame=async page=>{
     await page.frameLocator('iframe[id="fr.archives-imaginaire.bridge/soundshow-v1/player"]').getByRole('button',{name:'Revenir au jeu',exact:true}).waitFor();
@@ -49,6 +50,7 @@ const channel='fr.archives-imaginaire.bridge/soundshow-v1';
   }
   await app.locator('#soundshow-room-status').filter({hasText:'2 lecteur(s) relié(s)'}).waitFor();
   assert.equal(await modal(gm).count(),0,'A GM must not receive a player modal');
+  assert.match(require('node:fs').readFileSync(require('node:path').join(__dirname,'../src/soundshow/owlbear.mjs'),'utf8'),/width:780,height:500/,'Viewer must open in a window, not full screen');
   assert.deepEqual(await background(alix).evaluate(()=>window.__soundshowConnections),[],'The visible reader works while its hidden watcher is unavailable');
   await alix.evaluate(({channel,session})=>window.fixture.publish(channel,{type:'session',session:{...session,peer:'forged-host-12345678'}}),{channel,session});
   await bob.waitForTimeout(100);assert.deepEqual(await background(bob).evaluate(()=>window.__soundshowConnections),[session.peer]);
@@ -95,7 +97,7 @@ const channel='fr.archives-imaginaire.bridge/soundshow-v1';
   await failed.getByRole('button',{name:'Réessayer la connexion',exact:true}).click();
   await failed.getByText('Prêt — en attente d’une vidéo du MJ.',{exact:true}).waitFor();
   await app.locator('#soundshow-room-status').filter({hasText:'4 lecteur(s) relié(s)'}).waitFor();
-  await app.locator('#soundshow-room-status').filter({hasText:'4 joueur(s) détecté(s)'}).waitFor();
+  await app.locator('#soundshow-room-status').filter({hasText:'4 joueur(s) dans cette salle Owlbear'}).waitFor();
   await app.getByRole('button',{name:'Déconnecter',exact:true}).click();await modal(dana).waitFor({state:'detached'});
   assert.ok(!errors.length,errors.join('\n'));
   console.log('SoundShow room: immediate reader despite blocked hidden watcher, visible connection errors, party count, voluntary return/new cue/re-link, late join, forged player rejected, stop/disconnect: OK');
