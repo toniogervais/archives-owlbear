@@ -1,8 +1,16 @@
-# Les Archives de l’Imaginaire — Owlbear V4.23.0
+# Les Archives de l’Imaginaire — Owlbear V4.23.1
+
+## Owlbear reste le programme principal
+
+Le connecteur SoundShow **0.2.1** ouvre maintenant uniquement **Owlbear Rodeo** avec le bouton **« Ouvrir Owlbear et relier les joueurs »**. Il n’ouvre plus un onglet autonome des Archives. Lorsque le MJ rejoint sa salle dans cet onglet Owlbear, l’extension Les Archives demande une liaison locale de manière automatique ; la session n’est placée ni dans l’URL ni dans le presse-papiers. La communication vérifie l’onglet Owlbear d’origine, le domaine des Archives, l’adresse de boucle locale du connecteur et le rôle GM. Les joueurs restent cantonnés à la réception des vidéos.
+
+Les Archives restent accessibles **depuis le bouton de l’extension dans Owlbear**, dans la même interface. La vidéo s’ouvre sous forme de fenêtre intégrée à Owlbear ou à ses Archives embarquées. Aucune nouvelle fenêtre autonome Les Archives n’est nécessaire. Les codes manuels sont conservés en dépannage. Ce parcours utilise le lien d’ouverture du navigateur ; il faut donc rejoindre Owlbear depuis le bouton du connecteur pour la mise en relation automatique. La connexion sur le matériel réel doit encore être confirmée.
+
+
 
 ## Vidéos SoundShow — une seule connexion, dans Les Archives ou Owlbear
 
-Le connecteur Windows 0.2.0 **prépare la diffusion automatiquement** dès que SoundShow est connecté. Il peut reprendre sans intervention les fichiers vidéo dont Chrome possède toujours l'autorisation. Un bouton principal **Ouvrir Les Archives et relier les joueurs** ouvre l'application et transmet la session au MJ en toute sécurité : plus de code SS2 à copier-coller ni de page de test à ouvrir. L'autorisation s'appuie sur une requête ponctuelle du programme local, un identifiant aléatoire d'ouverture et la vérification du rôle MJ. La session est ensuite propagée vers Owlbear et le Salon Live.
+Le connecteur Windows 0.2.1 **prépare la diffusion automatiquement** dès que SoundShow est connecté. Il peut reprendre sans intervention les fichiers vidéo dont Chrome possède toujours l'autorisation. Un bouton principal **Ouvrir Les Archives et relier les joueurs** ouvre l'application et transmet la session au MJ en toute sécurité : plus de code SS2 à copier-coller ni de page de test à ouvrir. L'autorisation s'appuie sur une requête ponctuelle du programme local, un identifiant aléatoire d'ouverture et la vérification du rôle MJ. La session est ensuite propagée vers Owlbear et le Salon Live.
 
 Les vidéos se présentent dans une **fenêtre intégrée**, et non dans une page séparée ni systématiquement en plein écran. Dans Owlbear, le lecteur utilise un modal de 780 × 500 pixels ; dans Les Archives, un panneau flottant adapté à la largeur de l'écran. L'utilisateur conserve le bouton **Revenir au jeu** et peut autoriser le son si nécessaire. Les anciens codes restent disponibles sous **Dépannage**.
 
