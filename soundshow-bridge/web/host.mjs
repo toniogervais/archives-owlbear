@@ -8,7 +8,7 @@ let show, ws, wsTimer, peer, secret, stream, objectUrl, current, generation = 0,
 let playback = {type:'playback',active:false}, peerRetry = 0;
 let attempts=0,rejected=0,lastIssue='Aucune demande reçue.';
 function diagnostic(){const el=$('link-diagnostic');if(!el)return;const ready=[...clients.values()].filter(e=>e.ready&&e.mode==='view').length;el.textContent=attempts+' tentative(s) reçue(s) par le PC · '+ready+' lecteur(s) confirmé(s) · '+rejected+' demande(s) refusée(s). '+lastIssue;}
-const options = () => ({config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]},...window.ArchivesSoundShowPeerOptions});
+const options = () => ({config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}],iceCandidatePoolSize:2},...window.ArchivesSoundShowPeerOptions});
 function text(id,value) { $(id).textContent = value; }
 async function api(path,data) {
   const response = await fetch('/api/'+path,{method:'POST',headers:{'Content-Type':'application/json','X-Archives-Key':key},body:JSON.stringify(data || {})});
