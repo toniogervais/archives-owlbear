@@ -26,7 +26,7 @@ function open() {
   try {
     requireGM();const view=sheet('archives-soundshow','SoundShow · vidéos des joueurs');
     view.content.append(element('p','Lance le connecteur sur ton PC, associe tes vidéos puis colle son code ici. Pendant la partie, déclenche les vidéos directement dans SoundShow.','studio-hint'));
-    const download=element('a','Télécharger le connecteur Windows');download.href='https://github.com/toniogervais/archives-owlbear/releases/download/soundshow-bridge-v0.1.2/Archives-SoundShow-Connecteur.exe';download.target='_blank';download.rel='noopener';view.content.append(download);
+    const download=element('a','Télécharger le connecteur Windows');download.href='https://github.com/toniogervais/archives-owlbear/releases/download/soundshow-bridge-v0.1.3/Archives-SoundShow-Connecteur.exe';download.target='_blank';download.rel='noopener';view.content.append(download);
     const label=element('label','Code de connexion SoundShow'),input=element('input');input.type='password';input.autocomplete='off';input.placeholder='SS2.…';input.setAttribute('aria-label','Code de connexion SoundShow');input.value=session?encodeSession(session):'';label.append(input);view.content.append(label);
     const info=element('p',null,'studio-hint');info.id='soundshow-room-status';info.setAttribute('role','status');infoView=info;
     function connectionInfo(result){
@@ -59,7 +59,7 @@ window.addEventListener('message',event=>{
 window.addEventListener('archives:soundshow-session',event=>{
   if(isGM()||embedded)return;
   const value=event.detail?.session;if(value!==null&&!validSession(value))return;liveSession=value;
-  void(async()=>{if(!player){const {mountPlayer}=await import('./player.mjs?v=013');player=mountPlayer();}await player.use(document.hidden?null:value);})().catch(error=>notice(error.message));
+  void(async()=>{if(!player){const {mountPlayer}=await import('./player.mjs?v=014');player=mountPlayer();}await player.use(document.hidden?null:value);})().catch(error=>notice(error.message));
 });
 document.addEventListener('visibilitychange',()=>{if(!isGM()&&!embedded&&player)void player.use(document.hidden?null:liveSession).catch(error=>notice(error.message));});
 const control=document.querySelector('.canvas-integration-icon[aria-label^="Sound Show"]');
