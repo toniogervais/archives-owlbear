@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import {decodeSession,encodeSession,validSession,publicPlayback,autoLinkProtocol,validLocalBridgeOrigin} from '../src/soundshow/protocol.mjs';
+import {decodeSession,encodeSession,validSession,publicPlayback,autoLinkProtocol,owlbearLinkProtocol,validLocalBridgeOrigin} from '../src/soundshow/protocol.mjs';
 import {explainConnectionFailure} from '../src/soundshow/connection.mjs';
 test('SoundShow pairing accepts only a versioned peer and a strong secret',()=>{
   const session={version:1,peer:'host-12345678',secret:'a'.repeat(64)};
@@ -35,6 +35,7 @@ test('SoundShow player provides useful diagnostics without exposing codes',()=>{
 
 test('Automatic SoundShow pairing accepts only a loopback origin with explicit local port',()=>{
   assert.equal(autoLinkProtocol,'archives:soundshow:link-v1');
+  assert.equal(owlbearLinkProtocol,'archives:soundshow:owlbear-link-v1');
   assert.equal(validLocalBridgeOrigin('http://127.0.0.1:47321'),true);
   assert.equal(validLocalBridgeOrigin('http://localhost:56781'),true);
   for(const origin of ['https://127.0.0.1:47321','http://192.168.1.9:47321',
@@ -47,7 +48,11 @@ test('The simplified UI never requires a code as its primary action',()=>{
   const app=fs.readFileSync(new URL('../src/soundshow/archives.mjs',import.meta.url),'utf8');
   const bridge=fs.readFileSync(new URL('../soundshow-bridge/web/index.html',import.meta.url),'utf8');
   assert.match(app,/Dépannage : connexion manuelle avec un code/);
-  assert.match(bridge,/Ouvrir Les Archives et relier les joueurs/);
+  assert.match(bridge,/Ouvrir Owlbear et relier les joueurs/);
   assert.match(bridge,/Connexion manuelle \(uniquement en cas de problème\)/);
-  assert.match(app,/soundshow_link/);
+  assert.match(app,/Ouvre Owlbear depuis le connecteur Windows|ouvre Owlbear à partir du connecteur Windows/i);
+  const owl=fs.readFileSync(new URL('../src/soundshow/owlbear.mjs',import.meta.url),'utf8');
+  assert.match(owl,/type:'request',challenge:localChallenge/);
+  assert.match(owl,/event.source!==localConnector/);
+  assert.match(owl,/await OBR.player.getRole\(\)!=='GM'/);
 });
