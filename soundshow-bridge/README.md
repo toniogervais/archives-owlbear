@@ -1,6 +1,6 @@
 # SoundShow 2 → tablettes des joueurs
 
-Version d’essai 0.1.3. SoundShow reste le déclencheur : ses boutons, ses raccourcis clavier et sa télécommande lancent les vidéos. Le connecteur suit leur lecture et un onglet Chrome sur le PC diffuse la vidéo source aux lecteurs des Archives et d’Owlbear.
+Version d’essai 0.1.3. Elle prépare la connexion WebRTC à l’avance et corrige le démarrage d’une vidéo déjà en boucle lorsque sa position dépasse la durée du fichier. Les gains de temps dépendent du réseau et doivent être vérifiés sur la tablette. SoundShow reste le déclencheur : ses boutons, ses raccourcis clavier et sa télécommande lancent les vidéos. Le connecteur suit leur lecture et un onglet Chrome sur le PC diffuse la vidéo source aux lecteurs des Archives et d’Owlbear.
 
 ## Ce qu’il faut
 
