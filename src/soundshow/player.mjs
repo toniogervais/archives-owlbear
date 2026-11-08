@@ -1,4 +1,4 @@
-import {SoundShowConnection} from './connection.mjs?v=012';
+import {SoundShowConnection} from './connection.mjs?v=013';
 export function mountPlayer({container=document.body,onPlayback=()=>{},onStatus=()=>{},close,showWaiting=false}={}) {
   if(!document.querySelector('[data-soundshow-style]')){const style=document.createElement('link');style.rel='stylesheet';style.href=new URL('./player.css',import.meta.url).href;style.dataset.soundshowStyle='1';document.head.append(style);}
   const root=document.createElement('section');root.className='soundshow-view';root.hidden=!showWaiting;root.setAttribute('aria-label','Vidéo SoundShow du maître de jeu');
@@ -13,9 +13,9 @@ export function mountPlayer({container=document.body,onPlayback=()=>{},onStatus=
     catch{allow.hidden=false;status.textContent='Touche le bouton pour autoriser la vidéo avec le son.';video.muted=true;try{await video.play();}catch{}}
   }
   allow.onclick=async()=>{video.muted=playback.muted;try{await video.play();allow.hidden=true;status.textContent='';}catch{status.textContent='La lecture reste bloquée par le navigateur. Réessaie dans Chrome.';}};
-  const connection=new SoundShowConnection({onStatus:message=>{status.textContent=message;retry.hidden=!/interrompue|impossible|indisponible|ne répond pas|ne s’est pas chargé|échoué/i.test(message);onStatus(message);},onPlayback:data=>{
+  const connection=new SoundShowConnection({onStatus:message=>{status.textContent=message;retry.hidden=!/interrompue|impossible|indisponible|ne répond pas|ne s’est pas chargé|échoué|échec|bloqué/i.test(message);onStatus(message);},onPlayback:data=>{
     playback=data;root.hidden=data.active?data.id===dismissedId:!showWaiting;if(data.active){title.textContent=data.title;video.volume=data.volume;video.muted=data.muted||document.hidden||root.hidden;if(!data.playing){video.pause();status.textContent='En pause dans SoundShow.';}else{if(!video.srcObject)status.textContent='Vidéo annoncée — réception de l’image en cours…';void play();}}
-    else{video.pause();video.srcObject=null;if(showWaiting)status.textContent='Prêt — en attente d’une vidéo du MJ.';}onPlayback(data);
+    else{video.pause();video.srcObject=null;if(showWaiting&&connection.nonce)status.textContent='Prêt — en attente d’une vidéo du MJ.';}onPlayback(data);
   },onStream:stream=>{if(destroyed)return;video.srcObject=stream;if(stream)void play();}});
   retry.onclick=()=>{const activeSession=connection.session;if(!activeSession)return;retry.hidden=true;connection.stop();void connection.use(activeSession).catch(error=>{status.textContent=error.message;retry.hidden=false;onStatus(error.message);});};
   const visible=()=>{video.muted=playback.muted||document.hidden||root.hidden;if(!document.hidden)void play();};document.addEventListener('visibilitychange',visible);
