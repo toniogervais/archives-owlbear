@@ -1,6 +1,6 @@
 import {button,element,isGM,notice,requireGM,sheet} from '../v63/ui.mjs';
 import {isPacket,packet} from '../v56/link.mjs';
-import {decodeSession,encodeSession,validSession,autoLinkProtocol,validLocalBridgeOrigin} from './protocol.mjs?v=015';
+import {decodeSession,encodeSession,validSession} from './protocol.mjs?v=016';
 let session=null,player,liveSession=null,infoView=null;const pending=new Map(),roomFrames=new Map();
 const embedded=window.parent!==window;
 let pendingAutoLink=null,autoLinkBusy=false,autoLinkTimer=null,linkInfoView=null;
@@ -52,7 +52,7 @@ async function publish(value) {
 function open() {
   try {
     requireGM();const view=sheet('archives-soundshow','SoundShow · vidéos des joueurs');
-    view.content.append(element('p','Une seule fois au démarrage, dans le connecteur SoundShow sur ton PC, clique sur « Ouvrir Les Archives et relier les joueurs ». Ensuite, lance les vidéos directement dans SoundShow.','studio-hint'));
+    view.content.append(element('p','SoundShow se relie depuis Owlbear : ouvre Owlbear à partir du connecteur Windows, puis entre dans ta salle MJ. L’extension Les Archives relie les joueurs automatiquement. Aucun onglet Archives séparé.','studio-hint'));
     const simpleStatus=element('p',session?'SoundShow relié. Les prochaines vidéos s’ouvriront dans une fenêtre des Archives ou d’Owlbear.':'En attente du connecteur SoundShow. Aucun code à recopier.','studio-status');simpleStatus.setAttribute('role','status');linkInfoView=simpleStatus;view.content.append(simpleStatus);
     const download=element('a','Télécharger le connecteur Windows');download.href='https://github.com/toniogervais/archives-owlbear/releases/download/soundshow-bridge-v0.2.0/Archives-SoundShow-Connecteur.exe';download.target='_blank';download.rel='noopener';view.content.append(download);
     const advanced=element('details');const summary=element('summary','Dépannage : connexion manuelle avec un code');advanced.append(summary);
@@ -67,7 +67,7 @@ function open() {
       button('Déconnecter',async()=>{try{view.busy(true);await publish(null);input.value='';view.status.textContent='Diffusion SoundShow déconnectée.';simpleStatus.textContent='SoundShow déconnecté.';}catch(error){view.status.textContent=error.message;}finally{view.busy(false);}}));
     advanced.append(actions);view.content.append(info,advanced,element('p','La vidéo s’affiche dans une fenêtre intégrée. Les joueurs peuvent devoir autoriser le son la première fois. Le connecteur doit rester ouvert sur ton PC.','studio-hint'));
     let edited=false;input.addEventListener('input',()=>{edited=true;});
-    if(embedded)void request('owl-soundshow-query').then(result=>{if(view.dialog.isConnected){connectionInfo(result);if(!edited){session=result.session;input.value=session?encodeSession(session):'';}}}).catch(error=>{if(view.dialog.isConnected)view.status.textContent=error.message;});
+    if(embedded)void request('owl-soundshow-query').then(result=>{if(view.dialog.isConnected){connectionInfo(result);simpleStatus.textContent=result.session?'SoundShow est relié à cette salle Owlbear. Lance une vidéo dans SoundShow.':'SoundShow n’est pas encore relié : ouvre Owlbear depuis le connecteur Windows.';if(!edited){session=result.session;input.value=session?encodeSession(session):'';}}}).catch(error=>{if(view.dialog.isConnected)view.status.textContent=error.message;});
   }catch(error){notice(error.message);}
 }
 window.addEventListener('message',event=>{
