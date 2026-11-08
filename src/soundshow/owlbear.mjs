@@ -30,7 +30,7 @@ export async function installSoundShow(OBR) {
     modalQueue=modalQueue.catch(()=>{}).then(async()=>{
       if(closed||role!=='PLAYER'||!session||viewOpen)return;
       const token=crypto.randomUUID(),url=new URL('../../soundshow-player.html',import.meta.url);
-      url.searchParams.set('v','014');url.searchParams.set('viewer',token);viewToken=token;
+      url.searchParams.set('v','015');url.searchParams.set('viewer',token);viewToken=token;
       try{
         await OBR.modal.open({id:soundShowModal,url:url.href,width:780,height:500,hideBackdrop:true,hidePaper:true});
         if(viewToken===token)viewOpen=true;
