@@ -1,4 +1,14 @@
-# Les Archives de l’Imaginaire — Owlbear V4.22.2
+# Les Archives de l’Imaginaire — Owlbear V4.22.3
+
+## Diagnostic de liaison SoundShow 4.22.3
+
+Lorsqu'une tablette affiche un écran noir et alterne « connexion vidéo » et « liaison interrompue », la nouvelle version distingue les étapes : serveur de mise en relation, recherche du PC, validation du code puis connexion prête. Elle affiche une explication ciblée (ancien code, serveur inaccessible, WebRTC/pare-feu) et conserve le bouton **Réessayer la connexion**. Le lecteur n'annonce plus « Prêt » pendant une tentative interrompue. La perte du seul serveur de signalisation ne détruit plus une connexion de données déjà ouverte.
+
+Sur le PC, le connecteur **0.1.2** ajoute une section repliable **Diagnostic de connexion**, avec nombre de tentatives reçues, lecteurs effectivement prêts et demandes refusées. Le connecteur ne publie ni mot de passe ni code de session dans ce diagnostic. La connexion directe WebRTC peut encore être bloquée par un réseau invités, le pare-feu, ou une configuration NAT imposant un relais TURN ; cette version ne prétend pas contourner ces restrictions.
+
+Après réception fiable des images et du son, l'étape prévue est la télécommande SoundShow intégrée directement dans Les Archives (lecture, pause, arrêt et volume), sans multiplier les panneaux de réglages.
+
+
 
 ## Diagnostic SoundShow et reconnexion 4.22.2
 
