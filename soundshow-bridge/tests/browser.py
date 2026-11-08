@@ -127,6 +127,30 @@ async def main():
                     await wait_expression(host,"document.getElementById('pair-code').value.startsWith('SS2.')")
                     assert await host.get_by_role('button',name='Ouvrir Les Archives et relier les joueurs').is_visible()
                     code=await host.locator('#pair-code').input_value()
+                    # Test the new real browser window handshake without visiting GitHub Pages.
+                    async def fake_archives(route):
+                        page = """<!doctype html><title>Archives MJ — mock sécurisé</title>
+                        <script>
+                        window.receivedPairing=null;
+                        window.addEventListener('message',event=>{
+                          const d=event.data;
+                          if(!event.origin.startsWith('http://127.0.0.1:')||
+                             d?.protocol!=='archives:soundshow:link-v1'||d.type!=='offer'||
+                             d.requestId!==new URLSearchParams(location.search).get('soundshow_link'))return;
+                          window.receivedPairing={peer:d.session?.peer,secretLength:d.session?.secret?.length};
+                          event.source.postMessage({protocol:d.protocol,type:'accepted',requestId:d.requestId},event.origin);
+                        });
+                        </script>"""
+                        await route.fulfill(status=200,content_type='text/html',body=page)
+                    await context.route('https://toniogervais.github.io/archives-owlbear/archives.html*',fake_archives)
+                    async with host.expect_popup() as popup:
+                        await host.get_by_role('button',name='Ouvrir Les Archives et relier les joueurs').click()
+                    archives_window=await popup.value
+                    await wait_expression(archives_window,'window.receivedPairing?.secretLength===64')
+                    assert await archives_window.evaluate('window.receivedPairing.peer') in code
+                    assert 'secret=' not in archives_window.url and code not in archives_window.url
+                    await host.get_by_text('Archives reliées. Tu peux lancer tes vidéos directement dans SoundShow.',exact=True).wait_for()
+                    print('One click opens Archives and securely relays the session without copy/paste: OK',flush=True)
                     player_context=await browser.new_context(viewport={'width':800,'height':1100},has_touch=True)
                     await player_context.add_init_script('window.ArchivesSoundShowPeerOptions='+json.dumps(options))
                     tablet=await player_context.new_page();tablet.on('pageerror',lambda error:errors.append(str(error)))
