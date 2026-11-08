@@ -9,7 +9,7 @@ let playback = {type:'playback',active:false}, peerRetry = 0;
 const archivesOrigin='https://toniogervais.github.io';
 const archivesPath=archivesOrigin+'/archives-owlbear/archives.html';
 const linkProtocol='archives:soundshow:link-v1';
-let archivesWindow=null,linkNonce='',linkTimer=null,linkStarted=0,autoRestoreKey='';
+let archivesWindow=null,linkNonce='',linkTimer=null,linkStarted=0,autoRestoreKey='',archivesLinked=false;
 function stopLinkTimer(){clearInterval(linkTimer);linkTimer=null;}
 function sendArchivesLink(){
   if(!archivesWindow||archivesWindow.closed){stopLinkTimer();text('link-status','La fenêtre des Archives a été fermée. Clique de nouveau pour l’ouvrir.');return;}
@@ -19,6 +19,10 @@ function sendArchivesLink(){
     session:{version:1,peer:peer.id,secret}},archivesOrigin);
 }
 function openArchivesAndLink(){
+  if(linkTimer){archivesWindow?.focus();text('link-status','Connexion en cours. Les Archives vont confirmer la liaison automatiquement.');return;}
+  if(archivesLinked && archivesWindow && !archivesWindow.closed){
+    archivesWindow.focus();text('link-status','Déjà relié aux Archives. Lance simplement la vidéo dans SoundShow.');return;
+  }
   if(!['connected','simulation'].includes(show?.status)){
     text('link-status','Connecte d’abord SoundShow, puis réessaie.');return;
   }
@@ -35,7 +39,7 @@ window.addEventListener('message',event=>{
   const data=event.data;
   if(event.origin!==archivesOrigin||event.source!==archivesWindow||data?.protocol!==linkProtocol||
      data.type!=='accepted'||data.requestId!==linkNonce)return;
-  stopLinkTimer();
+  stopLinkTimer();archivesLinked=true;
   text('link-status','Archives reliées. Tu peux lancer tes vidéos directement dans SoundShow.');
 });
 let attempts=0,rejected=0,lastIssue='Aucune demande reçue.';
@@ -222,7 +226,7 @@ function prepare() {
   peer.on('error',error=>{lastIssue='Erreur de mise en relation du PC : '+String(error?.type||'inconnue').slice(0,40);diagnostic();text('peer-status','Connexion aux joueurs indisponible ('+String(error?.type||'réseau')+'). Vérifie Internet et le réseau local.');});
 }
 function stopSession() {
-  clearSource();for(const entry of clients.values())entry.connection.close();clients.clear();peer?.destroy();peer=null;
+  archivesLinked=false;stopLinkTimer();clearSource();for(const entry of clients.values())entry.connection.close();clients.clear();peer?.destroy();peer=null;
   $('pair-code').value='';$('copy').disabled=$('stop-session').disabled=true;text('peer-status','Diffusion terminée. Prépare une nouvelle connexion pour reprendre.');audience();
 }
 $('connection').onsubmit=async event=>{event.preventDefault();try{await api('connect',{url:$('address').value.trim(),password:$('password').value});$('password').value='';}catch(error){text('show-status',error.message);}};
