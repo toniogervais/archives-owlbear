@@ -1,6 +1,6 @@
 import {localRoom,roomMembers} from '../v57/room.mjs';
 import {validSession,sameSession,soundShowChannel,soundShowModal} from './protocol.mjs';
-import {SoundShowConnection} from './connection.mjs?v=013';
+import {SoundShowConnection} from './connection.mjs?v=014';
 import {isPacket,packet} from '../v56/link.mjs';
 export async function installSoundShow(OBR) {
   const {channel,connectionId:initial}=await localRoom(OBR),member=roomMembers(OBR);
@@ -30,7 +30,7 @@ export async function installSoundShow(OBR) {
     modalQueue=modalQueue.catch(()=>{}).then(async()=>{
       if(closed||role!=='PLAYER'||!session||viewOpen)return;
       const token=crypto.randomUUID(),url=new URL('../../soundshow-player.html',import.meta.url);
-      url.searchParams.set('v','013');url.searchParams.set('viewer',token);viewToken=token;
+      url.searchParams.set('v','014');url.searchParams.set('viewer',token);viewToken=token;
       try{
         await OBR.modal.open({id:soundShowModal,url:url.href,fullScreen:true,hideBackdrop:true,hidePaper:true});
         if(viewToken===token)viewOpen=true;
