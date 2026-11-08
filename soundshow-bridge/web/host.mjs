@@ -7,40 +7,55 @@ const files = new Map(), handles = new Map(), clients = new Map();
 let show, ws, wsTimer, peer, secret, stream, objectUrl, current, generation = 0, db, closing = false;
 let playback = {type:'playback',active:false}, peerRetry = 0;
 const archivesOrigin='https://toniogervais.github.io';
-const archivesPath=archivesOrigin+'/archives-owlbear/archives.html';
-const linkProtocol='archives:soundshow:link-v1';
-let archivesWindow=null,linkNonce='',linkTimer=null,linkStarted=0,autoRestoreKey='',archivesLinked=false;
+const owlUrl='https://www.owlbear.rodeo/';
+const linkProtocol='archives:soundshow:owlbear-link-v1';
+let owlWindow=null,linkTimer=null,linkStarted=0,autoRestoreKey='',owlLinked=false;
+let linkCandidate=null;
 function stopLinkTimer(){clearInterval(linkTimer);linkTimer=null;}
-function sendArchivesLink(){
-  if(!archivesWindow||archivesWindow.closed){stopLinkTimer();text('link-status','La fenêtre des Archives a été fermée. Clique de nouveau pour l’ouvrir.');return;}
-  if(Date.now()-linkStarted>180000){stopLinkTimer();text('link-status','La liaison automatique n’a pas été confirmée. Ouvre une campagne MJ dans Les Archives, puis recommence.');return;}
-  if(!peer?.open||!secret)return; // The player code is prepared in the background.
-  archivesWindow.postMessage({protocol:linkProtocol,type:'offer',requestId:linkNonce,
-    session:{version:1,peer:peer.id,secret}},archivesOrigin);
+function isInsideOwlbear(candidate,root,depth=0){
+  if(!root||!candidate||depth>8)return false;
+  try{
+    const count=Math.min(root.length,80);
+    for(let i=0;i<count;i++){
+      const child=root.frames[i];
+      if(child===candidate || isInsideOwlbear(candidate,child,depth+1))return true;
+    }
+  }catch{}
+  return false;
 }
-function openArchivesAndLink(){
-  if(linkTimer){archivesWindow?.focus();text('link-status','Connexion en cours. Les Archives vont confirmer la liaison automatiquement.');return;}
-  if(archivesLinked && archivesWindow && !archivesWindow.closed){
-    archivesWindow.focus();text('link-status','Déjà relié aux Archives. Lance simplement la vidéo dans SoundShow.');return;
-  }
+function openOwlbearAndLink(){
+  if(linkTimer){owlWindow?.focus();text('link-status','Liaison en cours. Rejoins ta salle Owlbear : l’extension se connectera automatiquement.');return;}
+  if(owlLinked&&owlWindow&&!owlWindow.closed){owlWindow.focus();text('link-status','La salle est reliée. Lance les vidéos dans SoundShow.');return;}
   if(!['connected','simulation'].includes(show?.status)){
-    text('link-status','Connecte d’abord SoundShow, puis réessaie.');return;
+    text('link-status','Connecte SoundShow une seule fois, puis relie Owlbear.');return;
   }
   if(!peer||peer.destroyed)prepare();
-  linkNonce=crypto.randomUUID();linkStarted=Date.now();stopLinkTimer();
-  const url=new URL(archivesPath);url.searchParams.set('soundshow_link',linkNonce);
-  archivesWindow=window.open(url.href,'archives-soundshow-main');
-  if(!archivesWindow){text('link-status','Chrome a bloqué l’ouverture. Autorise les fenêtres pour ce connecteur, puis réessaie.');return;}
-  archivesWindow.focus();
-  text('link-status','Ouverture des Archives… La liaison sera automatique dès que ta campagne MJ sera ouverte.');
-  sendArchivesLink();linkTimer=setInterval(sendArchivesLink,850);
+  owlLinked=false;linkCandidate=null;linkStarted=Date.now();stopLinkTimer();
+  // Never navigate to a separate Archives tab: only the Owlbear application is opened.
+  owlWindow=window.open(owlUrl,'archives-owlbear-soundshow');
+  if(!owlWindow){text('link-status','Chrome a bloqué Owlbear. Autorise les fenêtres de ce connecteur, puis réessaie.');return;}
+  owlWindow.focus();
+  text('link-status','Owlbear ouvert. Rejoins ta salle comme MJ : l’extension Les Archives récupère la connexion sans code.');
+  linkTimer=setInterval(()=>{
+    if(!owlWindow||owlWindow.closed){stopLinkTimer();text('link-status','Owlbear a été fermé. Rouvre-le avec le bouton ci-dessus.');}
+    else if(Date.now()-linkStarted>180000){stopLinkTimer();text('link-status','Aucune salle MJ reliée après trois minutes. Vérifie que l’extension Les Archives est active dans Owlbear.');}
+  },2000);
 }
 window.addEventListener('message',event=>{
   const data=event.data;
-  if(event.origin!==archivesOrigin||event.source!==archivesWindow||data?.protocol!==linkProtocol||
-     data.type!=='accepted'||data.requestId!==linkNonce)return;
-  stopLinkTimer();archivesLinked=true;
-  text('link-status','Archives reliées. Tu peux lancer tes vidéos directement dans SoundShow.');
+  if(event.origin!==archivesOrigin||data?.protocol!==linkProtocol||!owlWindow||
+     !isInsideOwlbear(event.source,owlWindow))return;
+  if(data.type==='request'){
+    if(!peer?.open||!secret||!linkTimer||typeof data.challenge!=='string'||
+       !/^[0-9a-f-]{36}$/.test(data.challenge))return;
+    linkCandidate={source:event.source,challenge:data.challenge};
+    event.source.postMessage({protocol:linkProtocol,type:'offer',challenge:data.challenge,
+      session:{version:1,peer:peer.id,secret}},archivesOrigin);
+  }else if(data.type==='accepted'&&linkCandidate?.source===event.source &&
+      data.challenge===linkCandidate.challenge){
+    stopLinkTimer();owlLinked=true;
+    text('link-status','Owlbear relié. Tu peux lancer directement tes vidéos dans SoundShow.');
+  }
 });
 let attempts=0,rejected=0,lastIssue='Aucune demande reçue.';
 function diagnostic(){const el=$('link-diagnostic');if(!el)return;const ready=[...clients.values()].filter(e=>e.ready&&e.mode==='view').length;el.textContent=attempts+' tentative(s) reçue(s) par le PC · '+ready+' lecteur(s) confirmé(s) · '+rejected+' demande(s) refusée(s). '+lastIssue;}
@@ -226,14 +241,14 @@ function prepare() {
   peer.on('error',error=>{lastIssue='Erreur de mise en relation du PC : '+String(error?.type||'inconnue').slice(0,40);diagnostic();text('peer-status','Connexion aux joueurs indisponible ('+String(error?.type||'réseau')+'). Vérifie Internet et le réseau local.');});
 }
 function stopSession() {
-  archivesLinked=false;stopLinkTimer();clearSource();for(const entry of clients.values())entry.connection.close();clients.clear();peer?.destroy();peer=null;
+  owlLinked=false;stopLinkTimer();clearSource();for(const entry of clients.values())entry.connection.close();clients.clear();peer?.destroy();peer=null;
   $('pair-code').value='';$('copy').disabled=$('stop-session').disabled=true;text('peer-status','Diffusion terminée. Prépare une nouvelle connexion pour reprendre.');audience();
 }
 $('connection').onsubmit=async event=>{event.preventDefault();try{await api('connect',{url:$('address').value.trim(),password:$('password').value});$('password').value='';}catch(error){text('show-status',error.message);}};
 $('demo-init').onclick=()=>void api('demo',{action:'init'}).catch(error=>text('show-status',error.message));
 document.querySelectorAll('[data-demo]').forEach(button=>button.onclick=()=>void api('demo',{action:button.dataset.demo}).catch(error=>text('show-status',error.message)));
 $('restore').onclick=()=>void restore();$('prepare').onclick=prepare;$('stop-session').onclick=stopSession;
-$('link-archives').onclick=openArchivesAndLink;
+$('link-archives').onclick=openOwlbearAndLink;
 $('copy').onclick=async()=>{try{await navigator.clipboard.writeText($('pair-code').value);text('peer-status','Code copié. Ouvre le bouton SoundShow des Archives pour le coller.');}catch{$('pair-code').select();text('peer-status','Sélectionne le code puis copie-le avec Ctrl+C.');}};
 window.addEventListener('pagehide',()=>{closing=true;clearTimeout(wsTimer);stopLinkTimer();ws?.close();stopSession();},{once:true});
 if(!key)text('show-status','Rouvre le connecteur depuis son programme pour obtenir ton accès administrateur.');else connectEvents();
