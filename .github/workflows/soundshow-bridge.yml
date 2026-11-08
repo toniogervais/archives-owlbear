@@ -78,7 +78,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          if ! gh release view soundshow-bridge-v0.1.3 > /dev/null 2>&1; then
-            gh release create soundshow-bridge-v0.1.3 --target "$GITHUB_SHA" --prerelease --title "Connecteur SoundShow — essai 0.1.3" --notes "Améliore le démarrage des vidéos en boucle et prépare la négociation WebRTC. Conserve les diagnostics de liaison, la connexion réseau locale SoundShow et le déclenchement automatique. Programme Windows autonome. Validation sur le matériel des joueurs encore nécessaire."
+          if ! gh release view soundshow-bridge-v0.2.0 > /dev/null 2>&1; then
+            gh release create soundshow-bridge-v0.2.0 --target "$GITHUB_SHA" --prerelease --title "Connecteur SoundShow — essai 0.2.0" --notes "Nouvelle ergonomie : préparation automatique, fichiers déjà autorisés retrouvés, un clic pour ouvrir Les Archives et relier les joueurs sans recopier de code. Vidéos affichées dans une fenêtre intégrée aux Archives ou à Owlbear. Programme Windows autonome ; validation sur le matériel des joueurs encore nécessaire."
           fi
-          gh release upload soundshow-bridge-v0.1.3 windows/Archives-SoundShow-Connecteur.exe --clobber
+          gh release upload soundshow-bridge-v0.2.0 windows/Archives-SoundShow-Connecteur.exe --clobber
