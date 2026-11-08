@@ -54,5 +54,5 @@ function unavailable(error) {
 void import("../v58/transfers.mjs?v=4210").then(module => module.installArtworkTransfers()).catch(unavailable);
 void import("../v57/room-background.mjs?v=4210").then(module => module.installRoomPlay(OBR)).catch(unavailable);
 void import("../v60/background.mjs?v=4210").then(module => module.installFileLibrary(OBR)).catch(unavailable);
-void import("../soundshow/owlbear.mjs?v=015").then(module => module.installSoundShow(OBR)).catch(unavailable);
+void import("../soundshow/owlbear.mjs?v=016").then(module => module.installSoundShow(OBR)).catch(unavailable);
 
