@@ -1,4 +1,5 @@
 export const autoLinkProtocol = 'archives:soundshow:link-v1';
+export const owlbearLinkProtocol = 'archives:soundshow:owlbear-link-v1';
 export function validLocalBridgeOrigin(origin) {
   try {
     const value=new URL(origin);
