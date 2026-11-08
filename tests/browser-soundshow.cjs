@@ -61,6 +61,8 @@ const channel='fr.archives-imaginaire.bridge/soundshow-v1';
    console.log('Wire',await gm.evaluate(channel=>window.fixture.wire().then(wire=>wire.filter(x=>x.value?.channel===channel).map(x=>({type:x.value.data.type,to:x.value.data.to,peer:x.value.data.session?.peer}))),channel));
    console.log('Errors',errors);throw error;
   }
+  await modal(late).waitFor();
+  await late.frameLocator('iframe[id="fr.archives-imaginaire.bridge/soundshow-v1/player"]').getByText('Prêt — en attente d’une vidéo du MJ.',{exact:true}).waitFor();
   // Voluntary return stays closed for the current cue, and a new cue reopens it.
   const active={type:'playback',active:true,id:'cue-12345678',title:'Vidéo du MJ',playing:true,volume:1};
   await background(bob).evaluate(data=>window.__soundshowEmit(data),active);
@@ -88,6 +90,10 @@ const channel='fr.archives-imaginaire.bridge/soundshow-v1';
   await failed.getByText('Liaison vidéo interrompue. Reconnexion…',{exact:true}).waitFor();
   assert.equal(await failed.locator('.soundshow-view').isVisible(),true);
   await failed.getByRole('button',{name:'Réessayer la connexion',exact:true}).waitFor({state:'visible'});
+  await failed.evaluate(()=>{window.__soundshowPeerFailure=false;});
+  await failed.getByRole('button',{name:'Réessayer la connexion',exact:true}).click();
+  await failed.getByText('Prêt — en attente d’une vidéo du MJ.',{exact:true}).waitFor();
+  await app.locator('#soundshow-room-status').filter({hasText:'4 lecteur(s) relié(s)'}).waitFor();
   await app.locator('#soundshow-room-status').filter({hasText:'4 joueur(s) détecté(s)'}).waitFor();
   await app.getByRole('button',{name:'Déconnecter',exact:true}).click();await modal(dana).waitFor({state:'detached'});
   assert.ok(!errors.length,errors.join('\n'));
