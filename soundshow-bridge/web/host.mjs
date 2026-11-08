@@ -6,6 +6,38 @@ history.replaceState(null,'',location.pathname); // Keep the administrator key o
 const files = new Map(), handles = new Map(), clients = new Map();
 let show, ws, wsTimer, peer, secret, stream, objectUrl, current, generation = 0, db, closing = false;
 let playback = {type:'playback',active:false}, peerRetry = 0;
+const archivesOrigin='https://toniogervais.github.io';
+const archivesPath=archivesOrigin+'/archives-owlbear/archives.html';
+const linkProtocol='archives:soundshow:link-v1';
+let archivesWindow=null,linkNonce='',linkTimer=null,linkStarted=0,autoRestoreKey='';
+function stopLinkTimer(){clearInterval(linkTimer);linkTimer=null;}
+function sendArchivesLink(){
+  if(!archivesWindow||archivesWindow.closed){stopLinkTimer();text('link-status','La fenêtre des Archives a été fermée. Clique de nouveau pour l’ouvrir.');return;}
+  if(Date.now()-linkStarted>180000){stopLinkTimer();text('link-status','La liaison automatique n’a pas été confirmée. Ouvre une campagne MJ dans Les Archives, puis recommence.');return;}
+  if(!peer?.open||!secret)return; // The player code is prepared in the background.
+  archivesWindow.postMessage({protocol:linkProtocol,type:'offer',requestId:linkNonce,
+    session:{version:1,peer:peer.id,secret}},archivesOrigin);
+}
+function openArchivesAndLink(){
+  if(!['connected','simulation'].includes(show?.status)){
+    text('link-status','Connecte d’abord SoundShow, puis réessaie.');return;
+  }
+  if(!peer||peer.destroyed)prepare();
+  linkNonce=crypto.randomUUID();linkStarted=Date.now();stopLinkTimer();
+  const url=new URL(archivesPath);url.searchParams.set('soundshow_link',linkNonce);
+  archivesWindow=window.open(url.href,'archives-soundshow-main');
+  if(!archivesWindow){text('link-status','Chrome a bloqué l’ouverture. Autorise les fenêtres pour ce connecteur, puis réessaie.');return;}
+  archivesWindow.focus();
+  text('link-status','Ouverture des Archives… La liaison sera automatique dès que ta campagne MJ sera ouverte.');
+  sendArchivesLink();linkTimer=setInterval(sendArchivesLink,850);
+}
+window.addEventListener('message',event=>{
+  const data=event.data;
+  if(event.origin!==archivesOrigin||event.source!==archivesWindow||data?.protocol!==linkProtocol||
+     data.type!=='accepted'||data.requestId!==linkNonce)return;
+  stopLinkTimer();
+  text('link-status','Archives reliées. Tu peux lancer tes vidéos directement dans SoundShow.');
+});
 let attempts=0,rejected=0,lastIssue='Aucune demande reçue.';
 function diagnostic(){const el=$('link-diagnostic');if(!el)return;const ready=[...clients.values()].filter(e=>e.ready&&e.mode==='view').length;el.textContent=attempts+' tentative(s) reçue(s) par le PC · '+ready+' lecteur(s) confirmé(s) · '+rejected+' demande(s) refusée(s). '+lastIssue;}
 const options = () => ({config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}],iceCandidatePoolSize:2},...window.ArchivesSoundShowPeerOptions});
@@ -23,7 +55,12 @@ function connectEvents() {
     const signature = JSON.stringify([next.project,next.videos]);
     if (!show || signature !== JSON.stringify([show.project,show.videos])) { show = next;renderVideos(); }
     else show = next;
-    text('show-status',show.message);void follow();
+    text('show-status',show.message);
+    if(['connected','simulation'].includes(show.status)){
+      if(!peer||peer.destroyed)prepare();
+      void autoRestoreFiles(); // Only previously authorized files can be loaded silently.
+    }
+    void follow();
   };
   ws.onclose = () => {clearSource();text('show-status','Connecteur déconnecté. Garde son programme ouvert.');if (!closing) wsTimer = setTimeout(connectEvents,2000);};
 }
@@ -61,6 +98,24 @@ async function restore() {
     }
     renderVideos();text('file-status',count+' vidéo(s) autorisée(s).');void follow();
   } catch (error) { text('file-status',error.message); }
+}
+async function autoRestoreFiles(){
+  if(!show?.videos?.length)return;
+  const signature=JSON.stringify([show.project,show.videos.map(video=>video.id)]);
+  if(autoRestoreKey===signature)return;
+  autoRestoreKey=signature;
+  try{
+    const database=await openDatabase();let restored=0;
+    for(const video of show.videos){
+      const saved=await new Promise((resolve,reject)=>{
+        const req=database.transaction('handles').objectStore('handles').get(fileKey(video.id));
+        req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+      });
+      if(!saved||typeof saved.queryPermission!=='function'||await saved.queryPermission({mode:'read'})!=='granted')continue;
+      files.set(fileKey(video.id),await saved.getFile());restored++;
+    }
+    if(restored){renderVideos();text('file-status',restored+' vidéo(s) autorisée(s) automatiquement.');void follow();}
+  }catch(error){console.warn('SoundShow : récupération des fichiers non disponible',error);}
 }
 function renderVideos() {
   $('videos').replaceChildren();
@@ -174,6 +229,7 @@ $('connection').onsubmit=async event=>{event.preventDefault();try{await api('con
 $('demo-init').onclick=()=>void api('demo',{action:'init'}).catch(error=>text('show-status',error.message));
 document.querySelectorAll('[data-demo]').forEach(button=>button.onclick=()=>void api('demo',{action:button.dataset.demo}).catch(error=>text('show-status',error.message)));
 $('restore').onclick=()=>void restore();$('prepare').onclick=prepare;$('stop-session').onclick=stopSession;
+$('link-archives').onclick=openArchivesAndLink;
 $('copy').onclick=async()=>{try{await navigator.clipboard.writeText($('pair-code').value);text('peer-status','Code copié. Ouvre le bouton SoundShow des Archives pour le coller.');}catch{$('pair-code').select();text('peer-status','Sélectionne le code puis copie-le avec Ctrl+C.');}};
-window.addEventListener('pagehide',()=>{closing=true;clearTimeout(wsTimer);ws?.close();stopSession();},{once:true});
+window.addEventListener('pagehide',()=>{closing=true;clearTimeout(wsTimer);stopLinkTimer();ws?.close();stopSession();},{once:true});
 if(!key)text('show-status','Rouvre le connecteur depuis son programme pour obtenir ton accès administrateur.');else connectEvents();
