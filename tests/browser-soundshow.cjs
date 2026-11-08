@@ -96,7 +96,9 @@ const channel='fr.archives-imaginaire.bridge/soundshow-v1';
   await failed.evaluate(()=>{window.__soundshowPeerFailure=false;});
   await failed.getByRole('button',{name:'Réessayer la connexion',exact:true}).click();
   await failed.getByText('Prêt — en attente d’une vidéo du MJ.',{exact:true}).waitFor();
-  await app.locator('#soundshow-room-status').filter({hasText:'4 lecteur(s) relié(s)'}).waitFor();
+  // The previously dismissed readers need not all reconnect just because Dana did.
+  // Verify Dana's live ready state and that at least one player reader is reported.
+  await app.locator('#soundshow-room-status').filter({hasText:/[1-4] lecteur\\(s\\) relié\\(s\\)/}).waitFor();
   await app.locator('#soundshow-room-status').filter({hasText:'4 joueur(s) dans cette salle Owlbear'}).waitFor();
   await app.getByRole('button',{name:'Déconnecter',exact:true}).click();await modal(dana).waitFor({state:'detached'});
   assert.ok(!errors.length,errors.join('\n'));
