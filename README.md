@@ -1,4 +1,12 @@
-# Les Archives de l’Imaginaire — Owlbear V4.22.3
+# Les Archives de l’Imaginaire — Owlbear V4.22.4
+
+## Démarrage des vidéos en boucle 4.22.4
+
+Le lecteur PC règle désormais la boucle et la position de départ **avant** de lancer la capture du fichier. Lorsqu'une vidéo SoundShow tourne en boucle sans fin explicite, sa position est ramenée dans la durée réelle du fichier au lieu de rester bloquée à la dernière image. La liaison WebRTC prépare un petit nombre de candidats réseau à l'avance. Sur la tablette, le lecteur distingue l'annonce de la vidéo, la réception du flux et la première image ; il affiche le délai constaté jusqu'à cette image.
+
+Cette correction vise notamment les vidéos déjà en lecture lorsque le joueur arrive. La baisse réelle de latence dépend des conditions du réseau et reste à mesurer sur la tablette. Le connecteur Windows **0.1.3** reprend le correctif de boucle (nécessite une nouvelle construction de l'exécutable). La télécommande sécurisée dans Les Archives reste un chantier distinct, à intégrer sans donner le droit de piloter SoundShow aux lecteurs joueurs.
+
+
 
 ## Diagnostic de liaison SoundShow 4.22.3
 
