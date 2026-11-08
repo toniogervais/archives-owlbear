@@ -1,16 +1,9 @@
 import {button,element,isGM,notice,requireGM,sheet} from '../v63/ui.mjs';
 import {isPacket,packet} from '../v56/link.mjs';
-import {decodeSession,encodeSession,validSession} from './protocol.mjs';
+import {decodeSession,encodeSession,validSession,autoLinkProtocol,validLocalBridgeOrigin} from './protocol.mjs';
 let session=null,player,liveSession=null,infoView=null;const pending=new Map(),roomFrames=new Map();
 const embedded=window.parent!==window;
-const autoLinkProtocol='archives:soundshow:link-v1';
 let pendingAutoLink=null,autoLinkBusy=false,autoLinkTimer=null,linkInfoView=null;
-function validLocalBridgeOrigin(origin){
-  try{
-    const value=new URL(origin);
-    return value.protocol==='http:' && ['127.0.0.1','localhost'].includes(value.hostname) && !!value.port;
-  }catch{return false;}
-}
 async function applyAutomaticLink(){
   if(embedded||!pendingAutoLink||autoLinkBusy||!isGM())return;
   autoLinkBusy=true;
