@@ -1,5 +1,12 @@
 # Les Archives de l’Imaginaire — Owlbear V4.21.0
 
+## Correctif de démarrage 4.21.1
+
+La commande des Archives démarre indépendamment du chargement des transferts, des documents et de la synchronisation des joueurs. Un échec de création de l’outil est retenté sans bloquer les autres fonctions ; les tentatives sont bornées. Le menu affiche une erreur et un accès au diagnostic si le SDK ou un fichier ne répond pas, au lieu de rester sans indication. Le bouton reste désactivé hors d’une salle Owlbear et ne peut plus ouvrir par défaut une application autonome avec le rôle MJ. Les vérifications d’origine, de rôle et d’accès sont conservées.
+
+Le manifeste garde son adresse d’installation et utilise des adresses d’entrée sans paramètres. Les scripts de démarrage restent versionnés pour leur actualisation. Le lien [Diagnostic de chargement](https://toniogervais.github.io/archives-owlbear/diagnostic.html) vérifie les fichiers depuis le navigateur de l’utilisateur, sans lire les campagnes ni transmettre de résultat automatiquement. Il ne vérifie pas la connexion interne d’une salle. La cause de la panne signalée dans la salle réelle n’a pas encore été confirmée par un journal d’erreur.
+
+
 ## Une salle, un onglet par personne
 
 Installe ou actualise l’extension avec cette adresse :

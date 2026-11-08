@@ -2,6 +2,8 @@ name: Tests Archives — accès, transferts et médias
 on:
   push:
     paths:
+      - 'diagnostic.html'
+      - 'tests/browser-startup.cjs'
       - 'src/v55/**'
       - 'src/v56/**'
       - 'src/v57/**'
@@ -75,3 +77,4 @@ jobs:
       - run: node tests/browser-v63.cjs
       - run: node tests/browser-v64.cjs
       - run: node tests/browser-v65.cjs
+      - run: node tests/browser-startup.cjs

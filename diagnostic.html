@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Archives — diagnostic de chargement</title>
+<style>
+:root{color-scheme:dark;font:16px/1.6 "Segoe UI",system-ui,sans-serif;background:#100d16;color:#f4ead8}
+*{box-sizing:border-box}body{margin:0;padding:clamp(20px,6vw,70px) 20px}main{max-width:760px;margin:auto;padding:clamp(22px,5vw,40px);border:1px solid #ccb27b40;border-radius:20px;background:#1b1623;box-shadow:0 18px 70px #0003}
+.eyebrow{color:#ccb27b;font-size:13px;letter-spacing:.08em}h1{font-size:clamp(24px,5vw,34px);line-height:1.2;margin:12px 0 20px}p{color:#cfc5d4}#status{font-size:19px;color:#f6e5bf}#progress{color:#b9abbf;font-size:14px}button{font:inherit;font-weight:600;color:#fff0cc;background:#594324;border:1px solid #c9a568;border-radius:10px;padding:12px 18px;cursor:pointer}button:disabled{opacity:.5;cursor:wait}button:focus-visible,summary:focus-visible,textarea:focus-visible{outline:2px solid #f7d699;outline-offset:4px}details{margin-top:24px}summary{cursor:pointer;color:#decbac}ul{padding-left:22px;font-size:14px}li{margin:8px 0}.failed{color:#ffb2aa}.ok{color:#a6dfb1}code{overflow-wrap:anywhere}textarea{width:100%;min-height:220px;margin-top:16px;background:#100d16;color:#f4ead8;border:1px solid #ccb27b60;border-radius:8px;padding:12px}[hidden]{display:none!important}
+</style>
+</head>
+<body><main>
+<span class="eyebrow">LES ARCHIVES DE L’IMAGINAIRE · 4.21.1</span>
+<h1>Vérifier le chargement</h1>
+<p>Ce test vérifie si ton navigateur peut charger les fichiers de l’extension. Il ne lit aucune campagne et n’envoie aucun résultat automatiquement.</p>
+<p id="status" role="status" aria-live="polite">Vérification en cours…</p>
+<p id="progress"></p>
+<p id="explanation">Garde cette page ouverte quelques instants.</p>
+<button id="copy" type="button" disabled>Copier le résultat</button>
+<textarea id="report" readonly aria-label="Résultat à copier" hidden></textarea>
+<details><summary>Détail des fichiers vérifiés</summary><ul id="checks"></ul></details>
+<noscript><p>JavaScript est désactivé dans ce navigateur. Active-le pour lancer le diagnostic.</p></noscript>
+</main>
+<script>
+(() => {
+ const files=[
+  ['Manifeste','manifest-v55.json','json'],
+  ['Icône','icon-archives-v43.svg','image'],
+  ['Commande du menu','index-v55.html','html'],
+  ['Démarrage','background-v55.html','html'],
+  ['Canevas','archives-app-v64-v55.html','html'],
+  ['Hôte des Archives','archives-host-v55.html','html'],
+  ['Invitation des joueurs','invite-v55.html','html'],
+  ['SDK Owlbear','assets/owlbear-transfer-sdk-v55.mjs','script'],
+  ['SDK de navigation','assets/index-BfJgTiPE.js','script'],
+  ['Navigation','src/v55/background.mjs?v=4211','script'],
+  ['Ouverture du menu','src/v55/open.mjs?v=4211','script'],
+  ['Validation de la salle','src/v56/link.mjs','script'],
+  ['Liaison à la salle','src/v57/room.mjs?v=4210','script'],
+  ['Synchronisation des joueurs','src/v57/room-background.mjs?v=4210','script'],
+  ['Images et tokens','src/v58/transfers.mjs?v=4210','script'],
+  ['Préparation des images','src/v58/model.mjs?v=4210','script'],
+  ['Bibliothèque','src/v60/background.mjs?v=4210','script'],
+  ['Documents','src/v60/files.mjs','script'],
+  ['Cadrage des tokens','src/v61/token-crop.mjs','script'],
+  ['Présence des joueurs','src/v63/presence.mjs?v=4210','script'],
+  ['Choix des écrans','src/v65/screen-model.mjs','script']
+ ];
+ const results=new Array(files.length);let next=0,done=0;
+ const progress=document.getElementById('progress'),copy=document.getElementById('copy'),report=document.getElementById('report');
+ async function check(index){
+  const [name,path,kind]=files[index],controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
+  let result;
+  try {
+   const response=await fetch(path,{cache:'no-store',credentials:'omit',signal:controller.signal});
+   if(!response.ok)throw Error('HTTP '+response.status);
+   const type=response.headers.get('content-type')||'',body=await response.text();
+   if(!body.trim())throw Error('Fichier vide');
+   if(kind==='script'&&!/(java|ecma)script/i.test(type))throw Error('Format JavaScript incorrect');
+   if(kind==='html'&&!/text\/html/i.test(type))throw Error('Format HTML incorrect');
+   if(kind==='image'&&!/image\/svg\+xml/i.test(type))throw Error('Format de l’icône incorrect');
+   if(kind==='json'){
+    const manifest=JSON.parse(body);
+    if(manifest.manifest_version!==1||!manifest.background_url||!manifest.action?.popover)throw Error('Manifeste incomplet');
+    result={name,path,ok:true,message:'Accessible · version '+manifest.version};
+   } else result={name,path,ok:true,message:'Accessible'};
+  }catch(error){result={name,path,ok:false,message:error.name==='AbortError'?'Délai dépassé':error.message};}
+  finally{clearTimeout(timer);}
+  results[index]=result;done++;progress.textContent=done+' / '+files.length+' fichiers vérifiés';
+ }
+ async function worker(){while(next<files.length){const index=next++;await check(index);}}
+ Promise.all(Array.from({length:4},worker)).then(()=>{
+  const failures=results.filter(result=>!result.ok);
+  document.getElementById('status').textContent=failures.length?failures.length+' fichier(s) n’ont pas pu charger.':'Tous les fichiers vérifiés sont accessibles.';
+  document.getElementById('explanation').textContent=failures.length?
+   'Copie le résultat et colle-le dans notre discussion pour identifier ce qui empêche le chargement.':
+   'Copie le résultat dans notre discussion. Le chargement des fichiers fonctionne ; la connexion interne à la salle Owlbear reste à vérifier.';
+  const list=document.getElementById('checks');
+  for(const result of results){const item=document.createElement('li');item.className=result.ok?'ok':'failed';item.textContent=result.name+' : '+result.message+' — '+result.path;list.append(item);}
+  report.value=['Archives — diagnostic 4.21.1',new Date().toISOString(),'Navigateur : '+navigator.userAgent,
+   'Ce test ne vérifie pas la connexion interne de la salle Owlbear.',
+   ...results.map(result=>(result.ok?'OK':'ÉCHEC')+' · '+result.path+' · '+result.message)].join('\n');
+  copy.disabled=false;
+ });
+ copy.addEventListener('click',async()=>{
+  try{await navigator.clipboard.writeText(report.value);copy.textContent='Résultat copié';}
+  catch{report.hidden=false;report.focus();report.select();copy.textContent='Sélectionné : appuie sur Ctrl+C';}
+ });
+})();
+</script>
+</body></html>
