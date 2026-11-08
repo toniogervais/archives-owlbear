@@ -57,9 +57,9 @@ class FakeShow:
         finally:self.sockets.discard(ws)
         return ws
 
-    async def emit(self,playing=True,position=0,volume=100,stop=False):
+    async def emit(self,playing=True,position=0,volume=100,stop=False,loop=False):
         self.state['players']=[] if stop else [{'id':'runtime-movie','kind':'video','source_playable_id':'movie',
-            'is_playing':playing,'position_seconds':position,'volume_percent':volume}]
+            'is_playing':playing,'position_seconds':position,'volume_percent':volume,'loop_enabled':loop}]
         for ws in self.sockets:
             await ws.send_json({'type':'players_snapshot','players':self.state['players']})
 
@@ -178,6 +178,13 @@ async def main():
                     await fake.emit(stop=True)
                     await tablet.get_by_text('Prêt — en attente d’une vidéo du MJ.',exact=True).wait_for()
                     print('Visible waiting reader and real media after later source start: OK',flush=True)
+                    # First launch of an already-looping video must wrap the timeline.
+                    # Without this correction the source started at its very last frame.
+                    await fake.emit(playing=True,position=65,loop=True)
+                    await wait_expression(host,'document.querySelector("#source").loop && document.querySelector("#source").currentTime > 4 && document.querySelector("#source").currentTime < 10')
+                    await wait_expression(tablet,'document.querySelector("video").videoWidth>0')
+                    await fake.emit(stop=True)
+                    print('Looping source wraps on its initial frame: OK',flush=True)
                     # No old video or launch is replayed by a local dashboard reload.
                     await host.reload()
                     await host.get_by_text('SoundShow connecté — les raccourcis sont suivis.',exact=True).wait_for()
