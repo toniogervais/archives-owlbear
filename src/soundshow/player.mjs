@@ -1,6 +1,6 @@
 import {SoundShowConnection} from './connection.mjs?v=014';
 export function mountPlayer({container=document.body,onPlayback=()=>{},onStatus=()=>{},close,showWaiting=false}={}) {
-  if(!document.querySelector('[data-soundshow-style]')){const style=document.createElement('link');style.rel='stylesheet';style.href=new URL('./player.css',import.meta.url).href;style.dataset.soundshowStyle='1';document.head.append(style);}
+  if(!document.querySelector('[data-soundshow-style]')){const style=document.createElement('link');style.rel='stylesheet';style.href=new URL('./player.css?v=015',import.meta.url).href;style.dataset.soundshowStyle='1';document.head.append(style);}
   const root=document.createElement('section');root.className='soundshow-view';root.hidden=!showWaiting;root.setAttribute('aria-label','Vidéo SoundShow du maître de jeu');
   const header=document.createElement('header'),title=document.createElement('h2'),back=document.createElement('button');title.textContent='Vidéo du MJ';back.textContent='Revenir au jeu';back.type='button';back.onclick=()=>{dismissedId=playback.id;root.hidden=true;video.muted=true;close?.();};header.append(title,back);
   const video=document.createElement('video');video.playsInline=true;video.autoplay=true;
