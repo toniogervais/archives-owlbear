@@ -96,7 +96,7 @@ async function sendDraft(frame, title) {
     });
     const main=await context.newPage();
     await main.goto(archives+"/archives.html?resume=1");
-    await main.waitForURL(archives+app+"?resume=1&v=4210");
+    await main.waitForURL(archives+app+"?resume=1&v=4220");
     const mapButton=main.getByRole("button",{name:"Owlbear — afficher la carte"});
     main.once("dialog",async dialog=>{assert.equal(dialog.type(),"prompt");await dialog.accept(owl+"/room/test");});
     const [room]=await Promise.all([main.waitForEvent("popup"),mapButton.click()]);
@@ -163,3 +163,4 @@ async function sendDraft(frame, title) {
     console.log("Chromium : bascule sans code, sauvegarde, reprise après recharge, retour sans liaison, rôle joueur et protection des brouillons vérifiés.");
   }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
+
