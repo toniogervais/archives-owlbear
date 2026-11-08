@@ -127,30 +127,48 @@ async def main():
                     await wait_expression(host,"document.getElementById('pair-code').value.startsWith('SS2.')")
                     assert await host.get_by_role('button',name='Ouvrir Les Archives et relier les joueurs').is_visible()
                     code=await host.locator('#pair-code').input_value()
-                    # Test the new real browser window handshake without visiting GitHub Pages.
-                    async def fake_archives(route):
-                        page = """<!doctype html><title>Archives MJ — mock sécurisé</title>
+                    # Owlbear is the sole game tab: no standalone Archives tab.
+                    # The installed extension is hosted in a nested cross-origin iframe.
+                    async def fake_owlbear(route):
+                        page="""<!doctype html><title>Owlbear — salle MJ</title>
+                        <h1>Salle Owlbear</h1>
+                        <iframe id="archives-extension" src="https://toniogervais.github.io/archives-owlbear/test-owlbear-extension.html"></iframe>"""
+                        await route.fulfill(status=200,content_type='text/html',body=page)
+                    async def fake_extension(route):
+                        page="""<!doctype html><title>Extension Les Archives</title>
                         <script>
                         window.receivedPairing=null;
+                        window.localChallenge=crypto.randomUUID();
+                        const connector=window.top.opener;
+                        function ask(){
+                          if(window.receivedPairing)return;
+                          connector?.postMessage({protocol:'archives:soundshow:owlbear-link-v1',
+                            type:'request',challenge:window.localChallenge},'*');
+                        }
                         window.addEventListener('message',event=>{
                           const d=event.data;
-                          if(!event.origin.startsWith('http://127.0.0.1:')||
-                             d?.protocol!=='archives:soundshow:link-v1'||d.type!=='offer'||
-                             d.requestId!==new URLSearchParams(location.search).get('soundshow_link'))return;
+                          if(!event.origin.startsWith('http://127.0.0.1:')||event.source!==connector||
+                             d?.protocol!=='archives:soundshow:owlbear-link-v1'||d.type!=='offer'||
+                             d.challenge!==window.localChallenge)return;
                           window.receivedPairing={peer:d.session?.peer,secretLength:d.session?.secret?.length};
-                          event.source.postMessage({protocol:d.protocol,type:'accepted',requestId:d.requestId},event.origin);
+                          connector.postMessage({protocol:d.protocol,type:'accepted',challenge:d.challenge},event.origin);
                         });
+                        setInterval(ask,300);ask();
                         </script>"""
                         await route.fulfill(status=200,content_type='text/html',body=page)
-                    await context.route('https://toniogervais.github.io/archives-owlbear/archives.html*',fake_archives)
+                    await context.route('https://www.owlbear.rodeo/**',fake_owlbear)
+                    await context.route('https://toniogervais.github.io/archives-owlbear/test-owlbear-extension.html',fake_extension)
                     async with host.expect_popup() as popup:
-                        await host.get_by_role('button',name='Ouvrir Les Archives et relier les joueurs').click()
-                    archives_window=await popup.value
-                    await wait_expression(archives_window,'window.receivedPairing?.secretLength===64')
-                    assert await archives_window.evaluate('window.receivedPairing.peer') in code
-                    assert 'secret=' not in archives_window.url and code not in archives_window.url
-                    await host.get_by_text('Archives reliées. Tu peux lancer tes vidéos directement dans SoundShow.',exact=True).wait_for()
-                    print('One click opens Archives and securely relays the session without copy/paste: OK',flush=True)
+                        await host.get_by_role('button',name='Ouvrir Owlbear et relier les joueurs').click()
+                    owlbear_window=await popup.value
+                    await owlbear_window.locator('#archives-extension').wait_for()
+                    extension=owlbear_window.frame(name='archives-extension')
+                    await wait_expression(extension,'window.receivedPairing?.secretLength===64')
+                    assert await extension.evaluate('window.receivedPairing.peer') in code
+                    assert 'owlbear.rodeo' in owlbear_window.url
+                    assert 'archives.html' not in owlbear_window.url and code not in owlbear_window.url
+                    await host.get_by_text('Owlbear relié. Tu peux lancer directement tes vidéos dans SoundShow.',exact=True).wait_for()
+                    print('One click opens Owlbear only; nested Archives extension receives session: OK',flush=True)
                     player_context=await browser.new_context(viewport={'width':800,'height':1100},has_touch=True)
                     await player_context.add_init_script('window.ArchivesSoundShowPeerOptions='+json.dumps(options))
                     tablet=await player_context.new_page();tablet.on('pageerror',lambda error:errors.append(str(error)))
