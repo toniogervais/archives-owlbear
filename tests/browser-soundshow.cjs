@@ -47,6 +47,7 @@ const channel='fr.archives-imaginaire.bridge/soundshow-v1';
     await page.frameLocator('iframe[id="fr.archives-imaginaire.bridge/soundshow-v1/player"]').getByText('Prêt — en attente d’une vidéo du MJ.',{exact:true}).waitFor();
     assert.ok(!(await modal(page).getAttribute('src')).includes(session.secret),'the credential must not appear in a URL');
   }
+  await app.locator('#soundshow-room-status').filter({hasText:'2 lecteur(s) relié(s)'}).waitFor();
   assert.equal(await modal(gm).count(),0,'A GM must not receive a player modal');
   assert.deepEqual(await background(alix).evaluate(()=>window.__soundshowConnections),[],'The visible reader works while its hidden watcher is unavailable');
   await alix.evaluate(({channel,session})=>window.fixture.publish(channel,{type:'session',session:{...session,peer:'forged-host-12345678'}}),{channel,session});
@@ -73,6 +74,7 @@ const channel='fr.archives-imaginaire.bridge/soundshow-v1';
   await background(bob).evaluate(()=>window.__soundshowEmit({type:'playback',active:false}));await modal(bob).waitFor({state:'detached'});
   // Re-linking the same session explicitly opens a closed reader again.
   await gm.bringToFront();await app.getByRole('button',{name:'Relier les joueurs',exact:true}).click();await modal(bob).waitFor();
+  await app.locator('#soundshow-room-status').filter({hasText:'3 lecteur(s) relié(s)'}).waitFor();
   await app.getByRole('button',{name:'Déconnecter',exact:true}).click();
   await app.getByText('Diffusion SoundShow déconnectée.',{exact:true}).waitFor();
   await modal(alix).waitFor({state:'detached'});await modal(bob).waitFor({state:'detached'});
@@ -85,6 +87,7 @@ const channel='fr.archives-imaginaire.bridge/soundshow-v1';
   const failed=await videoFrame(dana);
   await failed.getByText('Liaison vidéo interrompue. Reconnexion…',{exact:true}).waitFor();
   assert.equal(await failed.locator('.soundshow-view').isVisible(),true);
+  await failed.getByRole('button',{name:'Réessayer la connexion',exact:true}).waitFor({state:'visible'});
   await app.locator('#soundshow-room-status').filter({hasText:'4 joueur(s) détecté(s)'}).waitFor();
   await app.getByRole('button',{name:'Déconnecter',exact:true}).click();await modal(dana).waitFor({state:'detached'});
   assert.ok(!errors.length,errors.join('\n'));
