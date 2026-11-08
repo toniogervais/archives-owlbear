@@ -132,7 +132,7 @@ async def main():
                     async def fake_owlbear(route):
                         page="""<!doctype html><title>Owlbear — salle MJ</title>
                         <h1>Salle Owlbear</h1>
-                        <iframe id="archives-extension" src="https://toniogervais.github.io/archives-owlbear/test-owlbear-extension.html"></iframe>"""
+                        <iframe id="archives-extension" name="archives-extension" src="https://toniogervais.github.io/archives-owlbear/test-owlbear-extension.html"></iframe>"""
                         await route.fulfill(status=200,content_type='text/html',body=page)
                     async def fake_extension(route):
                         page="""<!doctype html><title>Extension Les Archives</title>
