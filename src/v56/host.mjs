@@ -74,6 +74,11 @@ button.addEventListener("click", () => {
 window.addEventListener("message", event => {
   if (!roomId || event.source !== frame.contentWindow || event.origin !== location.origin || !isPacket(event.data)) return;
   const data = event.data;
+  if (gm && ['owl-soundshow-command','owl-soundshow-query'].includes(data.type)) {
+    void import('../soundshow/host.mjs').then(module => module.forwardSoundShow(OBR,data,post))
+      .catch(error => post('owl-soundshow-result',{id:data.id,safe:false,message:error.message}));
+    return;
+  }
   if (data.type === "go-map") { button.click(); return; }
   if (nativeHost) {
     if (gm && data.type === "owl-editor-ready") editorStarted = true;
@@ -169,3 +174,4 @@ async function start() {
   }
 }
 void start().catch(error => fail(error.message || "La liaison Owlbear est indisponible."));
+

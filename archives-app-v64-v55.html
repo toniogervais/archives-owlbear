@@ -1980,6 +1980,12 @@ window.DuneApp = (function() {
   var peerInstance = null;
   var peerConns = [];
   window.ArchivesLiveInvitations = {
+    publishSoundShow: function(session) {
+      if (state.playerMode || state.strictReadOnly) throw new Error('Commande réservée au meneur.');
+      peerConns.filter(function(conn){return conn && conn.open;}).forEach(function(conn){
+        conn.send({type:'archives:soundshow:v1',session:session});
+      });
+    },
     inviteToOwlbear: function(roomUrl) {
       if (state.playerMode || state.strictReadOnly) throw new Error("Commande réservée au meneur.");
       if (!peerInstance || peerInstance.destroyed || !state.liveRoomId)
@@ -5706,6 +5712,10 @@ window.DuneApp = (function() {
                 done(true, "Connecté au salon " + roomCode + ". En attente des données du maître de jeu…");
               });
               conn.on("data", function(data){
+                if (data && data.type === 'archives:soundshow:v1') {
+                  window.dispatchEvent(new CustomEvent('archives:soundshow-session',{detail:{session:data.session}}));
+                  return;
+                }
                 if (data && data.type === "archives:invite:v40" && data.target === "OWLBEAR") {
                   window.dispatchEvent(new CustomEvent("archives:invite:v40",{detail:data}));
                   return;
@@ -5750,7 +5760,11 @@ window.DuneApp = (function() {
             livePlayers = livePlayers.filter(function(p){ return p.id !== player.id; });
             livePlayers.push(player); renderLivePlayers();
             peerConns.push(conn);
-            conn.on("open", function() { player.connected = true; renderLivePlayers(); saveState(); });
+            conn.on("open", function() {
+              player.connected = true; renderLivePlayers(); saveState();
+              var soundShowSession = window.ArchivesSoundShow?.session();
+              if (soundShowSession) conn.send({type:'archives:soundshow:v1',session:soundShowSession});
+            });
             conn.on("close", function() { player.connected = false; peerConns = peerConns.filter(function(c){ return c !== conn; }); renderLivePlayers(); });
             conn.on("error", function() { player.connected = false; renderLivePlayers(); });
           });
@@ -7018,3 +7032,5 @@ body.player-mode .player-cell-resize:hover{opacity:1}
 
 <script type="module" src="./src/v65/cell-picture.mjs?v=4210"></script>
 <script type="module" src="./src/v65/storage.mjs?v=4210"></script>
+<script type="module" src="./src/soundshow/archives.mjs?v=010"></script>
+
