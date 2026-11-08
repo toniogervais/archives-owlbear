@@ -1,4 +1,4 @@
-import {SoundShowConnection} from './connection.mjs';
+import {SoundShowConnection} from './connection.mjs?v=012';
 export function mountPlayer({container=document.body,onPlayback=()=>{},onStatus=()=>{},close,showWaiting=false}={}) {
   if(!document.querySelector('[data-soundshow-style]')){const style=document.createElement('link');style.rel='stylesheet';style.href=new URL('./player.css',import.meta.url).href;style.dataset.soundshowStyle='1';document.head.append(style);}
   const root=document.createElement('section');root.className='soundshow-view';root.hidden=!showWaiting;root.setAttribute('aria-label','Vidéo SoundShow du maître de jeu');
