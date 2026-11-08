@@ -6,6 +6,8 @@ history.replaceState(null,'',location.pathname); // Keep the administrator key o
 const files = new Map(), handles = new Map(), clients = new Map();
 let show, ws, wsTimer, peer, secret, stream, objectUrl, current, generation = 0, db, closing = false;
 let playback = {type:'playback',active:false}, peerRetry = 0;
+let attempts=0,rejected=0,lastIssue='Aucune demande reçue.';
+function diagnostic(){const el=$('link-diagnostic');if(!el)return;const ready=[...clients.values()].filter(e=>e.ready&&e.mode==='view').length;el.textContent=attempts+' tentative(s) reçue(s) par le PC · '+ready+' lecteur(s) confirmé(s) · '+rejected+' demande(s) refusée(s). '+lastIssue;}
 const options = () => ({config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]},...window.ArchivesSoundShowPeerOptions});
 function text(id,value) { $(id).textContent = value; }
 async function api(path,data) {
@@ -73,7 +75,7 @@ function renderVideos() {
 }
 function send(entry,data) { if (entry.connection.open) entry.connection.send(data); }
 function broadcast(data) { for (const entry of clients.values()) if (entry.ready) send(entry,data); }
-function audience() { text('audience',[...clients.values()].filter(x=>x.ready && x.mode==='view').length+' lecteur(s) connecté(s).'); }
+function audience() { text('audience',[...clients.values()].filter(x=>x.ready && x.mode==='view').length+' lecteur(s) connecté(s).');diagnostic(); }
 function call(entry) {
   if (!stream || !entry.ready || entry.mode !== 'view' || !peer || entry.call) return;
   const media=peer.call(entry.connection.peer,stream,{metadata:{session:entry.nonce,cue:playback.id}});entry.call=media;
@@ -137,25 +139,27 @@ async function follow() {
 function prepare() {
   if(peer && !peer.destroyed)return;
   if(typeof window.Peer!=='function'){text('peer-status','Le module de diffusion ne s’est pas chargé. Recharge cet onglet.');return;}
+  attempts=0;rejected=0;lastIssue='En attente de la première tentative depuis une tablette.';diagnostic();
   secret=Array.from(crypto.getRandomValues(new Uint8Array(32)),x=>x.toString(16).padStart(2,'0')).join('');
   peer=new Peer(undefined,options());const mine=peer;
   text('peer-status','Préparation de la connexion aux joueurs…');
   peer.on('open',id=>{if(peer!==mine)return;peerRetry=0;$('pair-code').value=encodeSession({version:1,peer:id,secret});$('copy').disabled=$('stop-session').disabled=false;text('peer-status','Code prêt. Colle-le dans SoundShow, dans les Archives.');});
   peer.on('connection',connection=>{
-    if(clients.size>=32){connection.close();return;}
+    attempts++;lastIssue='Une demande de liaison est arrivée au PC.';diagnostic();
+    if(clients.size>=32){rejected++;lastIssue='Nombre maximal de connexions atteint.';diagnostic();connection.close();return;}
     const entry={connection,ready:false,mode:'view',nonce:crypto.randomUUID(),call:null};clients.set(connection,entry);
     const timer=setTimeout(()=>{if(!entry.ready)connection.close();},6000);
     connection.on('data',data=>{
-      if(!entry.authenticated){if(data?.type!=='hello'||data.version!==1||data.secret!==secret){connection.close();return;}
-        entry.authenticated=true;entry.mode=data.mode==='watch'?'watch':'view';send(entry,{type:'welcome',session:entry.nonce});return;}
-      if(data?.type==='ready'&&data.session===entry.nonce){clearTimeout(timer);entry.ready=true;send(entry,playback);call(entry);audience();}
+      if(!entry.authenticated){if(data?.type!=='hello'||data.version!==1||data.secret!==secret){rejected++;lastIssue='Un lecteur a présenté un ancien code ou un code invalide.';diagnostic();connection.close();return;}
+        entry.authenticated=true;entry.mode=data.mode==='watch'?'watch':'view';lastIssue='Code accepté ; lecteur en cours d’activation.';diagnostic();send(entry,{type:'welcome',session:entry.nonce});return;}
+      if(data?.type==='ready'&&data.session===entry.nonce){clearTimeout(timer);entry.ready=true;lastIssue='Lecteur confirmé par le PC.';send(entry,playback);call(entry);audience();}
       // Receiving tablets cannot control SoundShow or select a local file.
     });
-    const closed=()=>{clearTimeout(timer);entry.call?.close();clients.delete(connection);audience();};connection.on('close',closed);connection.on('error',closed);
+    const closed=()=>{clearTimeout(timer);if(!entry.ready)lastIssue='Une tentative s’est fermée avant la validation du lecteur.';entry.call?.close();clients.delete(connection);audience();};connection.on('close',closed);connection.on('error',closed);
   });
   peer.on('call',call=>call.close());
-  peer.on('disconnected',()=>{if(peer!==mine||peer.destroyed)return;text('peer-status','Serveur de connexion interrompu. Reconnexion…');if(peerRetry++<5)setTimeout(()=>{if(peer===mine&&!peer.destroyed)peer.reconnect();},Math.min(1000*2**peerRetry,15000));});
-  peer.on('error',()=>text('peer-status','Connexion aux joueurs indisponible. Vérifie Internet et que les appareils utilisent le même réseau.'));
+  peer.on('disconnected',()=>{if(peer!==mine||peer.destroyed)return;lastIssue='Le PC a perdu le serveur de mise en relation.';diagnostic();text('peer-status','Serveur de connexion interrompu. Reconnexion…');if(peerRetry++<5)setTimeout(()=>{if(peer===mine&&!peer.destroyed)peer.reconnect();},Math.min(1000*2**peerRetry,15000));});
+  peer.on('error',error=>{lastIssue='Erreur de mise en relation du PC : '+String(error?.type||'inconnue').slice(0,40);diagnostic();text('peer-status','Connexion aux joueurs indisponible ('+String(error?.type||'réseau')+'). Vérifie Internet et le réseau local.');});
 }
 function stopSession() {
   clearSource();for(const entry of clients.values())entry.connection.close();clients.clear();peer?.destroy();peer=null;
