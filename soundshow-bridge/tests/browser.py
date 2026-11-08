@@ -125,7 +125,7 @@ async def main():
                     # The host prepares pairing automatically after SoundShow connects.
                     # Opening the advanced panel or pressing "Prepare" is no longer required.
                     await wait_expression(host,"document.getElementById('pair-code').value.startsWith('SS2.')")
-                    assert await host.get_by_role('button',name='Ouvrir Les Archives et relier les joueurs').is_visible()
+                    assert await host.get_by_role('button',name='Ouvrir Owlbear et relier les joueurs').is_visible()
                     code=await host.locator('#pair-code').input_value()
                     # Owlbear is the sole game tab: no standalone Archives tab.
                     # The installed extension is hosted in a nested cross-origin iframe.
