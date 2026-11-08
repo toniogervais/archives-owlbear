@@ -3,6 +3,40 @@ import {isPacket,packet} from '../v56/link.mjs';
 import {decodeSession,encodeSession,validSession} from './protocol.mjs';
 let session=null,player,liveSession=null,infoView=null;const pending=new Map(),roomFrames=new Map();
 const embedded=window.parent!==window;
+const autoLinkProtocol='archives:soundshow:link-v1';
+let pendingAutoLink=null,autoLinkBusy=false,autoLinkTimer=null,linkInfoView=null;
+function validLocalBridgeOrigin(origin){
+  try{
+    const value=new URL(origin);
+    return value.protocol==='http:' && ['127.0.0.1','localhost'].includes(value.hostname) && !!value.port;
+  }catch{return false;}
+}
+async function applyAutomaticLink(){
+  if(embedded||!pendingAutoLink||autoLinkBusy||!isGM())return;
+  autoLinkBusy=true;
+  const offer=pendingAutoLink;
+  try{
+    await publish(offer.session);
+    if(linkInfoView?.isConnected)linkInfoView.textContent='SoundShow est relié. Lance la vidéo dans SoundShow : elle s’affichera chez les joueurs.';
+    offer.source?.postMessage({protocol:autoLinkProtocol,type:'accepted',requestId:offer.requestId},offer.origin);
+    pendingAutoLink=null;clearInterval(autoLinkTimer);autoLinkTimer=null;
+    const url=new URL(location.href);url.searchParams.delete('soundshow_link');
+    history.replaceState(history.state,'',url.href);
+    notice('SoundShow relié automatiquement. Lance simplement ta vidéo.');
+  }catch(error){
+    if(linkInfoView?.isConnected)linkInfoView.textContent='Liaison SoundShow indisponible : '+error.message;
+  }finally{autoLinkBusy=false;}
+}
+window.addEventListener('message',event=>{
+  if(embedded||event.data?.protocol!==autoLinkProtocol||event.data.type!=='offer'||!validLocalBridgeOrigin(event.origin))return;
+  const expected=new URLSearchParams(location.search).get('soundshow_link');
+  if(!expected||event.data.requestId!==expected||!validSession(event.data.session))return;
+  pendingAutoLink={session:event.data.session,source:event.source,origin:event.origin,requestId:expected};
+  if(linkInfoView?.isConnected)linkInfoView.textContent='Connexion automatique reçue. Ouverture de la campagne MJ nécessaire.';
+  if(!autoLinkTimer)autoLinkTimer=setInterval(()=>void applyAutomaticLink(),1100);
+  void applyAutomaticLink();
+});
+window.addEventListener('pagehide',()=>clearInterval(autoLinkTimer),{once:true});
 async function request(type,value) {
   const id=crypto.randomUUID();
   return new Promise((resolve,reject)=>{
@@ -25,18 +59,20 @@ async function publish(value) {
 function open() {
   try {
     requireGM();const view=sheet('archives-soundshow','SoundShow · vidéos des joueurs');
-    view.content.append(element('p','Lance le connecteur sur ton PC, associe tes vidéos puis colle son code ici. Pendant la partie, déclenche les vidéos directement dans SoundShow.','studio-hint'));
+    view.content.append(element('p','Une seule fois au démarrage, dans le connecteur SoundShow sur ton PC, clique sur « Ouvrir Les Archives et relier les joueurs ». Ensuite, lance les vidéos directement dans SoundShow.','studio-hint'));
+    const simpleStatus=element('p',session?'SoundShow relié. Les prochaines vidéos s’ouvriront dans une fenêtre des Archives ou d’Owlbear.':'En attente du connecteur SoundShow. Aucun code à recopier.','studio-status');simpleStatus.setAttribute('role','status');linkInfoView=simpleStatus;view.content.append(simpleStatus);
     const download=element('a','Télécharger le connecteur Windows');download.href='https://github.com/toniogervais/archives-owlbear/releases/download/soundshow-bridge-v0.1.3/Archives-SoundShow-Connecteur.exe';download.target='_blank';download.rel='noopener';view.content.append(download);
-    const label=element('label','Code de connexion SoundShow'),input=element('input');input.type='password';input.autocomplete='off';input.placeholder='SS2.…';input.setAttribute('aria-label','Code de connexion SoundShow');input.value=session?encodeSession(session):'';label.append(input);view.content.append(label);
+    const advanced=element('details');const summary=element('summary','Dépannage : connexion manuelle avec un code');advanced.append(summary);
+    const label=element('label','Code de connexion SoundShow'),input=element('input');input.type='password';input.autocomplete='off';input.placeholder='SS2.…';input.setAttribute('aria-label','Code de connexion SoundShow');input.value=session?encodeSession(session):'';label.append(input);advanced.append(label);
     const info=element('p',null,'studio-hint');info.id='soundshow-room-status';info.setAttribute('role','status');infoView=info;
     function connectionInfo(result){
       if(Number.isInteger(result?.players))info.textContent=result.players+' joueur(s) dans cette salle Owlbear · '+(result.ready||0)+' lecteur(s) relié(s) au connecteur.'+(result.players===0?' La tablette doit rejoindre cette salle avec le rôle Joueur.':result.ready===result.players?' Connexion confirmée ; vérifie la lecture de la vidéo.':result.error?' '+result.error+' lecteur(s) signale(nt) une erreur. Vérifie le message sur la tablette.':' Si le nombre ne progresse pas, vérifie le message sur la tablette.');
       else if(Number.isInteger(result?.rooms))info.textContent=result.rooms+' salle(s) Owlbear reliée(s) aux Archives principales.'+(result.rooms===0?' Pour cet essai, ouvre les Archives depuis le livre de ta salle Owlbear et relie SoundShow dans cette vue.':'');
     }
     const actions=element('div',null,'studio-actions');
-    actions.append(button('Relier les joueurs',async()=>{try{view.busy(true);const result=await publish(decodeSession(input.value));connectionInfo(result);view.status.textContent='Code transmis. Les vidéos associées se présenteront quand tu les lanceras dans SoundShow.';}catch(error){view.status.textContent=error.message;}finally{view.busy(false);}}),
-      button('Déconnecter',async()=>{try{view.busy(true);await publish(null);input.value='';view.status.textContent='Diffusion SoundShow déconnectée.';}catch(error){view.status.textContent=error.message;}finally{view.busy(false);}}));
-    view.content.append(actions,info,element('p','Le lecteur s’ouvre d’abord avec son état de connexion. Il peut demander aux joueurs d’autoriser l’image et le son. Le connecteur et son onglet doivent rester ouverts.','studio-hint'));
+    actions.append(button('Relier les joueurs',async()=>{try{view.busy(true);const result=await publish(decodeSession(input.value));connectionInfo(result);view.status.textContent='SoundShow relié. Lance maintenant tes vidéos dans SoundShow.';simpleStatus.textContent='SoundShow relié aux joueurs.';}catch(error){view.status.textContent=error.message;}finally{view.busy(false);}}),
+      button('Déconnecter',async()=>{try{view.busy(true);await publish(null);input.value='';view.status.textContent='Diffusion SoundShow déconnectée.';simpleStatus.textContent='SoundShow déconnecté.';}catch(error){view.status.textContent=error.message;}finally{view.busy(false);}}));
+    advanced.append(actions);view.content.append(info,advanced,element('p','La vidéo s’affiche dans une fenêtre intégrée. Les joueurs peuvent devoir autoriser le son la première fois. Le connecteur doit rester ouvert sur ton PC.','studio-hint'));
     let edited=false;input.addEventListener('input',()=>{edited=true;});
     if(embedded)void request('owl-soundshow-query').then(result=>{if(view.dialog.isConnected){connectionInfo(result);if(!edited){session=result.session;input.value=session?encodeSession(session):'';}}}).catch(error=>{if(view.dialog.isConnected)view.status.textContent=error.message;});
   }catch(error){notice(error.message);}
