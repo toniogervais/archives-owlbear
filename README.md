@@ -1,4 +1,9 @@
-# Les Archives de l’Imaginaire — Owlbear V4.21.0
+# Les Archives de l’Imaginaire — Owlbear V4.22.2
+
+## Diagnostic SoundShow et reconnexion 4.22.2
+
+La commande SoundShow indique désormais séparément le nombre de joueurs présents dans la salle Owlbear et le nombre de lecteurs qui ont réellement confirmé leur connexion au connecteur PC. Cette confirmation provient du lecteur visible, pas de la simple présence d'un joueur ni de la surveillance cachée. Si un lecteur n'arrive pas à établir la connexion, sa tablette affiche un message et le bouton **Réessayer la connexion**. Une nouvelle commande **Relier les joueurs** rafraîchit aussi le diagnostic sans fermer les lecteurs déjà actifs. Les statuts sont limités à des informations de connexion ; ni mot de passe ni code de session ne sont renvoyés dans le diagnostic. Le réseau de la tablette et SoundShow réel doivent encore être validés sur place.
+
 
 ## Correctif de réception SoundShow 4.22.1
 
