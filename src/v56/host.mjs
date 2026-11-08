@@ -3,7 +3,7 @@ import {
   isPacket, liveRoomKey, packet, pairingKey, readLocal, screenChannel, trustedOwlbearSdk,
   validLiveRoom, validPairing, viewerId, writeLocal
 } from "./link.mjs";
-import { localEditor, localViewer, release } from "../v57/room.mjs?v=4221";
+import { localEditor, localViewer, release } from "../v57/room.mjs?v=4222";
 import { makeEditorHost, makePlayerHost } from "../v57/room-host.mjs?v=4210";
 
 const $ = id => document.getElementById(id);
@@ -75,7 +75,7 @@ window.addEventListener("message", event => {
   if (!roomId || event.source !== frame.contentWindow || event.origin !== location.origin || !isPacket(event.data)) return;
   const data = event.data;
   if (gm && ['owl-soundshow-command','owl-soundshow-query'].includes(data.type)) {
-    void import('../soundshow/host.mjs').then(module => module.forwardSoundShow(OBR,data,post))
+    void import('../soundshow/host.mjs?v=012').then(module => module.forwardSoundShow(OBR,data,post))
       .catch(error => post('owl-soundshow-result',{id:data.id,safe:false,message:error.message}));
     return;
   }
