@@ -9,9 +9,25 @@ export function loadPeer() {
     script.onload=()=>done(window.Peer?null:Error('Le module vidéo est indisponible.'));script.onerror=()=>done(Error('Le module vidéo ne s’est pas chargé.'));document.head.append(script);
   }).catch(error=>{loading=null;throw error;});return loading;
 }
+export function explainConnectionFailure(type,phase='signal') {
+  if(type==='peer-unavailable')return 'PC du MJ introuvable : le code SoundShow peut être périmé. Prépare une nouvelle diffusion sur le PC, puis relie les joueurs.';
+  if(['network','socket-error','socket-closed','server-error','ssl-unavailable'].includes(type))
+    return 'Serveur de mise en relation inaccessible. Vérifie Internet et le message « Code prêt » sur le connecteur du PC.';
+  if(type==='browser-incompatible')
+    return 'Navigateur incompatible avec la vidéo en direct. Ouvre Owlbear dans Chrome sur la tablette.';
+  if(type==='webrtc'||type==='ice-failed'||type==='negotiation-failed')
+    return 'Échec WebRTC entre le PC et la tablette. Vérifie le même Wi-Fi, l’absence de réseau invités et le pare-feu Windows.';
+  if(type==='connection-closed')
+    return phase==='ready'?'La liaison au PC s’est refermée. Vérifie que le connecteur Windows reste ouvert.':
+      'La liaison s’est fermée avant confirmation du PC. Vérifie le connecteur et le réseau local.';
+  if(phase==='signal')return 'Le serveur de mise en relation ne répond pas. Vérifie Internet sur la tablette.';
+  if(phase==='peer')return 'Le PC du MJ ne répond pas à la demande vidéo. Vérifie son onglet de diffusion et le pare-feu.';
+  if(phase==='handshake')return 'Connexion ouverte, mais le PC n’a pas confirmé la session. Prépare un nouveau code de diffusion.';
+  return 'Liaison vidéo interrompue. Vérifie que le connecteur Windows reste ouvert.';
+}
 export class SoundShowConnection {
   constructor({mode='view',onStatus=()=>{},onPlayback=()=>{},onStream=()=>{}}={}) {
-    Object.assign(this,{mode,onStatus,onPlayback,onStream});this.epoch=0;this.retries=0;
+    Object.assign(this,{mode,onStatus,onPlayback,onStream});this.epoch=0;this.retries=0;this.stage='idle';
   }
   async use(session) {
     if(session!==null&&!validSession(session))throw Error('Connexion SoundShow invalide.');
@@ -21,37 +37,61 @@ export class SoundShowConnection {
   async connect() {
     const epoch=++this.epoch,session=this.session;
     if(!session)return;
-    this.onStatus('Connexion vidéo au PC du MJ…');
+    this.stage='signal';
+    this.onStatus('Connexion au serveur vidéo…');
+    const fail=(reason='timeout')=>{
+      if(this.epoch!==epoch)return;
+      const phase=this.stage,issue=explainConnectionFailure(reason,phase);
+      this.drop();this.onStream(null);
+      const attempt=++this.retries;
+      if(attempt<=6){
+        this.onStatus('Liaison vidéo interrompue — '+issue+' Nouvelle tentative ('+attempt+'/6)…');
+        this.timer=setTimeout(()=>void this.connect(),Math.min(1000*2**attempt,15000));
+      }else this.onStatus('Connexion impossible après plusieurs essais — '+issue+' Appuie sur Réessayer la connexion.');
+    };
     try {
       await loadPeer();if(this.epoch!==epoch)return;
-      const peer=new Peer(undefined,{config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}]},...window.ArchivesSoundShowPeerOptions});this.peer=peer;
-      const fail=()=>{if(this.epoch!==epoch)return;this.drop();this.onStream(null);this.onStatus('Liaison vidéo interrompue. Reconnexion…');if(this.retries++<6)this.timer=setTimeout(()=>void this.connect(),Math.min(1000*2**this.retries,15000));else this.onStatus('Connexion impossible après plusieurs essais. Appuie sur Réessayer la connexion.');};
-      this.timeout=setTimeout(fail,20000);
+      const peer=new Peer(undefined,{config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]},...window.ArchivesSoundShowPeerOptions});this.peer=peer;
+      this.timeout=setTimeout(()=>fail('timeout'),20000);
       peer.on('open',()=>{
         if(this.epoch!==epoch)return;
+        this.stage='peer';this.onStatus('Recherche du PC du MJ…');
         const connection=peer.connect(session.peer,{reliable:true});this.connection=connection;
-        connection.on('open',()=>connection.send({type:'hello',version:1,secret:session.secret,mode:this.mode}));
+        connection.on('open',()=>{
+          if(this.epoch!==epoch)return;
+          this.stage='handshake';this.onStatus('Connexion établie — validation du code SoundShow…');
+          connection.send({type:'hello',version:1,secret:session.secret,mode:this.mode});
+        });
         connection.on('data',data=>{
           if(this.epoch!==epoch)return;
           if(data?.type==='welcome'&&typeof data.session==='string'&&/^[A-Za-z0-9_-]{8,100}$/.test(data.session)){
-            this.nonce=data.session;clearTimeout(this.timeout);this.retries=0;
+            this.nonce=data.session;clearTimeout(this.timeout);this.retries=0;this.stage='ready';
             connection.send({type:'ready',session:this.nonce});this.onStatus('Prêt — en attente d’une vidéo du MJ.');return;
           }
           const playback=this.nonce&&publicPlayback(data);if(playback)this.onPlayback(playback);
         });
-        connection.on('close',fail);connection.on('error',fail);
+        connection.on('close',()=>fail('connection-closed'));
+        connection.on('error',error=>fail(error?.type||'connection-closed'));
       });
       peer.on('call',call=>{
         if(this.epoch!==epoch||this.mode!=='view'||call.peer!==session.peer||!this.nonce||call.metadata?.session!==this.nonce){call.close();return;}
         this.call?.close();this.call=call;call.answer();
         call.on('stream',stream=>{if(this.epoch===epoch&&this.call===call)this.onStream(stream);});
-        call.on('close',()=>{if(this.call===call){this.call=null;this.onStream(null);}});call.on('error',()=>{if(this.call===call)this.onStatus('La vidéo ne peut pas traverser ce réseau. Vérifie le Wi-Fi des appareils.');});
+        call.on('close',()=>{if(this.call===call){this.call=null;this.onStream(null);}});
+        call.on('error',()=>{if(this.call===call)this.onStatus('Le PC répond, mais le flux vidéo ne traverse pas le réseau Wi-Fi. Vérifie le pare-feu Windows.');});
       });
-      peer.on('connection',connection=>connection.close());peer.on('disconnected',fail);peer.on('error',fail);
-    } catch(error){if(this.epoch===epoch)this.onStatus(error.message);}
+      peer.on('connection',connection=>connection.close());
+      peer.on('disconnected',()=>{
+        if(this.epoch!==epoch)return;
+        // The data/media connection may survive loss of the signalling socket.
+        if(this.connection?.open){this.onStatus('Serveur de mise en relation déconnecté ; liaison locale conservée.');try{peer.reconnect();}catch{}}
+        else fail('network');
+      });
+      peer.on('error',error=>fail(error?.type||'network'));
+    } catch(error){if(this.epoch===epoch)fail(error?.type||'network');}
   }
   drop() {
-    this.epoch++;clearTimeout(this.timeout);clearTimeout(this.timer);this.nonce=null;
+    this.epoch++;clearTimeout(this.timeout);clearTimeout(this.timer);this.nonce=null;this.stage='idle';
     const peer=this.peer;this.peer=null;this.connection=null;this.call=null;peer?.destroy();
   }
   stop() {this.drop();this.retries=0;this.session=null;this.onStream(null);this.onPlayback({type:'playback',active:false});}
