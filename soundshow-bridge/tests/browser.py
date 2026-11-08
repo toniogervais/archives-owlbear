@@ -122,8 +122,10 @@ async def main():
                     async with host.expect_file_chooser() as picker:
                         await host.get_by_role('button',name='Choisir la vidéo',exact=True).click()
                     await (await picker.value).set_files(str(video))
-                    await host.get_by_role('button',name='Préparer la diffusion',exact=True).click()
+                    # The host prepares pairing automatically after SoundShow connects.
+                    # Opening the advanced panel or pressing "Prepare" is no longer required.
                     await wait_expression(host,"document.getElementById('pair-code').value.startsWith('SS2.')")
+                    assert await host.get_by_role('button',name='Ouvrir Les Archives et relier les joueurs').is_visible()
                     code=await host.locator('#pair-code').input_value()
                     player_context=await browser.new_context(viewport={'width':800,'height':1100},has_touch=True)
                     await player_context.add_init_script('window.ArchivesSoundShowPeerOptions='+json.dumps(options))
