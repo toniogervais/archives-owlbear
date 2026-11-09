@@ -76,7 +76,7 @@ window.addEventListener("message", event => {
   const data = event.data;
   if (gm && ['owl-soundshow-command','owl-soundshow-query','owl-soundshow-remote-command','owl-soundshow-remote-get'].includes(data.type)) {
     void import('../soundshow/host.mjs?v=017').then(module => module.forwardSoundShow(OBR,data,post))
-      .catch(error => post('owl-soundshow-result',{id:data.id,safe:false,message:error.message}));
+      .catch(error => post(data.type.startsWith('owl-soundshow-remote-')?'owl-soundshow-remote-result':'owl-soundshow-result',{id:data.id,safe:false,message:error.message}));
     return;
   }
   if (data.type === "go-map") { button.click(); return; }
