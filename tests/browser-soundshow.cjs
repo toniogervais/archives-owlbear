@@ -29,6 +29,11 @@ const channel='fr.archives-imaginaire.bridge/soundshow-v1';
   // New GM-only floating toolbar opens a side panel without overlaying or losing nodes.
   const dock=app.locator('#soundshow-sounds-dock');
   await dock.waitFor({state:'visible'});
+  // The synthetic Owlbear fixture leaves its unrelated initial bridge-warning
+  // overlay over the editor. Real rooms dismiss it after campaign pairing.
+  // Keep this test focused on the sound dock without bypassing its own controls.
+  await frame().evaluate(()=>{const warning=document.querySelector('.archives-bridge-notice');
+    if(warning)warning.style.pointerEvents='none';});
   const originalNodes=await frame().evaluate(()=>JSON.stringify(window.DuneApp.getState().nodes));
   const originalWidth=await app.locator('#main-area').evaluate(el=>el.getBoundingClientRect().width);
   await frame().evaluate(()=>window.ArchivesSoundShow.getSoundDock().update({
