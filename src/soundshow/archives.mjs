@@ -85,9 +85,10 @@ window.addEventListener('message',event=>{
 window.addEventListener('archives:soundshow-session',event=>{
   if(isGM()||embedded)return;
   const value=event.detail?.session;if(value!==null&&!validSession(value))return;liveSession=value;
-  void(async()=>{if(!player){const {mountPlayer}=await import('./player.mjs?v=015');player=mountPlayer();}await player.use(document.hidden?null:value);})().catch(error=>notice(error.message));
+  void(async()=>{if(!player){const {mountPlayer}=await import('./player.mjs?v=028');player=mountPlayer();}await player.use(value);})().catch(error=>notice(error.message));
 });
-document.addEventListener('visibilitychange',()=>{if(!isGM()&&!embedded&&player)void player.use(document.hidden?null:liveSession).catch(error=>notice(error.message));});
+// Ne jamais réinitialiser WebRTC lorsque l'utilisateur change d'onglet :
+// le lecteur gère déjà la mise en sourdine pendant que l'onglet est masqué.
 const control=document.querySelector('.canvas-integration-icon[aria-label^="Sound Show"]');
 if(control){
   control.disabled=false;control.id='archives-soundshow-open';control.setAttribute('aria-label','SoundShow : sons, vidéos et télécommande');control.parentElement.title='SoundShow : sons, vidéos et télécommande MJ';control.onclick=()=>soundsDock?soundsDock.open():open;
