@@ -909,6 +909,7 @@ body.player-mode #archives-home-fab{display:flex!important}
   <div class="ctx-item" onclick="DuneApp.ctxToggleReveal()">👁 Révéler / Masquer aux joueurs</div>
   <button type="button" id="ctx-send-to-owlbear" class="ctx-item" style="width:100%;background:transparent;border:0;color:inherit;font:inherit;text-align:left">🌐 Envoyer à Owlbear</button>
   <div class="ctx-item" onclick="DuneApp.ctxOpenClues()">☑️ Gérer les indices & secrets</div>
+  <div class="ctx-item gm-only-ui" id="ctx-cell-media" onclick="window.ArchivesSoundShow?.openCellMedia?.('context')">♫ Sons et vidéos à la révélation</div>
   <div class="ctx-item" onclick="DuneApp.ctxAutoFitImg()">📐 Adapter l'image à la forme</div>
   <div class="ctx-item" onclick="DuneApp.ctxTriggerUploadImg()">📂 Changer l'image...</div>
   <div class="ctx-divider"></div>
@@ -1152,6 +1153,7 @@ body.player-mode #archives-home-fab{display:flex!important}
         </div>
         <section id="active-editor-description-panel" aria-label="Description générale"><div id="active-editor-description-slot"></div></section>
         <section id="active-editor-revelations" aria-label="Révélations et indices" hidden></section>
+        <section id="cell-media-editor" aria-label="Médias SoundShow liés à la cellule" class="gm-only-ui"></section>
       </div>
     </div>
   </div>
@@ -1267,6 +1269,11 @@ body.player-mode #archives-home-fab{display:flex!important}
 
 <!-- Barre de raccourcis : commandes fréquentes, sans remplacer les contrôles des cellules -->
 <nav id="quick-icon-dock" aria-label="Barre d’icônes de navigation et de commandes">
+  <button type="button" class="quick-icon-btn" id="archives-fullscreen-toggle" data-tone="blue"
+    title="Plein écran / affichage normal" aria-label="Passer en plein écran" aria-pressed="false"
+    onclick="window.ArchivesLayout?.toggleFullscreen?.()">
+    <svg class="quick-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg>
+  </button>
   <button type="button" id="quick-dock-handle" class="quick-dock-handle" title="Déplacer la barre d’icônes ; verticale sur un côté, horizontale en haut ou en bas" aria-label="Déplacer la barre d’icônes">
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="7" r="1.25"/><circle cx="16" cy="7" r="1.25"/><circle cx="8" cy="12" r="1.25"/><circle cx="16" cy="12" r="1.25"/><circle cx="8" cy="17" r="1.25"/><circle cx="16" cy="17" r="1.25"/></svg>
   </button>
@@ -4200,6 +4207,28 @@ window.DuneApp = (function() {
     closePlayerCellImage: closePlayerCellImage,
     isPlayerMode: function() { return state.playerMode; },
     getState: function(){ return state; },
+    getCellRevealMedia: function(id){
+      var n=getNode(id||state.selectedId);
+      return n&&Array.isArray(n.revealMedia)?n.revealMedia.map(function(item){
+        return {id:String(item.id||""),kind:String(item.kind||"sound"),action:String(item.action||"start")};
+      }):[];
+    },
+    setCellRevealMedia: function(id,entries){
+      if(state.playerMode||state.strictReadOnly)throw Error("Réglage réservé au MJ.");
+      var n=getNode(id||state.selectedId);
+      if(!n)throw Error("Aucune cellule sélectionnée.");
+      if(!Array.isArray(entries))throw Error("Liste de médias invalide.");
+      pushUndoSnapshot();
+      var seen=Object.create(null);
+      n.revealMedia=entries.filter(function(item){
+        return item&&typeof item.id==="string"&&item.id.length>0&&item.id.length<=200
+          &&!seen[item.id]&&(seen[item.id]=true);
+      }).slice(0,16).map(function(item){
+        return {id:item.id,kind:item.kind==="video"?"video":"sound",
+          action:["start","fade_in","crossfade","replace","toggle","toggle_fade"].indexOf(item.action)>=0?item.action:"start"};
+      });
+      saveState();return n.revealMedia.slice();
+    },
     focusCellById: function(nodeId, boardId){
       if(boardId && boardId!==state.activeBoardId){state.activeBoardId=boardId;bindActiveBoardRefs();renderTabs();}
       var n=getNode(nodeId);if(!n)return;
@@ -5065,6 +5094,11 @@ window.DuneApp = (function() {
         syncRevealsAcrossBoards(n.originalId || n.id, true, n.revOrder);
         saveState(n.id, null);
         setStatus("👁 « " + n.title + " » révélée (#" + n.revOrder + ") !");
+        if(!state.playerMode&&!state.strictReadOnly && Array.isArray(n.revealMedia)&&n.revealMedia.length)
+          window.dispatchEvent(new CustomEvent("archives:cell-revealed",{detail:{
+            nodeId:n.id,originalId:n.originalId||n.id,
+            media:n.revealMedia.slice(0,16).map(function(item){return {id:item.id,kind:item.kind,action:item.action};})
+          }}));
       } else {
         syncRevealsAcrossBoards(n.originalId || n.id, false, null);
         renderAll(); saveState();
@@ -7032,5 +7066,6 @@ body.player-mode .player-cell-resize:hover{opacity:1}
 
 <script type="module" src="./src/v65/cell-picture.mjs?v=4210"></script>
 <script type="module" src="./src/v65/storage.mjs?v=4210"></script>
-<script type="module" src="./src/soundshow/archives.mjs?v=018"></script>
+<script type="module" src="./src/soundshow/archives.mjs?v=019"></script>
+<script type="module" src="./src/v66/workspace.mjs?v=4260"></script>
 
