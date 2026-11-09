@@ -26,6 +26,44 @@ const channel='fr.archives-imaginaire.bridge/soundshow-v1';
   await gm.locator('#archives-tool').click();const app=gm.frameLocator('#viewer').frameLocator('#app');
   await app.locator('#archives-soundshow-open').waitFor({state:'attached'});assert.equal(await app.locator('#archives-soundshow-open').isDisabled(),false);
   const frame=()=>gm.frames().find(f=>f.url().includes('archives-app-v64-v55.html'));
+  // New GM-only floating toolbar opens a side panel without overlaying or losing nodes.
+  const dock=app.locator('#soundshow-sounds-dock');
+  await dock.waitFor({state:'visible'});
+  const originalNodes=await frame().evaluate(()=>JSON.stringify(window.DuneApp.getState().nodes));
+  const originalWidth=await app.locator('#main-area').evaluate(el=>el.getBoundingClientRect().width);
+  await frame().evaluate(()=>window.ArchivesSoundShow.getSoundDock().update({
+    connected:true,project:'Campagne test SoundShow',media:[
+      {id:'rain',name:'Pluie sur le toit',kind:'sound',category:'Ambiances',categoryId:'ambient',color:'#3b82f6'},
+      {id:'forest',name:'Forêt nocturne',kind:'sound',category:'Ambiances',categoryId:'ambient',color:'#22aa99'},
+      {id:'movie',name:'Cinématique',kind:'video',category:'Films',categoryId:'film'}],
+    active:[{id:'p1',source:'rain',kind:'sound',playing:true}]
+  }));
+  await dock.getByRole('button',{name:'Sons — ouvrir la grille SoundShow'}).click();
+  await app.locator('#soundshow-sounds-panel').waitFor({state:'visible'});
+  const narrowerWidth=await app.locator('#main-area').evaluate(el=>el.getBoundingClientRect().width);
+  assert.ok(narrowerWidth<originalWidth-150,'The sound grid must shrink the actual canvas, not cover it');
+  assert.equal(await frame().evaluate(()=>JSON.stringify(window.DuneApp.getState().nodes)),originalNodes,
+    'No cell or data may disappear when the sound grid opens');
+  assert.equal(await app.locator('#soundshow-sounds-panel .ss-tile').count(),2,'Videos are excluded from the Sounds grid');
+  const host=gm.frames().find(f=>f.url().includes('archives-host-v55.html'));
+  await host.evaluate(()=>{window.__soundGridCommands=[];window.addEventListener('message',event=>{
+    if(event.data?.type==='owl-soundshow-remote-command')window.__soundGridCommands.push(event.data.command);
+  });});
+  await app.locator('#soundshow-sounds-panel .ss-tile[data-id="forest"]').click({button:'right'});
+  await host.waitForFunction(()=>window.__soundGridCommands.some(x=>x.playable_id==='forest'&&x.action==='crossfade'));
+  await app.locator('#soundshow-sounds-panel .ss-advanced summary').click();
+  await app.getByLabel('Clic gauche / tactile',{exact:true}).selectOption('toggle_fade');
+  await app.locator('#soundshow-sounds-panel .ss-tile[data-id="rain"]').click();
+  await host.waitForFunction(()=>window.__soundGridCommands.some(x=>x.playable_id==='rain'&&x.action==='toggle_fade'));
+  await dock.getByRole('button',{name:'Réduire la barre SoundShow'}).click();
+  await app.locator('#soundshow-sounds-panel').waitFor({state:'hidden'});
+  assert.equal(await frame().evaluate(()=>JSON.stringify(window.DuneApp.getState().nodes)),originalNodes);
+  await dock.getByRole('button',{name:'Déployer la barre SoundShow'}).click();
+  await dock.getByRole('button',{name:'Sons — ouvrir la grille SoundShow'}).click();
+  await app.locator('#soundshow-sounds-panel').waitFor({state:'visible'});
+  await app.locator('#soundshow-sounds-panel .ss-close').click();
+  await app.locator('#soundshow-sounds-panel').waitFor({state:'hidden'});
+  console.log('SoundShow sound-grid: right dock, persistent mouse click preferences, responsive canvas, no lost cells: OK');
   await frame().evaluate(()=>window.ArchivesSoundShow.open());
   await app.locator('#archives-soundshow').waitFor();
   await app.locator('#archives-soundshow details').evaluate(el=>{el.open=true;});
