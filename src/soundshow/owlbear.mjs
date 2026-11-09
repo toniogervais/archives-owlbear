@@ -94,7 +94,7 @@ export async function installSoundShow(OBR) {
     modalQueue=modalQueue.catch(()=>{}).then(async()=>{
       if(closed||role!=='PLAYER'||!session||viewOpen)return;
       const token=crypto.randomUUID(),url=new URL('../../soundshow-player.html',import.meta.url);
-      url.searchParams.set('v','015');url.searchParams.set('viewer',token);viewToken=token;
+      url.searchParams.set('v','028');url.searchParams.set('viewer',token);viewToken=token;
       try{
         await OBR.modal.open({id:soundShowModal,url:url.href,width:780,height:500,hideBackdrop:true,hidePaper:true});
         if(viewToken===token)viewOpen=true;
@@ -118,7 +118,8 @@ export async function installSoundShow(OBR) {
     if(closed||role!=='PLAYER'||epoch!==sessionEpoch||!sameSession(value,session))return;
     watcher=new SoundShowConnection({mode:'watch',onPlayback:data=>{
       if(closed||role!=='PLAYER')return;
-      if(!data.active){if(lastCue)void closeView();return;}
+      // Garder la fenêtre prête lorsque la vidéo se termine : le MJ pourra relancer sans reconnexion.
+      if(!data.active)return;
       if(lastCue===data.id)return;lastCue=data.id;
       void openView();
     }});
