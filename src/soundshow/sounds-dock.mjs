@@ -1,5 +1,5 @@
 /* SoundShow — grille sons/vidéos et lecteur à droite du canevas, réservé au MJ. */
-import {mountMiniPlayer} from './mini-player.mjs?v=019';
+import {mountMiniPlayer} from './mini-player.mjs?v=027';
 const modes={
   start:'Lecture normale',
   fade_in:'Fondu d’entrée',
