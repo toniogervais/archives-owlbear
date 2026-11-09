@@ -13,6 +13,7 @@ export function mountRemote(host,send){
   const searchBox=el('input');searchBox.type='search';searchBox.placeholder='Rechercher dans le projet…';
   searchBox.setAttribute('aria-label','Rechercher un son ou une vidéo');
   decorate(searchBox,'flex:1;min-width:160px;padding:9px;border-radius:8px;border:1px solid #c7ad7555;background:#0b0b14;color:#f4e6cd');
+  const tabRow=el('div');decorate(tabRow,'display:flex;gap:7px');filters.append(tabRow,searchBox);
   const media=el('div'),playing=el('div'),nextVolume=el('div');
   decorate(media,'display:grid;gap:7px;max-height:270px;overflow-y:auto');
   decorate(playing,'display:grid;gap:7px;margin-top:8px;max-height:240px;overflow-y:auto');
@@ -53,14 +54,13 @@ export function mountRemote(host,send){
       makeButton('↘ Fondu général',{type:'fade_out_all'}),
       makeButton('■ Arrêter tout',{type:'stop_all'},{title:'Arrête tous les lecteurs non verrouillés'})
     );
-    filters.replaceChildren();
+    tabRow.replaceChildren();
     for(const [value,label] of [['sound','Sons'],['video','Vidéos'],['all','Tous']]){
       const control=makeButton(label,null);
       control.disabled=false;control.setAttribute('aria-pressed',String(kind===value));
       if(kind===value)control.style.borderColor='#f2d591';
-      control.onclick=()=>{kind=value;render();};filters.append(control);
+      control.onclick=()=>{kind=value;render();};tabRow.append(control);
     }
-    filters.append(searchBox);
     media.replaceChildren();
     const entries=(state?.media||[]).filter(item=>(kind==='all'||item.kind===kind)&&
       ((item.name||'')+' '+(item.category||'')).toLocaleLowerCase('fr').includes(search.toLocaleLowerCase('fr')));
