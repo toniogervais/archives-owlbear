@@ -151,7 +151,7 @@ export async function installSoundShow(OBR) {
           return;
         }
         const allowed=['play_playable','toggle_player_playback','stop_player','fade_out_player',
-          'set_player_volume','set_next_sound_volume','toggle_player_loop',
+          'set_player_volume','set_next_sound_volume','toggle_player_loop','seek_player',
           'pause_all','resume_all','stop_all','fade_out_all'];
         if(!data.command||!allowed.includes(data.command.type)){
           channel.postMessage({type:'soundshow-remote-result',id:data.id,safe:false,
