@@ -124,7 +124,13 @@ class ShowState:
                 'kind':item['kind'],'playing':item.get('is_playing') is True,
                 'locked':item.get('is_locked') is True,'muted':item.get('muted') is True,
                 'loop':item.get('loop_enabled') is True,
-                'volume':round(finite(item.get('volume_percent'),100,0,100))})
+                'volume':round(finite(item.get('volume_percent'),100,0,100)),
+                'position':finite(item.get('position_seconds')),
+                'duration':finite(item.get('duration_seconds')),
+                'start':finite(item.get('start_time_seconds')),
+                'stop':finite(item.get('stop_time_seconds')),
+                'timelineDuration':finite(item.get('timeline_duration_seconds')),
+                'observedAt':self.observed_at})
         return {'project':str(project.get('name') or '')[:160], 'media':media,'active':active,
             'nextVolume':round(finite((self.state.get('control') or {}).get('next_sound_volume'),100,0,100))}
 
@@ -285,7 +291,7 @@ class Bridge:
         cmd = request.get('type')
         commands = {'stop_all','pause_all','resume_all','fade_out_all',
             'play_playable','toggle_player_playback','stop_player','fade_out_player',
-            'set_player_volume','set_next_sound_volume','toggle_player_loop'}
+            'set_player_volume','set_next_sound_volume','toggle_player_loop','seek_player'}
         if cmd not in commands:
             raise ValueError('Commande non autorisée.')
         catalog = self.model.remote()
@@ -302,10 +308,15 @@ class Bridge:
                 raise ValueError('Ce son est verrouillé dans SoundShow.')
             result['playable_id'] = request['playable_id']
             result['action'] = request.get('action','start')
-        elif cmd in ('toggle_player_playback','stop_player','fade_out_player','set_player_volume','toggle_player_loop'):
+        elif cmd in ('toggle_player_playback','stop_player','fade_out_player','set_player_volume','toggle_player_loop','seek_player'):
             if request.get('player_id') not in active_ids:
                 raise ValueError('Ce lecteur n’est plus disponible ou est verrouillé.')
             result['player_id'] = request['player_id']
+        if cmd == 'seek_player':
+            percent = request.get('position_percent')
+            if type(percent) not in (int,float) or not math.isfinite(percent) or not 0 <= percent <= 100:
+                raise ValueError('Position attendue entre 0 et 100 %.')
+            result['position_percent'] = round(percent,2)
         if cmd in ('set_player_volume','set_next_sound_volume'):
             volume = request.get('volume')
             if type(volume) is not int or not 0 <= volume <= 100:
