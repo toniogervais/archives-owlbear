@@ -3,7 +3,7 @@ import {isPacket,packet} from '../v56/link.mjs';
 import {decodeSession,encodeSession,validSession} from './protocol.mjs?v=017';
 import {mountRemote} from './remote.mjs?v=017';
 import {mountSoundDock} from './sounds-dock.mjs?v=026';
-import {mountCellMedia} from './cell-media.mjs?v=026';
+import {mountCellMedia} from './cell-media.mjs?v=027';
 let session=null,player,liveSession=null,infoView=null;const pending=new Map(),roomFrames=new Map();
 const embedded=window.parent!==window;
 let remoteUi=null,linkInfoView=null,soundsDock=null,cellMedia=null,remoteState=null;
