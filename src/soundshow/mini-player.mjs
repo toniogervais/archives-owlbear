@@ -50,12 +50,13 @@ export function mountMiniPlayer(host,{send,readState,isGM}){
     const disabled=!current||!state?.connected||!isGM()||current.locked;
     selected.hidden=list.length<2;selected.disabled=!list.length;
     wave.hidden=!current;waveLabel.hidden=!current;timeline.hidden=!current;
-    actions.hidden=!current;volumeBox.hidden=!current;
+    actions.hidden=!current;volumeBox.hidden=false;
+    volumeTitle.textContent=current?'Volume du lecteur':'Volume des prochains sons';
     empty.hidden=!!current;
     for(const btn of Object.values(buttons))btn.disabled=disabled;
-    seek.disabled=disabled||!Number.isFinite(Number(current?.duration))||Number(current?.duration)<=0;
-    volume.disabled=disabled;
-    if(!editingVolume){const v=Number.isFinite(current?.volume)?current.volume:100;volume.value=String(v);volNum.textContent=v+' %';}
+    seek.disabled=disabled||!(Number(current?.duration)>0||Number(current?.timelineDuration)>0);
+    volume.disabled=!state?.connected||!isGM()||(current?.locked===true);
+    if(!editingVolume){const v=Number.isFinite(current?.volume)?current.volume:(Number.isInteger(state?.nextVolume)?state.nextVolume:100);volume.value=String(v);volNum.textContent=v+' %';}
     buttons.loop?.setAttribute('aria-pressed',String(!!current?.loop));
     buttons.pause.textContent=current?.playing?'⏸':'▶';
     if(current)draw();
@@ -114,7 +115,9 @@ export function mountMiniPlayer(host,{send,readState,isGM}){
   volume.oninput=()=>{editingVolume=true;volNum.textContent=volume.value+' %';};
   volume.onchange=()=>{
     const v=Number(volume.value);editingVolume=false;
-    if(current&&!volume.disabled)void run({type:'set_player_volume',player_id:activeId,volume:v});
+    if(volume.disabled)return;
+    if(current)void run({type:'set_player_volume',player_id:activeId,volume:v});
+    else void send({type:'set_next_sound_volume',volume:v}).catch(err=>{empty.hidden=false;empty.textContent=err.message||'Volume indisponible.';});
   };
   const tick=()=>{if(disposed)return;if(current&&!root.closest('[hidden]'))draw();frame=requestAnimationFrame(tick);};frame=requestAnimationFrame(tick);
   pick();
