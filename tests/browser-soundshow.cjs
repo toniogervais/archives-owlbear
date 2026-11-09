@@ -122,7 +122,9 @@ const channel='fr.archives-imaginaire.bridge/soundshow-v1';
   await background(bob).evaluate(data=>window.__soundshowEmit(data),active);assert.equal(await modal(bob).count(),0);
   await background(bob).evaluate(data=>window.__soundshowEmit(data),{...active,id:'cue-next-12345678'});await modal(bob).waitFor();
   await (await videoFrame(bob)).waitForFunction(peer=>window.__soundshowConnections.includes(peer),session.peer,{polling:50});
-  await background(bob).evaluate(()=>window.__soundshowEmit({type:'playback',active:false}));await modal(bob).waitFor({state:'detached'});
+  // La fenêtre reste prête à recevoir une nouvelle vidéo même après la fin de la précédente.
+  await background(bob).evaluate(()=>window.__soundshowEmit({type:'playback',active:false}));await modal(bob).waitFor();
+  await bob.frameLocator('iframe[id="fr.archives-imaginaire.bridge/soundshow-v1/player"]').getByText('Prêt — en attente d’une vidéo du MJ.',{exact:true}).waitFor();
   // Re-linking the same session explicitly opens a closed reader again.
   await gm.bringToFront();await app.getByRole('button',{name:'Relier les joueurs',exact:true}).click();await modal(bob).waitFor();
   await app.locator('#soundshow-room-status').filter({hasText:'3 lecteur(s) relié(s)'}).waitFor();
