@@ -101,3 +101,6 @@ body.soundshow-sounds-open #soundshow-sounds-dock.ss-moved{right:auto!important}
 @media(max-width:900px){#soundshow-sounds-panel{width:var(--ss-panel-width,310px);flex-basis:var(--ss-panel-width,310px)}}
 @media(max-width:580px){#soundshow-sounds-panel{width:var(--ss-panel-width,220px);flex-basis:var(--ss-panel-width,220px)}}
 @media(prefers-reduced-motion:reduce){#soundshow-sounds-panel *,#soundshow-sounds-dock *{transition:none!important}}
+
+/* V4.27 : aucune fausse forme d'onde ; progression uniquement dans le curseur. */
+#soundshow-sounds-panel .ss-wave-area,#soundshow-sounds-panel .ss-wave-caption{display:none!important}
