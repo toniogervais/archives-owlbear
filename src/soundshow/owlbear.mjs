@@ -28,6 +28,9 @@ export async function installSoundShow(OBR) {
     await send({type:'session',session,reopen:true});
     await notifyRoom();
     channel.postMessage({type:'soundshow-room-session',session});
+    // Le connecteur Windows peut établir une session différente de celle des Archives principales.
+    // Mettre à jour le Salon Live pour les joueurs qui ne sont pas dans la vue Owlbear.
+    try{mainWindow?.postMessage(packet('soundshow-main-update',{session,roomId:OBR.room.id}),location.origin);}catch{}
     return true;
   }
   function tryLocalConnector(){
@@ -223,7 +226,15 @@ export async function installSoundShow(OBR) {
     const data=event.data;
     if(closed||role!=='GM'||event.source!==mainWindow||event.origin!==location.origin||!isPacket(data)||data.type!=='soundshow-main-session'||data.roomId!==OBR.room.id||data.session!==null&&!validSession(data.session))return;
     clearTimeout(mainTimer);
-    void(async()=>{if(await OBR.player.getRole()!=='GM'||closed)return;session=data.session;receivers.clear();await send({type:'session',session,reopen:true});await notifyRoom();})().catch(console.warn);
+    void(async()=>{
+      if(await OBR.player.getRole()!=='GM'||closed)return;
+      if(localLinkReady&&validSession(session)){
+        // Ne pas écraser la connexion automatique active par une ancienne session vide du Salon Live.
+        if(!sameSession(data.session,session))try{mainWindow?.postMessage(packet('soundshow-main-update',{session,roomId:OBR.room.id}),location.origin);}catch{}
+        return;
+      }
+      session=data.session;receivers.clear();await send({type:'session',session,reopen:true});await notifyRoom();
+    })().catch(console.warn);
   }
   window.addEventListener('message',fromMain);askMain();
   window.addEventListener('pagehide',()=>{
