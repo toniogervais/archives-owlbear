@@ -123,6 +123,38 @@ class ServerTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(accepted.status,200)
         self.assertEqual(ws.send_json.await_count,2)
 
+    async def test_live_player_transport_exposes_timeline_and_validates_seek(self):
+        self.bridge.model.apply({'type':'state','state':{
+            'project':{'name':'Ambiances','categories':[{'playables':[
+                {'id':'rain','kind':'sound','name':'Pluie'}]}]},
+            'players':[{'id':'player-1','kind':'sound','source_playable_id':'rain',
+                'is_playing':True,'loop_enabled':True,'position_seconds':32.5,
+                'duration_seconds':120,'timeline_duration_seconds':120,
+                'start_time_seconds':0,'stop_time_seconds':120,'volume_percent':65}]}})
+        active=self.bridge.model.remote()['active'][0]
+        self.assertEqual(active['position'],32.5)
+        self.assertEqual(active['duration'],120)
+        self.assertTrue(active['loop'])
+        self.assertEqual(active['volume'],65)
+        self.assertIsInstance(active['observedAt'],int)
+        ws=AsyncMock();ws.closed=False
+        self.bridge.remote_ws=ws;self.bridge.status='connected'
+        for cmd in [
+            {'type':'seek_player','player_id':'player-1','position_percent':40},
+            {'type':'toggle_player_loop','player_id':'player-1'},
+            {'type':'toggle_player_playback','player_id':'player-1'},
+            {'type':'fade_out_player','player_id':'player-1'}
+        ]:
+            response=await self.client.post('/api/control',json=cmd,headers=self.headers)
+            self.assertEqual(response.status,200,cmd)
+        self.assertEqual(ws.send_json.await_args_list[0].args[0]['position_percent'],40)
+        before=ws.send_json.await_count
+        for value in [-1,101,float('nan'),True,'20']:
+            response=await self.client.post('/api/control',json={
+                'type':'seek_player','player_id':'player-1','position_percent':value},headers=self.headers)
+            self.assertEqual(response.status,400)
+        self.assertEqual(ws.send_json.await_count,before)
+
     async def test_remote_controls_sounds_and_videos_with_strict_allowlist(self):
         self.bridge.model.apply({'type':'state','state':{
             'project':{'name':'Campagne','categories':[{'name':'Ambiances','playables':[
