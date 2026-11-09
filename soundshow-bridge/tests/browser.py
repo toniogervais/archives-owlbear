@@ -36,7 +36,8 @@ class FakeShow:
         self.sockets=set()
         self.commands=[]
         self.state={'project':{'name':'Premier essai','categories':[{'playables':[
-            {'id':'movie','name':'Vidéo de test','kind':'video'}]}]},'players':[]}
+            {'id':'movie','name':'Vidéo de test','kind':'video'},
+            {'id':'rain','name':'Pluie','kind':'sound'}]}]},'players':[]}
 
     async def websocket(self,request):
         ws=web.WebSocketResponse();await ws.prepare(request)
@@ -137,8 +138,14 @@ async def main():
                     async def fake_extension(route):
                         page="""<!doctype html><title>Extension Les Archives</title>
                         <script>
-                        window.receivedPairing=null;
+                        window.receivedPairing=null;window.controlResult=null;
                         window.localChallenge=crypto.randomUUID();
+                        window.issueRemote=command=>{
+                          window.controlResult=null;
+                          connector?.postMessage({protocol:'archives:soundshow:owlbear-link-v1',
+                            type:'remote-command',challenge:window.localChallenge,
+                            controlToken:window.controlToken,id:crypto.randomUUID(),command},window.connectorOrigin);
+                        };
                         const connector=window.top.opener;
                         function ask(){
                           if(window.receivedPairing)return;
@@ -148,8 +155,10 @@ async def main():
                         window.addEventListener('message',event=>{
                           const d=event.data;
                           if(!event.origin.startsWith('http://127.0.0.1:')||event.source!==connector||
-                             d?.protocol!=='archives:soundshow:owlbear-link-v1'||d.type!=='offer'||
-                             d.challenge!==window.localChallenge)return;
+                             d?.protocol!=='archives:soundshow:owlbear-link-v1')return;
+                          if(d.type==='remote-result'){window.controlResult=d;return;}
+                          if(d.type!=='offer'||d.challenge!==window.localChallenge)return;
+                          window.controlToken=d.controlToken;window.connectorOrigin=event.origin;
                           window.receivedPairing={peer:d.session?.peer,secretLength:d.session?.secret?.length};
                           connector.postMessage({protocol:d.protocol,type:'accepted',challenge:d.challenge},event.origin);
                         });
@@ -169,6 +178,16 @@ async def main():
                     assert 'archives.html' not in owlbear_window.url and code not in owlbear_window.url
                     await host.get_by_text('Owlbear relié. Tu peux lancer directement tes vidéos dans SoundShow.',exact=True).wait_for()
                     print('One click opens Owlbear only; nested Archives extension receives session: OK',flush=True)
+                    await extension.evaluate("()=>window.issueRemote({type:'play_playable',playable_id:'rain',action:'start'})")
+                    await wait_expression(extension,'window.controlResult?.ok===true')
+                    assert any(cmd.get('type')=='play_playable' and cmd.get('playable_id')=='rain' for cmd in fake.commands)
+                    await extension.evaluate("()=>window.issueRemote({type:'play_playable',playable_id:'movie',action:'fade_in'})")
+                    await wait_expression(extension,'window.controlResult?.ok===true')
+                    assert any(cmd.get('type')=='play_playable' and cmd.get('playable_id')=='movie' for cmd in fake.commands)
+                    await extension.evaluate("()=>window.issueRemote({type:'delete_project'})")
+                    await wait_expression(extension,'window.controlResult?.ok===false')
+                    assert not any(cmd.get('type')=='delete_project' for cmd in fake.commands)
+                    print('Owlbear telecommand launches SoundShow audio and video, rejects forbidden commands: OK',flush=True)
                     player_context=await browser.new_context(viewport={'width':800,'height':1100},has_touch=True)
                     await player_context.add_init_script('window.ArchivesSoundShowPeerOptions='+json.dumps(options))
                     tablet=await player_context.new_page();tablet.on('pageerror',lambda error:errors.append(str(error)))
