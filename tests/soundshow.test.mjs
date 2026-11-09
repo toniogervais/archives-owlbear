@@ -124,8 +124,8 @@ test('SoundShow mini-player uses real timeline and media-controls commands',()=>
     assert.ok(bridge.includes(cmd),cmd);
   }
   assert.match(background,/seek_player/);
-  assert.match(player,/forme réelle des échantillons n’est pas disponible/);
-  assert.match(css,/\.ss-wave-canvas/);
+  assert.doesNotMatch(player,/forme réelle des échantillons n’est pas disponible/);
+  assert.match(player,/lastPlayed/);
   assert.match(css,/\.ss-player-volume/);
   assert.match(css,/\.ss-tile-name\{font-size:10\.5px/);
   assert.match(css,/grid-template-columns:repeat\(auto-fill,minmax\(72px,1fr\)\)/);
@@ -149,12 +149,12 @@ test('Linked cell media remains GM-side and is limited to valid loaded SoundShow
   assert.ok(match);
   assert.doesNotMatch(match[1],/revealMedia/,'Cell media associations must never be projected to players');
 });
-test('Movable Archives docks retain the Owlbear header back button and offer fullscreen',()=>{
+test('Movable Archives docks retain the Owlbear header back button without fullscreen',()=>{
   const layout=fs.readFileSync(new URL('../src/v66/workspace.mjs',import.meta.url),'utf8');
   const host=fs.readFileSync(new URL('../archives-host-v55.html',import.meta.url),'utf8');
   assert.match(layout,/moveBar\('canvas-integrations-dock'/);
   assert.match(layout,/moveBar\('top-hud'/);
-  assert.match(layout,/requestFullscreen/);
+  assert.doesNotMatch(layout,/requestFullscreen/);
   assert.match(host,/allowfullscreen/);
   assert.doesNotMatch(host,/<strong><img src="\.\/icon-archives-v43\.svg"[^>]*>Les Archives de l.Imaginaire/);
   assert.match(host,/id="return"/);
