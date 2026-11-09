@@ -78,7 +78,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          if ! gh release view soundshow-bridge-v0.2.1 > /dev/null 2>&1; then
-            gh release create soundshow-bridge-v0.2.1 --target "$GITHUB_SHA" --prerelease --title "Connecteur SoundShow — essai 0.2.1" --notes "Owlbear est le programme central : le connecteur n’ouvre plus un onglet Archives séparé. Depuis le connecteur, un clic ouvre Owlbear puis l’extension Les Archives relie les lecteurs automatiquement sans code. Diffusion en fenêtre intégrée. Validation sur matériel des joueurs à confirmer."
+          if ! gh release view soundshow-bridge-v0.3.0 > /dev/null 2>&1; then
+            gh release create soundshow-bridge-v0.3.0 --target "$GITHUB_SHA" --prerelease --title "Connecteur SoundShow — essai 0.3.0" --notes "Télécommande SoundShow sons et vidéos intégrée dans l’extension Les Archives pour Owlbear : lecture, pause, reprise, arrêt, fondu, volume, recherche et lecture active. Liaison locale autorisée uniquement pour le MJ. Validation sur matériel réel à confirmer."
           fi
-          gh release upload soundshow-bridge-v0.2.1 windows/Archives-SoundShow-Connecteur.exe --clobber
+          gh release upload soundshow-bridge-v0.3.0 windows/Archives-SoundShow-Connecteur.exe --clobber
