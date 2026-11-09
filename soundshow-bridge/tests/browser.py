@@ -176,7 +176,7 @@ async def main():
                     assert await extension.evaluate('window.receivedPairing.peer') in code
                     assert 'owlbear.rodeo' in owlbear_window.url
                     assert 'archives.html' not in owlbear_window.url and code not in owlbear_window.url
-                    await host.get_by_text('Owlbear relié. Tu peux lancer directement tes vidéos dans SoundShow.',exact=True).wait_for()
+                    await host.get_by_text('Owlbear relié. La télécommande est également active dans Les Archives.',exact=True).wait_for()
                     print('One click opens Owlbear only; nested Archives extension receives session: OK',flush=True)
                     await extension.evaluate("()=>window.issueRemote({type:'play_playable',playable_id:'rain',action:'start'})")
                     await wait_expression(extension,'window.controlResult?.ok===true')
