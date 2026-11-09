@@ -56,3 +56,26 @@ test('The simplified UI never requires a code as its primary action',()=>{
   assert.match(owl,/event.source!==localConnector/);
   assert.match(owl,/await OBR.player.getRole\(\)!=='GM'/);
 });
+
+test('The Owlbear SoundShow telecommand covers audio and video with GM-only local authorization',()=>{
+  const ui=fs.readFileSync(new URL('../src/soundshow/remote.mjs',import.meta.url),'utf8');
+  const app=fs.readFileSync(new URL('../src/soundshow/archives.mjs',import.meta.url),'utf8');
+  const remoteHost=fs.readFileSync(new URL('../src/soundshow/host.mjs',import.meta.url),'utf8');
+  const background=fs.readFileSync(new URL('../src/soundshow/owlbear.mjs',import.meta.url),'utf8');
+  const connector=fs.readFileSync(new URL('../soundshow-bridge/web/host.mjs',import.meta.url),'utf8');
+  assert.match(ui,/\['sound','Sons'\]/);
+  assert.match(ui,/\['video','Vidéos'\]/);
+  for(const action of ['play_playable','pause_all','resume_all','stop_all','fade_out_all',
+    'toggle_player_playback','stop_player','fade_out_player','set_player_volume',
+    'set_next_sound_volume']){
+    assert.ok(ui.includes(action),action);
+  }
+  assert.match(app,/mountRemote\(remoteHost/);
+  assert.match(app,/if\(embedded\)/);
+  assert.match(background,/role!=='GM'/);
+  assert.match(background,/await OBR.player.getRole\(\)!=='GM'/);
+  assert.match(background,/controlToken:localControlToken/);
+  assert.match(remoteHost,/owl-soundshow-remote-command/);
+  assert.match(connector,/data.controlToken===controlToken/);
+  assert.doesNotMatch(connector,/owlWindow=window.open\(archivesPath/);
+});
