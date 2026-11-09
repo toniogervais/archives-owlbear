@@ -36,6 +36,11 @@ const channel='fr.archives-imaginaire.bridge/soundshow-v1';
     if(warning)warning.style.pointerEvents='none';});
   const originalNodes=await frame().evaluate(()=>JSON.stringify(window.DuneApp.getState().nodes));
   const originalWidth=await app.locator('#main-area').evaluate(el=>el.getBoundingClientRect().width);
+  await dock.getByRole('button',{name:'Sons — ouvrir la grille SoundShow'}).click();
+  await app.locator('#soundshow-sounds-panel').waitFor({state:'visible'});
+  // Let the initial real (disconnected) fixture snapshot complete before supplying
+  // a mock connected SoundShow catalog for interaction-only tests.
+  await app.locator('#soundshow-sounds-panel .ss-status').filter({hasText:'SoundShow non relié'}).waitFor();
   await frame().evaluate(()=>window.ArchivesSoundShow.getSoundDock().update({
     connected:true,project:'Campagne test SoundShow',media:[
       {id:'rain',name:'Pluie sur le toit',kind:'sound',category:'Ambiances',categoryId:'ambient',color:'#3b82f6'},
@@ -43,8 +48,7 @@ const channel='fr.archives-imaginaire.bridge/soundshow-v1';
       {id:'movie',name:'Cinématique',kind:'video',category:'Films',categoryId:'film'}],
     active:[{id:'p1',source:'rain',kind:'sound',playing:true}]
   }));
-  await dock.getByRole('button',{name:'Sons — ouvrir la grille SoundShow'}).click();
-  await app.locator('#soundshow-sounds-panel').waitFor({state:'visible'});
+  await app.locator('#soundshow-sounds-panel .ss-tile[data-id="rain"]').waitFor({state:'visible'});
   const narrowerWidth=await app.locator('#main-area').evaluate(el=>el.getBoundingClientRect().width);
   assert.ok(narrowerWidth<originalWidth-150,'The sound grid must shrink the actual canvas, not cover it');
   assert.equal(await frame().evaluate(()=>JSON.stringify(window.DuneApp.getState().nodes)),originalNodes,
