@@ -75,7 +75,7 @@ window.addEventListener('message',event=>{
   if(event.source!==window.parent||event.origin!==location.origin||!isPacket(event.data))return;
   if(event.data.type==='owl-soundshow-status'){if(infoView?.isConnected&&Number.isInteger(event.data.players)){const data=event.data;infoView.textContent=data.players+' joueur(s) dans cette salle Owlbear · '+(data.ready||0)+' lecteur(s) relié(s) au connecteur.'+(data.players===0?' La tablette doit rejoindre la salle avec le rôle Joueur.':data.ready===data.players?' Connexion confirmée ; vérifie la lecture de la vidéo.':data.error?' '+data.error+' lecteur(s) signale(nt) une erreur. Vérifie la tablette.':' Si le nombre ne progresse pas, vérifie le message sur la tablette.');}return;}
   if(event.data.type==='owl-soundshow-remote-state'){
-    if(isGM()&&event.data.state){remoteState=event.data.state;remoteUi?.update(remoteState);soundsDock?.update(remoteState);cellMedia?.refresh();}
+    if(isGM()&&event.data.state){remoteState=event.data.state;remoteUi?.update(remoteState);soundsDock?.update(remoteState);}
     return;
   }
   if(!['owl-soundshow-result','owl-soundshow-remote-result'].includes(event.data.type))return;
