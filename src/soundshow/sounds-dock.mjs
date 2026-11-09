@@ -1,4 +1,5 @@
-/* SoundShow — mini-barre et grille latérale à droite du canevas. Réservé au MJ. */
+/* SoundShow — grille sons/vidéos et lecteur à droite du canevas, réservé au MJ. */
+import {mountMiniPlayer} from './mini-player.mjs?v=019';
 const modes={
   start:'Lecture normale',
   fade_in:'Fondu d’entrée',
@@ -37,10 +38,13 @@ export function mountSoundDock({send,refresh,isGM}){
   if(!app||!main||typeof send!=='function')return null;
   if(document.getElementById('soundshow-sounds-dock'))return null;
   const css=document.createElement('link');css.rel='stylesheet';
-  css.href=new URL('./sounds-dock.css?v=018',import.meta.url).href;
+  css.href=new URL('./sounds-dock.css?v=019',import.meta.url).href;
   document.head.append(css);
   let state={connected:false,media:[],active:[],project:''};
-  let project='',prefs=defaults(),expanded=false,collapsed=false,category='all',search='';
+  let project='',prefs=defaults(),expanded=false,collapsed=false,category='all',search='',mediaKind='sound',floating=false;
+  let panelWidth=370;
+  try{panelWidth=Math.round(Math.max(190,Math.min(650,Number(localStorage.getItem('archives-soundshow-width'))||370)));}catch{}
+  document.body.style.setProperty('--ss-panel-width',panelWidth+'px');
   let lastSignature='',pendingClicks=new Map(),pendingCommands=new Set(),disposed=false;
   try{collapsed=localStorage.getItem('archives-soundshow-dock-minimized')==='1';}catch{}
   const dock=el('nav');dock.id='soundshow-sounds-dock';dock.setAttribute('aria-label','Barre SoundShow rétractable');
@@ -52,13 +56,23 @@ export function mountSoundDock({send,refresh,isGM}){
   sound.setAttribute('aria-controls','soundshow-sounds-panel');
   sound.setAttribute('aria-expanded','false');
   sound.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>';
-  dock.append(sound,fold);document.body.append(dock);
+  const video=el('button','ss-video-trigger');video.type='button';
+  video.title='Vidéos à diffuser chez les joueurs';video.setAttribute('aria-label','Vidéos SoundShow');
+  video.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m10 8 6 4-6 4z"/></svg>';
+  const dragButton=el('button','ss-drag-handle','⠿');dragButton.type='button';
+  dragButton.title='Déplacer la barre SoundShow';dragButton.setAttribute('aria-label','Déplacer la barre SoundShow');
+  dock.prepend(dragButton);dock.append(sound,video,fold);document.body.append(dock);
   const panel=el('aside');panel.id='soundshow-sounds-panel';panel.hidden=true;
   panel.setAttribute('aria-label','Grille des sons SoundShow');
   const header=el('div','ss-head');const title=el('h2',null,'Sons SoundShow');
   const close=el('button','ss-close','×');close.type='button';close.setAttribute('aria-label','Fermer la grille des sons');close.title='Fermer le panneau';
-  header.append(title,close);
+  const floatButton=el('button','ss-float-toggle','↗');floatButton.type='button';
+  floatButton.title='Détacher ou ancrer le panneau';floatButton.setAttribute('aria-label','Détacher le panneau SoundShow');
+  const actionsHead=el('div','ss-head-actions');actionsHead.append(floatButton,close);
+  header.append(title,actionsHead);
   const status=el('p','ss-status');status.setAttribute('role','status');status.textContent='Connexion SoundShow en cours…';
+  const resizer=el('div','ss-resize-handle');resizer.title='Redimensionner la fenêtre SoundShow';resizer.setAttribute('aria-label','Ajuster la largeur du panneau SoundShow');
+  const playerHost=el('div','ss-player-host');
   const controls=el('div','ss-controls');
   const searchBox=el('input','ss-search');
   searchBox.type='search';searchBox.placeholder='Rechercher un son…';
@@ -86,8 +100,77 @@ export function mountSoundDock({send,refresh,isGM}){
   }
   const hint=el('p','ss-help','Les boucles, fondus, volumes et sorties audio restent ceux du projet SoundShow. Les actions attribuées aux clics dans Les Archives sont enregistrées uniquement ici.');
   settings.append(summary,fields,hint);
-  panel.append(header,status,controls,categories,scroll,settings);
+  panel.append(resizer,header,status,playerHost,controls,categories,scroll,settings);
   app.append(panel);
+  const miniPlayer=mountMiniPlayer(playerHost,{send,isGM,readState:()=>state});
+  function clamp(x,min,max){return Math.max(min,Math.min(max,x));}
+  function setWidth(width){
+    panelWidth=Math.round(clamp(width,190,Math.min(680,Math.max(200,app.clientWidth-main.offsetWidth+panelWidth-250))));
+    document.body.style.setProperty('--ss-panel-width',panelWidth+'px');
+    try{localStorage.setItem('archives-soundshow-width',String(panelWidth));}catch{}
+    resetView();
+  }
+  try{
+    const saved=JSON.parse(localStorage.getItem('archives-soundshow-dock-location')||'null');
+    if(saved&&Number.isFinite(saved.x)&&Number.isFinite(saved.y)){
+      dock.classList.add('ss-moved');dock.style.right='auto';dock.style.left=clamp(saved.x,2,innerWidth-50)+'px';dock.style.top=clamp(saved.y,2,innerHeight-50)+'px';
+    }
+  }catch{}
+  function draggable(handle,target,{dockHandle=false}={}){
+    handle.addEventListener('pointerdown',event=>{
+      if(event.button!==0||!isGM?.()||event.target.closest('button')!==handle&&dockHandle)return;
+      event.preventDefault();
+      const rect=target.getBoundingClientRect(),fromX=event.clientX,fromY=event.clientY;
+      handle.setPointerCapture?.(event.pointerId);
+      const move=ev=>{
+        if(dockHandle){
+          dock.classList.add('ss-moved');dock.style.right='auto';
+          dock.style.left=clamp(rect.left+ev.clientX-fromX,2,innerWidth-42)+'px';
+          dock.style.top=clamp(rect.top+ev.clientY-fromY,2,innerHeight-42)+'px';
+        }else{
+          if(!floating)floatWindow(rect);
+          panel.style.left=clamp(rect.left+ev.clientX-fromX,0,innerWidth-120)+'px';
+          panel.style.top=clamp(rect.top+ev.clientY-fromY,0,innerHeight-90)+'px';
+        }
+      };
+      const finish=()=>{
+        handle.removeEventListener('pointermove',move);
+        handle.removeEventListener('pointerup',finish);
+        handle.removeEventListener('pointercancel',finish);
+        if(dockHandle)try{localStorage.setItem('archives-soundshow-dock-location',
+          JSON.stringify({x:parseFloat(dock.style.left),y:parseFloat(dock.style.top)}));}catch{}
+      };
+      handle.addEventListener('pointermove',move);
+      handle.addEventListener('pointerup',finish);handle.addEventListener('pointercancel',finish);
+    });
+  }
+  function floatWindow(rect=panel.getBoundingClientRect()){
+    if(floating)return;
+    floating=true;panel.classList.add('ss-floating');document.body.append(panel);
+    const w=Math.round(Math.max(250,Math.min(680,rect.width)));
+    panel.style.left=clamp(rect.left,0,innerWidth-130)+'px';panel.style.top=clamp(rect.top,0,innerHeight-120)+'px';
+    panel.style.setProperty('--ss-float-width',w+'px');
+    panel.style.setProperty('--ss-float-height',clamp(Math.round(rect.height*.75),320,innerHeight-24)+'px');
+    document.body.classList.remove('soundshow-sounds-open');floatButton.textContent='↙';floatButton.setAttribute('aria-label','Ancrer le panneau à droite du canevas');
+    resetView();
+  }
+  function anchorWindow(){
+    if(!floating)return;
+    floating=false;panel.classList.remove('ss-floating');panel.removeAttribute('style');app.append(panel);
+    if(expanded)document.body.classList.add('soundshow-sounds-open');
+    floatButton.textContent='↗';floatButton.setAttribute('aria-label','Détacher le panneau SoundShow');
+    resetView();
+  }
+  floatButton.onclick=()=>floating?anchorWindow():floatWindow();
+  draggable(dragButton,dock,{dockHandle:true});
+  draggable(header,panel);
+  resizer.addEventListener('pointerdown',event=>{
+    if(event.button!==0||floating)return;event.preventDefault();
+    const start=event.clientX,initial=panelWidth;resizer.setPointerCapture?.(event.pointerId);
+    const move=ev=>setWidth(initial+start-ev.clientX);
+    const done=()=>{resizer.removeEventListener('pointermove',move);resizer.removeEventListener('pointerup',done);};
+    resizer.addEventListener('pointermove',move);resizer.addEventListener('pointerup',done);
+  });
   function resetView(){
     // Resize the flex canvas; recenter the whole diagram rather than clipping nodes.
     requestAnimationFrame(()=>requestAnimationFrame(()=>{
@@ -98,7 +181,7 @@ export function mountSoundDock({send,refresh,isGM}){
     if(disposed||!isGM?.())return;
     expanded=!!value;
     panel.hidden=!expanded;
-    document.body.classList.toggle('soundshow-sounds-open',expanded);
+    document.body.classList.toggle('soundshow-sounds-open',expanded&&!floating);
     sound.setAttribute('aria-expanded',String(expanded));
     sound.setAttribute('aria-pressed',String(expanded));
     if(expanded&&collapsed)toggleFold(false);
@@ -116,14 +199,15 @@ export function mountSoundDock({send,refresh,isGM}){
     try{localStorage.setItem('archives-soundshow-dock-minimized',collapsed?'1':'0');}catch{}
   }
   fold.onclick=()=>toggleFold(!collapsed);
-  sound.onclick=()=>setExpanded(!expanded);
+  sound.onclick=()=>{mediaKind='sound';setExpanded(true);renderCats();renderGrid();};
+  video.onclick=()=>{mediaKind='video';setExpanded(true);renderCats();renderGrid();};
   close.onclick=()=>setExpanded(false);
   dock.classList.toggle('ss-is-collapsed',collapsed);
   searchBox.addEventListener('input',()=>{search=searchBox.value;renderGrid();});
   function renderCats(){
     const seen=new Map();
     for(const item of state.media||[]){
-      if(item.kind!=='sound')continue;
+      if(item.kind!==mediaKind)continue;
       if(!seen.has(item.categoryId))seen.set(item.categoryId,item.category||'Sans catégorie');
     }
     if(category!=='all'&&!seen.has(category))category='all';
@@ -133,7 +217,7 @@ export function mountSoundDock({send,refresh,isGM}){
       button.onclick=()=>{category=id;renderCats();renderGrid();};
       return button;
     };
-    categories.replaceChildren(make('all','Tous les sons'),...[...seen.entries()].map(([id,label])=>make(id,label)));
+    categories.replaceChildren(make('all',mediaKind==='sound'?'Tous les sons':'Toutes les vidéos'),...[...seen.entries()].map(([id,label])=>make(id,label)));
   }
   function updatePrefs(){
     for(const [key,select] of selects)select.value=prefs[key];
@@ -167,7 +251,7 @@ export function mountSoundDock({send,refresh,isGM}){
   function makeTile(item){
     const tile=el('button','ss-tile');tile.type='button';
     tile.dataset.id=item.id;tile.style.setProperty('--ss-tile-color',safeColor(item.color||item.categoryColor));
-    const running=(state.active||[]).filter(player=>player.source===item.id&&player.kind==='sound');
+    const running=(state.active||[]).filter(player=>player.source===item.id&&player.kind===mediaKind);
     const active=running.length>0||item.playing===true;
     if(active)tile.classList.add('ss-playing');
     tile.disabled=!state.connected||item.locked===true;
@@ -206,12 +290,12 @@ export function mountSoundDock({send,refresh,isGM}){
   }
   function renderGrid(){
     if(disposed)return;
-    const visible=(state.media||[]).filter(item=>item.kind==='sound'&&
+    const visible=(state.media||[]).filter(item=>item.kind===mediaKind&&
       (category==='all'||item.categoryId===category)&&
       (item.name+' '+item.category).toLocaleLowerCase('fr').includes(search.toLocaleLowerCase('fr')));
     grid.replaceChildren();
     if(!visible.length){
-      grid.append(el('p','ss-empty',state.connected?'Aucun son dans cette catégorie.':'Connecte SoundShow pour afficher ses sons.'));
+      grid.append(el('p','ss-empty',state.connected?'Aucun média dans cette catégorie.':'Connecte SoundShow pour afficher les médias.'));
       return;
     }
     const limit=visible.slice(0,300);
@@ -231,8 +315,8 @@ export function mountSoundDock({send,refresh,isGM}){
     if(sig===lastSignature)return;
     lastSignature=sig;state=incoming;
     if(changedProject){project=incoming.project;prefs=loadPrefs(project);updatePrefs();category='all';}
-    report(state.connected?(project||'SoundShow')+' · '+state.media.filter(e=>e.kind==='sound').length+' sons disponibles':'SoundShow non relié — ouvre Owlbear depuis le connecteur Windows.');
-    renderCats();renderGrid();
+    report(state.connected?(project||'SoundShow')+' · '+state.media.filter(e=>e.kind===mediaKind).length+(mediaKind==='sound'?' sons':' vidéos')+' disponibles':'SoundShow non relié — ouvre Owlbear depuis le connecteur Windows.');
+    renderCats();renderGrid();miniPlayer.update(value);
   }
   function visibility(){
     const visible=!!isGM?.();
@@ -252,7 +336,7 @@ export function mountSoundDock({send,refresh,isGM}){
       disposed=true;clearInterval(timer);observer.disconnect();
       for(const timeout of pendingClicks.values())clearTimeout(timeout);
       pendingClicks.clear();
-      panel.remove();dock.remove();css.remove();
+      miniPlayer.destroy();panel.remove();dock.remove();css.remove();
       document.body.classList.remove('soundshow-sounds-open');
     }
   };
