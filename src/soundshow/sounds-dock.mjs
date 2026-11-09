@@ -105,7 +105,7 @@ export function mountSoundDock({send,refresh,isGM}){
   const miniPlayer=mountMiniPlayer(playerHost,{send,isGM,readState:()=>state});
   function clamp(x,min,max){return Math.max(min,Math.min(max,x));}
   function setWidth(width){
-    panelWidth=Math.round(clamp(width,190,Math.min(680,Math.max(200,app.clientWidth-main.offsetWidth+panelWidth-250))));
+    panelWidth=Math.round(clamp(width,190,Math.min(680,Math.max(200,app.clientWidth-(document.getElementById('sidebar')?.offsetWidth||0)-(document.getElementById('sidebar-resizer')?.offsetWidth||0)-270))));
     document.body.style.setProperty('--ss-panel-width',panelWidth+'px');
     try{localStorage.setItem('archives-soundshow-width',String(panelWidth));}catch{}
     resetView();
