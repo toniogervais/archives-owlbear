@@ -84,6 +84,45 @@ class ServerTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await self.client.get('/peerjs.min.js')).status,200)
         self.assertEqual((await self.client.get('/protocol.mjs')).status,200)
 
+    async def test_sound_grid_metadata_keeps_categories_colors_locks_and_no_private_paths(self):
+        self.bridge.model.apply({'type':'state','state':{
+            'project':{'name':'Scène','categories':[
+                {'id':'amb','name':'Ambiances','color':'#2288cc','playables':[
+                    {'id':'rain','name':'Pluie','kind':'sound','color':'#aa44cc','runtime_state_key':'rain_state',
+                     'path':'C:/private/sound.wav'},
+                    {'id':'forest','name':'Forêt','kind':'sound','color':'url(javascript:bad)'},
+                    {'id':'movie','name':'Cinématique','kind':'video'}]},
+                {'id':'secret','name':'Catégorie cachée','is_hidden':True,'playables':[
+                    {'id':'hidden','name':'Secret','kind':'sound'}]}]},
+            'playable_runtime':[
+                {'state_playable_id':'rain_state','is_playing':True,'is_locked':True,'play_count':4}
+            ],
+            'players':[]
+        }})
+        remote=self.bridge.model.remote()
+        self.assertEqual([v['id'] for v in remote['media']],['rain','forest','movie'])
+        rain=remote['media'][0]
+        self.assertEqual(rain['categoryId'],'amb')
+        self.assertEqual(rain['color'],'#aa44cc')
+        self.assertEqual(rain['categoryColor'],'#2288cc')
+        self.assertTrue(rain['playing'])
+        self.assertTrue(rain['locked'])
+        self.assertEqual(rain['playCount'],4)
+        self.assertEqual(remote['media'][1]['color'],'#2288cc')
+        self.assertNotIn('C:/private',json.dumps(remote))
+        self.assertNotIn('Catégorie cachée',json.dumps(remote))
+        ws=AsyncMock();ws.closed=False
+        self.bridge.status='connected';self.bridge.remote_ws=ws
+        denied=await self.client.post('/api/control',json={
+            'type':'play_playable','playable_id':'rain','action':'start'},headers=self.headers)
+        self.assertEqual(denied.status,400)
+        self.assertEqual(ws.send_json.await_count,0)
+        for mode in ('replace','toggle_fade'):
+            accepted=await self.client.post('/api/control',json={
+                'type':'play_playable','playable_id':'forest','action':mode},headers=self.headers)
+            self.assertEqual(accepted.status,200)
+        self.assertEqual(ws.send_json.await_count,2)
+
     async def test_remote_controls_sounds_and_videos_with_strict_allowlist(self):
         self.bridge.model.apply({'type':'state','state':{
             'project':{'name':'Campagne','categories':[{'name':'Ambiances','playables':[
