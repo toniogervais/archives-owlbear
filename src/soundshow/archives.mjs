@@ -2,9 +2,10 @@ import {button,element,isGM,notice,requireGM,sheet} from '../v63/ui.mjs';
 import {isPacket,packet} from '../v56/link.mjs';
 import {decodeSession,encodeSession,validSession} from './protocol.mjs?v=017';
 import {mountRemote} from './remote.mjs?v=017';
+import {mountSoundDock} from './sounds-dock.mjs?v=018';
 let session=null,player,liveSession=null,infoView=null;const pending=new Map(),roomFrames=new Map();
 const embedded=window.parent!==window;
-let remoteUi=null,linkInfoView=null;
+let remoteUi=null,linkInfoView=null,soundsDock=null,remoteState=null;
 async function request(type,value) {
   const id=crypto.randomUUID();
   return new Promise((resolve,reject)=>{
@@ -73,7 +74,7 @@ window.addEventListener('message',event=>{
   if(event.source!==window.parent||event.origin!==location.origin||!isPacket(event.data))return;
   if(event.data.type==='owl-soundshow-status'){if(infoView?.isConnected&&Number.isInteger(event.data.players)){const data=event.data;infoView.textContent=data.players+' joueur(s) dans cette salle Owlbear · '+(data.ready||0)+' lecteur(s) relié(s) au connecteur.'+(data.players===0?' La tablette doit rejoindre la salle avec le rôle Joueur.':data.ready===data.players?' Connexion confirmée ; vérifie la lecture de la vidéo.':data.error?' '+data.error+' lecteur(s) signale(nt) une erreur. Vérifie la tablette.':' Si le nombre ne progresse pas, vérifie le message sur la tablette.');}return;}
   if(event.data.type==='owl-soundshow-remote-state'){
-    if(isGM()&&event.data.state)remoteUi?.update(event.data.state);
+    if(isGM()&&event.data.state){remoteState=event.data.state;remoteUi?.update(remoteState);soundsDock?.update(remoteState);}
     return;
   }
   if(!['owl-soundshow-result','owl-soundshow-remote-result'].includes(event.data.type))return;
@@ -88,9 +89,35 @@ window.addEventListener('archives:soundshow-session',event=>{
 document.addEventListener('visibilitychange',()=>{if(!isGM()&&!embedded&&player)void player.use(document.hidden?null:liveSession).catch(error=>notice(error.message));});
 const control=document.querySelector('.canvas-integration-icon[aria-label^="Sound Show"]');
 if(control){
-  control.disabled=false;control.id='archives-soundshow-open';control.setAttribute('aria-label','SoundShow : sons, vidéos et télécommande');control.parentElement.title='SoundShow : sons, vidéos et télécommande MJ';control.onclick=open;
+  control.disabled=false;control.id='archives-soundshow-open';control.setAttribute('aria-label','SoundShow : sons, vidéos et télécommande');control.parentElement.title='SoundShow : sons, vidéos et télécommande MJ';control.onclick=()=>soundsDock?soundsDock.open():open;
   const refresh=()=>{control.parentElement.hidden=!isGM();};refresh();
   new MutationObserver(refresh).observe(document.body,{attributes:true,attributeFilter:['class']});
 }
-window.ArchivesSoundShow={open,session:()=>session};
-window.addEventListener('pagehide',()=>player?.destroy(),{once:true});
+function initializeSoundsDock(){
+  if(!embedded||!isGM()||soundsDock)return;
+  soundsDock=mountSoundDock({
+    isGM,
+    send:async command=>{
+      requireGM();
+      const result=await request('owl-soundshow-remote-command',command);
+      if(result?.state){remoteState=result.state;soundsDock?.update(remoteState);remoteUi?.update(remoteState);}
+      return result;
+    },
+    refresh:async()=>{
+      if(!isGM())return;
+      const response=await request('owl-soundshow-remote-get');
+      if(response?.state){remoteState=response.state;soundsDock?.update(remoteState);}
+    }
+  });
+  if(remoteState)soundsDock?.update(remoteState);
+  if(soundsDock){
+    void request('owl-soundshow-remote-get').then(result=>{
+      if(result?.state){remoteState=result.state;soundsDock?.update(remoteState);}
+    }).catch(()=>{});
+  }
+}
+initializeSoundsDock();
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initializeSoundsDock,{once:true});
+else setTimeout(initializeSoundsDock,700);
+window.ArchivesSoundShow={open,session:()=>session,openSounds:()=>{initializeSoundsDock();soundsDock?.open();},getSoundDock:()=>soundsDock};
+window.addEventListener('pagehide',()=>{player?.destroy();soundsDock?.destroy();},{once:true});
