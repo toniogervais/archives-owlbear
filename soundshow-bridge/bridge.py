@@ -8,6 +8,7 @@ import hmac
 import ipaddress
 import json
 import math
+import re
 import secrets
 import sys
 import time
@@ -84,16 +85,29 @@ class ShowState:
         project = self.state.get('project') or {}
         media = []
         names = {}
+        runtime = {}
+        for item in (self.state.get('playable_runtime') or [])[:1000]:
+            if isinstance(item,dict) and isinstance(item.get('state_playable_id'),str):
+                runtime[item['state_playable_id']] = item
         for category in (project.get('categories') or [])[:200]:
-            if not isinstance(category, dict):
+            if not isinstance(category, dict) or category.get('is_hidden') is True:
                 continue
             category_name = str(category.get('name') or 'Médias')[:80]
+            category_id = str(category.get('id') or category_name)[:200]
+            category_color = category.get('color') if isinstance(category.get('color'),str) and re.fullmatch(r'#[0-9a-fA-F]{6}',category['color']) else None
             for item in (category.get('playables') or [])[:1000]:
                 if not isinstance(item, dict) or item.get('kind') not in ('sound','video') or not isinstance(item.get('id'), str):
                     continue
                 item_id = item['id'][:200]
                 name = str(item.get('name') or ('Son' if item['kind']=='sound' else 'Vidéo'))[:160]
-                media.append({'id':item_id,'name':name,'kind':item['kind'],'category':category_name})
+                color = item.get('color') if isinstance(item.get('color'),str) and re.fullmatch(r'#[0-9a-fA-F]{6}',item['color']) else category_color
+                current = runtime.get(item.get('runtime_state_key') or item_id) or {}
+                media.append({'id':item_id,'name':name,'kind':item['kind'],
+                    'category':category_name,'categoryId':category_id,
+                    'color':color,'categoryColor':category_color,
+                    'locked':current.get('is_locked') is True,
+                    'playing':current.get('is_playing') is True,
+                    'playCount':int(finite(current.get('play_count'),0,0,1000000))})
                 names[item_id] = name
                 if len(media) >= 500:
                     break
@@ -281,8 +295,11 @@ class Bridge:
         if cmd == 'play_playable':
             if request.get('playable_id') not in media_ids:
                 raise ValueError('Son ou vidéo introuvable dans le projet actuel.')
-            if request.get('action','start') not in ('start','fade_in','crossfade','toggle'):
+            if request.get('action','start') not in ('start','fade_in','crossfade','replace','toggle','toggle_fade'):
                 raise ValueError('Mode de lecture invalide.')
+            matched = next(item for item in catalog['media'] if item['id'] == request['playable_id'])
+            if matched['locked']:
+                raise ValueError('Ce son est verrouillé dans SoundShow.')
             result['playable_id'] = request['playable_id']
             result['action'] = request.get('action','start')
         elif cmd in ('toggle_player_playback','stop_player','fade_out_player','set_player_volume','toggle_player_loop'):
