@@ -254,10 +254,12 @@ async def main():
                     await wait_expression(tablet,'document.querySelector("video").videoWidth>0')
                     await fake.emit(stop=True)
                     print('Looping source wraps on its initial frame: OK',flush=True)
-                    # No old video or launch is replayed by a local dashboard reload.
+                    # A dashboard reload must not repeat the two deliberate audio/video launches.
+                    launch_count=sum(command.get('type')=='play_playable' for command in fake.commands)
+                    assert launch_count==2
                     await host.reload()
                     await host.get_by_text('SoundShow connecté — les raccourcis sont suivis.',exact=True).wait_for()
-                    assert not any(command.get('type','').startswith('play') for command in fake.commands)
+                    assert sum(command.get('type')=='play_playable' for command in fake.commands)==launch_count
                     assert not errors,errors
                     print('Reload, no replayed SoundShow command, no browser errors: OK',flush=True)
                     await player_context.close();await context.close()
