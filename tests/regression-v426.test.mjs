@@ -15,7 +15,9 @@ test('Les commandes du lecteur SoundShow restent présentes',()=>{
   const player=source('src/soundshow/mini-player.mjs');
   for(const action of ['toggle_player_playback','toggle_player_loop','stop_player','fade_out_player','set_player_volume'])
     assert.ok(player.includes(action),'Commande manquante : '+action);
-  assert.match(player,/ss-wave-canvas/);
+  assert.doesNotMatch(player,/ss-wave-canvas/);
+  assert.match(player,/lastPlayed/);
+  assert.match(player,/play_playable/);
   assert.match(player,/ss-player-seek/);
 });
 
@@ -30,11 +32,12 @@ test('La fenêtre sons reste détachable, redimensionnable et à cases adaptativ
   assert.match(css,/\.ss-tile-name/);
 });
 
-test('Les barres déplaçables et le plein écran restent intégrés',()=>{
+test('Les barres déplaçables restent intégrées sans espace supplémentaire',()=>{
   const workspace=source('src/v66/workspace.mjs');
   assert.match(workspace,/moveBar\('canvas-integrations-dock'/);
   assert.match(workspace,/moveBar\('top-hud'/);
-  assert.match(workspace,/requestFullscreen/);
+  assert.match(workspace,/querySelector\('\.hud-row'\)/);
+  assert.doesNotMatch(workspace,/requestFullscreen/);
   assert.match(workspace,/localStorage\.setItem/);
 });
 
@@ -74,4 +77,9 @@ test('La diffusion vidéo vers les joueurs garde le contrôle des rôles Owlbear
   assert.match(owl,/role==='PLAYER'/);
   assert.match(owl,/role==='GM'/);
   assert.match(owl,/soundshow-player\.html/);
+  assert.match(owl,/if\(!data\.active\)return;/);
+  const main=source('src/soundshow/archives.mjs');
+  assert.doesNotMatch(main,/player\.use\(document\.hidden\?null:/);
+  const html=source('archives-app-v64-v55.html');
+  assert.doesNotMatch(html,/id="archives-fullscreen-toggle"/);
 });
