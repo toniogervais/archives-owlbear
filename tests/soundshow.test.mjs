@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import {decodeSession,encodeSession,validSession,publicPlayback,autoLinkProtocol,owlbearLinkProtocol,validLocalBridgeOrigin} from '../src/soundshow/protocol.mjs';
 import {explainConnectionFailure} from '../src/soundshow/connection.mjs';
+import {clickCommand,validSoundAction} from '../src/soundshow/sounds-dock.mjs';
 test('SoundShow pairing accepts only a versioned peer and a strong secret',()=>{
   const session={version:1,peer:'host-12345678',secret:'a'.repeat(64)};
   assert.deepEqual(decodeSession(encodeSession(session)),session);
@@ -78,4 +79,31 @@ test('The Owlbear SoundShow telecommand covers audio and video with GM-only loca
   assert.match(remoteHost,/owl-soundshow-remote-command/);
   assert.match(connector,/data.controlToken===controlToken/);
   assert.doesNotMatch(connector,/owlWindow=window.open\(archivesPath/);
+});
+
+test('SoundShow grid sends one real native playable action according to the selected mouse click',()=>{
+  const rain={id:'rain',kind:'sound',locked:false};
+  for(const action of ['start','fade_in','crossfade','replace','toggle','toggle_fade']){
+    assert.equal(validSoundAction(action),action);
+    assert.deepEqual(clickCommand(rain,action),{type:'play_playable',playable_id:'rain',action});
+  }
+  assert.equal(validSoundAction('delete_project'),'none');
+  assert.equal(clickCommand(rain,'none'),null);
+  assert.equal(clickCommand({...rain,locked:true},'start'),null);
+  assert.equal(clickCommand({id:'fake',kind:'instruction'},'start'),null);
+  const html=fs.readFileSync(new URL('../archives-app-v64-v55.html',import.meta.url),'utf8');
+  const app=fs.readFileSync(new URL('../src/soundshow/archives.mjs',import.meta.url),'utf8');
+  const dock=fs.readFileSync(new URL('../src/soundshow/sounds-dock.mjs',import.meta.url),'utf8');
+  const css=fs.readFileSync(new URL('../src/soundshow/sounds-dock.css',import.meta.url),'utf8');
+  assert.match(html,/id="main-area"/);
+  assert.match(app,/mountSoundDock\(/);
+  assert.match(app,/isGM/);
+  assert.match(dock,/app.append\(panel\)/);
+  assert.match(dock,/window.DuneApp\?\.resetView\?\.\(\)/);
+  assert.match(dock,/ondblclick/);
+  assert.match(dock,/oncontextmenu/);
+  assert.match(dock,/onauxclick/);
+  assert.match(css,/#app>#main-area\{min-width:0/);
+  assert.match(css,/flex:0 0 min\(370px,34vw\)/);
+  assert.match(css,/body.player-mode #soundshow-sounds-dock/);
 });
