@@ -1,6 +1,6 @@
 # SoundShow 2 → tablettes des joueurs
 
-Version d’essai 0.2.1. Le connecteur prépare la liaison vidéo automatiquement, retrouve les fichiers déjà autorisés et transmet la connexion à l'extension Les Archives **depuis Owlbear** sans codes manuels. Il conserve la correction de démarrage des vidéos en boucle. Les gains de temps dépendent du réseau et doivent être vérifiés sur la tablette. SoundShow reste le déclencheur : ses boutons, ses raccourcis clavier et sa télécommande lancent les vidéos. Le connecteur suit leur lecture et un onglet Chrome sur le PC diffuse la vidéo source aux lecteurs des Archives et d’Owlbear.
+Version d’essai 0.3.0. La nouveauté est une **télécommande complète pour les sons et les vidéos** directement dans Les Archives, au sein d'Owlbear. Le connecteur prépare la liaison vidéo automatiquement, retrouve les fichiers déjà autorisés et transmet la connexion à l'extension Les Archives **depuis Owlbear** sans codes manuels. Il conserve la correction de démarrage des vidéos en boucle. Les gains de temps dépendent du réseau et doivent être vérifiés sur la tablette. SoundShow reste le déclencheur : ses boutons, ses raccourcis clavier et sa télécommande lancent les vidéos. Le connecteur suit leur lecture et un onglet Chrome sur le PC diffuse la vidéo source aux lecteurs des Archives et d’Owlbear.
 
 ## Ce qu’il faut
 
@@ -13,9 +13,19 @@ Aucun outil ni abonnement vidéo payant supplémentaire. Le connecteur utilise d
 
 La version 0.1.2 ajoute le diagnostic facultatif dans le connecteur : nombre de tentatives reçues, lecteurs confirmés et erreurs de liaison (sans codes secrets). La version 0.1.1 corrige le refus des adresses privées comme `192.168.x.x` annoncées par SoundShow. Elle garde le serveur du connecteur accessible uniquement sur ce PC, exige sa clé administrateur et refuse les adresses publiques, les domaines externes et les redirections avant tout envoi du mot de passe. Un serveur injoignable affiche désormais une erreur d’adresse/port explicite.
 
+## Utiliser la télécommande du MJ
+
+Ouvre Owlbear **depuis le bouton du connecteur Windows**, puis la salle comme MJ et **Les Archives** via leur extension. Clique sur **SoundShow : sons, vidéos et télécommande** dans la barre des Archives.
+
+- **Sons / Vidéos** : explore ou recherche les éléments audio et vidéo du projet SoundShow, puis lance-les normalement ou en fondu d'entrée
+- **En cours de lecture** : pause, reprise, arrêt, fondu de sortie et volume de chaque lecteur non verrouillé
+- **Commandes générales** : pause de tout, reprise, arrêt général ou fondu général ; volume par défaut des sons suivants
+
+Les boutons contrôlent SoundShow 2 lui-même par sa WebSocket API version 2. Les sons sortent par les périphériques configurés dans SoundShow, pas automatiquement sur les tablettes des joueurs. La réception vidéo reste assurée par les lecteurs WebRTC intégrés à Owlbear. Aucun second onglet Archives ni saisie du code SS2 n'est nécessaire. Si SoundShow est déconnecté, les commandes se désactivent. Les joueurs n'ont pas accès à la télécommande.
+
 ## Installation simplifiée — Owlbear est le programme central
 
-1. Ouvre SoundShow 2 Pro et son **serveur distant** sur ton PC, puis lance le [connecteur Windows 0.2.1](https://github.com/toniogervais/archives-owlbear/releases/tag/soundshow-bridge-v0.2.1). Le connecteur ouvre automatiquement sa page dans Chrome.
+1. Ouvre SoundShow 2 Pro et son **serveur distant** sur ton PC, puis lance le [connecteur Windows 0.3.0](https://github.com/toniogervais/archives-owlbear/releases/tag/soundshow-bridge-v0.3.0). Le connecteur ouvre automatiquement sa page dans Chrome.
 2. Dans cette page, indique l'adresse locale affichée par SoundShow et le mot de passe de son serveur, puis clique sur **Connecter SoundShow**. Les paramètres secrets ne sont pas envoyés aux joueurs.
 3. Lors de la première utilisation d'une vidéo, utilise **Choisir la vidéo** pour sélectionner sur ton PC le fichier correspondant au bouton SoundShow. Chrome peut mémoriser l'autorisation du fichier ; lorsque cette autorisation subsiste, le nouveau connecteur retrouve le fichier automatiquement. Sinon, clique sur **Autoriser les vidéos mémorisées**.
 4. Clique sur **Ouvrir Owlbear et relier les joueurs**. Le connecteur ouvre **Owlbear, jamais un onglet Archives séparé**. Rejoins ta salle Owlbear comme MJ : l'extension Les Archives installée dans cette salle demande automatiquement au connecteur local la session SoundShow. La demande est limitée au navigateur Owlbear ouvert par le connecteur et vérifie le rôle MJ. Les joueurs présents et nouveaux reçoivent la liaison.
