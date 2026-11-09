@@ -18,6 +18,10 @@ button{min-height:38px;background:#d2ab6410;border:1px solid #d9ba7a40;border-ra
 @media(prefers-reduced-motion:reduce){button{transition:none}}
 button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid #f5d98c;outline-offset:3px}
 button:disabled{opacity:.65}
+/* V4.26 — supprimer la barre de titre ; conserver un petit retour à Owlbear. */
+body>header{position:fixed;top:5px;left:6px;right:auto;width:auto;height:auto;padding:0;background:transparent;border:0;box-shadow:none;z-index:110;pointer-events:none}
+body>header #return{pointer-events:auto;min-height:30px;padding:4px 8px;background:rgba(21,17,28,.84);font-size:11px;border:1px solid #c8a9725b}
+body>header #return span{display:none}
 iframe{width:100%;flex:1;min-height:0;border:0}
 [hidden]{display:none!important}
 #message{padding:9px 14px;text-align:center}
@@ -30,7 +34,7 @@ input{width:min(460px,100%);color:inherit;background:#130f19;border:1px solid #a
 <script type="module" src="./src/v56/host.mjs?v=4250"></script>
 </head>
 <body>
-<header><strong><img src="./icon-archives-v43.svg" alt="" aria-hidden="true">Les Archives de l’Imaginaire</strong><button id="return" type="button" aria-label="Retour à Owlbear" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 5-7 7 7 7M3 12h18"/></svg><span>Retour à Owlbear</span></button></header>
+<header><button id="return" type="button" aria-label="Retour à Owlbear" title="Retour à Owlbear" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 5-7 7 7 7M3 12h18"/></svg><span>Retour à Owlbear</span></button></header>
 <div id="message" role="status">Ouverture des Archives…</div>
 <details id="manual" hidden>
 <summary id="manual-label">Connexion de secours</summary>
@@ -40,7 +44,7 @@ input{width:min(460px,100%);color:inherit;background:#130f19;border:1px solid #a
   <button type="submit">Relier</button>
 </form>
 </details>
-<iframe id="app" hidden title="Canevas et cellules des Archives"></iframe>
+<iframe id="app" allow="fullscreen" allowfullscreen hidden title="Canevas et cellules des Archives"></iframe>
 </body>
 </html>
 
