@@ -9,7 +9,8 @@ function moveBar(id,caption){
   handle.title='Déplacer '+caption+' · double-clic : réinitialiser la position';
   handle.setAttribute('aria-label','Déplacer '+caption);
   handle.textContent='⠿';
-  dock.prepend(handle);
+  // Owlbear's map button selector depends on its integration remaining the first child.
+  if(id==='canvas-integrations-dock')dock.append(handle);else dock.prepend(handle);
   const key=storagePrefix+id;
   const apply=pos=>{
     if(!pos||!Number.isFinite(pos.x)||!Number.isFinite(pos.y))return;
