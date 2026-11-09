@@ -5088,7 +5088,7 @@ window.DuneApp = (function() {
       n.revealed = !n.revealed;
       if (n.revealed) {
         n.revOrder = stampNextRevOrder();
-        playRevealSound();
+        if(!(Array.isArray(n.revealMedia)&&n.revealMedia.length)) playRevealSound();
         renderAll(n.id, null);
         spawnNodeParticles(n);
         syncRevealsAcrossBoards(n.originalId || n.id, true, n.revOrder);
