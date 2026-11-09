@@ -180,9 +180,15 @@ async def main():
                     print('One click opens Owlbear only; nested Archives extension receives session: OK',flush=True)
                     await extension.evaluate("()=>window.issueRemote({type:'play_playable',playable_id:'rain',action:'start'})")
                     await wait_expression(extension,'window.controlResult?.ok===true')
+                    for _ in range(60):
+                        if any(cmd.get('type')=='play_playable' and cmd.get('playable_id')=='rain' for cmd in fake.commands):break
+                        await asyncio.sleep(.05)
                     assert any(cmd.get('type')=='play_playable' and cmd.get('playable_id')=='rain' for cmd in fake.commands)
                     await extension.evaluate("()=>window.issueRemote({type:'play_playable',playable_id:'movie',action:'fade_in'})")
                     await wait_expression(extension,'window.controlResult?.ok===true')
+                    for _ in range(60):
+                        if any(cmd.get('type')=='play_playable' and cmd.get('playable_id')=='movie' for cmd in fake.commands):break
+                        await asyncio.sleep(.05)
                     assert any(cmd.get('type')=='play_playable' and cmd.get('playable_id')=='movie' for cmd in fake.commands)
                     await extension.evaluate("()=>window.issueRemote({type:'delete_project'})")
                     await wait_expression(extension,'window.controlResult?.ok===false')
