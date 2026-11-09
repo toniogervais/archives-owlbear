@@ -1,14 +1,6 @@
 /* V4.26 — plusieurs médias SoundShow liés à la révélation d'une cellule, MJ uniquement. */
 import {isGM,requireGM,notice,sheet,element,button} from '../v63/ui.mjs';
-const allowed=['start','fade_in','crossfade','replace','toggle','toggle_fade'];
-export function safeCellAttachments(items,catalog){
-  if(!Array.isArray(items)||!Array.isArray(catalog))return [];
-  const map=new Map(catalog.filter(v=>v&&['sound','video'].includes(v.kind)&&v.locked!==true).map(v=>[v.id,v]));
-  const found=new Set();
-  return items.filter(v=>v&&typeof v.id==='string'&&!found.has(v.id)&&map.has(v.id))
-    .slice(0,16).map(v=>{found.add(v.id);const target=map.get(v.id);
-      return {id:v.id,kind:target.kind,action:allowed.includes(v.action)?v.action:'start'};});
-}
+import {safeCellAttachments} from './cell-media-core.mjs?v=019';
 export function mountCellMedia({send,getRemote,refreshRemote,embedded}){
   const editorSlot=document.getElementById('cell-media-editor');
   let closed=false,activeDialog=null;
