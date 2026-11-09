@@ -83,7 +83,7 @@ window.addEventListener('message',event=>{
   if(event.data.safe&&(event.data.type==='owl-soundshow-remote-result'||event.data.session===null||validSession(event.data.session)))entry.resolve(event.data);else entry.reject(Error(event.data.message||'La connexion SoundShow a échoué.'));
 });
 window.addEventListener('archives:soundshow-session',event=>{
-  if(isGM()||embedded)return;
+  if(isGM())return; // Le joueur peut consulter les Archives même dans un cadre Owlbear.
   const value=event.detail?.session;if(value!==null&&!validSession(value))return;liveSession=value;
   void(async()=>{if(!player){const {mountPlayer}=await import('./player.mjs?v=028');player=mountPlayer();}await player.use(value);})().catch(error=>notice(error.message));
 });
