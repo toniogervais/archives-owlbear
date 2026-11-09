@@ -1,4 +1,20 @@
-# Les Archives de l’Imaginaire — Owlbear V4.25.0
+# Les Archives de l’Imaginaire — Owlbear V4.26.0
+
+## SoundShow : lecteur complet, sons et vidéos associés aux révélations
+
+**Une seule fenêtre de jeu : Owlbear et son extension Les Archives.** Le MJ dispose dans Les Archives d'une barre SoundShow rétractable et déplaçable. Son icône **Sons** ouvre la grille des sons, désormais plus compacte ; l'icône **Vidéos** affiche les vidéos du projet SoundShow. Un panneau SoundShow apparaît à droite et réduit le canevas sans supprimer ni cacher les cellules. Sa poignée permet de modifier la largeur et son en-tête peut le détacher en fenêtre flottante déplaçable et redimensionnable. Le canevas se recentre quand la disposition change.
+
+La partie supérieure du panneau propose un **lecteur SoundShow** des instances en cours (son ou vidéo), avec lecture/pause, boucle, arrêt, fondu sortant, volume individuel, durée, progression, et saut dans la lecture. La forme d'onde affichée est **indicative** : l'API SoundShow fournit des informations de lecture, mais pas les échantillons nécessaires à une forme d'onde réellement calculée. La position, les durées et les commandes sont, en revanche, celles des lecteurs actifs dans SoundShow. Les cases audio sont plus petites et leur nombre de colonnes varie automatiquement avec la largeur du panneau.
+
+**Médias liés aux cellules.** Depuis les réglages d'une cellule ou son menu contextuel, le MJ peut sélectionner jusqu'à 16 sons et vidéos du projet SoundShow, avec un mode de démarrage propre à chaque média. Les associations sont sauvegardées avec la cellule. Quand le MJ révèle cette cellule (et uniquement au passage masquée → révélée), les commandes de lecture correspondantes partent vers SoundShow une seule fois. Si des médias y sont attachés, le gong générique de révélation ne se superpose pas. Les associations ne figurent pas dans les états de cellules communiqués aux joueurs.
+
+**Vidéos chez les joueurs.** Les vidéos sont lancées via le bouton Vidéos de la télécommande ou par une révélation de cellule ; le lecteur vidéo existant utilise la liaison WebRTC Owlbear et s'affiche comme fenêtre intégrée sur l'écran joueur. Pour chaque source vidéo, le connecteur Windows doit avoir obtenu une première autorisation d'accès au fichier sur le PC MJ : les navigateurs ne peuvent pas lire arbitrairement les fichiers SoundShow sur le disque.
+
+**Ergonomie générale.** Barre de raccourcis existante déplaçable ; barre d'intégrations, barre de commandes, barre SoundShow également repositionnables avec leurs poignées. La grande barre de titre du panneau hôte « Les Archives de l'Imaginaire » est supprimée, tout en conservant le retour vers Owlbear. Un bouton plein écran a été ajouté ; si le navigateur refuse le plein écran d'une fenêtre intégrée, l'interface affiche l'alternative F11.
+
+La télécommande et les médias de révélations sont **réservés au MJ**. Le connecteur refuse les commandes inconnues et les lecteurs verrouillés ; les données privées des cellules et les mots de passe SoundShow ne sont pas transmis aux joueurs. Version connecteur Windows **0.3.2**. Les fonctions sont vérifiées en tests automatiques ; leurs interactions sur PC Windows/Chrome et tablettes Android doivent être validées en conditions réelles.
+
+
 
 ## Grille SoundShow latérale — sons au clic depuis le canevas
 
