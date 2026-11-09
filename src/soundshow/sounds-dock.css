@@ -1,0 +1,58 @@
+/* Barre rétractable SoundShow, réservée au MJ dans l'extension Owlbear. */
+#app>#main-area{min-width:0;flex:1 1 auto}
+#soundshow-sounds-panel{box-sizing:border-box;order:30;width:min(370px,34vw);flex:0 0 min(370px,34vw);height:100%;min-width:0;overflow:hidden;background:linear-gradient(175deg,#201b2b 0%,#100e18 88%);border-left:1px solid #d7b7754d;box-shadow:-8px 0 28px #0005;color:#f3eadb;display:flex;flex-direction:column;position:relative;z-index:80;font:13px/1.42 system-ui,sans-serif}
+#soundshow-sounds-panel[hidden]{display:none!important}
+#soundshow-sounds-panel .ss-head{flex-shrink:0;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:15px 14px 10px;border-bottom:1px solid #d7b77533}
+#soundshow-sounds-panel .ss-head h2{font-size:17px;margin:0;color:#f4d8a0;font-weight:650}
+#soundshow-sounds-panel button{font-family:inherit}
+#soundshow-sounds-panel .ss-close,#soundshow-sounds-panel .ss-compact-btn{border:1px solid #d4b67855;background:#302737;color:#f7e7c8;border-radius:9px;min-width:35px;min-height:35px;cursor:pointer}
+#soundshow-sounds-panel .ss-close:hover,#soundshow-sounds-panel .ss-compact-btn:hover{border-color:#f0d39a}
+#soundshow-sounds-panel .ss-status{padding:8px 14px;margin:0;color:#d2c7ae;font-size:12px;min-height:22px;overflow-wrap:anywhere}
+#soundshow-sounds-panel .ss-controls{padding:5px 12px 8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+#soundshow-sounds-panel .ss-filter,#soundshow-sounds-panel .ss-category{color:#ebdbbf;border:1px solid #d7b77544;background:#282334;border-radius:8px;min-height:33px;padding:5px 10px;cursor:pointer;font-size:12px}
+#soundshow-sounds-panel button[aria-pressed="true"]{background:#66502d;color:#fff0c8;border-color:#f2d48e}
+#soundshow-sounds-panel .ss-search{flex:1;min-width:0;min-height:36px;background:#100f19;color:#f1e5d0;border:1px solid #d7b77555;border-radius:9px;padding:6px 10px}
+#soundshow-sounds-panel .ss-category-strip{display:flex;gap:5px;overflow:auto;flex-shrink:0;padding:0 12px 10px;scrollbar-width:thin}
+#soundshow-sounds-panel .ss-content{min-height:0;flex:1;overflow:auto;padding:1px 12px 20px;scrollbar-width:thin}
+#soundshow-sounds-panel .ss-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(102px,1fr));grid-auto-rows:minmax(85px,auto);gap:9px;align-content:start}
+#soundshow-sounds-panel .ss-tile{position:relative;background:linear-gradient(155deg,#332c3c,#1a1825);border:1px solid var(--ss-tile-color,#caa766);border-left:4px solid var(--ss-tile-color,#caa766);border-radius:11px;min-height:87px;padding:12px 8px 10px;color:#fff0db;cursor:pointer;text-align:left;display:flex;flex-direction:column;justify-content:space-between;gap:6px;overflow-wrap:anywhere;touch-action:manipulation;user-select:none;transition:background .16s,border-color .16s,transform .13s}
+#soundshow-sounds-panel .ss-tile:hover:not(:disabled){background:linear-gradient(155deg,#4c4054,#272134);transform:translateY(-1px)}
+#soundshow-sounds-panel .ss-tile:focus-visible,#soundshow-sounds-dock button:focus-visible{outline:2px solid #f5d88f;outline-offset:3px}
+#soundshow-sounds-panel .ss-tile.ss-playing{box-shadow:0 0 0 1px #ebc46b,0 0 16px #ddba4c30}
+#soundshow-sounds-panel .ss-tile:disabled{opacity:.45;cursor:not-allowed}
+#soundshow-sounds-panel .ss-tile-name{font-weight:650;font-size:13px;line-height:1.3}
+#soundshow-sounds-panel .ss-tile-foot{font-size:10px;display:flex;justify-content:space-between;gap:3px;color:#d8c7a7}
+#soundshow-sounds-panel .ss-empty{margin:16px 0;color:#c4b49a;font-size:13px}
+#soundshow-sounds-panel .ss-advanced{padding:10px 13px;border-top:1px solid #d7b7753b;flex-shrink:0;max-height:42vh;overflow:auto}
+#soundshow-sounds-panel .ss-advanced summary{cursor:pointer;font-size:12px;color:#f5dbab}
+#soundshow-sounds-panel .ss-settings{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+#soundshow-sounds-panel .ss-settings label{font-size:11px;display:flex;flex-direction:column;gap:4px;color:#e2d6c1}
+#soundshow-sounds-panel .ss-settings select{max-width:100%;padding:6px;background:#211c2b;color:#f9e8c7;border:1px solid #cba66655;border-radius:7px}
+#soundshow-sounds-panel .ss-help{font-size:11px;opacity:.76;margin:8px 0 0}
+#soundshow-sounds-dock{position:fixed;z-index:190;top:88px;right:12px;background:rgba(19,16,27,.96);backdrop-filter:blur(10px);border:1px solid #d2b67875;border-radius:13px;padding:5px;display:flex;flex-direction:column;align-items:center;gap:5px;box-shadow:0 10px 30px #0008;transition:right .19s ease}
+#soundshow-sounds-dock[hidden]{display:none!important}
+#soundshow-sounds-dock button{display:grid;place-items:center;min-width:34px;min-height:34px;color:#e9cf99;border:1px solid transparent;border-radius:8px;background:transparent;cursor:pointer}
+#soundshow-sounds-dock button:hover,#soundshow-sounds-dock button[aria-pressed="true"]{background:#63502f;border-color:#d9b675;color:#fff2d6}
+#soundshow-sounds-dock svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+#soundshow-sounds-dock .ss-collapse{font-size:11px;min-height:24px}
+#soundshow-sounds-dock.ss-is-collapsed{padding:3px}
+#soundshow-sounds-dock.ss-is-collapsed .ss-sound-trigger{display:none}
+body.soundshow-sounds-open #soundshow-sounds-dock{right:calc(min(370px,34vw) + 12px)}
+body.player-mode #soundshow-sounds-dock,body.strict-readonly #soundshow-sounds-dock,body.player-mode #soundshow-sounds-panel,body.strict-readonly #soundshow-sounds-panel{display:none!important}
+@media(max-width:900px){
+ #soundshow-sounds-panel{width:min(320px,40vw);flex-basis:min(320px,40vw)}
+ body.soundshow-sounds-open #soundshow-sounds-dock{right:calc(min(320px,40vw) + 8px)}
+ #soundshow-sounds-dock{top:65px;right:7px}
+ #soundshow-sounds-panel .ss-grid{grid-template-columns:repeat(auto-fill,minmax(90px,1fr))}
+ #soundshow-sounds-panel .ss-settings{grid-template-columns:1fr}
+}
+@media(max-width:580px){
+ #soundshow-sounds-panel{width:50vw;flex-basis:50vw}
+ body.soundshow-sounds-open #soundshow-sounds-dock{right:calc(50vw + 4px)}
+ #soundshow-sounds-panel .ss-head{padding:9px 7px}
+ #soundshow-sounds-panel .ss-controls{padding:5px}
+ #soundshow-sounds-panel .ss-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media print{
+ #soundshow-sounds-dock,#soundshow-sounds-panel{display:none!important}
+}
