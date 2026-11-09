@@ -11,6 +11,7 @@ const owlUrl='https://www.owlbear.rodeo/';
 const linkProtocol='archives:soundshow:owlbear-link-v1';
 let owlWindow=null,linkTimer=null,linkStarted=0,autoRestoreKey='',owlLinked=false;
 let linkCandidate=null;
+const controlToken=crypto.randomUUID();
 function stopLinkTimer(){clearInterval(linkTimer);linkTimer=null;}
 function isInsideOwlbear(candidate,root,depth=0){
   if(!root||!candidate||depth>8)return false;
@@ -50,13 +51,33 @@ window.addEventListener('message',event=>{
        !/^[0-9a-f-]{36}$/.test(data.challenge))return;
     linkCandidate={source:event.source,challenge:data.challenge};
     event.source.postMessage({protocol:linkProtocol,type:'offer',challenge:data.challenge,
-      session:{version:1,peer:peer.id,secret}},archivesOrigin);
+      session:{version:1,peer:peer.id,secret},controlToken},archivesOrigin);
   }else if(data.type==='accepted'&&linkCandidate?.source===event.source &&
       data.challenge===linkCandidate.challenge){
     stopLinkTimer();owlLinked=true;
-    text('link-status','Owlbear relié. Tu peux lancer directement tes vidéos dans SoundShow.');
+    text('link-status','Owlbear relié. La télécommande est également active dans Les Archives.');
+    sendRemoteState();
+  }else if(data.type==='remote-command'&&owlLinked&&linkCandidate?.source===event.source&&
+      data.challenge===linkCandidate.challenge&&data.controlToken===controlToken&&
+      typeof data.id==='string'&&/^[0-9a-f-]{36}$/.test(data.id)){
+    const target=event.source;
+    void api('control',data.command).then(result=>{
+      target.postMessage({protocol:linkProtocol,type:'remote-result',id:data.id,
+        ok:true,message:result.message||'Commande envoyée à SoundShow.'},archivesOrigin);
+    }).catch(error=>{
+      target.postMessage({protocol:linkProtocol,type:'remote-result',id:data.id,
+        ok:false,message:String(error.message||'Commande refusée.').slice(0,200)},archivesOrigin);
+    });
   }
 });
+function sendRemoteState(){
+  if(!owlLinked||!linkCandidate?.source)return;
+  try{
+    linkCandidate.source.postMessage({protocol:linkProtocol,type:'remote-state',
+      state:{connected:show?.status==='connected'||show?.status==='simulation',
+        simulation:show?.status==='simulation',...(show?.remote||{media:[],active:[]})}},archivesOrigin);
+  }catch{}
+}
 let attempts=0,rejected=0,lastIssue='Aucune demande reçue.';
 function diagnostic(){const el=$('link-diagnostic');if(!el)return;const ready=[...clients.values()].filter(e=>e.ready&&e.mode==='view').length;el.textContent=attempts+' tentative(s) reçue(s) par le PC · '+ready+' lecteur(s) confirmé(s) · '+rejected+' demande(s) refusée(s). '+lastIssue;}
 const options = () => ({config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}],iceCandidatePoolSize:2},...window.ArchivesSoundShowPeerOptions});
@@ -79,9 +100,9 @@ function connectEvents() {
       if(!peer||peer.destroyed)prepare();
       void autoRestoreFiles(); // Only previously authorized files can be loaded silently.
     }
-    void follow();
+    sendRemoteState();void follow();
   };
-  ws.onclose = () => {clearSource();text('show-status','Connecteur déconnecté. Garde son programme ouvert.');if (!closing) wsTimer = setTimeout(connectEvents,2000);};
+  ws.onclose = () => {clearSource();show=null;sendRemoteState();text('show-status','Connecteur déconnecté. Garde son programme ouvert.');if (!closing) wsTimer = setTimeout(connectEvents,2000);};
 }
 function fileKey(id) { return JSON.stringify([show?.project || '',id]); }
 async function openDatabase() {
