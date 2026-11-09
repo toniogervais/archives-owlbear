@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import {decodeSession,encodeSession,validSession,publicPlayback,autoLinkProtocol,owlbearLinkProtocol,validLocalBridgeOrigin} from '../src/soundshow/protocol.mjs';
 import {explainConnectionFailure} from '../src/soundshow/connection.mjs';
 import {clickCommand,validSoundAction} from '../src/soundshow/sounds-dock.mjs';
-import {safeCellAttachments} from '../src/soundshow/cell-media.mjs';
+import {safeCellAttachments} from '../src/soundshow/cell-media-core.mjs';
 import {safeProgress,formatClock} from '../src/soundshow/mini-player.mjs';
 test('SoundShow pairing accepts only a versioned peer and a strong secret',()=>{
   const session={version:1,peer:'host-12345678',secret:'a'.repeat(64)};
