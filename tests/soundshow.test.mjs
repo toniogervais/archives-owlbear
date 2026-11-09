@@ -5,6 +5,8 @@ import vm from 'node:vm';
 import {decodeSession,encodeSession,validSession,publicPlayback,autoLinkProtocol,owlbearLinkProtocol,validLocalBridgeOrigin} from '../src/soundshow/protocol.mjs';
 import {explainConnectionFailure} from '../src/soundshow/connection.mjs';
 import {clickCommand,validSoundAction} from '../src/soundshow/sounds-dock.mjs';
+import {safeCellAttachments} from '../src/soundshow/cell-media.mjs';
+import {safeProgress,formatClock} from '../src/soundshow/mini-player.mjs';
 test('SoundShow pairing accepts only a versioned peer and a strong secret',()=>{
   const session={version:1,peer:'host-12345678',secret:'a'.repeat(64)};
   assert.deepEqual(decodeSession(encodeSession(session)),session);
@@ -106,4 +108,54 @@ test('SoundShow grid sends one real native playable action according to the sele
   assert.match(css,/#app>#main-area\{min-width:0/);
   assert.match(css,/flex:0 0 min\(370px,34vw\)/);
   assert.match(css,/body.player-mode #soundshow-sounds-dock/);
+});
+
+test('SoundShow mini-player uses real timeline and media-controls commands',()=>{
+  assert.equal(safeProgress(25,100),25);
+  assert.equal(safeProgress(500,100),100);
+  assert.equal(safeProgress(0,0),0);
+  assert.equal(formatClock(125),'02:05');
+  const player=fs.readFileSync(new URL('../src/soundshow/mini-player.mjs',import.meta.url),'utf8');
+  const css=fs.readFileSync(new URL('../src/soundshow/sounds-dock.css',import.meta.url),'utf8');
+  const bridge=fs.readFileSync(new URL('../soundshow-bridge/bridge.py',import.meta.url),'utf8');
+  const background=fs.readFileSync(new URL('../src/soundshow/owlbear.mjs',import.meta.url),'utf8');
+  for(const cmd of ['toggle_player_playback','toggle_player_loop','stop_player','fade_out_player','seek_player','set_player_volume']){
+    assert.ok(player.includes(cmd),cmd);
+    assert.ok(bridge.includes(cmd),cmd);
+  }
+  assert.match(background,/seek_player/);
+  assert.match(player,/forme réelle des échantillons n’est pas disponible/);
+  assert.match(css,/\.ss-wave-canvas/);
+  assert.match(css,/\.ss-player-volume/);
+  assert.match(css,/\.ss-tile-name\{font-size:10\.5px/);
+  assert.match(css,/grid-template-columns:repeat\(auto-fill,minmax\(72px,1fr\)\)/);
+});
+test('Linked cell media remains GM-side and is limited to valid loaded SoundShow assets',()=>{
+  const catalog=[{id:'rain',kind:'sound',locked:false},{id:'trailer',kind:'video',locked:false},{id:'locked',kind:'sound',locked:true}];
+  assert.deepEqual(safeCellAttachments([
+    {id:'rain',action:'fade_in'}, {id:'trailer',action:'start'}, {id:'rain',action:'start'},
+    {id:'locked',action:'start'}, {id:'missing',action:'start'}],catalog),[
+    {id:'rain',kind:'sound',action:'fade_in'},
+    {id:'trailer',kind:'video',action:'start'}]);
+  const html=fs.readFileSync(new URL('../archives-app-v64-v55.html',import.meta.url),'utf8');
+  const app=fs.readFileSync(new URL('../src/soundshow/archives.mjs',import.meta.url),'utf8');
+  assert.match(html,/getCellRevealMedia: function/);
+  assert.match(html,/setCellRevealMedia: function/);
+  assert.match(html,/archives:cell-revealed/);
+  assert.match(html,/ctx-cell-media/);
+  assert.match(html,/id="cell-media-editor"/);
+  assert.match(app,/mountCellMedia/);
+  const match=html.match(/var safeFields = \[([\s\S]*?)\];/);
+  assert.ok(match);
+  assert.doesNotMatch(match[1],/revealMedia/,'Cell media associations must never be projected to players');
+});
+test('Movable Archives docks retain the Owlbear header back button and offer fullscreen',()=>{
+  const layout=fs.readFileSync(new URL('../src/v66/workspace.mjs',import.meta.url),'utf8');
+  const host=fs.readFileSync(new URL('../archives-host-v55.html',import.meta.url),'utf8');
+  assert.match(layout,/moveBar\('canvas-integrations-dock'/);
+  assert.match(layout,/moveBar\('top-hud'/);
+  assert.match(layout,/requestFullscreen/);
+  assert.match(host,/allowfullscreen/);
+  assert.doesNotMatch(host,/<strong><img src="\.\/icon-archives-v43\.svg"[^>]*>Les Archives de l.Imaginaire/);
+  assert.match(host,/id="return"/);
 });
