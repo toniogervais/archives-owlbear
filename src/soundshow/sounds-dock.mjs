@@ -38,7 +38,7 @@ export function mountSoundDock({send,refresh,isGM}){
   if(!app||!main||typeof send!=='function')return null;
   if(document.getElementById('soundshow-sounds-dock'))return null;
   const css=document.createElement('link');css.rel='stylesheet';
-  css.href=new URL('./sounds-dock.css?v=019',import.meta.url).href;
+  css.href=new URL('./sounds-dock.css?v=026',import.meta.url).href;
   document.head.append(css);
   let state={connected:false,media:[],active:[],project:''};
   let project='',prefs=defaults(),expanded=false,collapsed=false,category='all',search='',mediaKind='sound',floating=false;
