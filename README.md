@@ -1,4 +1,14 @@
-# Les Archives de l’Imaginaire — Owlbear V4.23.1
+# Les Archives de l’Imaginaire — Owlbear V4.24.0
+
+## Télécommande SoundShow intégrée dans Les Archives — sons et vidéos
+
+Depuis la salle Owlbear, le MJ ouvre l'extension **Les Archives**, puis clique sur son icône **SoundShow**. Une télécommande s'affiche directement dans cette fenêtre : deux filtres **Sons** et **Vidéos**, une recherche dans les éléments du projet, lecture immédiate ou avec fondu d'entrée. Une seconde partie **En cours de lecture** propose pause, reprise, arrêt, fondu de sortie et volume individuel. Les boutons globaux permettent pause/reprise, arrêt général ou fondu général ; un curseur définit le volume par défaut des sons suivants.
+
+Cette télécommande pilote **le véritable SoundShow 2 Pro sur le PC**, avec les commandes de son API WebSocket v2, et non une imitation de lecteur audio. Le routage audio (PC/enceintes) reste configuré dans SoundShow ; les vidéos sources continuent à être diffusées en fenêtres intégrées dans Owlbear. Les sons ne sont pas copiés sur les tablettes, et aucun nouveau mot de passe ou onglet n'est nécessaire.
+
+Sécurité : seule l'extension du MJ peut envoyer une commande au connecteur local, sous contrôle d'un jeton éphémère associé à la liaison Owlbear. Le connecteur limite les commandes aux fonctions prévues, contrôle les identifiants du projet et des lecteurs et ne permet ni modification de projet ni téléchargement de fichiers. Le bouton peut signaler l'envoi d'une commande, mais son effet est confirmé par les états successifs de SoundShow. Cette version nécessite le **connecteur Windows 0.3.0**. Les essais en environnement simulé ne remplacent pas une vérification sur le PC du MJ et les tablettes réelles.
+
+
 
 ## Owlbear reste le programme principal
 
