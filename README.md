@@ -1,4 +1,16 @@
-# Les Archives de l’Imaginaire — Owlbear V4.24.0
+# Les Archives de l’Imaginaire — Owlbear V4.25.0
+
+## Grille SoundShow latérale — sons au clic depuis le canevas
+
+La vue MJ des Archives, ouverte **dans Owlbear**, dispose maintenant d'une barre SoundShow indépendante, rétractable sur le côté droit. Son icône **Sons** affiche un **panneau de grille latéral à droite du canevas**. Le panneau prend sa propre largeur dans la disposition, sans recouvrir les cellules : le canevas se réduit et se recentre pour conserver l'ensemble des informations. La barre se réduit à une languette et peut se redéployer. Le bouton SoundShow existant ouvre aussi cette grille.
+
+La grille récupère automatiquement les sons, noms, catégories, couleurs, nombre de lectures, état de lecture et verrouillages du projet SoundShow via le connecteur Windows **0.3.1**. Les catégories masquées dans SoundShow restent masquées ; les cases verrouillées sont désactivées. La recherche et les filtres par catégorie restent accessibles sans sortir des Archives.
+
+Par défaut, **clic gauche / appui tactile = lecture normale** (respectant les réglages du son dans SoundShow), **clic droit = fondu enchaîné** et **Maj + clic = fondu d'entrée**. Les associations gauche, droite, milieu, double et Maj+gauche peuvent être personnalisées dans « Préférences des clics » puis sont conservées localement pour chaque projet. Les actions disponibles sont lecture, fondu d'entrée, fondu enchaîné, remplacement, bascule lecture/arrêt et bascule lecture/fondu. La WebSocket API de SoundShow ne fournit pas une commande générique garantissant la reproduction de toutes les personnalisations de souris de l'interface SoundShow : ces associations sont définies dans Les Archives. Les boucles, sorties audio, réglages des éléments et fondus restent ceux de SoundShow.
+
+La grille transmet les commandes au SoundShow sur le **PC du MJ**, via l'authentification locale existante, et n'est jamais accessible aux joueurs. Les effets sont confirmés par les snapshots de SoundShow, pas supposés à la réception d'un clic. L'ancienne télécommande complète conserve les commandes de contrôle global et vidéo. Tests automatiques en cours d'actualisation ; vérifier ensuite la sensation des clics sur le matériel réel.
+
+
 
 ## Télécommande SoundShow intégrée dans Les Archives — sons et vidéos
 
