@@ -79,6 +79,42 @@ class ShowState:
         # No local paths, project secrets, unrelated sounds, or remote password.
         return {'project':str(project.get('name') or '')[:160], 'videos':videos, 'players':players}
 
+    def remote(self):
+        """Minimal SoundShow telecommand catalog. No file paths or passwords."""
+        project = self.state.get('project') or {}
+        media = []
+        names = {}
+        for category in (project.get('categories') or [])[:200]:
+            if not isinstance(category, dict):
+                continue
+            category_name = str(category.get('name') or 'Médias')[:80]
+            for item in (category.get('playables') or [])[:1000]:
+                if not isinstance(item, dict) or item.get('kind') not in ('sound','video') or not isinstance(item.get('id'), str):
+                    continue
+                item_id = item['id'][:200]
+                name = str(item.get('name') or ('Son' if item['kind']=='sound' else 'Vidéo'))[:160]
+                media.append({'id':item_id,'name':name,'kind':item['kind'],'category':category_name})
+                names[item_id] = name
+                if len(media) >= 500:
+                    break
+            if len(media) >= 500:
+                break
+        active = []
+        for item in (self.state.get('players') or [])[:1000]:
+            if not isinstance(item,dict) or item.get('kind') not in ('sound','video') or not isinstance(item.get('id'),str):
+                continue
+            source = item.get('source_playable_id') or item.get('state_playable_id')
+            if source not in names:
+                continue
+            active.append({'id':item['id'][:200],'source':source,'name':str(item.get('title') or names[source])[:160],
+                'kind':item['kind'],'playing':item.get('is_playing') is True,
+                'locked':item.get('is_locked') is True,'muted':item.get('muted') is True,
+                'loop':item.get('loop_enabled') is True,
+                'volume':round(finite(item.get('volume_percent'),100,0,100))})
+        return {'project':str(project.get('name') or '')[:160], 'media':media,'active':active,
+            'nextVolume':round(finite((self.state.get('control') or {}).get('next_sound_volume'),100,0,100))}
+
+
 
 class SoundShowRedirectError(ValueError):
     pass
@@ -123,10 +159,11 @@ class Bridge:
         self.task = None
         self.demo = False
         self.demo_started = 0
+        self.remote_ws = None
 
     def packet(self):
         return {'type':'show', 'version':VERSION, 'status':self.status, 'message':self.message,
-                'simulation':self.demo, **self.model.public()}
+                'simulation':self.demo, 'remote':self.model.remote(), **self.model.public()}
 
     async def publish(self):
         packet = self.packet()
@@ -137,6 +174,7 @@ class Bridge:
                 self.clients.discard(client)
 
     async def cancel(self):
+        self.remote_ws = None
         if self.task:
             self.task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
@@ -167,6 +205,7 @@ class Bridge:
                             self.message = 'Connexion refusée : vérifie le mot de passe et l’accès Pro dans SoundShow.'
                             await self.publish()
                             return  # Never loop on a wrong password.
+                        self.remote_ws = ws
                         async def keep_alive():
                             while True:
                                 await asyncio.sleep(2)
@@ -217,12 +256,55 @@ class Bridge:
                 self.message = 'SoundShow ne répond plus. Lecture arrêtée ; reconnexion automatique.'
                 await self.publish()
             finally:
+                self.remote_ws = None
                 if heartbeat:
                     heartbeat.cancel()
                     with contextlib.suppress(asyncio.CancelledError, Exception):
                         await heartbeat
             await asyncio.sleep(delay)
             delay = min(delay * 2, 20)
+
+    async def control(self, request):
+        """Allowlist remote commands; never forward arbitrary JSON to SoundShow."""
+        if not isinstance(request,dict) or len(json.dumps(request)) > 1024:
+            raise ValueError('Commande SoundShow invalide.')
+        cmd = request.get('type')
+        commands = {'stop_all','pause_all','resume_all','fade_out_all',
+            'play_playable','toggle_player_playback','stop_player','fade_out_player',
+            'set_player_volume','set_next_sound_volume','toggle_player_loop'}
+        if cmd not in commands:
+            raise ValueError('Commande non autorisée.')
+        catalog = self.model.remote()
+        media_ids = {item['id'] for item in catalog['media']}
+        active_ids = {item['id'] for item in catalog['active'] if not item['locked']}
+        result = {'type':cmd}
+        if cmd == 'play_playable':
+            if request.get('playable_id') not in media_ids:
+                raise ValueError('Son ou vidéo introuvable dans le projet actuel.')
+            if request.get('action','start') not in ('start','fade_in','crossfade','toggle'):
+                raise ValueError('Mode de lecture invalide.')
+            result['playable_id'] = request['playable_id']
+            result['action'] = request.get('action','start')
+        elif cmd in ('toggle_player_playback','stop_player','fade_out_player','set_player_volume','toggle_player_loop'):
+            if request.get('player_id') not in active_ids:
+                raise ValueError('Ce lecteur n’est plus disponible ou est verrouillé.')
+            result['player_id'] = request['player_id']
+        if cmd in ('set_player_volume','set_next_sound_volume'):
+            volume = request.get('volume')
+            if type(volume) is not int or not 0 <= volume <= 100:
+                raise ValueError('Volume attendu entre 0 et 100 % (entier).')
+            result['volume'] = volume
+        if self.demo:
+            if cmd in ('play_playable','stop_all','pause_all','resume_all'):
+                await self.simulate({'play_playable':'play','stop_all':'stop',
+                                     'pause_all':'pause','resume_all':'play'}[cmd])
+                return
+            raise ValueError('Commande indisponible dans la simulation.')
+        ws = self.remote_ws
+        if self.status != 'connected' or ws is None or ws.closed:
+            raise ConnectionError('SoundShow n’est pas connecté. Aucune commande envoyée.')
+        await ws.send_json(result)
+        # Send only: SoundShow confirms the effect through later state snapshots.
 
     async def simulate(self, action):
         if not self.demo:
@@ -299,6 +381,15 @@ def create_app(bridge=None):
         await bridge.publish()
         return web.json_response({'ok':True})
 
+    async def control(request):
+        try:
+            await bridge.control(await request.json())
+        except ValueError as exc:
+            return web.json_response({'error':str(exc)},status=400)
+        except (ConnectionError,RuntimeError) as exc:
+            return web.json_response({'error':str(exc)},status=503)
+        return web.json_response({'ok':True,'message':'Commande envoyée à SoundShow ; état en cours de confirmation.'})
+
     async def demo(request):
         action = (await request.json()).get('action')
         if action not in ('init','play','pause','stop','restart'):
@@ -334,6 +425,7 @@ def create_app(bridge=None):
     app.router.add_post('/api/connect',connect)
     app.router.add_post('/api/disconnect',disconnect)
     app.router.add_post('/api/demo',demo)
+    app.router.add_post('/api/control',control)
     app.router.add_get('/events',events)
     app.router.add_get('/',static)
     app.router.add_get('/{name}',static)
