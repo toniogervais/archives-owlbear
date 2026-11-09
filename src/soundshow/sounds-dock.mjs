@@ -118,7 +118,7 @@ export function mountSoundDock({send,refresh,isGM}){
   }catch{}
   function draggable(handle,target,{dockHandle=false}={}){
     handle.addEventListener('pointerdown',event=>{
-      if(event.button!==0||!isGM?.()||event.target.closest('button')!==handle&&dockHandle)return;
+      if(event.button!==0||!isGM?.()||(dockHandle&&event.target.closest('button')!==handle)||(!dockHandle&&event.target.closest('button')))return;
       event.preventDefault();
       const rect=target.getBoundingClientRect(),fromX=event.clientX,fromY=event.clientY;
       handle.setPointerCapture?.(event.pointerId);
