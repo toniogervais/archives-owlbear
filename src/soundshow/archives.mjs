@@ -2,10 +2,11 @@ import {button,element,isGM,notice,requireGM,sheet} from '../v63/ui.mjs';
 import {isPacket,packet} from '../v56/link.mjs';
 import {decodeSession,encodeSession,validSession} from './protocol.mjs?v=017';
 import {mountRemote} from './remote.mjs?v=017';
-import {mountSoundDock} from './sounds-dock.mjs?v=018';
+import {mountSoundDock} from './sounds-dock.mjs?v=019';
+import {mountCellMedia} from './cell-media.mjs?v=019';
 let session=null,player,liveSession=null,infoView=null;const pending=new Map(),roomFrames=new Map();
 const embedded=window.parent!==window;
-let remoteUi=null,linkInfoView=null,soundsDock=null,remoteState=null;
+let remoteUi=null,linkInfoView=null,soundsDock=null,cellMedia=null,remoteState=null;
 async function request(type,value) {
   const id=crypto.randomUUID();
   return new Promise((resolve,reject)=>{
@@ -74,7 +75,7 @@ window.addEventListener('message',event=>{
   if(event.source!==window.parent||event.origin!==location.origin||!isPacket(event.data))return;
   if(event.data.type==='owl-soundshow-status'){if(infoView?.isConnected&&Number.isInteger(event.data.players)){const data=event.data;infoView.textContent=data.players+' joueur(s) dans cette salle Owlbear · '+(data.ready||0)+' lecteur(s) relié(s) au connecteur.'+(data.players===0?' La tablette doit rejoindre la salle avec le rôle Joueur.':data.ready===data.players?' Connexion confirmée ; vérifie la lecture de la vidéo.':data.error?' '+data.error+' lecteur(s) signale(nt) une erreur. Vérifie la tablette.':' Si le nombre ne progresse pas, vérifie le message sur la tablette.');}return;}
   if(event.data.type==='owl-soundshow-remote-state'){
-    if(isGM()&&event.data.state){remoteState=event.data.state;remoteUi?.update(remoteState);soundsDock?.update(remoteState);}
+    if(isGM()&&event.data.state){remoteState=event.data.state;remoteUi?.update(remoteState);soundsDock?.update(remoteState);cellMedia?.refresh();}
     return;
   }
   if(!['owl-soundshow-result','owl-soundshow-remote-result'].includes(event.data.type))return;
@@ -111,6 +112,16 @@ function initializeSoundsDock(){
   });
   if(remoteState)soundsDock?.update(remoteState);
   if(soundsDock){
+    cellMedia=mountCellMedia({
+      embedded,isGM,
+      getRemote:()=>remoteState,
+      send:async command=>request('owl-soundshow-remote-command',command),
+      refreshRemote:async()=>{
+        const result=await request('owl-soundshow-remote-get');
+        if(result?.state){remoteState=result.state;soundsDock?.update(remoteState);}
+        return result;
+      }
+    });
     void request('owl-soundshow-remote-get').then(result=>{
       if(result?.state){remoteState=result.state;soundsDock?.update(remoteState);}
     }).catch(()=>{});
@@ -119,5 +130,8 @@ function initializeSoundsDock(){
 initializeSoundsDock();
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initializeSoundsDock,{once:true});
 else setTimeout(initializeSoundsDock,700);
-window.ArchivesSoundShow={open,session:()=>session,openSounds:()=>{initializeSoundsDock();soundsDock?.open();},getSoundDock:()=>soundsDock};
-window.addEventListener('pagehide',()=>{player?.destroy();soundsDock?.destroy();},{once:true});
+window.ArchivesSoundShow={open,session:()=>session,
+  openSounds:()=>{initializeSoundsDock();soundsDock?.open();},
+  openCellMedia:(source='editor')=>{initializeSoundsDock();cellMedia?.openPicker(source);},
+  getSoundDock:()=>soundsDock};
+window.addEventListener('pagehide',()=>{player?.destroy();cellMedia?.destroy();soundsDock?.destroy();},{once:true});
