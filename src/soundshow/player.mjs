@@ -24,6 +24,7 @@ export function mountPlayer({container=document.body,onPlayback=()=>{},onStatus=
   allow.onclick=async()=>{video.muted=playback.muted;try{await video.play();allow.hidden=true;status.textContent='';}catch{status.textContent='La lecture reste bloquée par le navigateur. Réessaie dans Chrome.';}};
   const connection=new SoundShowConnection({onStatus:message=>{status.textContent=message;retry.hidden=!/interrompue|impossible|indisponible|ne répond pas|ne s’est pas chargé|échoué|échec|bloqué/i.test(message);onStatus(message);},onPlayback:data=>{
     if(data.active&&data.id!==playback.id){
+      dismissedId=null; // Une nouvelle vidéo doit rouvrir le lecteur.
       announcedAt=performance.now();waitingForFrame=true;clearMediaTimer();
       mediaTimer=setTimeout(()=>{if(waitingForFrame&&!destroyed)status.textContent='Vidéo annoncée par le PC ; établissement du flux en cours…';},7000);
     }
