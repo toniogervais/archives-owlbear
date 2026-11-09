@@ -71,7 +71,7 @@ body.player-mode #soundshow-sounds-dock,body.strict-readonly #soundshow-sounds-d
 #soundshow-sounds-panel .ss-head .ss-close{cursor:pointer}
 #soundshow-sounds-panel .ss-float-toggle{border:1px solid #d4b67855;background:#302737;color:#f7e7c8;border-radius:9px;min-height:35px;min-width:35px;cursor:pointer}
 #soundshow-sounds-panel .ss-head-actions{display:flex;gap:5px;align-items:center}
-#soundshow-sounds-panel.ss-floating{position:fixed!important;inset:auto;left:var(--ss-float-left,38%);top:var(--ss-float-top,10%);width:var(--ss-float-width,420px)!important;height:var(--ss-float-height,65vh)!important;min-height:320px;max-height:95vh;max-width:96vw;flex:none;z-index:700;resize:both;box-shadow:0 18px 60px #000c;border:1px solid #e4bf7866;border-radius:12px;overflow:hidden}
+#soundshow-sounds-panel.ss-floating{position:fixed!important;inset:auto;left:var(--ss-float-left,38%);top:var(--ss-float-top,10%);width:var(--ss-float-width,420px);height:var(--ss-float-height,65vh);min-height:320px;max-height:95vh;max-width:96vw;flex:none;z-index:700;resize:both;box-shadow:0 18px 60px #000c;border:1px solid #e4bf7866;border-radius:12px;overflow:hidden}
 #soundshow-sounds-panel.ss-floating .ss-resize-handle{display:none}
 #soundshow-sounds-panel .ss-mini-player{flex-shrink:0;display:grid;gap:6px;padding:10px 12px 8px;background:#171320;border-top:1px solid #d6b77933;border-bottom:1px solid #d6b77933}
 #soundshow-sounds-panel .ss-player-head{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#edd6a5}
