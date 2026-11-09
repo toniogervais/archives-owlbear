@@ -84,6 +84,66 @@ class ServerTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await self.client.get('/peerjs.min.js')).status,200)
         self.assertEqual((await self.client.get('/protocol.mjs')).status,200)
 
+    async def test_remote_controls_sounds_and_videos_with_strict_allowlist(self):
+        self.bridge.model.apply({'type':'state','state':{
+            'project':{'name':'Campagne','categories':[{'name':'Ambiances','playables':[
+                {'id':'rain','kind':'sound','name':'Pluie', 'path':'C:/PRIVATE/rain.wav'},
+                {'id':'intro','kind':'video','name':'Introduction'},
+                {'id':'not-audio','kind':'action','name':'Danger'}]}]},
+            'players':[
+                {'id':'rain-playing','kind':'sound','source_playable_id':'rain',
+                 'title':'Pluie','is_playing':True,'volume_percent':62},
+                {'id':'intro-playing','kind':'video','source_playable_id':'intro',
+                 'title':'Introduction','is_playing':False,'volume_percent':85},
+                {'id':'locked-playing','kind':'sound','source_playable_id':'rain',
+                 'is_locked':True}
+            ],'control':{'next_sound_volume':74}}})
+        state=self.bridge.model.remote()
+        self.assertEqual([item['kind'] for item in state['media']],['sound','video'])
+        self.assertEqual([item['id'] for item in state['active']],['rain-playing','intro-playing','locked-playing'])
+        self.assertEqual(state['nextVolume'],74)
+        self.assertNotIn('PRIVATE',json.dumps(state))
+        ws=AsyncMock()
+        ws.closed=False
+        self.bridge.remote_ws=ws
+        self.bridge.status='connected'
+        commands=[
+            {'type':'play_playable','playable_id':'rain','action':'start'},
+            {'type':'play_playable','playable_id':'intro','action':'fade_in'},
+            {'type':'pause_all'},
+            {'type':'resume_all'},
+            {'type':'fade_out_all'},
+            {'type':'stop_all'},
+            {'type':'toggle_player_playback','player_id':'rain-playing'},
+            {'type':'set_player_volume','player_id':'rain-playing','volume':55},
+            {'type':'set_next_sound_volume','volume':70},
+            {'type':'stop_player','player_id':'intro-playing'}]
+        for command in commands:
+            response=await self.client.post('/api/control',json=command,headers=self.headers)
+            self.assertEqual(response.status,200,(command,await response.text()))
+        self.assertEqual(ws.send_json.await_count,len(commands))
+        self.assertEqual(ws.send_json.await_args_list[0].args[0],commands[0])
+        self.assertEqual(ws.send_json.await_args_list[1].args[0],commands[1])
+        self.assertNotIn('play_playable',json.dumps(self.bridge.model.public()['players']))
+        for invalid in [
+            {'type':'play_playable','playable_id':'not-audio'},
+            {'type':'play_playable','playable_id':'unknown'},
+            {'type':'play_playable','playable_id':'rain','action':'danger'},
+            {'type':'set_player_volume','player_id':'rain-playing','volume':101},
+            {'type':'set_player_volume','player_id':'rain-playing','volume':True},
+            {'type':'stop_player','player_id':'locked-playing'},
+            {'type':'delete_project'},
+            {'type':'stop_player','player_id':'unknown'}
+        ]:
+            response=await self.client.post('/api/control',json=invalid,headers=self.headers)
+            self.assertEqual(response.status,400,invalid)
+        self.assertEqual(ws.send_json.await_count,len(commands))
+        self.assertEqual((await self.client.post('/api/control',json={'type':'stop_all'})).status,403)
+        self.assertEqual((await self.client.post('/api/control',json={'type':'stop_all'},headers={
+            **self.headers,'Origin':'https://www.owlbear.rodeo'})).status,403)
+        self.bridge.remote_ws=None
+        self.assertEqual((await self.client.post('/api/control',json={'type':'stop_all'},headers=self.headers)).status,503)
+
     async def test_demo_runs_without_soundshow_and_authenticates_websocket(self):
         self.assertEqual((await self.client.post('/api/demo',json={'action':'init'},headers=self.headers)).status,200)
         async with self.client.ws_connect('/events') as ws:
