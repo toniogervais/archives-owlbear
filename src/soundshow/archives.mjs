@@ -1,40 +1,16 @@
 import {button,element,isGM,notice,requireGM,sheet} from '../v63/ui.mjs';
 import {isPacket,packet} from '../v56/link.mjs';
-import {decodeSession,encodeSession,validSession} from './protocol.mjs?v=016';
+import {decodeSession,encodeSession,validSession} from './protocol.mjs?v=017';
+import {mountRemote} from './remote.mjs?v=017';
 let session=null,player,liveSession=null,infoView=null;const pending=new Map(),roomFrames=new Map();
 const embedded=window.parent!==window;
-let pendingAutoLink=null,autoLinkBusy=false,autoLinkTimer=null,linkInfoView=null;
-async function applyAutomaticLink(){
-  if(embedded||!pendingAutoLink||autoLinkBusy||!isGM())return;
-  autoLinkBusy=true;
-  const offer=pendingAutoLink;
-  try{
-    await publish(offer.session);
-    if(linkInfoView?.isConnected)linkInfoView.textContent='SoundShow est relié. Lance la vidéo dans SoundShow : elle s’affichera chez les joueurs.';
-    offer.source?.postMessage({protocol:autoLinkProtocol,type:'accepted',requestId:offer.requestId},offer.origin);
-    pendingAutoLink=null;clearInterval(autoLinkTimer);autoLinkTimer=null;
-    const url=new URL(location.href);url.searchParams.delete('soundshow_link');
-    history.replaceState(history.state,'',url.href);
-    notice('SoundShow relié automatiquement. Lance simplement ta vidéo.');
-  }catch(error){
-    if(linkInfoView?.isConnected)linkInfoView.textContent='Liaison SoundShow indisponible : '+error.message;
-  }finally{autoLinkBusy=false;}
-}
-window.addEventListener('message',event=>{
-  if(embedded||event.data?.protocol!==autoLinkProtocol||event.data.type!=='offer'||!validLocalBridgeOrigin(event.origin))return;
-  const expected=new URLSearchParams(location.search).get('soundshow_link');
-  if(!expected||event.data.requestId!==expected||!validSession(event.data.session))return;
-  pendingAutoLink={session:event.data.session,source:event.source,origin:event.origin,requestId:expected};
-  if(linkInfoView?.isConnected)linkInfoView.textContent='Connexion automatique reçue. Ouverture de la campagne MJ nécessaire.';
-  if(!autoLinkTimer)autoLinkTimer=setInterval(()=>void applyAutomaticLink(),1100);
-  void applyAutomaticLink();
-});
-window.addEventListener('pagehide',()=>clearInterval(autoLinkTimer),{once:true});
+let remoteUi=null,linkInfoView=null;
 async function request(type,value) {
   const id=crypto.randomUUID();
   return new Promise((resolve,reject)=>{
     const timer=setTimeout(()=>{pending.delete(id);reject(Error('La salle ne répond pas. Recharge Owlbear puis réessaie.'));},12000);
-    pending.set(id,{resolve,reject,timer});window.parent.postMessage(packet(type,{id,session:value}),location.origin);
+    pending.set(id,{resolve,reject,timer});window.parent.postMessage(packet(type,
+      type==='owl-soundshow-remote-command'?{id,command:value}:{id,session:value}),location.origin);
   });
 }
 async function publish(value) {
@@ -51,10 +27,25 @@ async function publish(value) {
 }
 function open() {
   try {
-    requireGM();const view=sheet('archives-soundshow','SoundShow · vidéos des joueurs');
+    requireGM();const view=sheet('archives-soundshow','SoundShow · télécommande');
+    remoteUi?.destroy();remoteUi=null;
+    if(embedded){
+      const remoteHost=element('div');
+      view.content.append(remoteHost);
+      remoteUi=mountRemote(remoteHost,async command=>{
+        const result=await request('owl-soundshow-remote-command',command);
+        if(result.state)remoteUi?.update(result.state);
+        return result;
+      });
+      const refresh=()=>void request('owl-soundshow-remote-get').then(value=>{
+        if(view.dialog.isConnected&&value.state)remoteUi?.update(value.state);
+      }).catch(error=>{if(view.dialog.isConnected)view.status.textContent=error.message;});
+      refresh();const timer=setInterval(refresh,4000);
+      view.cleanup(()=>{clearInterval(timer);remoteUi?.destroy();remoteUi=null;});
+    }
     view.content.append(element('p','SoundShow se relie depuis Owlbear : ouvre Owlbear à partir du connecteur Windows, puis entre dans ta salle MJ. L’extension Les Archives relie les joueurs automatiquement. Aucun onglet Archives séparé.','studio-hint'));
     const simpleStatus=element('p',session?'SoundShow relié. Les prochaines vidéos s’ouvriront dans une fenêtre des Archives ou d’Owlbear.':'En attente du connecteur SoundShow. Aucun code à recopier.','studio-status');simpleStatus.setAttribute('role','status');linkInfoView=simpleStatus;view.content.append(simpleStatus);
-    const download=element('a','Télécharger le connecteur Windows');download.href='https://github.com/toniogervais/archives-owlbear/releases/download/soundshow-bridge-v0.2.1/Archives-SoundShow-Connecteur.exe';download.target='_blank';download.rel='noopener';view.content.append(download);
+    const download=element('a','Télécharger le connecteur Windows');download.href='https://github.com/toniogervais/archives-owlbear/releases/download/soundshow-bridge-v0.3.0/Archives-SoundShow-Connecteur.exe';download.target='_blank';download.rel='noopener';view.content.append(download);
     const advanced=element('details');const summary=element('summary','Dépannage : connexion manuelle avec un code');advanced.append(summary);
     const label=element('label','Code de connexion SoundShow'),input=element('input');input.type='password';input.autocomplete='off';input.placeholder='SS2.…';input.setAttribute('aria-label','Code de connexion SoundShow');input.value=session?encodeSession(session):'';label.append(input);advanced.append(label);
     const info=element('p',null,'studio-hint');info.id='soundshow-room-status';info.setAttribute('role','status');infoView=info;
@@ -81,9 +72,13 @@ window.addEventListener('message',event=>{
   }
   if(event.source!==window.parent||event.origin!==location.origin||!isPacket(event.data))return;
   if(event.data.type==='owl-soundshow-status'){if(infoView?.isConnected&&Number.isInteger(event.data.players)){const data=event.data;infoView.textContent=data.players+' joueur(s) dans cette salle Owlbear · '+(data.ready||0)+' lecteur(s) relié(s) au connecteur.'+(data.players===0?' La tablette doit rejoindre la salle avec le rôle Joueur.':data.ready===data.players?' Connexion confirmée ; vérifie la lecture de la vidéo.':data.error?' '+data.error+' lecteur(s) signale(nt) une erreur. Vérifie la tablette.':' Si le nombre ne progresse pas, vérifie le message sur la tablette.');}return;}
-  if(event.data.type!=='owl-soundshow-result')return;
+  if(event.data.type==='owl-soundshow-remote-state'){
+    if(isGM()&&event.data.state)remoteUi?.update(event.data.state);
+    return;
+  }
+  if(!['owl-soundshow-result','owl-soundshow-remote-result'].includes(event.data.type))return;
   const entry=pending.get(event.data.id);if(!entry)return;pending.delete(event.data.id);clearTimeout(entry.timer);
-  if(event.data.safe&&(event.data.session===null||validSession(event.data.session)))entry.resolve(event.data);else entry.reject(Error(event.data.message||'La connexion SoundShow a échoué.'));
+  if(event.data.safe&&(event.data.type==='owl-soundshow-remote-result'||event.data.session===null||validSession(event.data.session)))entry.resolve(event.data);else entry.reject(Error(event.data.message||'La connexion SoundShow a échoué.'));
 });
 window.addEventListener('archives:soundshow-session',event=>{
   if(isGM()||embedded)return;
@@ -93,7 +88,7 @@ window.addEventListener('archives:soundshow-session',event=>{
 document.addEventListener('visibilitychange',()=>{if(!isGM()&&!embedded&&player)void player.use(document.hidden?null:liveSession).catch(error=>notice(error.message));});
 const control=document.querySelector('.canvas-integration-icon[aria-label^="Sound Show"]');
 if(control){
-  control.disabled=false;control.id='archives-soundshow-open';control.setAttribute('aria-label','SoundShow : diffuser les vidéos');control.parentElement.title='SoundShow : connexion et vidéos des joueurs';control.onclick=open;
+  control.disabled=false;control.id='archives-soundshow-open';control.setAttribute('aria-label','SoundShow : sons, vidéos et télécommande');control.parentElement.title='SoundShow : sons, vidéos et télécommande MJ';control.onclick=open;
   const refresh=()=>{control.parentElement.hidden=!isGM();};refresh();
   new MutationObserver(refresh).observe(document.body,{attributes:true,attributeFilter:['class']});
 }
