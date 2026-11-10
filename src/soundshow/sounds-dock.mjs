@@ -60,7 +60,7 @@ export function mountSoundDock({send,refresh,isGM}){
   video.title='Vidéos à diffuser chez les joueurs';video.setAttribute('aria-label','Vidéos SoundShow');
   video.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m10 8 6 4-6 4z"/></svg>';
   const dragButton=el('button','ss-drag-handle','⠿');dragButton.type='button';
-  dragButton.title='Déplacer la barre SoundShow';dragButton.setAttribute('aria-label','Déplacer la barre SoundShow');
+  dragButton.setAttribute('aria-label','Déplacer la barre SoundShow');
   dock.prepend(dragButton);dock.append(sound,video,fold);document.body.append(dock);
   const panel=el('aside');panel.id='soundshow-sounds-panel';panel.hidden=true;
   panel.setAttribute('aria-label','Grille des sons SoundShow');
@@ -110,10 +110,22 @@ export function mountSoundDock({send,refresh,isGM}){
     try{localStorage.setItem('archives-soundshow-width',String(panelWidth));}catch{}
     resetView();
   }
+  function positionDock(x,y){
+    dock.classList.add('ss-moved');dock.style.right='auto';
+    dock.style.left=clamp(x,2,Math.max(2,innerWidth-dock.offsetWidth-4))+'px';
+    dock.style.top=clamp(y,2,Math.max(2,innerHeight-dock.offsetHeight-4))+'px';
+  }
+  function saveDock(){
+    try{localStorage.setItem('archives-soundshow-dock-location',JSON.stringify({
+      x:parseFloat(dock.style.left),y:parseFloat(dock.style.top),
+      horizontal:dock.classList.contains('ss-horizontal')
+    }));}catch{}
+  }
   try{
     const saved=JSON.parse(localStorage.getItem('archives-soundshow-dock-location')||'null');
     if(saved&&Number.isFinite(saved.x)&&Number.isFinite(saved.y)){
-      dock.classList.add('ss-moved');dock.style.right='auto';dock.style.left=clamp(saved.x,2,innerWidth-50)+'px';dock.style.top=clamp(saved.y,2,innerHeight-50)+'px';
+      dock.classList.toggle('ss-horizontal',saved.horizontal===true);
+      positionDock(saved.x,saved.y);
     }
   }catch{}
   function draggable(handle,target,{dockHandle=false}={}){
@@ -124,9 +136,7 @@ export function mountSoundDock({send,refresh,isGM}){
       handle.setPointerCapture?.(event.pointerId);
       const move=ev=>{
         if(dockHandle){
-          dock.classList.add('ss-moved');dock.style.right='auto';
-          dock.style.left=clamp(rect.left+ev.clientX-fromX,2,innerWidth-42)+'px';
-          dock.style.top=clamp(rect.top+ev.clientY-fromY,2,innerHeight-42)+'px';
+          positionDock(rect.left+ev.clientX-fromX,rect.top+ev.clientY-fromY);
         }else{
           if(!floating)floatWindow(rect);
           panel.style.left=clamp(rect.left+ev.clientX-fromX,0,innerWidth-120)+'px';
@@ -137,8 +147,14 @@ export function mountSoundDock({send,refresh,isGM}){
         handle.removeEventListener('pointermove',move);
         handle.removeEventListener('pointerup',finish);
         handle.removeEventListener('pointercancel',finish);
-        if(dockHandle)try{localStorage.setItem('archives-soundshow-dock-location',
-          JSON.stringify({x:parseFloat(dock.style.left),y:parseFloat(dock.style.top)}));}catch{}
+        if(dockHandle){
+          const r=dock.getBoundingClientRect();
+          const cx=r.left+r.width/2,cy=r.top+r.height/2;
+          const horizontal=Math.min(cy,innerHeight-cy)<Math.min(cx,innerWidth-cx);
+          dock.classList.toggle('ss-horizontal',horizontal);
+          positionDock(cx-dock.offsetWidth/2,cy-dock.offsetHeight/2);
+          saveDock();
+        }
       };
       handle.addEventListener('pointermove',move);
       handle.addEventListener('pointerup',finish);handle.addEventListener('pointercancel',finish);
