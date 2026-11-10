@@ -219,7 +219,8 @@ export async function installArtworkTransfers() {
       return {scene:currentScene,preset:typeof command.sourceKey === 'string' && command.sourceKey.length <= 300 ? await store.preset(command.sourceKey) : null,presets};
     }
     if (command.action === 'focus') {
-      await refresh();const record = records.find(entry => entry.sourceKey === command.sourceKey);
+      await refresh();const record = records.find(entry =>
+        entry.sourceKey === command.sourceKey || (typeof command.assetId === 'string' && entry.id === command.assetId));
       if (!record) throw Error('Transfère d’abord cette cellule dans la scène Owlbear ouverte.');
       // Repair missing GM-only items before framing the map.
       if(!shared(record.id)?.visible)await queueRender();
