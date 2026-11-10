@@ -130,6 +130,17 @@ async function manager(view,context,back) {
     for (const record of result.records) {
       const row = document.createElement("div");row.className = "record";
       const label = document.createElement("span");label.textContent = record.title + " · " + (record.kind === "TOKEN" ? "token" : "document") + " · " + (record.revealed ? "révélé" : "caché");
+      const locate = document.createElement("button");locate.type = "button";
+      locate.textContent = record.revealed ? "Localiser" : "Localiser (MJ)";
+      locate.title = "Recentrer la carte Owlbear sur cet élément, même s’il est caché";
+      locate.onclick = async () => {
+        setBusy(true);ui("status").textContent = "Recherche du token dans la scène Owlbear…";
+        try {
+          await request({action:"focus",scene:context.scene,assetId:record.id});
+          if(dialog.open)ui("status").textContent="La carte Owlbear est recentrée sur « "+record.title+" ».";
+        } catch(error) {if(dialog.open)ui("status").textContent=error.message;}
+        finally {setBusy(false);}
+      };
       const toggle = document.createElement("button");toggle.type = "button";toggle.textContent = record.revealed ? "Cacher" : "Révéler";
       const remove = document.createElement("button");remove.type = "button";remove.textContent = "Retirer";
       const perform = async (action,reveal) => {
@@ -144,7 +155,7 @@ async function manager(view,context,back) {
       };
       toggle.onclick = () => { void perform("visibility",!record.revealed); };
       remove.onclick = () => { void perform("remove"); };
-      row.append(label,toggle,remove);ui("records").append(row);
+      row.append(label,locate,toggle,remove);ui("records").append(row);
     }
     ui("status").textContent = "Les fichiers non révélés restent réservés au MJ. Les révélations et retraits s’appliquent à la scène ouverte.";
   } catch (error) { ui("status").textContent = error.message; }
