@@ -9,7 +9,7 @@ function fail(text){message.hidden=false;message.textContent=text;}
 function openApp(value){
   const url=new URL("../../archives-app-v64-v55.html",import.meta.url);
   url.searchParams.set("resume","1");
-  url.searchParams.set("v","4310");
+  url.searchParams.set("v","4320");
   if(gm){url.searchParams.set("remote","1");url.hash=encodeURIComponent(value);}
   else{url.searchParams.set("ro","1");url.searchParams.set("room",value);}
   announcedRoom="";
