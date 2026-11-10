@@ -1,0 +1,19 @@
+name: Archives — glissement réel de la barre des actes
+on:
+  push:
+    paths:
+      - 'src/v66/workspace.mjs'
+      - 'tests/ui-v428.test.mjs'
+      - 'tests/regression-v426.test.mjs'
+      - '.github/workflows/test-toolbar-acts-v428.yml'
+  workflow_dispatch:
+jobs:
+  toolbar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: node --test tests/ui-v428.test.mjs tests/regression-v426.test.mjs
