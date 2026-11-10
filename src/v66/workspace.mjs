@@ -11,7 +11,7 @@ function moveBar(id,caption){
   // Le HUD n'accepte les interactions que dans .top-group.
   // Garder la poignée dans ce groupe évite le blocage par pointer-events:none.
   if(id==='canvas-integrations-dock')dock.append(handle);
-  else (dock.querySelector('.hud-row > .top-group:first-child')||dock).append(handle);
+  else (dock.querySelector('.hud-row > .top-group:first-child')||dock).prepend(handle);
   const key=storagePrefix+id;
   const apply=pos=>{
     if(!pos||!Number.isFinite(pos.x)||!Number.isFinite(pos.y))return;
