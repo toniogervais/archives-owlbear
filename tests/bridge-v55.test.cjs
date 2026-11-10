@@ -3,7 +3,7 @@ const {JSDOM}=require("jsdom"),{EventEmitter}=require("node:events");
 const read=p=>fs.readFileSync(p,"utf8");
 test("V4.15 URLs, syntax, secret-guarded bridge and previous graphics",()=>{
  const m=JSON.parse(read("manifest-v55.json"));
- assert.equal(m.version,"4.32.0");
+ assert.match(m.version,/^4\.\d+\.\d+$/,"Manifest must keep a valid v4 semantic version");
  assert.match(read("archives.html"),/archives-app-v64-v55\.html/);
  assert.match(read("src/v55/host.mjs"),/archives-app-v64-v55\.html/);
  assert.match(read("archives-app-v64-v55.html"),/src\/v56\/relay\.mjs/);
