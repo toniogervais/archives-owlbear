@@ -1,5 +1,5 @@
 import { isPacket, packet } from "../v56/link.mjs";
-import { prepareSource,renderSource,sourcePicture } from "./media.mjs?v=4210";
+import { prepareSource,renderSource,sourcePicture } from "./media.mjs?v=4300";
 import { installCropEditor } from "../v61/token-crop.mjs";
 
 const pending = new Map();
@@ -188,7 +188,7 @@ async function openSource(input,report = notify) {
             ui("preview").src = art.data;ui("preview").hidden = false;ui("crop-stage").hidden = true;ui("crop-tools").hidden = true;
           }
           renderError = null;ready = true;ui("preview-status").hidden = true;
-          ui("status").textContent = token ? "Ajuste librement l’image dans le token, puis choisis de le placer caché ou de le révéler." : "Seuls le rendu de l’aperçu et son nom seront transférés.";
+          ui("status").textContent = token ? "Aperçu interactif. Le token sera généré en haute définition (jusqu’à 2 048 px) depuis l’image source lors du transfert, sans agrandir cet aperçu." : "Seuls le rendu de l’aperçu et son nom seront transférés.";
           ui("submit").disabled = ui("share").disabled = working;
         } catch (error) {
           if (version !== latest || !dialog.open) return;
@@ -202,7 +202,7 @@ async function openSource(input,report = notify) {
     ui("list").onclick = () => { void manager(view,context,true); };
     async function transfer(reveal) {
       await rendering;if (!ready || renderError || working) return;
-      setBusy(true);ui("status").textContent = "Préparation du placement dans Owlbear…";
+      setBusy(true);ui("status").textContent = ui("kind").value === "TOKEN" ? "Génération du token haute définition puis transfert vers Owlbear…" : "Préparation du placement dans Owlbear…";
       try {
         const kind = ui("kind").value,title = ui("title").value.trim(),page = Number(ui("page").value);
         const framing = {identity:source.identity,crop:crop.getState(),page};
@@ -247,7 +247,7 @@ async function placeSource(input,reveal = false) {
   controls.forEach(control => { control.disabled = true; });
   let source;
   try {
-    gmState();notify('Préparation du token…');
+    gmState();notify('Génération du token haute définition…');
     const context = await request({action:'context',sourceKey:input.key});
     source = await prepareSource(input);
     const preset = context.preset?.identity === source.identity ? context.preset : null;
