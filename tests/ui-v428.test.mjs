@@ -6,9 +6,9 @@ const read=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('La barre des actes reste déplaçable sans titre ni double clic',()=>{
   const source=read('src/v66/workspace.mjs');
   assert.match(source,/\.hud-row > \.top-group:first-child/);
-  assert.match(source,/\.prepend\(handle\)/);
-  assert.match(source,/setPointerCapture/);
-  assert.doesNotMatch(source,/handle\.ondblclick|handle\.title\s*=/);
+  assert.match(source,/target\.prepend\(grip\)/);
+  assert.match(source,/window\.addEventListener\('pointermove',onMove,true\)/);
+  assert.doesNotMatch(source,/grip\.ondblclick|grip\.title\s*=/);
 });
 
 test('La barre SoundShow passe du vertical à l’horizontal et mémorise son orientation',()=>{
