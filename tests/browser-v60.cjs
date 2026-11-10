@@ -127,7 +127,7 @@ async function present(page,title,publicTitle){
   await transfer.locator('[data-kind]').selectOption('TOKEN');
   await transfer.getByRole('button',{name:'Placer et révéler',exact:true}).click();
   await transfer.waitFor({state:'detached'});
-  const item=(await gm.evaluate(()=>window.fixture.scene())).items[0];assert.equal(item.layer,'CHARACTER');assert.equal(item.image.width,512);
+  const item=(await gm.evaluate(()=>window.fixture.scene())).items[0];assert.equal(item.layer,'CHARACTER');assert.equal(item.image.width,2048);
 
   await app(gm).evaluate(()=>window.ArchivesFileLibrary.open());
   // Produce a real VP8 WebM in the browser, not a fake video placeholder.
