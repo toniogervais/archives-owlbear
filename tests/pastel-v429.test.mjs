@@ -2,19 +2,27 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const read=path=>fs.readFileSync(new URL('../'+path,import.meta.url),'utf8');
-test('La V4.29 ajoute une palette pastel à toutes les principales barres sans modifier leur structure',()=>{
- const css=read('src/v66/pastel-icons.css');
- const html=read('archives-app-v64-v55.html');
- assert.match(html,/background:linear-gradient\(150deg,[\s\S]*color-mix\(in srgb,var\(--arc-accent\) 88%,#fff\)/);
- const workspace=read('src/v66/workspace.mjs');
- assert.match(html,/<style id="archives-pastel-v4291">/);
- for(const selector of ['#quick-icon-dock','#top-hud','#tabs-bar','#canvas-integrations-dock','#soundshow-sounds-dock','#settings-fab','#create-fab','.cell-actions .mini-btn']){
-   assert.ok(css.includes(selector),'Sélecteur absent : '+selector);
- }
- for(const pastel of ['--arc-pastel-lavender','--arc-pastel-blue','--arc-pastel-mint','--arc-pastel-peach','--arc-pastel-pink']){
-   assert.ok(css.includes(pastel),'Couleur pastel absente : '+pastel);
- }
- assert.match(css,/prefers-reduced-motion/);
- assert.doesNotMatch(css,/pointer-events:\s*none/);
- assert.match(workspace,/window\.addEventListener\('pointermove',onMove,true\)/);
+
+test('V4.29.2 : uniquement bleu pastel et vert menthe, réservés aux icônes du canevas',()=>{
+  const html=read('archives-app-v64-v55.html');
+  const start=html.indexOf('<style id="archives-pastel-v4292">');
+  assert.ok(start>=0,'La feuille CSS limitée au canevas doit être présente.');
+  const css=html.slice(start,html.indexOf('</style>',start));
+  const workspace=read('src/v66/workspace.mjs');
+  for(const selector of [
+    '#quick-icon-dock .quick-icon-btn',
+    '#canvas-integrations-dock .canvas-integration-icon:not(:disabled)',
+    '#soundshow-sounds-dock > .ss-sound-trigger',
+    '#soundshow-sounds-dock > .ss-video-trigger',
+    '#settings-fab','#archives-home-fab','#create-fab'
+  ])assert.ok(css.includes(selector),'Icône du canevas absente : '+selector);
+  assert.match(css,/#b9d9f8/);
+  assert.match(css,/#bcebd9/);
+  assert.doesNotMatch(css,/--arc-pastel-(lavender|pink|peach|sand)/);
+  assert.doesNotMatch(css,/#top-hud\s+[^\n{]+\s*\{/);
+  assert.doesNotMatch(css,/\.cell-actions\s+\.mini-btn\s*\{/);
+  assert.doesNotMatch(css,/#soundshow-sounds-panel\s+\.ss-player-btn/);
+  assert.doesNotMatch(css,/pointer-events:\s*none/);
+  assert.match(workspace,/window\.addEventListener\('pointermove',onMove,true\)/);
+  assert.doesNotMatch(html,/<style id="archives-pastel-v4291">/);
 });
