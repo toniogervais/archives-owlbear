@@ -104,3 +104,11 @@ body.soundshow-sounds-open #soundshow-sounds-dock.ss-moved{right:auto!important}
 
 /* V4.27 : aucune fausse forme d'onde ; progression uniquement dans le curseur. */
 #soundshow-sounds-panel .ss-wave-area,#soundshow-sounds-panel .ss-wave-caption{display:none!important}
+
+/* V4.28 — Barre SoundShow libre : horizontale en haut/bas, verticale sur les côtés. */
+#soundshow-sounds-dock.ss-horizontal{flex-direction:row;align-items:center;gap:5px}
+#soundshow-sounds-dock.ss-horizontal .ss-drag-handle{min-width:24px;min-height:34px}
+#soundshow-sounds-dock.ss-horizontal .ss-collapse{min-width:24px;min-height:34px}
+#soundshow-sounds-dock.ss-horizontal.ss-is-collapsed .ss-sound-trigger,
+#soundshow-sounds-dock.ss-horizontal.ss-is-collapsed .ss-video-trigger{display:none}
+#soundshow-sounds-dock.ss-moved{right:auto!important}
