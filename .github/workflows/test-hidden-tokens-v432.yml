@@ -1,0 +1,21 @@
+name: Archives — tokens cachés visibles MJ
+on:
+  push:
+    paths:
+      - 'src/v58/transfers.mjs'
+      - 'src/v58/transfer-ui.mjs'
+      - 'tests/hidden-tokens-v432.test.mjs'
+      - '.github/workflows/test-hidden-tokens-v432.yml'
+  workflow_dispatch:
+jobs:
+  hidden-tokens:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: node --check src/v58/transfers.mjs
+      - run: node --check src/v58/transfer-ui.mjs
+      - run: node --test tests/hidden-tokens-v432.test.mjs tests/direct-tokens-v431.test.mjs tests/tokens-hd-v430.test.mjs
