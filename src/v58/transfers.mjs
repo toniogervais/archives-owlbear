@@ -3,6 +3,7 @@ import { localRoom } from "../v57/room.mjs?v=4210";
 import { validSession } from "../v56/link.mjs";
 import { artworkBlob,assetKey,blobDigest,privateArtworkStore,sceneKey,validArtwork } from "./model.mjs?v=4210";
 import { normalizeCrop } from "../v61/token-crop.mjs";
+import {safeHostedImage} from "./hosted-assets.mjs?v=4310";
 
 // Only the GM talks to this local channel. Unrevealed artwork never enters a
 // shared item, broadcast, room metadata, public bucket, or player snapshot.
@@ -134,13 +135,26 @@ export async function installArtworkTransfers() {
   const imageFields = image => ({url:image.url,mime:image.mime,width:image.width,height:image.height});
   const validTransfer = command => command && ['TOKEN','DOCUMENT'].includes(command.kind) &&
     typeof command.sourceKey === 'string' && !!command.sourceKey && command.sourceKey.length <= 300 &&
-    typeof command.title === 'string' && !!command.title.trim() && command.title.length <= 120 && validArtwork(command.art);
+    typeof command.title === 'string' && !!command.title.trim() && command.title.length <= 120 && validArtwork(command.art) &&
+    (!command.hosted || (safeHostedImage(command.hosted)&&command.hosted.mime===command.art.mime&&
+      command.hosted.width===command.art.width&&command.hosted.height===command.art.height));
   async function nativeImages(batch,progress) {
     const entries = [],missing = new Map();
     for (const command of batch) {
       const blob = artworkBlob(command.art),hash = await blobDigest(blob),cached = command.forceImport === true ? null : await store.asset(hash);
-      const entry = {command,hash,blob,name:'Archives · '+hash.slice(0,12),reused:safeImage(cached,command.art)};
-      if (entry.reused) entry.image = imageFields(cached);else missing.set(hash,entry);
+      const hosted = command.hosted && safeHostedImage(command.hosted) &&
+        command.hosted.mime === command.art.mime &&
+        command.hosted.width === command.art.width &&
+        command.hosted.height === command.art.height ? command.hosted : null;
+      const entry = {command,hash,blob,name:'Archives · '+hash.slice(0,12),
+        reused:!!hosted || safeImage(cached,command.art)};
+      if (hosted) {
+        entry.image=imageFields(hosted);
+        // Cache this direct address for the current GM session; never send hidden
+        // URLs through public scene metadata or a broadcast.
+        await store.putAsset(hash,entry.image);
+      } else if (entry.reused) entry.image = imageFields(cached);
+      else missing.set(hash,entry);
       entries.push(entry);
     }
     if (missing.size) {
@@ -170,6 +184,7 @@ export async function installArtworkTransfers() {
   async function place(command,{image,reused},currentScene,position) {
     await requireGM(currentScene);await refresh();
     const previous = records.find(entry => entry.sourceKey === command.sourceKey && entry.kind === command.kind);
+    const wasRevealed=previous ? Boolean(shared(previous.id)?.visible || previous.revealed) : false;
     const record = {...previous,id:previous?.id || command.art.id,version:command.art.version,scene:currentScene,
       sourceKey:command.sourceKey,title:command.title.trim(),kind:command.kind,image,grid:grid(command.kind,image),
       position:previous?.position || position || await centre(),scale:previous?.scale || {x:1,y:1},rotation:previous?.rotation || 0,locked:previous?.locked || false,revealed:false};
@@ -177,7 +192,7 @@ export async function installArtworkTransfers() {
     const framing = command.framing;
     if (framing && typeof framing.identity === 'string' && /^[a-f0-9]{64}$/.test(framing.identity))
       await store.putPreset(command.sourceKey,{identity:framing.identity,kind:command.kind,page:Number.isInteger(framing.page) && framing.page > 0 && framing.page <= 10000 ? framing.page : 1,crop:normalizeCrop(framing.crop)});
-    await visibility(record,command.reveal === true);
+    await visibility(record,command.reveal === true || (command.reveal !== false && wasRevealed));
     return {title:record.title,revealed:record.revealed,assetId:record.id,reused};
   }
   async function execute(command,progress = () => {}) {
