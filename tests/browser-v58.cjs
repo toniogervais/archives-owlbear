@@ -63,7 +63,7 @@ async function openCharacter(page){
   await managerRow(gm,'Personnage secret').getByRole('button',{name:'Révéler',exact:true}).waitFor();
   await waitLocal(gm,1);await waitShared(gm,0);
   const hidden=await gm.evaluate(()=>window.fixture.local()[0]);
-  assert.equal(hidden.layer,'CHARACTER');assert.equal(hidden.grid.dpi,512);assert.match(hidden.image.url,/^https:\/\/images\.owlbear\.test/);
+  assert.equal(hidden.layer,'POPOVER');assert.equal(hidden.grid.dpi,512);assert.match(hidden.image.url,/^https:\/\/images\.owlbear\.test/);
   assert.equal((await player.evaluate(()=>window.fixture.local())).length,0);
   let wire=await player.evaluate(()=>window.fixture.wire());
   assert.ok(!JSON.stringify(wire).includes('Personnage secret'),'hidden title never shared');
@@ -80,7 +80,7 @@ async function openCharacter(page){
   await managerRow(gm,'Personnage secret').getByRole('button',{name:'Révéler',exact:true}).click();
   await waitShared(gm,1);await waitLocal(gm,0);
   let item=(await gm.evaluate(()=>window.fixture.scene())).items[0];
-  assert.equal(item.id,hidden.id);assert.deepEqual(item.position,{x:123,y:456});assert.equal(item.image.url,hidden.image.url);assert.equal(item.visible,true);
+  assert.equal(item.layer,'CHARACTER');assert.equal(item.id,hidden.id);assert.deepEqual(item.position,{x:123,y:456});assert.equal(item.image.url,hidden.image.url);assert.equal(item.visible,true);
   assert.equal((await player.evaluate(()=>window.fixture.scene())).items[0].id,item.id);
   await closeDialog(gm);
   // A changed transfer stays private by default, updates the same item, and keeps placement.
