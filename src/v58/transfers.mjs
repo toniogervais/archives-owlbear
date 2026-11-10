@@ -42,7 +42,7 @@ export async function installArtworkTransfers() {
       .name(record.title + (hidden ? " [caché]" : ""))
       .plainText(record.title + (hidden ? " · caché" : "")).textItemType("LABEL")
       .layer(hidden ? "POPOVER" : (record.kind === "TOKEN" ? "CHARACTER" : "PROP"))
-      .position(record.position).visible(!hidden)
+      .position(record.position).visible(true)
       .metadata({[assetKey]:{id:record.id,version:record.version}}).build();
     Object.assign(item,pose(record));
     // Private tokens must be clearly visible to the GM. The local scene keeps
@@ -86,7 +86,7 @@ export async function installArtworkTransfers() {
         if(current.image?.url!==desired.image?.url ||
            current.image?.width!==desired.image?.width ||
            current.image?.height!==desired.image?.height ||
-           current.visible!==desired.visible ||
+           current.visible!==true ||
            current.name!==desired.name || current.layer!==desired.layer){
           const updated={...desired,...pose(current)};
           await OBR.scene.local.updateItems([record.id],draft=>{Object.assign(draft[0],updated);});
@@ -154,7 +154,7 @@ export async function installArtworkTransfers() {
     await refresh();
     if(!reveal){
       const check=await OBR.scene.local.getItems([record.id]);
-      if(!check.some(item=>item.id===record.id && item.visible===false)){
+      if(!check.some(item=>item.id===record.id && item.visible===true)){
         throw Error('Token conservé dans les Archives, mais non créé dans la couche privée Owlbear. Vérifie que le module de transfert est chargé.');
       }
     }
@@ -238,7 +238,7 @@ export async function installArtworkTransfers() {
       if(!shared(record.id)?.visible)await queueRender();
       if(!shared(record.id)?.visible) {
         const found=await OBR.scene.local.getItems([record.id]);
-        if(!found.some(item=>item.id===record.id && item.visible===false))
+        if(!found.some(item=>item.id===record.id && item.visible===true))
           throw Error('Le token privé est enregistré, mais Owlbear ne le dessine pas. Vérifie le chargement de l’extension.');
       }
       const bounds = await (shared(record.id)?.visible ? OBR.scene.items : OBR.scene.local).getItemBounds([record.id]);
