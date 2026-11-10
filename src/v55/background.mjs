@@ -1,5 +1,5 @@
 import OBR from "../../assets/owlbear-transfer-sdk-v55.mjs";
-import { archivesUrl, screenUrl } from "../v57/room.mjs?v=4261";
+import { archivesUrl, screenUrl } from "../v57/room.mjs?v=4390";
 import { trustedOwlbearSdk } from "../v56/link.mjs";
 const channel="fr.archives-imaginaire.bridge/screen-v55";
 const viewer="fr.archives-imaginaire.bridge/archives-viewer";
