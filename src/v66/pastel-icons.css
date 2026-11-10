@@ -14,7 +14,7 @@
 #top-hud .top-group > button,
 #top-hud #tabs-bar .tab-btn,
 #canvas-integrations-dock .canvas-integration-icon,
-#soundshow-sounds-dock > button,
+body #soundshow-sounds-dock > button,
 #settings-fab,#archives-home-fab,#create-fab,
 #pinned-bar button,
 .cell-actions .mini-btn{
@@ -30,25 +30,25 @@
 #quick-icon-dock .quick-icon-btn:nth-of-type(6n + 1),
 #top-hud #tabs-bar .tab-btn:nth-child(6n + 1),
 #canvas-integrations-dock .canvas-integration-item:nth-child(6n + 1) .canvas-integration-icon,
-#soundshow-sounds-dock > button:nth-child(4n + 1){
+body #soundshow-sounds-dock > button:nth-child(4n + 1){
   --arc-accent:var(--arc-pastel-blue);--arc-halo:rgba(175,215,255,.25)
 }
 #quick-icon-dock .quick-icon-btn:nth-of-type(6n + 2),
 #top-hud #tabs-bar .tab-btn:nth-child(6n + 2),
 #canvas-integrations-dock .canvas-integration-item:nth-child(6n + 2) .canvas-integration-icon,
-#soundshow-sounds-dock > button:nth-child(4n + 2){
+body #soundshow-sounds-dock > button:nth-child(4n + 2){
   --arc-accent:var(--arc-pastel-mint);--arc-halo:rgba(174,233,207,.23)
 }
 #quick-icon-dock .quick-icon-btn:nth-of-type(6n + 3),
 #top-hud #tabs-bar .tab-btn:nth-child(6n + 3),
 #canvas-integrations-dock .canvas-integration-item:nth-child(6n + 3) .canvas-integration-icon,
-#soundshow-sounds-dock > button:nth-child(4n + 3){
+body #soundshow-sounds-dock > button:nth-child(4n + 3){
   --arc-accent:var(--arc-pastel-peach);--arc-halo:rgba(255,206,180,.22)
 }
 #quick-icon-dock .quick-icon-btn:nth-of-type(6n + 4),
 #top-hud #tabs-bar .tab-btn:nth-child(6n + 4),
 #canvas-integrations-dock .canvas-integration-item:nth-child(6n + 4) .canvas-integration-icon,
-#soundshow-sounds-dock > button:nth-child(4n){
+body #soundshow-sounds-dock > button:nth-child(4n){
   --arc-accent:var(--arc-pastel-pink);--arc-halo:rgba(245,188,214,.23)
 }
 #quick-icon-dock .quick-icon-btn:nth-of-type(6n + 5),
@@ -81,7 +81,7 @@
 #top-hud .top-group > button:not(:disabled):hover,
 #top-hud #tabs-bar .tab-btn:not(:disabled):hover,
 #canvas-integrations-dock .canvas-integration-icon:not(:disabled):hover,
-#soundshow-sounds-dock > button:not(:disabled):hover,
+body #soundshow-sounds-dock > button:not(:disabled):hover,
 #settings-fab:hover,#archives-home-fab:hover,#create-fab:hover,
 #pinned-bar button:not(:disabled):hover,
 .cell-actions .mini-btn:not(:disabled):hover{
@@ -92,7 +92,7 @@
 }
 #quick-icon-dock .quick-icon-btn:not(:disabled):active,
 #top-hud #tabs-bar .tab-btn:not(:disabled):active,
-#soundshow-sounds-dock > button:not(:disabled):active{
+body #soundshow-sounds-dock > button:not(:disabled):active{
   box-shadow:inset 0 3px 8px rgba(0,0,0,.45),0 0 10px var(--arc-halo);
   filter:brightness(.98);
 }
@@ -118,18 +118,42 @@
 /* Les écrans tactiles ne déclenchent pas de halo collant. */
 @media(hover:none){
   #quick-icon-dock .quick-icon-btn:hover,
-  #soundshow-sounds-dock > button:hover,
+  body #soundshow-sounds-dock > button:hover,
   #top-hud #tabs-bar .tab-btn:hover{filter:none}
 }
 @media(prefers-reduced-motion:reduce){
   #quick-icon-dock .quick-icon-btn,
   #top-hud .top-group button,
   #canvas-integrations-dock .canvas-integration-icon,
-  #soundshow-sounds-dock > button{transition:none!important}
+  body #soundshow-sounds-dock > button{transition:none!important}
 }
 @media print{
   #quick-icon-dock .quick-icon-btn,
   #top-hud .top-group button,
   #canvas-integrations-dock .canvas-integration-icon,
-  #soundshow-sounds-dock > button{box-shadow:none!important;text-shadow:none!important}
+  body #soundshow-sounds-dock > button{box-shadow:none!important;text-shadow:none!important}
+}
+
+/* Les petites commandes du lecteur et du panneau SoundShow suivent la même palette. */
+#soundshow-sounds-panel .ss-player-btn,
+#soundshow-sounds-panel .ss-close,
+#soundshow-sounds-panel .ss-float-toggle,
+#soundshow-sounds-panel .ss-category{
+  --arc-accent:var(--arc-pastel-blue);
+  --arc-halo:rgba(175,215,255,.17);
+  color:var(--arc-accent);
+  border-color:color-mix(in srgb,var(--arc-accent) 40%,transparent);
+  background:linear-gradient(155deg,rgba(255,255,255,.12),#292232 55%,#17131f);
+  box-shadow:0 3px 10px rgba(0,0,0,.38),inset 0 1px rgba(255,255,255,.14),0 0 9px var(--arc-halo);
+}
+#soundshow-sounds-panel .ss-player-btn:nth-child(3n+2),
+#soundshow-sounds-panel .ss-category:nth-child(3n+2){--arc-accent:var(--arc-pastel-mint);--arc-halo:rgba(174,233,207,.17)}
+#soundshow-sounds-panel .ss-player-btn:nth-child(3n),
+#soundshow-sounds-panel .ss-category:nth-child(3n){--arc-accent:var(--arc-pastel-peach);--arc-halo:rgba(255,206,180,.17)}
+#soundshow-sounds-panel .ss-player-btn:not(:disabled):hover,
+#soundshow-sounds-panel .ss-close:hover,
+#soundshow-sounds-panel .ss-float-toggle:hover,
+#soundshow-sounds-panel .ss-category:not(:disabled):hover{
+  border-color:var(--arc-accent);
+  box-shadow:0 5px 13px rgba(0,0,0,.43),0 0 15px var(--arc-halo),inset 0 1px rgba(255,255,255,.21);
 }
