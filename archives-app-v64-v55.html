@@ -7066,224 +7066,64 @@ body.player-mode .player-cell-resize:hover{opacity:1}
 })();
 </script>
 
-<style id="archives-pastel-v4291">
-/* Les Archives de l'Imaginaire — V4.29 : icônes pastel en léger relief.
-   Habillage uniquement : ne modifie ni dimensions, ni événements, ni positions. */
-:root{
-  --arc-pastel-lavender:#cdbbff;
-  --arc-pastel-blue:#afd7ff;
-  --arc-pastel-mint:#aee9cf;
-  --arc-pastel-peach:#ffceb4;
-  --arc-pastel-pink:#f5bcd6;
-  --arc-pastel-sand:#f2d9a3;
-  --arc-pastel-shadow:0 5px 11px rgba(0,0,0,.38),inset 0 1px 1px rgba(255,255,255,.17),inset 0 -3px 4px rgba(0,0,0,.16);
-}
-/* Chaque icône dispose de ses propres accents, pour éviter une barre monochrome. */
+<style id="archives-pastel-v4292">
+/* V4.29.2 : deux couleurs pastel, seulement sur les icônes du canevas.
+   Exclusions volontaires : actes, commandes de cellules, fenêtres et panneaux. */
 #quick-icon-dock .quick-icon-btn,
-#top-hud .top-group > button,
-#top-hud #tabs-bar .tab-btn,
-#canvas-integrations-dock .canvas-integration-icon,
-body #soundshow-sounds-dock > button,
-#settings-fab,#archives-home-fab,#create-fab,
-#pinned-bar button,
-.cell-actions .mini-btn{
-  --arc-accent:var(--arc-pastel-lavender);
-  --arc-halo:rgba(205,187,255,.23);
-  color:var(--arc-accent);
-  background:linear-gradient(150deg,rgba(255,255,255,.14) 0%,rgba(62,51,76,.69) 43%,rgba(20,17,28,.92) 100%);
-  border-color:color-mix(in srgb,var(--arc-accent) 46%,transparent);
-  box-shadow:var(--arc-pastel-shadow),0 0 12px var(--arc-halo);
-  text-shadow:0 1px 8px var(--arc-halo);
-  transition:background .18s ease,border-color .18s ease,color .18s ease,box-shadow .18s ease,filter .18s ease,transform .18s ease;
-}
-#quick-icon-dock .quick-icon-btn:nth-of-type(6n + 1),
-#top-hud #tabs-bar .tab-btn:nth-child(6n + 1),
-#canvas-integrations-dock .canvas-integration-item:nth-child(6n + 1) .canvas-integration-icon,
-body #soundshow-sounds-dock > button:nth-child(4n + 1){
-  --arc-accent:var(--arc-pastel-blue);--arc-halo:rgba(175,215,255,.25)
-}
-#quick-icon-dock .quick-icon-btn:nth-of-type(6n + 2),
-#top-hud #tabs-bar .tab-btn:nth-child(6n + 2),
-#canvas-integrations-dock .canvas-integration-item:nth-child(6n + 2) .canvas-integration-icon,
-body #soundshow-sounds-dock > button:nth-child(4n + 2){
-  --arc-accent:var(--arc-pastel-mint);--arc-halo:rgba(174,233,207,.23)
-}
-#quick-icon-dock .quick-icon-btn:nth-of-type(6n + 3),
-#top-hud #tabs-bar .tab-btn:nth-child(6n + 3),
-#canvas-integrations-dock .canvas-integration-item:nth-child(6n + 3) .canvas-integration-icon,
-body #soundshow-sounds-dock > button:nth-child(4n + 3){
-  --arc-accent:var(--arc-pastel-peach);--arc-halo:rgba(255,206,180,.22)
-}
-#quick-icon-dock .quick-icon-btn:nth-of-type(6n + 4),
-#top-hud #tabs-bar .tab-btn:nth-child(6n + 4),
-#canvas-integrations-dock .canvas-integration-item:nth-child(6n + 4) .canvas-integration-icon,
-body #soundshow-sounds-dock > button:nth-child(4n){
-  --arc-accent:var(--arc-pastel-pink);--arc-halo:rgba(245,188,214,.23)
-}
-#quick-icon-dock .quick-icon-btn:nth-of-type(6n + 5),
-#top-hud #tabs-bar .tab-btn:nth-child(6n + 5){
-  --arc-accent:var(--arc-pastel-sand);--arc-halo:rgba(242,217,163,.22)
-}
-#quick-icon-dock .quick-icon-btn:nth-of-type(6n),
-#top-hud #tabs-bar .tab-btn:nth-child(6n){
-  --arc-accent:var(--arc-pastel-lavender);--arc-halo:rgba(205,187,255,.24)
-}
-/* Conserver les codes de couleurs intentionnels des icônes rapides. */
-#quick-icon-dock .quick-icon-btn[data-tone="green"]{--arc-accent:var(--arc-pastel-mint);--arc-halo:rgba(174,233,207,.25)}
-#quick-icon-dock .quick-icon-btn[data-tone="blue"]{--arc-accent:var(--arc-pastel-blue);--arc-halo:rgba(175,215,255,.25)}
-#quick-icon-dock .quick-icon-btn[data-tone="violet"]{--arc-accent:var(--arc-pastel-lavender);--arc-halo:rgba(205,187,255,.25)}
-#quick-icon-dock .quick-icon-btn[data-tone="red"]{--arc-accent:var(--arc-pastel-pink);--arc-halo:rgba(245,188,214,.24)}
-#quick-icon-dock .quick-icon-btn[data-tone="gold"]{--arc-accent:var(--arc-pastel-sand);--arc-halo:rgba(242,217,163,.25)}
-/* Barre des actes : boutons du catalogue et de sauvegarde, puis chaque acte. */
-#top-hud #clear-act-button{--arc-accent:var(--arc-pastel-pink);--arc-halo:rgba(245,188,214,.23)}
-#top-hud #canvas-save-icon{--arc-accent:var(--arc-pastel-mint);--arc-halo:rgba(174,233,207,.24)}
-#top-hud #cell-catalog-icon{--arc-accent:var(--arc-pastel-blue);--arc-halo:rgba(175,215,255,.24)}
-#top-hud #tabs-bar .tab-btn.active,
-#top-hud #tabs-bar .tab-btn[aria-selected="true"]{
-  color:#1c1726;
-  background:linear-gradient(150deg,#fff9ec,var(--arc-accent) 55%,color-mix(in srgb,var(--arc-accent) 65%,#60516a));
-  border-color:var(--arc-accent);
-  box-shadow:0 3px 12px rgba(0,0,0,.42),0 0 17px var(--arc-halo),inset 0 1px 1px rgba(255,255,255,.7);
-}
-/* Léger rebond lumineux au survol, sans déplacer les commandes elles-mêmes. */
-#quick-icon-dock .quick-icon-btn:not(:disabled):hover,
-#top-hud .top-group > button:not(:disabled):hover,
-#top-hud #tabs-bar .tab-btn:not(:disabled):hover,
-#canvas-integrations-dock .canvas-integration-icon:not(:disabled):hover,
-body #soundshow-sounds-dock > button:not(:disabled):hover,
-#settings-fab:hover,#archives-home-fab:hover,#create-fab:hover,
-#pinned-bar button:not(:disabled):hover,
-.cell-actions .mini-btn:not(:disabled):hover{
-  border-color:var(--arc-accent);
-  background:linear-gradient(145deg,color-mix(in srgb,var(--arc-accent) 24%,#3b3447),rgba(31,25,40,.97));
-  box-shadow:0 7px 16px rgba(0,0,0,.48),inset 0 1px 1px rgba(255,255,255,.28),0 0 19px var(--arc-halo),0 0 5px var(--arc-halo);
-  filter:brightness(1.1);
-}
-#quick-icon-dock .quick-icon-btn:not(:disabled):active,
-#top-hud #tabs-bar .tab-btn:not(:disabled):active,
-body #soundshow-sounds-dock > button:not(:disabled):active{
-  box-shadow:inset 0 3px 8px rgba(0,0,0,.45),0 0 10px var(--arc-halo);
-  filter:brightness(.98);
-}
-/* Panneaux et barres : profondeur ambiante, sans toucher à la taille ni à l'ancrage. */
-#quick-icon-dock,#canvas-integrations-dock,#soundshow-sounds-dock,
-#top-hud .hud-row > .top-group:first-child{
-  box-shadow:0 10px 25px rgba(0,0,0,.46),0 0 19px rgba(202,186,249,.10),inset 0 1px 0 rgba(255,255,255,.085);
-  border-color:rgba(216,197,249,.28);
-}
-#quick-dock-handle,#canvas-integrations-dock > .archives-dock-move,
-#top-hud .archives-dock-move,#soundshow-sounds-dock > .ss-drag-handle{
-  --arc-accent:var(--arc-pastel-sand);--arc-halo:rgba(242,217,163,.22);
-  color:var(--arc-accent);
-  background:linear-gradient(160deg,rgba(245,225,191,.19),rgba(33,26,44,.88));
-  border-color:rgba(242,217,163,.43);
-  box-shadow:0 3px 9px rgba(0,0,0,.4),inset 0 1px 1px rgba(255,255,255,.13),0 0 9px var(--arc-halo);
-}
-/* Ne jamais donner un effet actif à une intégration désactivée. */
-#canvas-integrations-dock .canvas-integration-icon:disabled{
-  opacity:.45;filter:saturate(.45);
-  box-shadow:0 2px 5px rgba(0,0,0,.27);cursor:not-allowed;
-}
-/* Les écrans tactiles ne déclenchent pas de halo collant. */
-@media(hover:none){
-  #quick-icon-dock .quick-icon-btn:hover,
-  body #soundshow-sounds-dock > button:hover,
-  #top-hud #tabs-bar .tab-btn:hover{filter:none}
-}
-@media(prefers-reduced-motion:reduce){
-  #quick-icon-dock .quick-icon-btn,
-  #top-hud .top-group button,
-  #canvas-integrations-dock .canvas-integration-icon,
-  body #soundshow-sounds-dock > button{transition:none!important}
-}
-@media print{
-  #quick-icon-dock .quick-icon-btn,
-  #top-hud .top-group button,
-  #canvas-integrations-dock .canvas-integration-icon,
-  body #soundshow-sounds-dock > button{box-shadow:none!important;text-shadow:none!important}
-}
-
-/* Les petites commandes du lecteur et du panneau SoundShow suivent la même palette. */
-#soundshow-sounds-panel .ss-player-btn,
-#soundshow-sounds-panel .ss-close,
-#soundshow-sounds-panel .ss-float-toggle,
-#soundshow-sounds-panel .ss-category{
-  --arc-accent:var(--arc-pastel-blue);
-  --arc-halo:rgba(175,215,255,.17);
-  color:var(--arc-accent);
-  border-color:color-mix(in srgb,var(--arc-accent) 40%,transparent);
-  background:linear-gradient(155deg,rgba(255,255,255,.12),#292232 55%,#17131f);
-  box-shadow:0 3px 10px rgba(0,0,0,.38),inset 0 1px rgba(255,255,255,.14),0 0 9px var(--arc-halo);
-}
-#soundshow-sounds-panel .ss-player-btn:nth-child(3n+2),
-#soundshow-sounds-panel .ss-category:nth-child(3n+2){--arc-accent:var(--arc-pastel-mint);--arc-halo:rgba(174,233,207,.17)}
-#soundshow-sounds-panel .ss-player-btn:nth-child(3n),
-#soundshow-sounds-panel .ss-category:nth-child(3n){--arc-accent:var(--arc-pastel-peach);--arc-halo:rgba(255,206,180,.17)}
-#soundshow-sounds-panel .ss-player-btn:not(:disabled):hover,
-#soundshow-sounds-panel .ss-close:hover,
-#soundshow-sounds-panel .ss-float-toggle:hover,
-#soundshow-sounds-panel .ss-category:not(:disabled):hover{
-  border-color:var(--arc-accent);
-  box-shadow:0 5px 13px rgba(0,0,0,.43),0 0 15px var(--arc-halo),inset 0 1px rgba(255,255,255,.21);
-}
-
-/* V4.29.1 — Palette visiblement pastel, même sans survol.
-   Les boutons restent interactifs et leurs tailles/positions sont inchangées. */
-#quick-icon-dock .quick-icon-btn,
-#top-hud .top-group > button:not(.archives-dock-move),
-#top-hud #tabs-bar .tab-btn,
 #canvas-integrations-dock .canvas-integration-icon:not(:disabled),
-body #soundshow-sounds-dock > button:not(.ss-drag-handle),
-#settings-fab,#archives-home-fab,#create-fab,
-#pinned-bar button,
-.cell-actions .mini-btn{
-  background:linear-gradient(150deg,
-    color-mix(in srgb,var(--arc-accent) 88%,#fff) 0%,
-    color-mix(in srgb,var(--arc-accent) 78%,#9c8bac) 57%,
-    color-mix(in srgb,var(--arc-accent) 69%,#66576c) 100%)!important;
-  color:#272234!important;
-  border:1px solid color-mix(in srgb,var(--arc-accent) 65%,#fff)!important;
-  box-shadow:0 6px 13px rgba(0,0,0,.49),0 0 15px var(--arc-halo),
-    inset 0 2px 2px rgba(255,255,255,.64),inset 0 -3px 5px rgba(52,36,73,.20)!important;
+#soundshow-sounds-dock > .ss-sound-trigger,
+#soundshow-sounds-dock > .ss-video-trigger,
+#settings-fab,
+#archives-home-fab,
+#create-fab {
+  --arc-accent:#b9d9f8; /* bleu pastel */
+  --arc-glow:rgba(185,217,248,.28);
+  color:#27243b!important;
+  background:linear-gradient(145deg,#e5f0ff 0%,var(--arc-accent) 55%,#789bc9 100%)!important;
+  border-color:#d5e8ff!important;
+  box-shadow:0 6px 14px rgba(0,0,0,.44),0 0 14px var(--arc-glow),
+    inset 0 2px 2px rgba(255,255,255,.68),inset 0 -3px 5px rgba(33,42,66,.20)!important;
   text-shadow:none!important;
+  transition:filter .16s ease,box-shadow .16s ease,transform .16s ease;
 }
-#quick-icon-dock .quick-icon-btn svg,
-#top-hud .top-group > button:not(.archives-dock-move) svg,
-#canvas-integrations-dock .canvas-integration-icon:not(:disabled) svg,
-body #soundshow-sounds-dock > button:not(.ss-drag-handle) svg{
-  stroke:currentColor;
+#quick-icon-dock .quick-icon-btn:nth-of-type(even),
+#quick-icon-dock .quick-icon-btn[data-tone="green"],
+#quick-icon-dock .quick-icon-btn[data-tone="violet"],
+#canvas-integrations-dock .canvas-integration-item:nth-child(even) .canvas-integration-icon:not(:disabled),
+#soundshow-sounds-dock > .ss-video-trigger,
+#archives-home-fab {
+  --arc-accent:#bcebd9; /* vert menthe pastel */
+  --arc-glow:rgba(188,235,217,.28);
+  background:linear-gradient(145deg,#e9fff5 0%,var(--arc-accent) 55%,#83b9a5 100%)!important;
+  border-color:#d7fff0!important;
 }
 #quick-icon-dock .quick-icon-btn:not(:disabled):hover,
-#top-hud .top-group > button:not(:disabled):not(.archives-dock-move):hover,
-#top-hud #tabs-bar .tab-btn:not(:disabled):hover,
 #canvas-integrations-dock .canvas-integration-icon:not(:disabled):hover,
-body #soundshow-sounds-dock > button:not(:disabled):not(.ss-drag-handle):hover,
-#settings-fab:hover,#archives-home-fab:hover,#create-fab:hover{
-  filter:brightness(1.09) saturate(1.05)!important;
-  box-shadow:0 9px 18px rgba(0,0,0,.46),0 0 24px var(--arc-halo),
-    inset 0 2px 3px rgba(255,255,255,.78),inset 0 -3px 4px rgba(51,31,70,.22)!important;
+#soundshow-sounds-dock > .ss-sound-trigger:not(:disabled):hover,
+#soundshow-sounds-dock > .ss-video-trigger:not(:disabled):hover,
+#settings-fab:hover,#archives-home-fab:hover,#create-fab:hover {
+  filter:brightness(1.08)!important;
+  box-shadow:0 9px 18px rgba(0,0,0,.48),0 0 24px var(--arc-glow),
+    inset 0 2px 3px rgba(255,255,255,.78)!important;
 }
-/* La couleur d'un acte sélectionné doit rester évidente. */
-#top-hud #tabs-bar .tab-btn.active{
-  outline:2px solid color-mix(in srgb,var(--arc-accent) 62%,white);
-  outline-offset:1px;
+#quick-icon-dock .quick-icon-btn:active,
+#soundshow-sounds-dock > .ss-sound-trigger:active,
+#soundshow-sounds-dock > .ss-video-trigger:active {
+  box-shadow:inset 0 3px 6px rgba(0,0,0,.27),0 0 10px var(--arc-glow)!important;
 }
-#canvas-integrations-dock .canvas-integration-icon:disabled{
-  background:linear-gradient(150deg,#332d3d,#191622)!important;
-  color:#978ca5!important;border-color:#5f536e!important;
-  box-shadow:0 2px 7px rgba(0,0,0,.25)!important;
+/* Les icônes inactives conservent leur style normal ; pas d'effet trompeur. */
+#canvas-integrations-dock .canvas-integration-icon:disabled {filter:none}
+/* Les boutons dans les cellules, les onglets d'acte et leurs poignées ne sont pas ciblés. */
+@media(prefers-reduced-motion:reduce) {
+  #quick-icon-dock .quick-icon-btn,
+  #canvas-integrations-dock .canvas-integration-icon,
+  #soundshow-sounds-dock > button {transition:none!important}
 }
-/* Un dégradé pastel s'applique également aux touches du lecteur SoundShow. */
-#soundshow-sounds-panel .ss-player-btn:not(:disabled),
-#soundshow-sounds-panel .ss-close,
-#soundshow-sounds-panel .ss-float-toggle,
-#soundshow-sounds-panel .ss-category:not(:disabled){
-  background:linear-gradient(150deg,color-mix(in srgb,var(--arc-accent) 91%,white),
-    color-mix(in srgb,var(--arc-accent) 70%,#82758e))!important;
-  color:#292237!important;
-  border-color:color-mix(in srgb,var(--arc-accent) 64%,#fff)!important;
+@media print {
+  #quick-icon-dock .quick-icon-btn,
+  #canvas-integrations-dock .canvas-integration-icon,
+  #soundshow-sounds-dock > button {box-shadow:none!important}
 }
-
 </style>
 <script type="module" src="./src/v65/cell-picture.mjs?v=4210"></script>
 <script type="module" src="./src/v65/storage.mjs?v=4210"></script>
