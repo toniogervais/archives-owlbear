@@ -31,7 +31,7 @@ async function notes(page){await page.bringToFront();await editor(page).getByRol
   assert.equal(await editor(gm).locator('#archives-owl-transfer').count(),0,'direct action skips the preview and its extra submit');
   const hidden=await gm.evaluate(()=>window.fixture.local()[0]);
   assert.equal((await gm.evaluate(()=>window.fixture.scene())).items.length,0);
-  assert.equal(hidden.layer,'CHARACTER');assert.equal(hidden.image.width,512);
+  assert.equal(hidden.layer,'POPOVER');assert.equal(hidden.image.width,2048);
   await editor(gm).locator('#archives-owl-direct-reveal:not([disabled])').click();
   await gm.waitForFunction(()=>window.fixture.local().length===0);
   await gm.waitForFunction(async()=> (await window.fixture.scene()).items.length===1);
