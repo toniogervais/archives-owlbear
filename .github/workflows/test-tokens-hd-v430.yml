@@ -1,0 +1,23 @@
+name: Archives — tokens haute définition
+on:
+  push:
+    paths:
+      - 'src/v61/token-crop.mjs'
+      - 'src/v58/media.mjs'
+      - 'src/v58/transfer-ui.mjs'
+      - 'tests/tokens-hd-v430.test.mjs'
+      - '.github/workflows/test-tokens-hd-v430.yml'
+  workflow_dispatch:
+jobs:
+  hd-tokens:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: node --check src/v61/token-crop.mjs
+      - run: node --check src/v58/media.mjs
+      - run: node --check src/v58/transfer-ui.mjs
+      - run: node --test tests/tokens-hd-v430.test.mjs tests/crop-v61.test.mjs
