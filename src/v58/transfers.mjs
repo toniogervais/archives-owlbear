@@ -295,7 +295,7 @@ export async function installArtworkTransfers() {
     try{
       const opener=window.top.opener;
       if(!opener||opener.closed||opener.location.origin!==location.origin||
-        !/\\/archives-app-v64-v55\\.html$/.test(opener.location.pathname))return;
+        !opener.location.pathname.endsWith('/archives-app-v64-v55.html'))return;
       primaryTab=opener;
       opener.postMessage(packet('artwork-main-ready',{roomId:OBR.room.id}),location.origin);
     }catch{}
