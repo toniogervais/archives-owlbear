@@ -31,3 +31,30 @@ test('Le catalogue affiche une description déroulante accessible et un retour d
   assert.match(html,/back\.onclick=function\(\)\{leave\(true\)\}/);
   assert.doesNotMatch(html,/class="quick-dock-handle" title=/);
 });
+
+test('Le glissement de la poignée des actes déplace réellement le groupe de boutons',async()=>{
+  const {JSDOM}=await import('jsdom');
+  const dom=new JSDOM('<!doctype html><html><head></head><body><div id="canvas-integrations-dock"></div><div id="top-hud"><div class="hud-row"><div class="top-group"><div id="tabs-bar">Acte 1</div></div></div></div></body></html>',{
+    url:'https://archives.test/',runScripts:'outside-only'
+  });
+  const {window}=dom;
+  window.DuneApp={getState:()=>({playerMode:false,strictReadOnly:false})};
+  const script=read('src/v66/workspace.mjs').replace(/^import\s+\{isGM\}\s+from\s+['"][^'"]+['"];?/m,'const isGM=()=>true;');
+  window.eval(script);
+  const handle=window.document.querySelector('#top-hud .archives-dock-move');
+  const acts=window.document.querySelector('#top-hud .top-group');
+  assert.ok(handle,'La poignée doit être dans la zone visible des actes.');
+  function pointer(type,x,y){
+    const event=new window.MouseEvent(type,{bubbles:true,cancelable:true,button:0,clientX:x,clientY:y});
+    Object.defineProperty(event,'pointerId',{value:17});
+    (type==='pointerdown'?handle:window).dispatchEvent(event);
+  }
+  pointer('pointerdown',40,15);
+  pointer('pointermove',200,85);
+  pointer('pointerup',200,85);
+  assert.equal(acts.style.position,'fixed');
+  assert.ok(parseFloat(acts.style.left)>0,'La position horizontale doit changer.');
+  assert.ok(parseFloat(acts.style.top)>0,'La position verticale doit changer.');
+  assert.ok(window.localStorage.getItem('archives:dock-location:v426:top-hud'),'La position doit être mémorisée.');
+  dom.window.close();
+});
