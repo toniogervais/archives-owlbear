@@ -253,7 +253,8 @@ export async function installArtworkTransfers() {
       const localIds=new Set(actual.map(item=>item.id));
       return {scene:currentScene,records:records.map(record => ({id:record.id,title:record.title,
         kind:record.kind,revealed:Boolean(shared(record.id)?.visible),
-        visibleToGM:Boolean(shared(record.id)?.visible||localIds.has(record.id))}))};
+        visibleToGM:Boolean(shared(record.id)?.visible||localIds.has(record.id)),
+        privateLayer:actual.find(item=>item.id===record.id)?.layer || null}))};
     }
     if (["visibility","remove"].includes(command.action)) {
       const record = await store.get(command.assetId);
