@@ -157,3 +157,60 @@ body #soundshow-sounds-dock > button:not(:disabled):active{
   border-color:var(--arc-accent);
   box-shadow:0 5px 13px rgba(0,0,0,.43),0 0 15px var(--arc-halo),inset 0 1px rgba(255,255,255,.21);
 }
+
+/* V4.29.1 — Palette visiblement pastel, même sans survol.
+   Les boutons restent interactifs et leurs tailles/positions sont inchangées. */
+#quick-icon-dock .quick-icon-btn,
+#top-hud .top-group > button:not(.archives-dock-move),
+#top-hud #tabs-bar .tab-btn,
+#canvas-integrations-dock .canvas-integration-icon:not(:disabled),
+body #soundshow-sounds-dock > button:not(.ss-drag-handle),
+#settings-fab,#archives-home-fab,#create-fab,
+#pinned-bar button,
+.cell-actions .mini-btn{
+  background:linear-gradient(150deg,
+    color-mix(in srgb,var(--arc-accent) 88%,#fff) 0%,
+    color-mix(in srgb,var(--arc-accent) 78%,#9c8bac) 57%,
+    color-mix(in srgb,var(--arc-accent) 69%,#66576c) 100%)!important;
+  color:#272234!important;
+  border:1px solid color-mix(in srgb,var(--arc-accent) 65%,#fff)!important;
+  box-shadow:0 6px 13px rgba(0,0,0,.49),0 0 15px var(--arc-halo),
+    inset 0 2px 2px rgba(255,255,255,.64),inset 0 -3px 5px rgba(52,36,73,.20)!important;
+  text-shadow:none!important;
+}
+#quick-icon-dock .quick-icon-btn svg,
+#top-hud .top-group > button:not(.archives-dock-move) svg,
+#canvas-integrations-dock .canvas-integration-icon:not(:disabled) svg,
+body #soundshow-sounds-dock > button:not(.ss-drag-handle) svg{
+  stroke:currentColor;
+}
+#quick-icon-dock .quick-icon-btn:not(:disabled):hover,
+#top-hud .top-group > button:not(:disabled):not(.archives-dock-move):hover,
+#top-hud #tabs-bar .tab-btn:not(:disabled):hover,
+#canvas-integrations-dock .canvas-integration-icon:not(:disabled):hover,
+body #soundshow-sounds-dock > button:not(:disabled):not(.ss-drag-handle):hover,
+#settings-fab:hover,#archives-home-fab:hover,#create-fab:hover{
+  filter:brightness(1.09) saturate(1.05)!important;
+  box-shadow:0 9px 18px rgba(0,0,0,.46),0 0 24px var(--arc-halo),
+    inset 0 2px 3px rgba(255,255,255,.78),inset 0 -3px 4px rgba(51,31,70,.22)!important;
+}
+/* La couleur d'un acte sélectionné doit rester évidente. */
+#top-hud #tabs-bar .tab-btn.active{
+  outline:2px solid color-mix(in srgb,var(--arc-accent) 62%,white);
+  outline-offset:1px;
+}
+#canvas-integrations-dock .canvas-integration-icon:disabled{
+  background:linear-gradient(150deg,#332d3d,#191622)!important;
+  color:#978ca5!important;border-color:#5f536e!important;
+  box-shadow:0 2px 7px rgba(0,0,0,.25)!important;
+}
+/* Un dégradé pastel s'applique également aux touches du lecteur SoundShow. */
+#soundshow-sounds-panel .ss-player-btn:not(:disabled),
+#soundshow-sounds-panel .ss-close,
+#soundshow-sounds-panel .ss-float-toggle,
+#soundshow-sounds-panel .ss-category:not(:disabled){
+  background:linear-gradient(150deg,color-mix(in srgb,var(--arc-accent) 91%,white),
+    color-mix(in srgb,var(--arc-accent) 70%,#82758e))!important;
+  color:#292237!important;
+  border-color:color-mix(in srgb,var(--arc-accent) 64%,#fff)!important;
+}
