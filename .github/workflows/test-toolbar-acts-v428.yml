@@ -4,6 +4,8 @@ on:
     paths:
       - 'src/v66/workspace.mjs'
       - 'tests/ui-v428.test.mjs'
+      - 'tests/pastel-v429.test.mjs'
+      - 'src/v66/pastel-icons.css'
       - 'tests/regression-v426.test.mjs'
       - '.github/workflows/test-toolbar-acts-v428.yml'
   workflow_dispatch:
@@ -16,4 +18,4 @@ jobs:
         with:
           node-version: '22'
       - run: npm ci
-      - run: node --test tests/ui-v428.test.mjs tests/regression-v426.test.mjs
+      - run: node --test tests/ui-v428.test.mjs tests/regression-v426.test.mjs tests/pastel-v429.test.mjs
