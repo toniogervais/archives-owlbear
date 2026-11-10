@@ -41,13 +41,13 @@ export async function installArtworkTransfers() {
     const item = buildImage(record.image,record.grid).id(record.id)
       .name(record.title + (hidden ? " [caché]" : ""))
       .plainText(record.title + (hidden ? " · caché" : "")).textItemType("LABEL")
-      .layer(record.kind === "TOKEN" ? "CHARACTER" : "PROP")
+      .layer(hidden ? "POPOVER" : (record.kind === "TOKEN" ? "CHARACTER" : "PROP"))
       .position(record.position).visible(true)
       .metadata({[assetKey]:{id:record.id,version:record.version}}).build();
     Object.assign(item,pose(record));
     // Private tokens must be clearly visible to the GM. The local scene keeps
     // them entirely absent from the shared scene, regardless of opacity.
-    if (hidden) item.opacity = 1;
+    if (hidden) { item.opacity = 1; item.zIndex = 2147483000; }
     return item;
   }
   async function removeLocal(id) {
@@ -83,7 +83,7 @@ export async function installArtworkTransfers() {
            current.image?.width!==desired.image?.width ||
            current.image?.height!==desired.image?.height ||
            current.visible!==true || current.opacity!==1 ||
-           current.name!==desired.name){
+           current.name!==desired.name || current.layer!==desired.layer){
           const updated={...desired,...pose(current)};
           await OBR.scene.local.updateItems([record.id],draft=>{Object.assign(draft[0],updated);});
           locals.set(record.id,updated);
@@ -224,6 +224,11 @@ export async function installArtworkTransfers() {
       if (!record) throw Error('Transfère d’abord cette cellule dans la scène Owlbear ouverte.');
       // Repair missing GM-only items before framing the map.
       if(!shared(record.id)?.visible)await queueRender();
+      if(!shared(record.id)?.visible) {
+        const found=await OBR.scene.local.getItems([record.id]);
+        if(!found.some(item=>item.id===record.id && item.visible))
+          throw Error('Le token privé est enregistré, mais Owlbear ne le dessine pas. Vérifie le chargement de l’extension.');
+      }
       const bounds = await (shared(record.id)?.visible ? OBR.scene.items : OBR.scene.local).getItemBounds([record.id]);
       await requireGM(currentScene);await OBR.viewport.animateToBounds(bounds);return {focused:true};
     }
