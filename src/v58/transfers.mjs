@@ -1,5 +1,6 @@
 import OBR, { buildImage, buildImageUpload } from "../../assets/owlbear-transfer-sdk-v55.mjs";
 import { localRoom } from "../v57/room.mjs?v=4210";
+import {isPacket,packet,validRoomId,validSession} from "../v56/link.mjs?v=4210";
 import { validSession } from "../v56/link.mjs";
 import { artworkBlob,assetKey,blobDigest,privateArtworkStore,sceneKey,validArtwork } from "./model.mjs?v=4210";
 import { normalizeCrop } from "../v61/token-crop.mjs";
@@ -288,6 +289,46 @@ export async function installArtworkTransfers() {
     channel.close();
     void commands.finally(() => store?.close());
   },{once:true});
+  // When Owlbear was opened from the primary Archives tab, use the existing
+  // same-origin opener relationship: no additional Owlbear editor/picker.
+  let primaryTab=null;
+  function announceMain() {
+    if(closed||role!=='GM'||!validRoomId(OBR.room.id))return;
+    try{
+      const opener=window.top.opener;
+      if(!opener||opener.closed||opener.location.origin!==location.origin||
+        !/\\/archives-app-v64-v55\\.html$/.test(opener.location.pathname))return;
+      primaryTab=opener;
+      opener.postMessage(packet('artwork-main-ready',{roomId:OBR.room.id}),location.origin);
+    }catch{}
+  }
+  function onMainCommand(event){
+    const data=event.data;
+    if(closed||role!=='GM'||event.origin!==location.origin||event.source!==primaryTab||
+      !isPacket(data)||data.roomId!==OBR.room.id)return;
+    if(data.type==='artwork-main-ack')return;
+    if(data.type!=='artwork-main-command'||!validSession(data.id))return;
+    commands=commands.then(async()=>{
+      try{
+        await requireGM();
+        const result=await execute(data.command||{},message=>{
+          primaryTab?.postMessage(packet('artwork-main-progress',
+            {roomId:OBR.room.id,id:data.id,message}),location.origin);
+        });
+        primaryTab?.postMessage(packet('artwork-main-result',
+          {roomId:OBR.room.id,id:data.id,safe:true,result}),location.origin);
+      }catch(error){
+        primaryTab?.postMessage(packet('artwork-main-result',
+          {roomId:OBR.room.id,id:data.id,safe:false,message:error?.message||'Transfert impossible.'}),location.origin);
+      }
+    }).catch(console.warn);
+  }
+  window.addEventListener('message',onMainCommand);
+  const announceTimer=setInterval(announceMain,12000);
+  window.addEventListener('pagehide',()=>{
+    clearInterval(announceTimer);window.removeEventListener('message',onMainCommand);
+  },{once:true});
   await queuePurge();
   await refresh();
+  announceMain();
 }
