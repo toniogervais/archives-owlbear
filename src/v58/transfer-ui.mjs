@@ -1,6 +1,7 @@
 import { isPacket, packet } from "../v56/link.mjs";
 import { prepareSource,renderSource,sourcePicture } from "./media.mjs?v=4300";
 import { installCropEditor } from "../v61/token-crop.mjs";
+import {ensureHostedArtwork} from "./hosted-assets.mjs?v=4310";
 
 const pending = new Map();
 const $ = id => document.getElementById(id);
@@ -98,6 +99,17 @@ function buildDialog() {
   ui("close").onclick = () => { if (!busy) dialog.close(); };
   dialog.addEventListener("close",() => { dispose();if (!window.ArchivesAppearance?.retire(dialog)) dialog.remove();if (activeDialog === dialog) activeDialog = null; },{once:true});
   return {dialog,ui,setBusy,setDispose:fn => { dispose = fn; },setBusyHook:fn => { busyHook = fn; }};
+}
+// Automatic upload is optional until the one-time private Supabase bucket is
+// installed. No shared token is published without an explicit GM transfer.
+async function tryDirectHosting(art,report=notify) {
+  try {
+    return (await ensureHostedArtwork(art,{report})).image;
+  } catch(error) {
+    report('Envoi direct indisponible : '+error.message+
+      ' Le transfert Owlbear classique reste accessible.');
+    return null;
+  }
 }
 async function manager(view,context,back) {
   const {ui,dialog,setBusy} = view;
@@ -208,7 +220,8 @@ async function openSource(input,report = notify) {
         const framing = {identity:source.identity,crop:crop.getState(),page};
         const art = await renderSource(source,{kind,title,page,text:ui("text").value,includeText:ui("include").checked,crop:framing.crop});
         gmState();
-        const result = await request({action:"transfer",scene:context.scene,sourceKey:source.key,kind,title,reveal,art,framing},message => {
+        const hosted = await tryDirectHosting(art,message=>{if(dialog.open)ui("status").textContent=message;});
+        const result = await request({action:"transfer",scene:context.scene,sourceKey:source.key,kind,title,reveal,art,hosted,framing},message => {
           if (dialog.open) ui("status").textContent = message;
         });
         if (!dialog.open) return;
@@ -238,7 +251,7 @@ function selectedCell() {
   if (!node) throw Error("Sélectionne une cellule du canevas.");
   return cellSource(node,state.activeBoardId);
 }
-async function placeSource(input,reveal = false) {
+async function placeSource(input,reveal = null) {
   // Documents retain their preview, including explicit PDF page/text choices.
   if (input.kind !== 'TOKEN') return openSource(input);
   if (directTransfers.has(input.key)) return;
@@ -254,14 +267,15 @@ async function placeSource(input,reveal = false) {
     const framing = {identity:source.identity,crop:preset?.crop,page:1};
     const art = await renderSource(source,{kind:'TOKEN',title:source.title,crop:framing.crop});
     gmState();
+    const hosted = await tryDirectHosting(art,notify);
     const result = await request({action:'transfer',scene:context.scene,sourceKey:source.key,
-      kind:'TOKEN',title:source.title,reveal:reveal === true,art,framing},notify);
+      kind:'TOKEN',title:source.title,reveal,art,hosted,framing},notify);
     notify(result.revealed ? '« '+result.title+' » placé et révélé dans Owlbear.' :
       '« '+result.title+' » placé dans ta vue MJ, caché aux joueurs.');
   } catch (error) { notify(error.message); }
   finally { source?.release();directTransfers.delete(input.key);controls.forEach(control => { control.disabled = false; }); }
 }
-async function placeSelected(reveal = false) {
+async function placeSelected(reveal = null) {
   try { await placeSource(selectedCell(),reveal); }
   catch (error) { notify(error.message); }
 }
@@ -282,21 +296,17 @@ function install() {
   const reveal = document.querySelector('#pin-block-cell-actions button[onclick="DuneApp.toggleSelectedReveal()"]');
   if (reveal && !$("archives-v45-transfer-button")) {
     const button = document.createElement("button");button.id = "archives-v45-transfer-button";button.type = "button";
-    button.className = "btn";button.textContent = "Owlbear · Placer caché";button.dataset.directTransfer = '1';
-    button.onclick = () => { void placeSelected(false); };
-    const share = document.createElement('button');share.type = 'button';share.className = 'btn';
-    share.id = 'archives-owl-direct-reveal';share.dataset.directTransfer = '1';share.textContent = 'Owlbear · Placer et révéler';
-    share.onclick = () => { void placeSelected(true); };
-    const frame = document.createElement('button');frame.type = 'button';frame.className = 'btn';
-    frame.id = 'archives-owl-frame';frame.textContent = 'Cadrer / préparer…';frame.onclick = () => { void sendSelected(); };
+    button.className = "btn";button.textContent = "🐻 Envoyer vers Owlbear";button.dataset.directTransfer = '1';
+    button.title = 'Un clic : place le token, ou actualise celui déjà présent en conservant sa position';
+    button.onclick = () => { void placeSelected(); };
     const actions = document.createElement('div');actions.className = 'archives-transfer-actions';
-    actions.setAttribute('role','group');actions.setAttribute('aria-label','Transfert vers Owlbear');
-    actions.append(button,share,frame);reveal.parentElement.after(actions);
+    actions.setAttribute('role','group');actions.setAttribute('aria-label','Transfert rapide vers Owlbear');
+    actions.append(button);reveal.parentElement.after(actions);
   }
   const context = $('ctx-send-to-owlbear');
   if (context) {
-    context.textContent = 'Owlbear · Placer caché';context.dataset.directTransfer = '1';
-    context.addEventListener('click',() => { window.DuneApp.closeContextMenus();void placeSelected(false); });
+    context.textContent = '🐻 Envoyer vers Owlbear';context.dataset.directTransfer = '1';
+    context.addEventListener('click',() => { window.DuneApp.closeContextMenus();void placeSelected(); });
     for (const [id,label,handler] of [
       ['archives-ctx-owl-reveal','Owlbear · Placer et révéler',() => placeSelected(true)],
       ['archives-ctx-owl-frame','Owlbear · Cadrer / préparer…',sendSelected]
