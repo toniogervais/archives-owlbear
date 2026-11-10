@@ -94,13 +94,28 @@ function addContextButtons(){
   label.insertAdjacentElement('afterend',button);
  }
 }
+function installSettingsShortcut(){
+ if(!isGM())return;
+ const area=document.getElementById('settings-content');
+ if(!area||area.querySelector('#archives-drive-settings'))return;
+ const section=document.createElement('section');
+ section.id='archives-drive-settings';
+ section.style.cssText='padding:14px;margin:12px 0;border:1px solid #bba06966;border-radius:11px;background:#261d31';
+ const title=document.createElement('strong');title.textContent='☁ Google Drive';
+ const description=document.createElement('p');description.textContent='Importer une sauvegarde, une cellule, une image ou un document depuis Google Drive dans les Archives.';description.style.margin='8px 0';
+ const actions=document.createElement('div');actions.style.cssText='display:flex;flex-wrap:wrap;gap:8px';
+ const load=document.createElement('button');load.type='button';load.textContent='Choisir un fichier Google Drive';load.onclick=()=>launch(null);
+ const setup=document.createElement('button');setup.type='button';setup.textContent='Configurer Google Drive';setup.onclick=configure;
+ actions.append(load,setup);section.append(title,description,actions);area.prepend(section);
+}
 function install(){
  if(document.getElementById('archives-google-drive-button'))return;
- const button=document.createElement('button');button.id='archives-google-drive-button';button.type='button';button.textContent='☁ Google Drive';button.title='Choisir une sauvegarde ou un fichier Google Drive';button.style.cssText='position:fixed;right:12px;top:90px;z-index:9950;background:#31253d;color:#f5e4c5;border:1px solid #a78b5b;border-radius:9px;padding:9px 12px;cursor:pointer;font:600 12px system-ui;box-shadow:0 5px 15px #0008';
+ const button=document.createElement('button');button.id='archives-google-drive-button';button.type='button';button.textContent='☁ Google Drive';button.title='Choisir une sauvegarde ou un fichier Google Drive';button.style.cssText='position:fixed;right:12px;bottom:84px;z-index:9950;background:#31253d;color:#f5e4c5;border:1px solid #a78b5b;border-radius:9px;padding:9px 12px;cursor:pointer;font:600 12px system-ui;box-shadow:0 5px 15px #0008';
  button.onclick=()=>launch(null);document.body.append(button);
  const style=document.createElement('style');style.textContent='body.player-mode #archives-google-drive-button,body.strict-readonly #archives-google-drive-button,body.player-mode .archives-drive-context,body.strict-readonly .archives-drive-context{display:none!important}';document.head.append(style);
  addContextButtons();
- const observer=new MutationObserver(()=>addContextButtons());
+ installSettingsShortcut();
+ const observer=new MutationObserver(()=>{addContextButtons();installSettingsShortcut()});
  observer.observe(document.body,{childList:true,subtree:true});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
