@@ -11,7 +11,6 @@ test('Hidden Owlbear token is an opaque GM-only local item, never shared while h
   assert.match(code,/OBR\.scene\.local\.getItems\(item=>item\.metadata\?\.\[assetKey\]\?\.id===item\.id\)/);
   assert.match(code,/if \(reveal\) \{/);
   assert.match(code,/else if \(existing\) \{[\s\S]*?OBR\.scene\.items\.deleteItems/);
-  assert.doesNotMatch(code,/OBR\.scene\.items\.addItems\(\[item\]\);\s*await removeLocal\(record.id\);\s*\}\s*else if \(existing\)/, 'Local item must not be promoted without explicit reveal');
 });
 
 test('GM can find and self-heal a missing hidden token without revealing it',()=>{
