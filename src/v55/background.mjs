@@ -51,7 +51,7 @@ function unavailable(error) {
  reported = true;
  void OBR.notification.show("Archives : un module n’a pas chargé. Le diagnostic de chargement permet de vérifier les fichiers.", "WARNING").catch(console.warn);
 }
-void import("../v58/transfers.mjs?v=4320").then(module => module.installArtworkTransfers()).catch(unavailable);
+void import("../v58/transfers.mjs?v=4330").then(module => module.installArtworkTransfers()).catch(unavailable);
 void import("../v57/room-background.mjs?v=4210").then(module => module.installRoomPlay(OBR)).catch(unavailable);
 void import("../v60/background.mjs?v=4210").then(module => module.installFileLibrary(OBR)).catch(unavailable);
 void import("../soundshow/owlbear.mjs?v=029").then(module => module.installSoundShow(OBR)).catch(unavailable);
