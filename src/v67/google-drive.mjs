@@ -55,6 +55,7 @@ function chooseInput(){return new Promise(resolve=>{
  d.querySelector('[data-cancel]').onclick=()=>finish(null);d.querySelector('[data-ok]').onclick=()=>finish(opts[Number(select.value)]?.el||null);d.querySelector('[data-config]').onclick=()=>{finish(null);configure()};d.oncancel=()=>finish(null);document.body.append(d);d.showModal()
  })}
 async function pick(input){
+ if(!input)return;
  if(!isGM())throw Error('Import réservé au MJ.');
  const c=config();
  if(!c.clientId||!c.apiKey||!c.appId){configure();return}
@@ -79,7 +80,7 @@ async function pick(input){
   }).build();picker.setVisible(true)
  });
 }
-function launch(input){void (async()=>{try{await pick(input||await chooseInput())}catch(e){notice('Google Drive : '+(e.message||e))}})()}
+function launch(input){void (async()=>{try{const target=input||await chooseInput();if(target)await pick(target)}catch(e){notice('Google Drive : '+(e.message||e))}})()}
 function install(){
  if(document.getElementById('archives-google-drive-button'))return;
  const button=document.createElement('button');button.id='archives-google-drive-button';button.type='button';button.textContent='☁ Google Drive';button.title='Choisir une sauvegarde ou un fichier Google Drive';button.style.cssText='position:fixed;right:12px;top:90px;z-index:9950;background:#31253d;color:#f5e4c5;border:1px solid #a78b5b;border-radius:9px;padding:9px 12px;cursor:pointer;font:600 12px system-ui;box-shadow:0 5px 15px #0008';
