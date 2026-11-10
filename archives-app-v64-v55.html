@@ -4202,6 +4202,26 @@ window.DuneApp = (function() {
     closePlayerCellImage: closePlayerCellImage,
     isPlayerMode: function() { return state.playerMode; },
     getState: function(){ return state; },
+    // Fiche de jeu MJ : changer l'état d'un indice sans ouvrir les réglages.
+    setBriefClueRevealed: function(nodeId, clueId, revealed){
+      if(state.playerMode || state.strictReadOnly)return false;
+      var node=getNode(nodeId);
+      if(!node || !Array.isArray(node.clues))return false;
+      var clue=node.clues.find(function(item){return item.id===clueId;});
+      if(!clue)return false;
+      var next=!!revealed;
+      if(clue.revealed===next)return true;
+      pushUndoSnapshot();
+      clue.revealed=next;
+      if(next){
+        clue.revOrder=stampNextRevOrder();
+        playRevealSound();
+      }
+      syncClueAcrossBoards(clue.originalId||clue.id,next,clue.revOrder);
+      renderAll();
+      saveState();
+      return true;
+    },
     getCellRevealMedia: function(id){
       var n=getNode(id||state.selectedId);
       return n&&Array.isArray(n.revealMedia)?n.revealMedia.map(function(item){
@@ -7130,5 +7150,5 @@ body.player-mode .player-cell-resize:hover{opacity:1}
 <script type="module" src="./src/v65/storage.mjs?v=4210"></script>
 <script type="module" src="./src/soundshow/archives.mjs?v=030"></script>
 <script type="module" src="./src/v66/workspace.mjs?v=4281"></script>
-<script type="module" src="./src/v67/google-drive.mjs?v=4381"></script>
+<script type="module" src="./src/v68/cell-brief.mjs?v=4390"></script>
 
