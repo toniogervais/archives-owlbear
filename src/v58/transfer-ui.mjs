@@ -15,8 +15,11 @@ function gmState() {
 function request(command,report) {
   gmState();
   const params = new URLSearchParams(location.search);
-  if (window.parent === window || !params.has("owl-editor"))
-    throw Error("Dans ta salle Owlbear, clique sur le livre pour ouvrir les Archives, puis effectue ce transfert.");
+  if (window.parent === window || !params.has("owl-editor")) {
+    if(window.ArchivesTokenBridge?.connected)
+      return window.ArchivesTokenBridge.request(command,report);
+    throw Error("Owlbear n’est pas relié aux Archives. Ouvre la salle depuis les Archives puis réessaie.");
+  }
   const id = crypto.randomUUID();
   return new Promise((resolve,reject) => {
     const timer = setTimeout(() => { pending.delete(id);reject(Error("Le transfert n’a pas été confirmé. Vérifie la scène avant de réessayer.")); },180000);
