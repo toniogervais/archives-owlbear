@@ -47,7 +47,7 @@ export async function installArtworkTransfers() {
     Object.assign(item,pose(record));
     // Private tokens must be clearly visible to the GM. The local scene keeps
     // them entirely absent from the shared scene, regardless of opacity.
-    if (hidden) { item.opacity = 1; item.zIndex = 2147483000; }
+    if (hidden) item.zIndex = Date.now();
     return item;
   }
   async function removeLocal(id) {
@@ -74,6 +74,10 @@ export async function installArtworkTransfers() {
       const current=present.get(record.id);
       if(!current){
         await OBR.scene.local.addItems([desired]);
+        const confirmed=await OBR.scene.local.getItems([record.id]);
+        if(!confirmed.some(item=>item.id===record.id)){
+          throw Error('Owlbear n’a pas conservé le token dans la couche locale du MJ. Aucun élément n’a été partagé.');
+        }
         locals.set(record.id,desired);
       }else{
         // A visual/position update only when needed; do not override a GM
@@ -92,8 +96,10 @@ export async function installArtworkTransfers() {
     }
   }
   function queueRender() {
-    renders = renders.then(render).catch(error => console.warn("Affichage privé Owlbear",error));
-    return renders;
+    // Never report a successful hidden transfer when Owlbear rejects its private image.
+    const next = renders.catch(() => {}).then(render);
+    renders = next;
+    return next;
   }
   function queuePurge() {
     // Read the actual local scene after older renders finish. An add operation
@@ -146,6 +152,12 @@ export async function installArtworkTransfers() {
     record.revealed = reveal;
     await store.put(record);
     await refresh();
+    if(!reveal){
+      const check=await OBR.scene.local.getItems([record.id]);
+      if(!check.some(item=>item.id===record.id && item.visible)){
+        throw Error('Token conservé dans les Archives, mais non créé dans la couche privée Owlbear. Vérifie que le module de transfert est chargé.');
+      }
+    }
   }
   const safeImage = (image,art) => image && image.width === art.width && image.height === art.height &&
     ['image/png','image/jpeg','image/webp'].includes(image.mime) && typeof image.url === 'string' && image.url.startsWith('https://') && !image.url.includes('/storage/v1/object/sign/');
