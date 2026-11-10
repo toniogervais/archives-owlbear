@@ -1,5 +1,5 @@
 import { blobDigest,maxImageBytes } from "./model.mjs?v=4210";
-import { drawToken } from "../v61/token-crop.mjs";
+import { drawToken } from "../v61/token-crop.mjs?v=4300";
 
 const rasterTypes = ["image/png","image/jpeg","image/webp"];
 const maxFileBytes = 25 * 1024 * 1024;
@@ -91,13 +91,46 @@ export async function sourcePicture(source,page = 1) {
   }
   return source.pictureCache.get(page);
 }
+// Owlbear accepts up to 5 MiB of decoded image bytes.  HD is generated
+// directly from the source bitmap with a shared crop; never upscale a preview.
+// Choose the largest safe PNG first, then WebP when PNG is too large.
+export const tokenSizes = Object.freeze([2048,1536,1024,768,512]);
+export function tokenExportFits(data,limit = maxImageBytes) {
+  // Encoded data URLs are base64. Validate the actual byte estimate and keep
+  // the 5 MiB message cap, including any transport/metadata overhead.
+  if (typeof data !== "string" || !/^data:image\\/(?:png|webp);base64,/.test(data)) return false;
+  const encoded = data.slice(data.indexOf(",") + 1);
+  const padding = encoded.endsWith("==") ? 2 : encoded.endsWith("=") ? 1 : 0;
+  return (encoded.length * 3 / 4 - padding) <= limit;
+}
+export async function exportHighDefinitionToken(picture,title,crop = {},{
+  sizes = tokenSizes,
+  limit = maxImageBytes,
+  makeCanvas = canvas
+} = {}) {
+  for (const size of sizes) {
+    if (!Number.isInteger(size) || size < 128 || size > 2400) continue;
+    const out = makeCanvas(size,size),ctx = out.getContext("2d",{alpha:true});
+    if (!ctx) throw Error("Le dessin du token n’est pas pris en charge par ce navigateur.");
+    drawToken(ctx,picture,title,crop,size);
+    // First attempt is PNG with transparency and lossless crisp outlines.
+    for (const [mime,quality] of [["image/png",undefined],["image/webp",0.96],["image/webp",0.88]]) {
+      let data;
+      try { data = out.toDataURL(mime,quality); } catch { continue; }
+      if (!data?.startsWith("data:"+mime+";base64,")) continue;
+      if (tokenExportFits(data,limit)) return {
+        id:crypto.randomUUID(),version:crypto.randomUUID(),width:size,height:size,mime,data
+      };
+    }
+  }
+  throw Error("Le token HD dépasse la taille autorisée par Owlbear, même après optimisation.");
+}
+
 export async function renderSource(source,{kind,title,text,page = 1,includeText = false,crop}) {
   const picture = await sourcePicture(source,page);
   let out;
-  if (kind === "TOKEN") {
-    out = canvas(512,512);
-    drawToken(out.getContext("2d"),picture,title,crop);
-  } else {
+  if (kind === "TOKEN") return exportHighDefinitionToken(picture,title,crop);
+  else {
     const docText = includeText ? String(text || "").trim() : "";
     if (!picture && !docText) throw Error("Ajoute le texte du document ou choisis un fichier.");
     const probe = canvas(1200,100), pc = probe.getContext("2d");
