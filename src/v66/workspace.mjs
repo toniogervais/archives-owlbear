@@ -1,4 +1,4 @@
-/* V4.26 : barres déplaçables + plein écran du canevas, sans altérer les cellules. */
+/* V4.28 : déplacement réel des barres sans double clic ni infobulles. */
 import {isGM} from '../v63/ui.mjs';
 const storagePrefix='archives:dock-location:v426:';
 function limit(n,lo,hi){return Math.max(lo,Math.min(hi,n));}
@@ -6,12 +6,12 @@ function moveBar(id,caption){
   const dock=document.getElementById(id);if(!dock)return;
   const handle=document.createElement('button');
   handle.type='button';handle.className='archives-dock-move';
-  handle.title='Déplacer '+caption+' · double-clic : réinitialiser la position';
   handle.setAttribute('aria-label','Déplacer '+caption);
   handle.textContent='⠿';
-  // Owlbear's map button selector depends on its integration remaining the first child.
+  // Le HUD n'accepte les interactions que dans .top-group.
+  // Garder la poignée dans ce groupe évite le blocage par pointer-events:none.
   if(id==='canvas-integrations-dock')dock.append(handle);
-  else (dock.querySelector('.hud-row')||dock).append(handle); // Ne crée pas de ligne blanche au-dessus des commandes.
+  else (dock.querySelector('.hud-row > .top-group:first-child')||dock).append(handle);
   const key=storagePrefix+id;
   const apply=pos=>{
     if(!pos||!Number.isFinite(pos.x)||!Number.isFinite(pos.y))return;
@@ -23,17 +23,10 @@ function moveBar(id,caption){
     dock.style.top=limit(pos.y,2,Math.max(2,innerHeight-40))+'px';
   };
   try{apply(JSON.parse(localStorage.getItem(key)));}catch{}
-  handle.ondblclick=()=>{
-    dock.classList.remove('archives-dock-moved');
-    dock.style.removeProperty('position');dock.style.removeProperty('transform');
-    dock.style.removeProperty('right');dock.style.removeProperty('bottom');
-    dock.style.removeProperty('top');dock.style.removeProperty('left');
-    try{localStorage.removeItem(key);}catch{}
-  };
   handle.addEventListener('pointerdown',event=>{
     if(event.button!==0||!isGM())return;
     event.preventDefault();event.stopPropagation();
-    handle.setPointerCapture?.(event.pointerId);
+    try{handle.setPointerCapture(event.pointerId);}catch{}
     const original=dock.getBoundingClientRect(),x=event.clientX,y=event.clientY;
     const move=ev=>apply({x:original.left+ev.clientX-x,y:original.top+ev.clientY-y});
     const finish=()=>{
@@ -52,7 +45,7 @@ css.textContent=`
 #top-hud .archives-dock-move{min-width:27px;min-height:27px;background:#25212c;border:1px solid #d7b87b66;color:#f4dfb4;border-radius:8px;font-size:14px;touch-action:none;cursor:grab;pointer-events:auto;flex:none}
 #canvas-integrations-dock .archives-dock-move:active,#top-hud .archives-dock-move:active{cursor:grabbing}
 #canvas-integrations-dock.archives-dock-moved{z-index:240;max-width:calc(100vw - 10px)}
-#top-hud.archives-dock-moved{z-index:230;pointer-events:none;max-width:calc(100vw - 12px);width:max-content;max-height:calc(100vh - 50px);overflow:auto;background:rgba(12,10,18,.78);border:1px solid #d7b87b55;padding:5px;border-radius:10px}
+#top-hud.archives-dock-moved{z-index:230;pointer-events:none;max-width:calc(100vw - 12px);width:max-content;max-height:calc(100vh - 50px);background:rgba(12,10,18,.78);border:1px solid #d7b87b55;padding:5px;border-radius:10px}\n#top-hud .top-group .archives-dock-move{pointer-events:auto;position:relative;z-index:2;touch-action:none}
 #top-hud .archives-dock-move{align-self:center;margin-left:4px}
 body.player-mode #canvas-integrations-dock .archives-dock-move,
 body.strict-readonly #canvas-integrations-dock .archives-dock-move{display:none}
@@ -61,6 +54,4 @@ body.strict-readonly #canvas-integrations-dock .archives-dock-move{display:none}
 document.head.append(css);
 moveBar('canvas-integrations-dock','la barre d’intégrations');
 moveBar('top-hud','la barre de commandes');
-window.ArchivesLayout={resetBars(){
-  for(const id of ['canvas-integrations-dock','top-hud'])document.querySelector('#'+id+' .archives-dock-move')?.dispatchEvent(new MouseEvent('dblclick',{bubbles:true}));
-}};
+window.ArchivesLayout={};
