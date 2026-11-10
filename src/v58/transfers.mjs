@@ -1,7 +1,6 @@
 import OBR, { buildImage, buildImageUpload } from "../../assets/owlbear-transfer-sdk-v55.mjs";
 import { localRoom } from "../v57/room.mjs?v=4210";
 import {isPacket,packet,validRoomId,validSession} from "../v56/link.mjs?v=4210";
-import { validSession } from "../v56/link.mjs";
 import { artworkBlob,assetKey,blobDigest,privateArtworkStore,sceneKey,validArtwork } from "./model.mjs?v=4210";
 import { normalizeCrop } from "../v61/token-crop.mjs";
 import {safeHostedImage} from "./hosted-assets.mjs?v=4310";
