@@ -63,7 +63,7 @@ async function openCharacter(page){
   await managerRow(gm,'Personnage secret').getByRole('button',{name:'Révéler',exact:true}).waitFor();
   await waitLocal(gm,1);await waitShared(gm,0);
   const hidden=await gm.evaluate(()=>window.fixture.local()[0]);
-  assert.equal(hidden.layer,'POPOVER');assert.equal(hidden.grid.dpi,512);assert.match(hidden.image.url,/^https:\/\/images\.owlbear\.test/);
+  assert.equal(hidden.layer,'POPOVER');assert.equal(hidden.grid.dpi,2048);assert.match(hidden.image.url,/^https:\/\/images\.owlbear\.test/);
   assert.equal((await player.evaluate(()=>window.fixture.local())).length,0);
   let wire=await player.evaluate(()=>window.fixture.wire());
   assert.ok(!JSON.stringify(wire).includes('Personnage secret'),'hidden title never shared');
