@@ -129,7 +129,7 @@ async function manager(view,context,back) {
     if (!result.records.length) ui("records").textContent = "Aucun transfert dans cette scène pour le moment.";
     for (const record of result.records) {
       const row = document.createElement("div");row.className = "record";
-      const label = document.createElement("span");label.textContent = record.title + " · " + (record.kind === "TOKEN" ? "token" : "document") + " · " + (record.revealed ? "révélé" : "caché");
+      const label = document.createElement("span");label.textContent = record.title + " · " + (record.kind === "TOKEN" ? "token" : "document") + " · " + (record.revealed ? "révélé" : (record.visibleToGM ? "caché · présent côté MJ ("+(record.privateLayer||"local")+")" : "caché · ABSENT côté MJ"));
       const locate = document.createElement("button");locate.type = "button";
       locate.textContent = record.revealed ? "Localiser" : "Localiser (MJ)";
       locate.title = "Recentrer la carte Owlbear sur cet élément, même s’il est caché";
