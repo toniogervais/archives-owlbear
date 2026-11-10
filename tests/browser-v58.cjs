@@ -105,7 +105,7 @@ async function openCharacter(page){
   await dialog(gm).waitFor({state:'detached'});
   await frame(gm).evaluate(()=>window.ArchivesCellTransfer.showManager());
   await managerRow(gm,'Document devenu pion').getByRole('button',{name:'Cacher',exact:true}).waitFor();await waitShared(gm,2);
-  item=(await gm.evaluate(()=>window.fixture.scene())).items.find(item=>item.name==='Document devenu pion');assert.equal(item.layer,'CHARACTER');assert.equal(item.image.width,512);await closeDialog(gm);
+  item=(await gm.evaluate(()=>window.fixture.scene())).items.find(item=>item.name==='Document devenu pion');assert.equal(item.layer,'CHARACTER');assert.equal(item.image.width,2048);await closeDialog(gm);
   // Text document is rasterized; only its chosen representation enters Owlbear.
   await frame(gm).evaluate(()=>window.ArchivesCellTransfer.sendFile(new File(['Rapport destiné aux joueurs.'],'rapport.txt',{type:'text/plain'}),'Rapport publié'));
   await dialog(gm).locator('[data-submit]:not([disabled])').waitFor();assert.equal(await dialog(gm).locator('[data-include]').isChecked(),true);
