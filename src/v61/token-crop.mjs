@@ -31,7 +31,7 @@ export function drawToken(ctx,picture,title,crop = {},size = ctx.canvas?.width |
   } else {
     ctx.fillStyle = "#ffe3a0";ctx.font = "bold " + Math.round(132 * unit) + "px serif";
     ctx.textAlign = "center";ctx.textBaseline = "middle";
-    ctx.fillText(String(title || "").trim().split(/\\s+/).slice(0,2).map(word => Array.from(word)[0] || "").join("").toLocaleUpperCase("fr"),centre,centre);
+    ctx.fillText(String(title || "").trim().split(/\s+/).slice(0,2).map(word => Array.from(word)[0] || "").join("").toLocaleUpperCase("fr"),centre,centre);
   }
   ctx.restore();
   ctx.strokeStyle = "#d8b76b";ctx.lineWidth = 12 * unit;
