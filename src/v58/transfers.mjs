@@ -132,7 +132,7 @@ export async function installArtworkTransfers() {
     await refresh();
   }
   const safeImage = (image,art) => image && image.width === art.width && image.height === art.height &&
-    ['image/png','image/jpeg','image/webp'].includes(image.mime) && typeof image.url === 'string' && image.url.startsWith('https://');
+    ['image/png','image/jpeg','image/webp'].includes(image.mime) && typeof image.url === 'string' && image.url.startsWith('https://') && !image.url.includes('/storage/v1/object/sign/');
   const imageFields = image => ({url:image.url,mime:image.mime,width:image.width,height:image.height});
   const validTransfer = command => command && ['TOKEN','DOCUMENT'].includes(command.kind) &&
     typeof command.sourceKey === 'string' && !!command.sourceKey && command.sourceKey.length <= 300 &&
@@ -151,9 +151,8 @@ export async function installArtworkTransfers() {
         reused:!!hosted || safeImage(cached,command.art)};
       if (hosted) {
         entry.image=imageFields(hosted);
-        // Cache this direct address for the current GM session; never send hidden
-        // URLs through public scene metadata or a broadcast.
-        await store.putAsset(hash,entry.image);
+        // Signed URLs expire: never cache one as a permanent Owlbear asset.
+        // The next click automatically refreshes the signature.
       } else if (entry.reused) entry.image = imageFields(cached);
       else missing.set(hash,entry);
       entries.push(entry);
