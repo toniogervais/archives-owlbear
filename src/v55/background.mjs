@@ -44,15 +44,15 @@ OBR.broadcast.onMessage(channel,async event=>{
   try{await OBR.modal.close(invite);}catch{}
   await OBR.modal.open({id:invite,url:screenUrl(data.target,false),fullScreen:true,hideBackdrop:true,hidePaper:true});
 });
-let reported = false;
-function unavailable(error) {
- console.warn("Archives : un module n’a pas pu démarrer", error);
- if (reported || stopped) return;
- reported = true;
- void OBR.notification.show("Archives : un module n’a pas chargé. Le diagnostic de chargement permet de vérifier les fichiers.", "WARNING").catch(console.warn);
+const moduleErrors = [];
+function unavailable(moduleName,error) {
+ const details=String(error?.message||error||'Erreur inconnue').slice(0,140);
+ console.error("Archives : échec du module "+moduleName,error);
+ moduleErrors.push(moduleName+": "+details);
+ if(stopped)return;
+ void OBR.notification.show("Archives — module "+moduleName+" : "+details, "WARNING").catch(console.warn);
 }
-void import("../v58/transfers.mjs?v=4350").then(module => module.installArtworkTransfers()).catch(unavailable);
-void import("../v57/room-background.mjs?v=4210").then(module => module.installRoomPlay(OBR)).catch(unavailable);
-void import("../v60/background.mjs?v=4210").then(module => module.installFileLibrary(OBR)).catch(unavailable);
-void import("../soundshow/owlbear.mjs?v=029").then(module => module.installSoundShow(OBR)).catch(unavailable);
-
+void import("../v58/transfers.mjs?v=4360").then(module => module.installArtworkTransfers()).catch(error=>unavailable("Tokens",error));
+void import("../v57/room-background.mjs?v=4210").then(module => module.installRoomPlay(OBR)).catch(error=>unavailable("Synchronisation",error));
+void import("../v60/background.mjs?v=4210").then(module => module.installFileLibrary(OBR)).catch(error=>unavailable("Bibliothèque",error));
+void import("../soundshow/owlbear.mjs?v=029").then(module => module.installSoundShow(OBR)).catch(error=>unavailable("SoundShow",error));
