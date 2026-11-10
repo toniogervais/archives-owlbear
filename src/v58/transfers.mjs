@@ -39,8 +39,8 @@ export async function installArtworkTransfers() {
   }
   function makeItem(record, hidden) {
     const item = buildImage(record.image,record.grid).id(record.id)
-      .name(record.title + (hidden ? " [caché]" : ""))
-      .plainText(record.title + (hidden ? " · caché" : "")).textItemType("LABEL")
+      .name(record.title)
+      .plainText(record.title).textItemType("LABEL")
       .layer(hidden ? "POPOVER" : (record.kind === "TOKEN" ? "CHARACTER" : "PROP"))
       .position(record.position).visible(true)
       .metadata({[assetKey]:{id:record.id,version:record.version}}).build();
