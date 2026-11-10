@@ -1,0 +1,25 @@
+name: Archives — tokens Owlbear en un clic
+on:
+  push:
+    paths:
+      - 'src/v58/hosted-assets.mjs'
+      - 'src/v58/main-relay.mjs'
+      - 'src/v58/transfers.mjs'
+      - 'src/v58/transfer-ui.mjs'
+      - 'tests/direct-tokens-v431.test.mjs'
+      - '.github/workflows/test-direct-tokens-v431.yml'
+  workflow_dispatch:
+jobs:
+  token-direct:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: node --check src/v58/hosted-assets.mjs
+      - run: node --check src/v58/main-relay.mjs
+      - run: node --check src/v58/transfers.mjs
+      - run: node --check src/v58/transfer-ui.mjs
+      - run: node --test tests/direct-tokens-v431.test.mjs tests/tokens-hd-v430.test.mjs tests/crop-v61.test.mjs
