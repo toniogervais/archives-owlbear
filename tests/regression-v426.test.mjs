@@ -34,8 +34,8 @@ test('La fenêtre sons reste détachable, redimensionnable et à cases adaptativ
 
 test('Les barres déplaçables restent intégrées sans espace supplémentaire',()=>{
   const workspace=source('src/v66/workspace.mjs');
-  assert.match(workspace,/moveBar\('canvas-integrations-dock'/);
-  assert.match(workspace,/moveBar\('top-hud'/);
+  assert.match(workspace,/installMovableBar\('canvas-integrations-dock'/);
+  assert.match(workspace,/installMovableBar\('top-hud'/);
   assert.match(workspace,/\.hud-row > \.top-group:first-child/);
   assert.doesNotMatch(workspace,/handle\.ondblclick/);
   assert.doesNotMatch(workspace,/handle\.title=/);
