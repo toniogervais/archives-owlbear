@@ -81,11 +81,27 @@ async function pick(input){
  });
 }
 function launch(input){void (async()=>{try{const target=input||await chooseInput();if(target)await pick(target)}catch(e){notice('Google Drive : '+(e.message||e))}})()}
+function addContextButtons(){
+ if(!isGM())return;
+ for(const input of document.querySelectorAll('input[type=file]')){
+  if(input.dataset.archivesDriveBound)return;
+  const label=input.id?document.querySelector('label[for="'+CSS.escape(input.id)+'"]'):null;
+  if(!label || !label.parentNode)continue;
+  input.dataset.archivesDriveBound='1';
+  const button=document.createElement('button');button.type='button';button.textContent='☁ Drive';button.title='Choisir un fichier Google Drive pour cette rubrique';
+  button.className='archives-drive-context';button.style.cssText='padding:6px 9px;margin:3px 6px;background:#342641;color:#f8e5bd;border:1px solid #b49b6c;border-radius:7px;cursor:pointer;font:600 12px system-ui';
+  button.onclick=event=>{event.stopPropagation();launch(input)};
+  label.insertAdjacentElement('afterend',button);
+ }
+}
 function install(){
  if(document.getElementById('archives-google-drive-button'))return;
  const button=document.createElement('button');button.id='archives-google-drive-button';button.type='button';button.textContent='☁ Google Drive';button.title='Choisir une sauvegarde ou un fichier Google Drive';button.style.cssText='position:fixed;right:12px;top:90px;z-index:9950;background:#31253d;color:#f5e4c5;border:1px solid #a78b5b;border-radius:9px;padding:9px 12px;cursor:pointer;font:600 12px system-ui;box-shadow:0 5px 15px #0008';
  button.onclick=()=>launch(null);document.body.append(button);
- const style=document.createElement('style');style.textContent='body.player-mode #archives-google-drive-button,body.strict-readonly #archives-google-drive-button{display:none!important}';document.head.append(style);
+ const style=document.createElement('style');style.textContent='body.player-mode #archives-google-drive-button,body.strict-readonly #archives-google-drive-button,body.player-mode .archives-drive-context,body.strict-readonly .archives-drive-context{display:none!important}';document.head.append(style);
+ addContextButtons();
+ const observer=new MutationObserver(()=>addContextButtons());
+ observer.observe(document.body,{childList:true,subtree:true});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 window.ArchivesGoogleDrive={open:launch,configure};
