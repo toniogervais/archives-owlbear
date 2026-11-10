@@ -15,17 +15,27 @@ export function zoomCropAt(crop,zoom,point = {x:0.5,y:0.5}) {
   return normalizeCrop({...next,x:point.x - 0.5 - (point.x - 0.5 - state.x) * ratio,
     y:point.y - 0.5 - (point.y - 0.5 - state.y) * ratio});
 }
-export function drawToken(ctx,picture,title,crop = {}) {
-  ctx.clearRect(0,0,512,512);ctx.save();ctx.beginPath();ctx.arc(256,256,248,0,Math.PI * 2);ctx.clip();
-  ctx.fillStyle = "#302139";ctx.fillRect(0,0,512,512);
+export function drawToken(ctx,picture,title,crop = {},size = ctx.canvas?.width || 512) {
+  if (!(Number.isInteger(size) && size >= 128 && size <= 2400)) throw Error("Résolution du token invalide.");
+  // Preview at 512px and HD output use the SAME normalized framing.
+  // Source picture is always the original bitmap, never an enlarged preview.
+  const unit = size / 512,centre = size / 2,radius = 248 * unit;
+  ctx.clearRect(0,0,size,size);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.save();ctx.beginPath();ctx.arc(centre,centre,radius,0,Math.PI * 2);ctx.clip();
+  ctx.fillStyle = "#302139";ctx.fillRect(0,0,size,size);
   if (picture) {
-    const box = imagePlacement(picture.width,picture.height,crop);
+    const box = imagePlacement(picture.width,picture.height,crop,size);
     ctx.drawImage(picture,box.x,box.y,box.width,box.height);
   } else {
-    ctx.fillStyle = "#ffe3a0";ctx.font = "bold 132px serif";ctx.textAlign = "center";ctx.textBaseline = "middle";
-    ctx.fillText(String(title || "").trim().split(/\s+/).slice(0,2).map(word => Array.from(word)[0] || "").join("").toLocaleUpperCase("fr"),256,256);
+    ctx.fillStyle = "#ffe3a0";ctx.font = "bold " + Math.round(132 * unit) + "px serif";
+    ctx.textAlign = "center";ctx.textBaseline = "middle";
+    ctx.fillText(String(title || "").trim().split(/\\s+/).slice(0,2).map(word => Array.from(word)[0] || "").join("").toLocaleUpperCase("fr"),centre,centre);
   }
-  ctx.restore();ctx.strokeStyle = "#d8b76b";ctx.lineWidth = 12;ctx.beginPath();ctx.arc(256,256,248,0,Math.PI * 2);ctx.stroke();
+  ctx.restore();
+  ctx.strokeStyle = "#d8b76b";ctx.lineWidth = 12 * unit;
+  ctx.beginPath();ctx.arc(centre,centre,radius,0,Math.PI * 2);ctx.stroke();
 }
 export function installCropEditor({canvas,range,output,onChange = () => {}}) {
   let state = normalizeCrop(),picture,title = "",disabled = false,animation,disposed = false;
