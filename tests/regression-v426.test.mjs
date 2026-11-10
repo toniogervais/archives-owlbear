@@ -36,7 +36,9 @@ test('Les barres déplaçables restent intégrées sans espace supplémentaire',
   const workspace=source('src/v66/workspace.mjs');
   assert.match(workspace,/moveBar\('canvas-integrations-dock'/);
   assert.match(workspace,/moveBar\('top-hud'/);
-  assert.match(workspace,/querySelector\('\.hud-row'\)/);
+  assert.match(workspace,/\.hud-row > \.top-group:first-child/);
+  assert.doesNotMatch(workspace,/handle\.ondblclick/);
+  assert.doesNotMatch(workspace,/handle\.title=/);
   assert.doesNotMatch(workspace,/requestFullscreen/);
   assert.match(workspace,/localStorage\.setItem/);
 });
