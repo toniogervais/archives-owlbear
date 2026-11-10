@@ -98,7 +98,7 @@ export const tokenSizes = Object.freeze([2048,1536,1024,768,512]);
 export function tokenExportFits(data,limit = maxImageBytes) {
   // Encoded data URLs are base64. Validate the actual byte estimate and keep
   // the 5 MiB message cap, including any transport/metadata overhead.
-  if (typeof data !== "string" || !/^data:image\\/(?:png|webp);base64,/.test(data)) return false;
+  if (typeof data !== "string" || !/^data:image\/(?:png|webp);base64,/.test(data)) return false;
   const encoded = data.slice(data.indexOf(",") + 1);
   const padding = encoded.endsWith("==") ? 2 : encoded.endsWith("=") ? 1 : 0;
   return (encoded.length * 3 / 4 - padding) <= limit;
