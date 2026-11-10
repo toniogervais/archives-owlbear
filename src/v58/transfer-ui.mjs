@@ -105,12 +105,15 @@ function buildDialog() {
 }
 // Automatic upload is optional until the one-time private Supabase bucket is
 // installed. No shared token is published without an explicit GM transfer.
-async function tryDirectHosting(art,report=notify) {
+async function tryDirectHosting(art,report=notify,allowClassicFallback=false) {
   try {
     return (await ensureHostedArtwork(art,{report})).image;
   } catch(error) {
-    report('Envoi direct indisponible : '+error.message+
-      ' Le transfert Owlbear classique reste accessible.');
+    if(!allowClassicFallback)
+      throw Error('Envoi automatique impossible : '+error.message+
+        ' Active le stockage privé Supabase une seule fois pour envoyer les tokens en un clic.');
+    report('Stockage direct indisponible : '+error.message+
+      ' Transfert classique disponible dans le mode avancé.');
     return null;
   }
 }
@@ -223,7 +226,7 @@ async function openSource(input,report = notify) {
         const framing = {identity:source.identity,crop:crop.getState(),page};
         const art = await renderSource(source,{kind,title,page,text:ui("text").value,includeText:ui("include").checked,crop:framing.crop});
         gmState();
-        const hosted = await tryDirectHosting(art,message=>{if(dialog.open)ui("status").textContent=message;});
+        const hosted = await tryDirectHosting(art,message=>{if(dialog.open)ui("status").textContent=message;},true);
         const result = await request({action:"transfer",scene:context.scene,sourceKey:source.key,kind,title,reveal,art,hosted,framing},message => {
           if (dialog.open) ui("status").textContent = message;
         });
