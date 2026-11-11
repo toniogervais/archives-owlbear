@@ -1,4 +1,4 @@
-import {SoundShowConnection} from './connection.mjs?v=014';
+import {SoundShowConnection} from './connection.mjs?v=4410';
 export function mountPlayer({container=document.body,onPlayback=()=>{},onStatus=()=>{},onState=()=>{},close,showWaiting=false}={}) {
   if(!document.querySelector('[data-soundshow-style]')){
     const style=document.createElement('link');style.rel='stylesheet';style.href=new URL('./player.css?v=4400',import.meta.url).href;
@@ -102,12 +102,14 @@ export function mountPlayer({container=document.body,onPlayback=()=>{},onStatus=
     const activeSession=connection.session;if(!activeSession)return;
     retry.hidden=true;connection.stop();void connection.use(activeSession).catch(error=>{status.textContent=error.message;retry.hidden=false;state('error');onStatus(error.message);});
   };
-  const visible=()=>{audible();if(!document.hidden)void play();};document.addEventListener('visibilitychange',visible);
+  const visible=()=>{audible();if(!document.hidden){connection.resume();void play();}};
+  const online=()=>connection.resume();
+  document.addEventListener('visibilitychange',visible);window.addEventListener('online',online);
   return {root,video,connection,reopen,
     async use(session){await connection.use(session);refreshBadge();},
     destroy(){
       if(destroyed)return;destroyed=true;playAttempt++;clearMediaTimer();
-      document.removeEventListener('visibilitychange',visible);connection.stop();video.pause();video.srcObject=null;root.remove();badge.remove();
+      document.removeEventListener('visibilitychange',visible);window.removeEventListener('online',online);connection.stop();video.pause();video.srcObject=null;root.remove();badge.remove();
     }
   };
 }
