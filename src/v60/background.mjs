@@ -1,4 +1,4 @@
-import { localRoom,roomMembers,roomChannel,release } from "../v57/room.mjs?v=4210";
+import { localRoom,roomMembers,roomChannel,release } from "../v57/room.mjs?v=4420";
 import { openFileLibrary,validateFile,validId,validPublication,publicFile,digest,fileChunks,fileReceiver,mediaChannel,mediaModal } from "./files.mjs?v=4420";
 import {installDossierFiles,dossierEntry} from '../v69/dossier-files.mjs?v=4420';
 
