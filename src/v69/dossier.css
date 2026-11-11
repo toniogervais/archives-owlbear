@@ -1,0 +1,13 @@
+#archives-player-dossier .dossier-tools{display:flex;flex-direction:column;align-items:stretch;gap:12px}
+#archives-player-dossier .dossier-tools input[type=search]{width:100%;min-width:0}
+#archives-player-dossier .dossier-filters{display:flex;gap:8px;flex-wrap:wrap}
+#archives-player-dossier .dossier-filters button{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:76px;min-height:64px;padding:10px 8px;font-size:12px}
+#archives-player-dossier .dossier-filters svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+#archives-player-dossier .dossier-filters button[aria-pressed=true]{color:#ffe5ad;background:#d1ad6430;border-color:#d1ad64}
+#archives-player-dossier [hidden]{display:none!important}
+#archives-dossier-add input{display:block;width:100%;margin:14px 0}
+#archives-dossier-detail .dossier-media{display:block;width:100%;max-height:65dvh;object-fit:contain;background:#09080e;border-radius:10px;margin-bottom:15px}
+#archives-dossier-detail .dossier-text{font:15px/1.6 system-ui;white-space:pre-wrap;overflow-wrap:anywhere;user-select:text}
+#archives-dossier-detail .dossier-pdf{width:100%;height:65dvh;display:block;margin-bottom:15px;background:#fff}
+#archives-dossier-detail a{display:inline-block;padding:10px 0;color:#f4d999}
+@media(max-width:600px){#archives-player-dossier .dossier-filters{gap:6px}#archives-player-dossier .dossier-filters button{flex:1 1 20%;min-width:65px;font-size:11px}}

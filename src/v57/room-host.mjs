@@ -1,7 +1,8 @@
-import { localRoom, roomChannel, roomMembers, snapshotReader, validSnapshot } from "./room.mjs?v=4210";
+import { localRoom, roomChannel, roomMembers, snapshotReader, validSnapshot } from "./room.mjs?v=4420";
 import { openScenario } from "./storage.mjs";
 import { validSession } from "../v56/link.mjs";
 import {campaignHost} from '../v63/campaign-host.mjs?v=4210';
+import {dossierHost} from '../v69/dossier-host.mjs?v=4420';
 import {publicItems} from '../v63/public-items.mjs';
 
 export async function makeEditorHost(OBR, post, canEdit) {
@@ -25,6 +26,7 @@ export async function makeEditorHost(OBR, post, canEdit) {
   }
   const campaign = campaignHost({OBR,store,canEdit:() => !closed && canEdit(),snapshot:() => snapshot,
     replace:value => { snapshot = value; },post,beforeRestore:stopPresentation});
+  const dossier=dossierHost(channel,post,()=>!closed&&canEdit());
   const transfers = new Set();
   const fileCommands = new Set();
   const screenCommands = new Set();
@@ -72,6 +74,7 @@ export async function makeEditorHost(OBR, post, canEdit) {
   return {
     receive(data) {
       if (!canEdit() || closed) return;
+      if (dossier.receive(data)) return;
       if (data.type === 'owl-roster-request') channel.postMessage({type:'roster-request'});
       else if (data.type === 'owl-screen-command' && validSession(data.id) && screenCommands.size < 8) {
         screenCommands.add(data.id);channel.postMessage({type:'gm-screen-command',id:data.id,command:data.command});
@@ -118,6 +121,7 @@ export async function makeEditorHost(OBR, post, canEdit) {
     dispose() {
       if (closed) return;
       closed = true;
+      dossier.dispose();
       transfers.clear();
       fileCommands.clear();
       screenCommands.clear();
@@ -136,6 +140,7 @@ export async function makePlayerHost(OBR, post, canRead) {
   const send = (type, fields) => OBR.broadcast.sendMessage(roomChannel, {type, id, ...fields});
   let ready = false, disposed = false, revision, interval, initialTimer;
   let snapshot, gmConnection = "";
+  const dossier=dossierHost(channel,post,()=>!disposed&&canRead());
   const received = snapshotReader((payload, version) => {
     if (disposed || !canRead()) return;
     snapshot = payload;
@@ -180,6 +185,7 @@ export async function makePlayerHost(OBR, post, canRead) {
   window.addEventListener("focus", request);
   return {
     receive(data) {
+      if (dossier.receive(data)) return;
       if (data.type === 'owl-public-items-request' && validSession(data.id) && !disposed && canRead()) {
         void publicItems(OBR).then(items => { if (!disposed && canRead()) post('owl-public-items-result',{id:data.id,safe:true,result:{items}}); }).catch(() => {});
         return;
@@ -198,6 +204,7 @@ export async function makePlayerHost(OBR, post, canRead) {
     dispose() {
       if (disposed) return;
       disposed = true;
+      dossier.dispose();
       clearInterval(interval);
       clearTimeout(initialTimer);
       window.removeEventListener("focus", request);

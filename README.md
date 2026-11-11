@@ -1,5 +1,15 @@
 # Les Archives de l’Imaginaire
 
+## V4.42 — canevas, fiches MJ et dossier des joueurs
+
+La molette zoome et dézoome autour du pointeur, en tenant compte du panneau latéral. Les boutons de zoom utilisent la dernière position de la souris dans le canevas. Un acte sans titre apparaît comme **Acte sans nom** et les commandes restent alignées. Les menus des cellules et des flèches sont placés selon leur hauteur réelle ; ils deviennent défilants sur un écran trop petit.
+
+Une **Fiche MJ** comporte maintenant un sélecteur **Choisir une cellule…** et le bouton **Ajouter une fiche**. Jusqu’à quatre fiches sont affichées côte à côte, avec leurs descriptions et indices indépendants. Chaque croix retire une fiche. Les petits écrans peuvent faire défiler les fiches horizontalement.
+
+Le **Dossier des joueurs** conserve la recherche et remplace la liste de tri par des boutons à icônes : Tous, Personnages, Groupes, Lieux, Objets, Ressources, Événements et **Autre**. Dans la salle Owlbear, le MJ choisit **Autre → Ajouter un fichier dans Autre**, saisit le titre public puis **Partager dans Autre**. Les fichiers de la bibliothèque proposent également **Ajouter au dossier des joueurs** ou **Retirer du dossier des joueurs**. Les joueurs consultent les documents et lancent eux-mêmes les sons/vidéos, sans démarrage imposé.
+
+Les fichiers restent enregistrés dans la bibliothèque du MJ ; il doit être connecté pour leur chargement. Limites existantes : documents de 25 Mo, sons/vidéos de 8 Mo, et 100 fichiers dans le dossier. Les originaux privés, les noms de fichiers d’origine et les liens vers les cellules ne sont jamais publiés par cette fonction. Une restauration de campagne remet les fichiers en privé : le MJ choisit ceux à repartager. Actualiser les salles du MJ et des joueurs pour charger cette version. Le connecteur SoundShow 0.3.3 reste compatible.
+
 ## V4.41 — reprise automatique de la vidéo des joueurs
 
 Le lecteur surveille désormais l’arrivée du flux vidéo, au-delà de la seule connexion au PC. Si un flux annoncé reste absent ou se coupe alors que la vidéo doit jouer, il tente de rétablir la réception automatiquement. Les mises à jour de lecture ne repoussent pas indéfiniment ce contrôle. Les tentatives sont limitées et le bouton **Réessayer la connexion** reste disponible si la liaison ne revient pas.

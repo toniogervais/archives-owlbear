@@ -45,9 +45,13 @@ export async function digest(value) {
   return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes)),byte => byte.toString(16).padStart(2,"0")).join("");
 }
 export function validPublication(value) {
-  return value && validId(value.id) && validId(value.version) && ["AUDIO","VIDEO"].includes(kindOf(value.mime)) &&
+  return validSharedFile(value) && ["AUDIO","VIDEO"].includes(kindOf(value.mime));
+}
+export function validSharedFile(value) {
+  const kind = kindOf(value?.mime),limit = kind === 'DOCUMENT' ? maxDocumentBytes : maxMediaBytes;
+  return value && validId(value.id) && validId(value.version) && !!kind &&
     typeof value.title === "string" && value.title.trim().length > 0 && value.title.length <= 120 &&
-    Number.isInteger(value.size) && value.size > 0 && value.size <= maxMediaBytes &&
+    Number.isInteger(value.size) && value.size > 0 && value.size <= limit &&
     typeof value.hash === "string" && /^[a-f0-9]{64}$/.test(value.hash);
 }
 // Explicit allowlist: never publish a library record, filename, linked cell or campaign.
@@ -58,8 +62,8 @@ export async function* fileChunks(blob) {
     yield {index,chunk:btoa(String.fromCharCode(...bytes.subarray(offset,offset + chunkBytes)))};
   }
 }
-export function fileReceiver(publication) {
-  if (!validPublication(publication)) throw Error("Présentation invalide.");
+export function fileReceiver(publication,validate = validPublication) {
+  if (!validate(publication)) throw Error("Présentation invalide.");
   const bytes = new Uint8Array(publication.size),seen = new Set();
   const count = Math.ceil(publication.size / chunkBytes);
   let transfer,finished = false;

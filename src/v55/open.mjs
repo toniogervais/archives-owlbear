@@ -1,5 +1,5 @@
 import { O as OBR } from "../../assets/index-BfJgTiPE.js";
-import { archivesUrl } from "../v57/room.mjs?v=4410";
+import { archivesUrl } from "../v57/room.mjs?v=4420";
 import { trustedOwlbearSdk } from "../v56/link.mjs";
 const hint=document.getElementById("access-hint");
 const button=document.getElementById("return"),retry=document.getElementById("retry"),diagnostic=document.getElementById("diagnostic");

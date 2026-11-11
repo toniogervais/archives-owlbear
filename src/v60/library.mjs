@@ -135,6 +135,9 @@ export async function openLibrary(context = {}) {
       const info = document.createElement("p");info.textContent = labels[entry.kind] + " · " + sizeText(entry.size) + " · " + (entry.presented ? "présenté aux joueurs" : entry.released ? "présentation arrêtée" : entry.kind === "DOCUMENT" ? "original côté MJ" : "privé");
       const action = button(entry.kind === "DOCUMENT" ? "Aperçu et transfert…" : "Aperçu et présentation…",() => { void preview(entry); });action.className = "primary";
       card.append(title,info,action);
+      card.append(button(entry.dossierShared ? 'Retirer du dossier des joueurs' : 'Ajouter au dossier des joueurs',() => {
+        void perform({action:entry.dossierShared ? 'dossier-unshare' : 'dossier-share',fileId:entry.id},entry.dossierShared ? 'Fichier retiré du dossier.' : 'Fichier partagé dans Autre. Les joueurs peuvent le consulter depuis leur dossier.');
+      }));
       if (context.cellKey && !entry.links.includes(context.cellKey)) card.append(button("Lier à cette cellule",() => { void perform({action:"link",fileId:entry.id,cellKey:context.cellKey},"Document lié à la cellule."); }));
       if (entry.presented) card.append(button("Arrêter la présentation",() => { void perform({action:"stop",fileId:entry.id},"Présentation arrêtée. Ce qui a déjà été reçu peut être conservé par les joueurs."); }));
       const options = document.createElement("details"),summary = document.createElement("summary");summary.textContent = "Options";options.append(summary);
