@@ -31,6 +31,25 @@ async def wait_expression(page, expression, timeout=20000):
     raise AssertionError('Browser condition did not become true: '+expression)
 
 
+async def assert_audible(page):
+    allow=page.get_by_role('button',name='Autoriser l’image et le son',exact=True)
+    if await allow.is_visible():await allow.click()
+    peak=await page.evaluate('''async()=>{
+        const context=new AudioContext();await context.resume();
+        try{
+            const source=context.createMediaStreamSource(document.querySelector('video').srcObject);
+            const analyser=context.createAnalyser();source.connect(analyser);
+            const data=new Float32Array(analyser.fftSize);let peak=0;
+            for(let attempt=0;attempt<30&&peak<=.001;attempt++){
+                await new Promise(resolve=>setTimeout(resolve,100));
+                analyser.getFloatTimeDomainData(data);peak=Math.max(...data.map(Math.abs));
+            }
+            return peak;
+        }finally{await context.close();}
+    }''')
+    assert peak>.001, f'The real received audio is silent: {peak}'
+
+
 class FakeShow:
     def __init__(self):
         self.sockets=set()
@@ -222,11 +241,32 @@ async def main():
                     assert await host.evaluate('window.__speakerConnections')==0, 'The connector must not play a second soundtrack on the PC.'
                     assert await tablet.locator('video').evaluate('(video)=>video.srcObject.getAudioTracks().length')==1
                     # A tablet with blocked autoplay gets a real, working authorisation button.
-                    allow=tablet.get_by_role('button',name='Autoriser l’image et le son',exact=True)
-                    if await allow.is_visible():await allow.click()
-                    audio_peak=await tablet.evaluate('''async()=>{const c=new AudioContext();await c.resume();const s=c.createMediaStreamSource(document.querySelector('video').srcObject),a=c.createAnalyser();s.connect(a);await new Promise(r=>setTimeout(r,200));const data=new Float32Array(a.fftSize);a.getFloatTimeDomainData(data);const peak=Math.max(...data.map(Math.abs));await c.close();return peak;}''')
-                    assert audio_peak>.001, f'The real received audio is silent: {audio_peak}'
+                    await assert_audible(tablet)
                     print('Real picture and audible media over WebRTC: OK',flush=True)
+                    # A late player receives the current film and its audio without
+                    # another launch, file selection, or SoundShow command.
+                    launch_count=sum(command.get('type')=='play_playable' for command in fake.commands)
+                    late=await player_context.new_page();late.on('pageerror',lambda error:errors.append(str(error)))
+                    await late.goto(str(server.make_url('/test/player')))
+                    await wait_expression(late,'!!window.attach')
+                    await late.evaluate('code=>window.attach(code)',code)
+                    await host.get_by_text('2 lecteur(s) connecté(s).',exact=True).wait_for()
+                    await wait_expression(late,'document.querySelector("video").videoWidth>0')
+                    await assert_audible(late)
+                    assert sum(command.get('type')=='play_playable' for command in fake.commands)==launch_count
+                    await late.close();await tablet.bring_to_front()
+                    print('Late join during a film receives real video and audio without relaunching SoundShow: OK',flush=True)
+                    # Lose the media transport while preserving the data channel.
+                    # Recovery must establish a fresh real stream automatically.
+                    await tablet.evaluate('''()=>{
+                        const connection=window.player.connection;
+                        window.previousVideoPeer=connection.peer.id;
+                        connection.call.emit('error',new Error('Test: media transport interrupted'));
+                    }''')
+                    await wait_expression(tablet,'window.player.connection.peer?.id && window.player.connection.peer.id!==window.previousVideoPeer && document.querySelector("video").srcObject && document.querySelector("video").videoWidth>0')
+                    await assert_audible(tablet)
+                    assert sum(command.get('type')=='play_playable' for command in fake.commands)==launch_count
+                    print('Media transport failure recovers real video and audio without a SoundShow command: OK',flush=True)
                     await fake.emit(playing=False,position=2,volume=35)
                     await wait_expression(tablet,'document.querySelector("video").paused && Math.abs(document.querySelector("video").volume-.35)<.01')
                     await fake.emit(playing=True,position=8,volume=60)

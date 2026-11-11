@@ -34,7 +34,7 @@ jobs:
               output.write('ARCHIVES_FFMPEG=' + imageio_ffmpeg.get_ffmpeg_exe() + '\n')
           PY
       - run: python -m unittest discover -s soundshow-bridge/tests -v
-      - run: node --test tests/soundshow.test.mjs
+      - run: node --test tests/soundshow.test.mjs tests/soundshow-recovery.test.mjs
       - run: python soundshow-bridge/tests/browser.py
       - run: node tests/browser-soundshow.cjs
       - run: node tests/browser-soundshow-archives.cjs

@@ -1,5 +1,15 @@
 # Les Archives de l’Imaginaire
 
+## V4.41 — reprise automatique de la vidéo des joueurs
+
+Le lecteur surveille désormais l’arrivée du flux vidéo, au-delà de la seule connexion au PC. Si un flux annoncé reste absent ou se coupe alors que la vidéo doit jouer, il tente de rétablir la réception automatiquement. Les mises à jour de lecture ne repoussent pas indéfiniment ce contrôle. Les tentatives sont limitées et le bouton **Réessayer la connexion** reste disponible si la liaison ne revient pas.
+
+Les pauses et arrêts du MJ, les changements de vidéo et les onglets masqués sont distingués d’une panne. Le retour sur l’onglet conserve une liaison qui fonctionne ; une liaison déjà interrompue peut reprendre au retour du réseau. Aucune commande de lecture SoundShow n’est renvoyée lors d’une reconnexion.
+
+Un joueur rejoignant la diffusion en cours reçoit la vidéo actuelle et sa piste audio. Les essais automatiques contrôlent cette arrivée tardive et une interruption de transport suivie d’une reprise réelle de l’image et du son, sans nouvelle commande SoundShow.
+
+**Le connecteur Windows 0.3.3 reste compatible.** Pour charger ce correctif, actualiser la salle du MJ et les pages des joueurs. Le réseau Wi-Fi, le PC Windows et la tablette Samsung doivent toujours faire l’objet d’un essai réel.
+
 ## V4.40 — vidéo et son directement dans les Archives des joueurs
 
 Une vidéo lancée par le MJ dans SoundShow s’affiche maintenant **dans les Archives ouvertes par le joueur**, au-dessus du canevas et avec sa piste audio. La session vidéo est transmise automatiquement au lecteur de cette vue ; une seconde fenêtre vidéo Owlbear ne joue pas en parallèle sur le même appareil. Le retour à la carte rend la réception au lecteur Owlbear, et la réouverture des Archives reprend la liaison.

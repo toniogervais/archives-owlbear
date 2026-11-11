@@ -10,6 +10,7 @@ export function loadPeer() {
   }).catch(error=>{loading=null;throw error;});return loading;
 }
 export function explainConnectionFailure(type,phase='signal') {
+  if(type==='media-timeout')return 'La vidéo est annoncée, mais son flux n’arrive plus. Vérifie le Wi-Fi et garde le connecteur du PC ouvert.';
   if(type==='peer-unavailable')return 'PC du MJ introuvable : le code SoundShow peut être périmé. Prépare une nouvelle diffusion sur le PC, puis relie les joueurs.';
   if(['network','socket-error','socket-closed','server-error','ssl-unavailable'].includes(type))
     return 'Serveur de mise en relation inaccessible. Vérifie Internet et le message « Code prêt » sur le connecteur du PC.';
@@ -28,6 +29,29 @@ export function explainConnectionFailure(type,phase='signal') {
 export class SoundShowConnection {
   constructor({mode='view',onStatus=()=>{},onPlayback=()=>{},onStream=()=>{}}={}) {
     Object.assign(this,{mode,onStatus,onPlayback,onStream});this.epoch=0;this.retries=0;this.stage='idle';
+    this.playback={active:false};
+  }
+  clearMediaTimeout(){clearTimeout(this.mediaTimeout);this.mediaTimeout=null;}
+  checkMedia(){
+    if(this.mode!=='view'||!this.playback.active||!this.playback.playing){this.clearMediaTimeout();return;}
+    if(this.videoTrack?.readyState==='live'&&!this.videoTrack.muted){
+      this.retries=0;this.clearMediaTimeout();return;
+    }
+    if(this.stage!=='ready'||this.mediaTimeout)return;
+    const epoch=this.epoch;
+    this.mediaTimeout=setTimeout(()=>{
+      this.mediaTimeout=null;
+      if(this.epoch!==epoch||!this.playback.active||!this.playback.playing||
+        typeof document!=='undefined'&&document.hidden)return;
+      if(this.videoTrack?.readyState==='live'&&!this.videoTrack.muted)return;
+      this.recover?.('media-timeout');
+    },12000);
+  }
+  resume(){
+    if(!this.session)return;
+    if(this.connection?.open){this.checkMedia();return;}
+    if(this.stage!=='idle')return;
+    this.drop();this.retries=0;void this.connect();
   }
   async use(session) {
     if(session!==null&&!validSession(session))throw Error('Connexion SoundShow invalide.');
@@ -49,6 +73,7 @@ export class SoundShowConnection {
         this.timer=setTimeout(()=>void this.connect(),Math.min(1000*2**attempt,15000));
       }else this.onStatus('Connexion impossible après plusieurs essais — '+issue+' Appuie sur Réessayer la connexion.');
     };
+    this.recover=fail;
     try {
       await loadPeer();if(this.epoch!==epoch)return;
       const peer=new Peer(undefined,{config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}],iceCandidatePoolSize:2},...window.ArchivesSoundShowPeerOptions});this.peer=peer;
@@ -65,20 +90,34 @@ export class SoundShowConnection {
         connection.on('data',data=>{
           if(this.epoch!==epoch)return;
           if(data?.type==='welcome'&&typeof data.session==='string'&&/^[A-Za-z0-9_-]{8,100}$/.test(data.session)){
-            this.nonce=data.session;clearTimeout(this.timeout);this.retries=0;this.stage='ready';
+            this.nonce=data.session;clearTimeout(this.timeout);this.stage='ready';
+            if(this.mode==='watch'||!this.playback.active)this.retries=0;
             connection.send({type:'ready',session:this.nonce});this.onStatus('Prêt — en attente d’une vidéo du MJ.');return;
           }
-          const playback=this.nonce&&publicPlayback(data);if(playback)this.onPlayback(playback);
+          const playback=this.nonce&&publicPlayback(data);
+          if(playback){this.playback=playback;if(!playback.active)this.retries=0;this.checkMedia();this.onPlayback(playback);}
         });
         connection.on('close',()=>fail('connection-closed'));
         connection.on('error',error=>fail(error?.type||'connection-closed'));
       });
       peer.on('call',call=>{
         if(this.epoch!==epoch||this.mode!=='view'||call.peer!==session.peer||!this.nonce||call.metadata?.session!==this.nonce){call.close();return;}
-        this.call?.close();this.call=call;call.answer();
-        call.on('stream',stream=>{if(this.epoch===epoch&&this.call===call)this.onStream(stream);});
-        call.on('close',()=>{if(this.call===call){this.call=null;this.onStream(null);}});
-        call.on('error',()=>{if(this.call===call)this.onStatus('Le PC répond, mais le flux vidéo ne traverse pas le réseau Wi-Fi. Vérifie le pare-feu Windows.');});
+        const previous=this.call;this.call=call;this.videoTrack=null;
+        previous?.close();if(previous)this.onStream(null);
+        this.checkMedia();
+        call.on('stream',stream=>{
+          if(this.epoch!==epoch||this.call!==call)return;
+          this.videoTrack=stream?.getVideoTracks()[0]||null;
+          const changed=()=>{if(this.epoch===epoch&&this.call===call)this.checkMedia();};
+          for(const event of ['mute','unmute','ended'])this.videoTrack?.addEventListener(event,changed);
+          this.checkMedia();this.onStream(stream);
+        });
+        call.on('close',()=>{
+          if(this.epoch!==epoch||this.call!==call)return;
+          this.call=null;this.videoTrack=null;this.onStream(null);this.checkMedia();
+        });
+        call.on('error',()=>{if(this.epoch===epoch&&this.call===call)fail('webrtc');});
+        try{call.answer();}catch{fail('webrtc');}
       });
       peer.on('connection',connection=>connection.close());
       peer.on('disconnected',()=>{
@@ -91,8 +130,9 @@ export class SoundShowConnection {
     } catch(error){if(this.epoch===epoch)fail(error?.type||'network');}
   }
   drop() {
-    this.epoch++;clearTimeout(this.timeout);clearTimeout(this.timer);this.nonce=null;this.stage='idle';
+    this.epoch++;clearTimeout(this.timeout);clearTimeout(this.timer);this.clearMediaTimeout();this.nonce=null;this.stage='idle';
+    this.videoTrack=null;this.recover=null;
     const peer=this.peer;this.peer=null;this.connection=null;this.call=null;peer?.destroy();
   }
-  stop() {this.drop();this.retries=0;this.session=null;this.onStream(null);this.onPlayback({type:'playback',active:false});}
+  stop() {this.drop();this.retries=0;this.session=null;this.playback={type:'playback',active:false};this.onStream(null);this.onPlayback(this.playback);}
 }

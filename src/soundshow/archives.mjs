@@ -12,7 +12,7 @@ async function usePlayerSession(value,reopen=false){
   if(isGM()||value!==null&&!validSession(value))return;
   liveSession=value;const epoch=++playerEpoch;
   if(!value&&!player&&!playerLoading)return;
-  if(!playerLoading)playerLoading=import('./player.mjs?v=4400').then(({mountPlayer})=>{
+  if(!playerLoading)playerLoading=import('./player.mjs?v=4410').then(({mountPlayer})=>{
     player=mountPlayer({onState:state=>{
       if(embedded&&!isGM())window.parent.postMessage(packet('owl-soundshow-player-status',{state}),location.origin);
     }});return player;
