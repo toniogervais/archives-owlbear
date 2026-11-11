@@ -97,8 +97,19 @@ const library=async(p,command)=>app(p).evaluate(async command=>{const {libraryRe
   assert.ok(playback.paused&&playback.playing&&!playback.muted&&playback.volume>0);
   await closePane(player,'archives-dossier-detail');
   await library(gm,{action:'dossier-unshare',fileId:audio.entry.id});await sound.waitFor({state:'detached'});
+  // A large public catalog is chunked below Owlbear's 16 KB message limit.
+  await app(gm).evaluate(seedId=>new Promise((resolve,reject)=>{
+    const open=indexedDB.open('archives-imaginaire-files',1);open.onerror=()=>reject(open.error);open.onsuccess=()=>{
+      const db=open.result,tx=db.transaction('entries','readwrite'),store=tx.objectStore('entries'),request=store.getAll();
+      request.onsuccess=()=>{
+        const seed=request.result.find(entry=>entry.id===seedId);
+        for(let i=0;i<40;i++){const id=crypto.randomUUID();store.put({...seed,id,name:'CATALOG_PRIVATE_'+i+'.txt',title:'Catalogue '+i+' '+('文'.repeat(100)),dossier:{version:crypto.randomUUID()}},[...seed.scope,id])}
+      };tx.oncomplete=()=>{db.close();resolve()};tx.onerror=()=>reject(tx.error);
+    }
+  }),hidden.entry.id);
+  await until(async()=>await dossier.locator('[data-dossier-id]').count()===41,'large shared catalog received without message overflow');
   const wire=JSON.stringify(await player.evaluate(()=>window.fixture.wire()));
-  for(const secret of ['FICHIER_PRIVE_442','CONTENU_PRIVE_442','CELLULE_PRIVEE_442','DESCRIPTION_PRIVEE_442','ORIGINAL_MJ_442','SON_PRIVE_442','SECRET_0'])assert.ok(!wire.includes(secret),'private data leaked: '+secret);
+  for(const secret of ['FICHIER_PRIVE_442','CONTENU_PRIVE_442','CELLULE_PRIVEE_442','DESCRIPTION_PRIVEE_442','ORIGINAL_MJ_442','SON_PRIVE_442','SECRET_0','CATALOG_PRIVATE'])assert.ok(!wire.includes(secret),'private data leaked: '+secret);
   assert.deepEqual(errors,[]);
   console.log('V4.42: cursor zoom, unnamed acts, four independent GM briefs, bounded menus, icon filters, safe on-demand documents/audio and withdrawal passed.');
  }finally{await browser.close()}

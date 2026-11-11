@@ -46,7 +46,12 @@ export function installDossierFiles(OBR,{channel,isMember,getStore,getRole,getCo
         if(getRole()!=='GM'||!await isMember(event.connectionId,'PLAYER')||!live())return;
         const to=event.connectionId,requestId=data.requestId;
         if(data.action==='list'){
-          const entries=await catalog();await getStore();if(live())await send({type:'catalog',to,requestId,entries});return;
+          const entries=await catalog(),count=Math.max(1,Math.ceil(entries.length/10));
+          for(let index=0;index<count;index++){
+            await getStore();if(!live())return;
+            await send({type:'catalog',to,requestId,index,count,entries:entries.slice(index*10,index*10+10)});
+          }
+          return;
         }
         if(data.action!=='get'||!validId(data.fileId)||sending.has(to)||sending.size>=8)return;
         sending.add(to);
@@ -68,8 +73,12 @@ export function installDossierFiles(OBR,{channel,isMember,getStore,getRole,getCo
       }
       const state=pending.get(data.requestId);
       if(getRole()!=='PLAYER'||!state||state.sender!==event.connectionId||!await isMember(event.connectionId,'GM')||!live()||pending.get(data.requestId)!==state)return;
-      if(data.type==='catalog'&&state.action==='list'&&Array.isArray(data.entries)&&data.entries.length<=100&&data.entries.every(validSharedFile)){
-        finish(data.requestId,true,{entries:data.entries.map(publicFile)});
+      if(data.type==='catalog'&&state.action==='list'&&Number.isInteger(data.count)&&data.count>=1&&data.count<=10&&
+          Number.isInteger(data.index)&&data.index>=0&&data.index<data.count&&Array.isArray(data.entries)&&data.entries.length<=10&&data.entries.every(validSharedFile)){
+        state.parts||=new Map();state.count||=data.count;
+        if(state.count!==data.count)return;
+        state.parts.set(data.index,data.entries.map(publicFile));resetTimeout(data.requestId,state);
+        if(state.parts.size===state.count)finish(data.requestId,true,{entries:Array.from({length:state.count},(_,index)=>state.parts.get(index)).flat()});
       }else if(data.type==='file'&&state.action==='get'&&!state.receiver&&data.entry?.id===state.fileId&&validSharedFile(data.entry)){
         state.entry=publicFile(data.entry);state.receiver=fileReceiver(state.entry,validSharedFile);resetTimeout(data.requestId,state);
       }else if(data.type==='data'&&state.receiver){
