@@ -1,5 +1,13 @@
 # Les Archives de l’Imaginaire
 
+## V4.43 — images des cellules et classement multiple
+
+Dans **Réglages de la cellule active**, le bouton **Bibliothèque d’images** est placé à côté de l’import depuis l’ordinateur. La fenêtre de choix propose une recherche par nom, un type de cellule et une sous-catégorie. **Utiliser cette image** applique l’illustration à la cellule choisie, avec son aperçu, sans recréer la cellule ni modifier ses descriptions et indices. Le sélecteur d’image de la barre de raccourcis propose le même accès.
+
+Dans la bibliothèque d’images, sélectionner une image par clic gauche, puis en ajouter ou en retirer par **Ctrl + clic gauche** (ou Cmd sur Mac). Les cases à cocher permettent aussi la sélection, notamment sur tablette. Le compteur et la bordure mettent en évidence la sélection. Cliquer sur **Déplacer la sélection…**, choisir le type et la sous-catégorie de destination puis **Valider**. Il est possible de créer une sous-catégorie directement dans cette fenêtre. Le clic droit sur une image sélectionnée permet également d’opérer sur tout le lot. La commande **Copier** conserve les originaux et crée des copies dans la destination.
+
+Le classement fonctionne pour une seule image et pour un lot. Une transaction unique empêche un déplacement partiel si l’enregistrement échoue. Les images conservent leurs fichiers, noms et dimensions d’origine ; le classement reste privé et persiste après rechargement. Les cellules déjà illustrées ne sont pas déplacées par le classement de leurs images dans la bibliothèque. Actualiser les pages du MJ et des joueurs pour charger cette version.
+
 ## V4.42 — canevas, fiches MJ et dossier des joueurs
 
 La molette zoome et dézoome autour du pointeur, en tenant compte du panneau latéral. Les boutons de zoom utilisent la dernière position de la souris dans le canevas. Un acte sans titre apparaît comme **Acte sans nom** et les commandes restent alignées. Les menus des cellules et des flèches sont placés selon leur hauteur réelle ; ils deviennent défilants sur un écran trop petit.
