@@ -115,6 +115,7 @@ async def main():
                     options={'host':'127.0.0.1','port':server.port,'path':'/signal/','secure':False,'config':{'iceServers':[]}}
                     context=await browser.new_context()
                     await context.add_init_script('window.ArchivesSoundShowPeerOptions='+json.dumps(options)+';window.showOpenFilePicker=undefined;')
+                    await context.add_init_script('''window.__speakerConnections=0;const connect=AudioNode.prototype.connect;AudioNode.prototype.connect=function(destination,...rest){if(destination instanceof AudioDestinationNode)window.__speakerConnections++;return connect.call(this,destination,...rest);};''')
                     host=await context.new_page();host.on('pageerror',lambda error:errors.append(str(error)))
                     host.on('console',lambda msg:print('Browser console: '+msg.text,flush=True) if msg.type=='error' else None)
                     await host.goto(str(server.make_url('/'))+'#key=browser-test-admin')
@@ -218,7 +219,7 @@ async def main():
                         print('Receiver media:',await tablet.evaluate('''()=>{const v=document.querySelector('video'),c=window.player.connection;return{status:document.querySelector('.soundshow-view footer').textContent,width:v.videoWidth,ready:v.readyState,paused:v.paused,muted:v.muted,tracks:v.srcObject?.getTracks().map(t=>({kind:t.kind,ready:t.readyState})),rtc:c.call?.peerConnection?.connectionState};}'''),flush=True)
                         raise
                     await wait_expression(tablet,'document.querySelector("video").currentTime>0')
-                    assert await host.locator('#source').evaluate('(video)=>video.muted')
+                    assert await host.evaluate('window.__speakerConnections')==0, 'The connector must not play a second soundtrack on the PC.'
                     assert await tablet.locator('video').evaluate('(video)=>video.srcObject.getAudioTracks().length')==1
                     # A tablet with blocked autoplay gets a real, working authorisation button.
                     allow=tablet.get_by_role('button',name='Autoriser l’image et le son',exact=True)

@@ -18,7 +18,7 @@ from urllib.parse import urlsplit
 
 from aiohttp import ClientConnectorError, ClientSession, ClientTimeout, TraceConfig, WSServerHandshakeError, WSMsgType, web
 
-VERSION = '0.3.2'
+VERSION = '0.3.3'
 ROOT = Path(getattr(sys, '_MEIPASS', Path(__file__).resolve().parent))
 REPO = Path(__file__).resolve().parent.parent
 

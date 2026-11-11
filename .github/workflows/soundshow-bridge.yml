@@ -84,7 +84,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          if ! gh release view soundshow-bridge-v0.3.2 > /dev/null 2>&1; then
-            gh release create soundshow-bridge-v0.3.2 --target "$GITHUB_SHA" --prerelease --title "Connecteur SoundShow — essai 0.3.2" --notes "Lecteur SoundShow : boucle, pause, arrêt, fondu, volume, frise d'onde indicative et progression. Sons et vidéos, grille compacte, fenêtre mobile et redimensionnable, cellule avec déclenchement multi-médias. MJ uniquement. Essais sur matériel réel à confirmer."
+          if ! gh release view soundshow-bridge-v0.3.3 > /dev/null 2>&1; then
+            gh release create soundshow-bridge-v0.3.3 --target "$GITHUB_SHA" --prerelease --title "Connecteur SoundShow — essai 0.3.3" --notes "Lecteur SoundShow : boucle, pause, arrêt, fondu, volume, frise d'onde indicative et progression. Sons et vidéos, grille compacte, fenêtre mobile et redimensionnable, cellule avec déclenchement multi-médias. MJ uniquement. Essais sur matériel réel à confirmer."
           fi
-          gh release upload soundshow-bridge-v0.3.2 windows/Archives-SoundShow-Connecteur.exe --clobber
+          gh release upload soundshow-bridge-v0.3.3 windows/Archives-SoundShow-Connecteur.exe --clobber

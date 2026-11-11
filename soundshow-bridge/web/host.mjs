@@ -6,6 +6,21 @@ history.replaceState(null,'',location.pathname); // Keep the administrator key o
 const files = new Map(), handles = new Map(), clients = new Map();
 let show, ws, wsTimer, peer, secret, stream, objectUrl, current, generation = 0, db, closing = false;
 let playback = {type:'playback',active:false}, peerRetry = 0;
+let audioContext=null,audioSource=null,audioDestination=null;
+function prepareAudio(){
+  if(!audioContext){
+    const Context=window.AudioContext||window.webkitAudioContext;
+    if(!Context)throw Error('Ce navigateur ne permet pas la diffusion audio. Ouvre le connecteur dans Chrome.');
+    audioContext=new Context();audioSource=audioContext.createMediaElementSource($('source'));
+    audioContext.addEventListener('statechange',()=>{$('enable-audio').hidden=audioContext.state==='running';});
+  }
+  $('enable-audio').hidden=audioContext.state==='running';
+  return audioContext.resume();
+}
+function primeAudio(){
+  try{void prepareAudio().catch(()=>{$('enable-audio').hidden=false;});}
+  catch(error){text('stream-status',error.message);}
+}
 const archivesOrigin='https://toniogervais.github.io';
 const owlUrl='https://www.owlbear.rodeo/';
 const linkProtocol='archives:soundshow:owlbear-link-v1';
@@ -113,6 +128,7 @@ async function remember(id,handle) {
   const database = await openDatabase();return new Promise((resolve,reject)=>{const tx=database.transaction('handles','readwrite');tx.objectStore('handles').put(handle,fileKey(id));tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});
 }
 async function choose(id) {
+  primeAudio();
   try {
     let file,handle;
     if (window.showOpenFilePicker) {
@@ -179,6 +195,9 @@ function call(entry) {
 function clearSource() {
   generation++;
   $('source').pause();$('source').removeAttribute('src');$('source').load();
+  audioSource?.disconnect();
+  for(const track of audioDestination?.stream.getTracks()||[])track.stop();
+  audioDestination=null;
   for (const entry of clients.values()) { entry.call?.close();entry.call=null; }
   for (const track of stream?.getTracks() || []) track.stop();
   stream=null;current=null;
@@ -219,12 +238,21 @@ async function follow() {
       if(mine!==generation)return;
       if(typeof source.captureStream!=='function')throw Error('Ouvre le connecteur dans Chrome sur ton PC pour diffuser cette vidéo.');
       source.currentTime=desiredPosition(item,source.duration);
+      await prepareAudio();if(mine!==generation)return;
+      // Media-element muting also silences captureStream() in Chromium.
+      // Route decoded audio only to a stream destination, never the PC speakers.
+      const destination=audioContext.createMediaStreamDestination();
+      audioDestination=destination;
+      audioSource.connect(destination);source.muted=false;source.volume=1;
       await source.play();if(mine!==generation)return;
-      stream=source.captureStream();if(!item.playing)source.pause();current.pending=false;
+      const captured=source.captureStream();
+      for(const track of captured.getAudioTracks())track.stop();
+      stream=new MediaStream([...captured.getVideoTracks(),...destination.stream.getAudioTracks()]);
+      if(!item.playing)source.pause();current.pending=false;
       if (!stream.getVideoTracks().length) throw Error('La capture de cette vidéo ne fournit aucune image.');
       broadcast(playback);for(const entry of clients.values())call(entry);
       text('stream-status','Diffusion de « '+playback.title+' ». Les commandes restent dans SoundShow.');
-    } catch(error) {if(mine===generation){clearSource();text('stream-status',error.message);}}
+    } catch(error) {if(mine===generation){clearSource();if(error.name==='NotAllowedError'){$('enable-audio').hidden=false;text('stream-status','Touche « Autoriser la diffusion du son » pour démarrer la vidéo avec son audio.');}else text('stream-status',error.message);}}
     return;
   }
   if(current.pending)return;
@@ -265,11 +293,12 @@ function stopSession() {
   owlLinked=false;stopLinkTimer();clearSource();for(const entry of clients.values())entry.connection.close();clients.clear();peer?.destroy();peer=null;
   $('pair-code').value='';$('copy').disabled=$('stop-session').disabled=true;text('peer-status','Diffusion terminée. Prépare une nouvelle connexion pour reprendre.');audience();
 }
-$('connection').onsubmit=async event=>{event.preventDefault();try{await api('connect',{url:$('address').value.trim(),password:$('password').value});$('password').value='';}catch(error){text('show-status',error.message);}};
-$('demo-init').onclick=()=>void api('demo',{action:'init'}).catch(error=>text('show-status',error.message));
+$('connection').onsubmit=async event=>{event.preventDefault();primeAudio();try{await api('connect',{url:$('address').value.trim(),password:$('password').value});$('password').value='';}catch(error){text('show-status',error.message);}};
+$('demo-init').onclick=()=>{primeAudio();void api('demo',{action:'init'}).catch(error=>text('show-status',error.message));};
 document.querySelectorAll('[data-demo]').forEach(button=>button.onclick=()=>void api('demo',{action:button.dataset.demo}).catch(error=>text('show-status',error.message)));
-$('restore').onclick=()=>void restore();$('prepare').onclick=prepare;$('stop-session').onclick=stopSession;
+$('restore').onclick=()=>{primeAudio();void restore();};$('prepare').onclick=prepare;$('stop-session').onclick=stopSession;
+$('enable-audio').onclick=()=>{primeAudio();void follow();};
 $('link-archives').onclick=openOwlbearAndLink;
 $('copy').onclick=async()=>{try{await navigator.clipboard.writeText($('pair-code').value);text('peer-status','Code copié. Ouvre le bouton SoundShow des Archives pour le coller.');}catch{$('pair-code').select();text('peer-status','Sélectionne le code puis copie-le avec Ctrl+C.');}};
-window.addEventListener('pagehide',()=>{closing=true;clearTimeout(wsTimer);stopLinkTimer();ws?.close();stopSession();},{once:true});
+window.addEventListener('pagehide',()=>{closing=true;clearTimeout(wsTimer);stopLinkTimer();ws?.close();stopSession();void audioContext?.close();},{once:true});
 if(!key)text('show-status','Rouvre le connecteur depuis son programme pour obtenir ton accès administrateur.');else connectEvents();

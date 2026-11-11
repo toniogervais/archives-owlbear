@@ -6,7 +6,7 @@ Une vidéo lancée par le MJ dans SoundShow s’affiche maintenant **dans les Ar
 
 **Pour une première utilisation :**
 
-1. Sur le PC MJ, ouvrir SoundShow 2 Pro, son serveur distant et le [connecteur Windows 0.3.2](https://github.com/toniogervais/archives-owlbear/releases/download/soundshow-bridge-v0.3.2/Archives-SoundShow-Connecteur.exe).
+1. Sur le PC MJ, ouvrir SoundShow 2 Pro, son serveur distant et le [connecteur Windows 0.3.3](https://github.com/toniogervais/archives-owlbear/releases/download/soundshow-bridge-v0.3.3/Archives-SoundShow-Connecteur.exe).
 2. Dans le connecteur, saisir l’adresse annoncée par SoundShow et le mot de passe, puis **Connecter SoundShow**. Pour chaque vidéo à diffuser, cliquer sur **Choisir la vidéo** et sélectionner le fichier correspondant. Le fichier reste uniquement sur le PC MJ.
 3. Cliquer sur **Ouvrir Owlbear et relier les joueurs**, puis rejoindre sa salle comme MJ. Les joueurs rejoignent cette même salle et ouvrent **Les Archives** avec leur bouton habituel. Garder le connecteur et son onglet Chrome ouverts.
 4. Lancer la vidéo dans SoundShow, avec son bouton ou son raccourci habituel. La vidéo s’ouvre dans les Archives des joueurs ; aucune adresse vidéo ni aucun code SoundShow ne leur est demandé.
@@ -14,7 +14,7 @@ Une vidéo lancée par le MJ dans SoundShow s’affiche maintenant **dans les Ar
 
 **Revenir au jeu** masque la vidéo. Le bouton discret **Revoir la vidéo du MJ** permet de la réafficher sans attendre le film suivant. La fin du film libère le canevas ; le lecteur reste relié pour le suivant. Le panneau SoundShow du MJ indique le nombre de lecteurs joueurs reliés et les écrans qui doivent encore autoriser le son.
 
-Cette mise à jour fonctionne avec le connecteur **0.3.2 existant**. Après publication, actualiser la salle Owlbear du MJ et celles des joueurs pour charger la V4.40. L’adresse de l’extension reste [manifest-v55.json](https://toniogervais.github.io/archives-owlbear/manifest-v55.json).
+Le **nouveau connecteur 0.3.3 est nécessaire pour transmettre le son** : l’aperçu silencieux de l’ancienne version produisait un flux audio muet. Le son est désormais capturé séparément, sans ajout d’une seconde lecture sur le PC. Après publication, actualiser la salle Owlbear du MJ et celles des joueurs pour charger la V4.40. L’adresse de l’extension reste [manifest-v55.json](https://toniogervais.github.io/archives-owlbear/manifest-v55.json).
 
 Le son diffusé est **celui du fichier vidéo**. Le mixage général des sons de SoundShow continue de sortir par les périphériques configurés dans SoundShow. Les effets visuels de sortie de SoundShow ne sont pas capturés ; le connecteur synchronise une lecture du fichier source. Utiliser Chrome sur le PC et, pour le premier essai, un MP4 H.264 avec audio AAC et des tablettes sur le même Wi-Fi. Les validations automatiques ne remplacent pas l’essai sur le PC Windows et la tablette Samsung du MJ.
 
@@ -32,7 +32,7 @@ La partie supérieure du panneau propose un **lecteur SoundShow** des instances 
 
 **Ergonomie générale.** Barre de raccourcis existante déplaçable ; barre d'intégrations, barre de commandes, barre SoundShow également repositionnables avec leurs poignées. La grande barre de titre du panneau hôte « Les Archives de l'Imaginaire » est supprimée, tout en conservant le retour vers Owlbear. Un bouton plein écran a été ajouté ; si le navigateur refuse le plein écran d'une fenêtre intégrée, l'interface affiche l'alternative F11.
 
-La télécommande et les médias de révélations sont **réservés au MJ**. Le connecteur refuse les commandes inconnues et les lecteurs verrouillés ; les données privées des cellules et les mots de passe SoundShow ne sont pas transmis aux joueurs. Version connecteur Windows **0.3.2**. Les fonctions sont vérifiées en tests automatiques ; leurs interactions sur PC Windows/Chrome et tablettes Android doivent être validées en conditions réelles.
+La télécommande et les médias de révélations sont **réservés au MJ**. Le connecteur refuse les commandes inconnues et les lecteurs verrouillés ; les données privées des cellules et les mots de passe SoundShow ne sont pas transmis aux joueurs. Version connecteur Windows **0.3.3**. Les fonctions sont vérifiées en tests automatiques ; leurs interactions sur PC Windows/Chrome et tablettes Android doivent être validées en conditions réelles.
 
 
 
