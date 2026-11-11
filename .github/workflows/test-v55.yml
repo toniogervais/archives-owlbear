@@ -16,6 +16,9 @@ on:
       - 'src/v64/**'
       - 'src/v65/**'
       - 'src/v68/**'
+      - 'src/v69/**'
+      - 'tests/dossier-v442.test.mjs'
+      - 'tests/browser-v442.cjs'
       - 'tests/cell-brief-v439.test.cjs'
       - 'tests/browser-v65.cjs'
       - 'tests/controls-v65.test.mjs'
@@ -64,7 +67,7 @@ jobs:
         with:
           node-version: '22'
       - run: npm ci
-      - run: node --test tests/controls-v65.test.mjs tests/campaign-v63.test.mjs tests/crop-v61.test.mjs tests/files-v60.test.mjs tests/security-v58.test.cjs tests/room-v57.test.mjs tests/fallback-v56.test.mjs tests/transfer-v55.test.cjs tests/bridge-v55.test.cjs tests/visual-v54.test.cjs tests/bridge-v53.test.cjs tests/bridge-v52.test.cjs tests/security-v52.test.cjs tests/cell-brief-v439.test.cjs
+      - run: node --test tests/controls-v65.test.mjs tests/campaign-v63.test.mjs tests/crop-v61.test.mjs tests/files-v60.test.mjs tests/security-v58.test.cjs tests/room-v57.test.mjs tests/fallback-v56.test.mjs tests/transfer-v55.test.cjs tests/bridge-v55.test.cjs tests/visual-v54.test.cjs tests/bridge-v53.test.cjs tests/bridge-v52.test.cjs tests/security-v52.test.cjs tests/cell-brief-v439.test.cjs tests/dossier-v442.test.mjs
       - run: node tests/syntax.cjs
       - run: node --test tests/settings-v59.test.cjs
       - run: npx playwright install chromium
@@ -79,4 +82,5 @@ jobs:
       - run: node tests/browser-v63.cjs
       - run: node tests/browser-v64.cjs
       - run: node tests/browser-v65.cjs
+      - run: node tests/browser-v442.cjs
       - run: node tests/browser-startup.cjs

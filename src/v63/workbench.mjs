@@ -1,6 +1,7 @@
-import {button,element,isGM,nativeEditor,notice,request,requireGM,sheet} from './ui.mjs';
+import {button,element,isGM,nativeEditor,notice,request,requireGM,sheet} from './ui.mjs?v=4420';
 import {packet,editEvent} from '../v56/link.mjs';
 import {sendScreenCommand,leaveToMap} from '../v65/screens.mjs?v=4210';
+import {dossierFilters,openAddFile,openSharedFile,removeSharedFile} from '../v69/dossier-ui.mjs?v=4420';
 let players = [];
 const paths = {
   batch:'<rect x="3" y="4" width="13" height="13" rx="2"/><path d="M8 20h11a2 2 0 0 0 2-2V9M7 13l3-3 3 3M7 8h.01"/>',
@@ -62,6 +63,7 @@ function publicNodes() {
   })));
 }
 function detail(record) {
+  if(record.file){openSharedFile(record);return}
   const view = sheet('archives-dossier-detail',record.title,'Dossier des joueurs');
   if (record.image) { const image = element('img');image.src = record.image;image.alt = record.title;image.referrerPolicy = 'no-referrer';image.style.cssText = 'display:block;width:100%;max-height:60dvh;object-fit:contain;border-radius:12px;background:#09080e';view.content.append(image); }
   if (record.description) view.content.append(element('p',record.description));
@@ -69,17 +71,25 @@ function detail(record) {
 }
 function openDossier() {
   const view = sheet('archives-player-dossier','Dossier des joueurs','Éléments révélés');
-  const tools = element('div',null,'studio-tools'),search = element('input'),grid = element('div',null,'studio-grid');
+  const tools = element('div',null,'studio-tools dossier-tools'),search = element('input'),grid = element('div',null,'studio-grid');
   search.type = 'search';search.placeholder = 'Rechercher un personnage, un document ou un indice…';search.setAttribute('aria-label','Rechercher dans le dossier des joueurs');
-  const filter = element('select');filter.setAttribute('aria-label','Filtrer le dossier');
-  for (const [value,label] of [['','Tout'],['personnage','Personnages'],['document','Documents Owlbear'],['indices','Avec des indices']]) { const option = element('option',label);option.value = value;filter.append(option); }
-  tools.append(search,filter);view.content.append(element('p','Retrouve les informations révélées de la campagne et les documents actuellement partagés dans cette scène Owlbear.','studio-hint'),tools,grid);
-  let documents = [],documentSignature = '',closed = false,fetching = false;
+  const filters=element('div',null,'dossier-filters');filters.setAttribute('role','group');filters.setAttribute('aria-label','Filtrer par type de cellule');
+  let selectedKind='';
+  const controls=dossierFilters.map(([kind,label,path])=>{
+    const control=button('',()=>{selectedKind=kind;render()});control.dataset.kind=kind;control.setAttribute('aria-label',label);control.title=label;
+    control.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+path+'</svg>';control.append(element('span',label));filters.append(control);return control;
+  });
+  const add=button('＋ Ajouter un fichier dans Autre',()=>openAddFile(async()=>{selectedKind='autre';await refreshDocuments();render()}));
+  tools.append(search,filters,add);view.content.append(element('p','Retrouve les informations révélées de la campagne et les documents, sons ou vidéos partagés par le MJ.','studio-hint'),tools,grid);
+  let documents = [],files=[],documentSignature = '',closed = false,fetching = false;
+  const knownKinds=new Set(dossierFilters.map(([kind])=>kind));
   function render() {
     if (closed) return;
-    const query = search.value.toLocaleLowerCase('fr'),kind = filter.value;
-    const records = [...publicNodes(),...documents],filtered = records.filter(record => (!kind ||
-      kind === 'indices' && record.clues?.length || kind === 'document' && record.category === 'document' || kind === 'personnage' && record.category === 'personnage') &&
+    const query = search.value.toLocaleLowerCase('fr');
+    for(const control of controls)control.setAttribute('aria-pressed',String(control.dataset.kind===selectedKind));
+    add.hidden=!(isGM()&&nativeEditor()&&selectedKind==='autre');
+    const records = [...publicNodes(),...documents,...files],filtered = records.filter(record => (!selectedKind ||
+      (knownKinds.has(record.category)?record.category:'autre')===selectedKind) &&
       (record.title+' '+(record.description || '')+' '+(record.clues || []).join(' ')).toLocaleLowerCase('fr').includes(query));
     grid.replaceChildren();
     for (const record of filtered) {
@@ -88,7 +98,11 @@ function openDossier() {
       card.append(element('h3',record.title));
       if (record.description) card.append(element('p',record.description.slice(0,170)+(record.description.length > 170 ? '…' : ''),'studio-hint'));
       if (record.clues?.length) card.append(element('p',record.clues.length+' indice(s) révélé(s)','studio-hint'));
-      card.append(button('Consulter',() => detail(record)));grid.append(card);
+      card.append(button('Consulter',() => detail(record)));
+      if(record.file&&isGM()&&nativeEditor())card.append(button('Retirer du dossier',async()=>{
+        try{await removeSharedFile(record);await refreshDocuments()}catch(error){view.status.textContent=error.message}
+      }));
+      grid.append(card);
     }
     if (!filtered.length) grid.append(element('p',query ? 'Aucun élément révélé pour cette recherche.' : 'Le MJ n’a encore partagé aucun élément correspondant.','studio-hint'));
     view.status.textContent = filtered.length+' élément(s) disponible(s).';
@@ -97,14 +111,15 @@ function openDossier() {
     if (closed || fetching || window.parent === window) return;
     fetching = true;
     try {
-      const result = await request('public');if (closed) return;
-      const next = (result.items || []).map(item => ({id:'owl:'+item.id,title:item.title,image:item.image.url,description:'',clues:[],category:item.kind === 'TOKEN' ? 'personnage' : 'document'}));
-      const signature = JSON.stringify(next);
-      if (signature !== documentSignature) { documentSignature = signature;documents = next;render(); }
-    } catch (error) { if (!closed && !documents.length) view.status.textContent = error.message; }
-    finally { fetching = false; }
+      const [artwork,shared]=await Promise.allSettled([request('public'),request('dossier',{action:'list'})]);if(closed)return;
+      const nextDocuments=artwork.status==='fulfilled'?(artwork.value.items||[]).map(item=>({id:'owl:'+item.id,title:item.title,image:item.image.url,description:'',clues:[],category:item.kind==='TOKEN'?'personnage':'autre'})):documents;
+      const nextFiles=shared.status==='fulfilled'?(shared.value.entries||[]).map(file=>({id:'file:'+file.id,title:file.title,description:file.mime.startsWith('audio/')?'Fichier audio':file.mime.startsWith('video/')?'Vidéo':'Document',clues:[],category:'autre',file})):files;
+      const signature=JSON.stringify([nextDocuments,nextFiles]);
+      if(signature!==documentSignature){documentSignature=signature;documents=nextDocuments;files=nextFiles;render()}
+      if(shared.status==='rejected')view.status.textContent=shared.reason.message;
+    } finally { fetching = false; }
   }
-  search.oninput = filter.onchange = render;render();void refreshDocuments();
+  search.oninput = render;render();void refreshDocuments();
   const timer = setInterval(() => { void refreshDocuments(); },4000);
   window.addEventListener('archives:public-view',render);window.addEventListener(editEvent,render);
   view.cleanup(() => { closed = true;clearInterval(timer);window.removeEventListener('archives:public-view',render);window.removeEventListener(editEvent,render); });

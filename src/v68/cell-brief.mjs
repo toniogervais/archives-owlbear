@@ -1,7 +1,7 @@
-/* V4.39 — fiche de jeu MJ : consultation rapide des cellules et suivi des révélations. */
+/* V4.42 — jusqu’à quatre fiches MJ, indépendantes et consultables côte à côte. */
 const DIALOG_ID='archives-cell-brief';
 const BUTTON_CLASS='archives-cell-brief-trigger';
-let activeNodeId=null;
+let activeNodeIds=[];
 const el=(tag,cls,textValue)=>{
   const element=document.createElement(tag);
   if(cls)element.className=cls;
@@ -148,6 +148,35 @@ function css(){
     #archives-cell-brief .brief-footer {flex-wrap:wrap}
     #archives-cell-brief .brief-status {font-size:9px}
   }
+  #archives-cell-brief[data-count]:not([data-count="1"]) {width:98vw;max-width:98vw}
+  #archives-cell-brief .brief-toolbar {display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-width:0}
+  #archives-cell-brief .brief-toolbar select {min-width:0;max-width:240px;background:#181320;color:#f6ebdc;border:1px solid #82704e;border-radius:7px;padding:8px;font:inherit}
+  #archives-cell-brief .brief-add {border:1px solid #c2a66d;background:#463622;color:#fff0d1;border-radius:7px;padding:8px}
+  #archives-cell-brief button:disabled,#archives-cell-brief select:disabled {opacity:.5;cursor:default}
+  #archives-cell-brief .brief-deck {display:grid;grid-template-columns:repeat(var(--brief-count,1),minmax(280px,1fr));gap:12px;flex:1;min-height:0;overflow-x:auto;padding:12px}
+  #archives-cell-brief .brief-card {display:flex;flex-direction:column;min-width:0;min-height:0;border:1px solid #8d76567b;border-radius:10px;overflow:hidden}
+  #archives-cell-brief .brief-card-header {display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;background:#2b2138}
+  #archives-cell-brief .brief-card-header h2 {font-size:18px;margin:0}
+  #archives-cell-brief .brief-card-header button {width:28px;height:28px;font-size:18px}
+  #archives-cell-brief[data-count]:not([data-count="1"]) .brief-body {display:flex;flex-direction:column;overflow:hidden}
+  #archives-cell-brief[data-count]:not([data-count="1"]) .brief-portrait {flex:0 0 150px;min-height:0;padding:8px;border-right:0;border-bottom:1px solid #c5a76e55}
+  #archives-cell-brief[data-count]:not([data-count="1"]) .brief-figure {min-height:0}
+  #archives-cell-brief[data-count]:not([data-count="1"]) .brief-subtitle {font-size:10px;padding-top:4px}
+  #archives-cell-brief[data-count]:not([data-count="1"]) .brief-right {flex:1;min-height:0}
+  #archives-cell-brief[data-count]:not([data-count="1"]) .brief-desc {padding:12px;min-height:90px;flex:1 1 40%}
+  #archives-cell-brief[data-count]:not([data-count="1"]) .brief-description {font-size:13px;line-height:1.5}
+  #archives-cell-brief[data-count]:not([data-count="1"]) .brief-clues {min-height:120px;flex:1 1 60%}
+  #archives-cell-brief[data-count]:not([data-count="1"]) .brief-clues-header {padding:10px}
+  #archives-cell-brief[data-count]:not([data-count="1"]) .brief-clue-list {padding:5px 8px 10px}
+  #archives-cell-brief[data-count]:not([data-count="1"]) .brief-clue-row {padding:8px;gap:7px;flex-wrap:wrap}
+  #archives-cell-brief[data-count]:not([data-count="1"]) .brief-clue-text {font-size:13px}
+  @media(max-width:690px) {
+    #archives-cell-brief .brief-header {padding:10px;flex-wrap:wrap}
+    #archives-cell-brief .brief-header > .brief-close {position:absolute;right:10px;top:10px}
+    #archives-cell-brief .brief-toolbar {width:100%;padding-right:0}
+    #archives-cell-brief .brief-toolbar select {flex:1}
+    #archives-cell-brief .brief-deck {grid-template-columns:repeat(var(--brief-count,1),minmax(280px,1fr));padding:8px;gap:8px}
+  }
   @media(prefers-reduced-motion:reduce) {
     #archives-cell-brief::backdrop {backdrop-filter:none}
   }`;
@@ -157,92 +186,89 @@ function ensureDialog(){
   let dialog=document.getElementById(DIALOG_ID);
   if(dialog)return dialog;
   dialog=el('dialog');dialog.id=DIALOG_ID;
-  dialog.setAttribute('aria-label','Fiche MJ de consultation de la cellule');
-  const shell=el('div','brief-shell');
-  const header=el('header','brief-header');
+  dialog.setAttribute('aria-label','Fiches MJ de consultation des cellules');
+  const shell=el('div','brief-shell'),header=el('header','brief-header');
   const titles=el('div','brief-titles');
-  const overline=el('span','brief-overline','Fiche de jeu · Maître du jeu');
-  const title=el('h2');title.id='archives-brief-title';
-  titles.append(overline,title);
-  const close=el('button','brief-close','×');close.type='button';close.title='Fermer la fiche (Échap)';
-  close.onclick=()=>dialog.close();
-  header.append(titles,close);
-  const body=el('div','brief-body');
-  const portrait=el('aside','brief-portrait');
-  const figure=el('div','brief-figure');figure.id='archives-brief-figure';
-  const subtitle=el('div','brief-subtitle');subtitle.id='archives-brief-category';
-  portrait.append(figure,subtitle);
-  const right=el('div','brief-right');
-  const section=el('section','brief-desc');
-  section.append(el('h3',null,'Description générale'));
-  const description=el('div','brief-description');description.id='archives-brief-description';
-  section.append(description);
-  const clueArea=el('section','brief-clues');
-  const clueHeader=el('div','brief-clues-header');
-  clueHeader.append(el('h3',null,'Indices et révélations'));
-  const counter=el('span','brief-count');counter.id='archives-brief-count';clueHeader.append(counter);
-  const list=el('div','brief-clue-list');list.id='archives-brief-list';
-  clueArea.append(clueHeader,list);
-  right.append(section,clueArea);
-  body.append(portrait,right);
+  titles.append(el('span','brief-overline','Maître du jeu'),el('h2',null,'Fiches MJ'));
+  const toolbar=el('div','brief-toolbar'),select=el('select');
+  select.id='archives-brief-picker';select.setAttribute('aria-label','Cellule à ajouter aux fiches MJ');
+  const add=el('button','brief-add','＋ Ajouter une fiche');add.type='button';add.id='archives-brief-add';
+  add.onclick=()=>{if(select.value)open(select.value)};
+  const count=el('span','brief-hint');count.id='archives-brief-deck-count';count.setAttribute('role','status');
+  toolbar.append(select,add,count);
+  const close=el('button','brief-close','×');close.type='button';close.title='Fermer les fiches (Échap)';close.setAttribute('aria-label','Fermer les fiches MJ');close.onclick=()=>dialog.close();
+  header.append(titles,toolbar,close);
+  const deck=el('div','brief-deck');deck.id='archives-brief-deck';
   const footer=el('footer','brief-footer');
-  const tip=el('span',null,'Cocher révèle un indice aux joueurs si la cellule leur est visible. Décocher le masque.');
-  const back=el('button',null,'Fermer');back.type='button';back.onclick=()=>dialog.close();
-  footer.append(tip,back);
-  shell.append(header,body,footer);dialog.append(shell);
-  document.body.append(dialog);
-  dialog.addEventListener('close',()=>{activeNodeId=null});
+  footer.append(el('span',null,'Cocher révèle un indice aux joueurs si la cellule leur est visible. Décocher le masque.'));
+  const back=el('button',null,'Fermer');back.type='button';back.onclick=()=>dialog.close();footer.append(back);
+  shell.append(header,deck,footer);dialog.append(shell);document.body.append(dialog);
+  dialog.addEventListener('close',()=>{activeNodeIds=[];deck.replaceChildren()});
   return dialog;
 }
-function render(nodeId) {
-  const node=currentNode(nodeId);
-  if(!node)return false;
-  document.getElementById('archives-brief-title').textContent=node.title||'Cellule sans titre';
-  const category=[node.category||'Cellule',node.faction||'',node.revealed?'Cellule révélée':'Cellule cachée'].filter(Boolean).join(' · ');
-  document.getElementById('archives-brief-category').textContent=category;
-  const picture=document.getElementById('archives-brief-figure');
-  picture.replaceChildren();
+function renderCard(node,index){
+  const card=el('article','brief-card');card.dataset.nodeId=String(node.id);
+  const id=(part)=>'archives-brief-'+part+(index?'-'+index:'');
+  const header=el('header','brief-card-header'),title=el('h2',null,node.title||'Cellule sans titre');title.id=id('title');
+  card.setAttribute('aria-labelledby',title.id);
+  const remove=el('button','brief-close','×');remove.type='button';remove.setAttribute('aria-label','Retirer la fiche '+(node.title||'sans titre'));
+  remove.onclick=()=>{activeNodeIds=activeNodeIds.filter(value=>value!==String(node.id));if(!activeNodeIds.length)document.getElementById(DIALOG_ID).close();else renderDeck()};
+  header.append(title,remove);
+  const body=el('div','brief-body'),portrait=el('aside','brief-portrait'),picture=el('div','brief-figure');picture.id=id('figure');
   const url=node.bgImg||node.image||node.imageData;
   if(typeof url==='string'&&url){
     const img=el('img','brief-picture');img.src=url;img.alt='Portrait ou illustration : '+(node.title||'cellule');
-    img.onerror=()=>{picture.replaceChildren(el('span','brief-no-picture','Image indisponible'))};
-    picture.append(img);
-  } else picture.append(el('span','brief-no-picture','Aucun portrait ou illustration associé à cette cellule'));
-  const description=document.getElementById('archives-brief-description');
-  description.textContent=node.desc?.trim()||'Aucune description générale renseignée.';
-  if(!node.desc?.trim())description.classList.add('brief-hint');else description.classList.remove('brief-hint');
-  const list=document.getElementById('archives-brief-list');list.replaceChildren();
-  const clues=Array.isArray(node.clues)?node.clues:[];
-  document.getElementById('archives-brief-count').textContent=clues.filter(c=>c.revealed).length+' / '+clues.length+' révélés';
+    img.onerror=()=>picture.replaceChildren(el('span','brief-no-picture','Image indisponible'));picture.append(img);
+  }else picture.append(el('span','brief-no-picture','Aucun portrait ou illustration associé à cette cellule'));
+  const category=el('div','brief-subtitle',[node.category||'Cellule',node.faction||'',node.revealed?'Cellule révélée':'Cellule cachée'].filter(Boolean).join(' · '));category.id=id('category');portrait.append(picture,category);
+  const right=el('div','brief-right'),section=el('section','brief-desc');
+  const description=el('div','brief-description',node.desc?.trim()||'Aucune description générale renseignée.');description.id=id('description');
+  if(!node.desc?.trim())description.classList.add('brief-hint');section.append(el('h3',null,'Description générale'),description);
+  const clues=Array.isArray(node.clues)?node.clues:[],clueArea=el('section','brief-clues'),clueHeader=el('div','brief-clues-header');
+  const counter=el('span','brief-count',clues.filter(c=>c.revealed).length+' / '+clues.length+' révélés');counter.id=id('count');
+  clueHeader.append(el('h3',null,'Indices et révélations'),counter);
+  const list=el('div','brief-clue-list');list.id=id('list');
   if(!clues.length)list.append(el('div','brief-hint','Aucun indice ou révélation n’est associé à cette cellule.'));
   for(const clue of clues){
     const row=el('label','brief-clue-row');row.dataset.revealed=clue.revealed?'true':'false';
     const checkbox=el('input','brief-clue-checkbox');checkbox.type='checkbox';checkbox.checked=!!clue.revealed;
     checkbox.setAttribute('aria-label','Révéler aux joueurs : '+String(clue.text||'indice'));
-    const text=el('span','brief-clue-text',clue.text||'(Indice sans texte)');
-    const status=el('span','brief-status',clue.revealed?'Révélé':'Secret');
-    row.append(checkbox,text,status);
+    row.append(checkbox,el('span','brief-clue-text',clue.text||'(Indice sans texte)'),el('span','brief-status',clue.revealed?'Révélé':'Secret'));
     checkbox.addEventListener('change',()=>{
-      if(!gmState()||!window.DuneApp?.setBriefClueRevealed?.(node.id,clue.id,checkbox.checked)){
-        checkbox.checked=!checkbox.checked;return;
-      }
-      // Lire l’état après la sauvegarde et la synchronisation plutôt que
-      // conserver une copie de l’indice dans cette fenêtre de consultation.
-      render(node.id);
-    });
-    list.append(row);
+      if(!gmState()||!window.DuneApp?.setBriefClueRevealed?.(node.id,clue.id,checkbox.checked)){checkbox.checked=!checkbox.checked;return}
+      renderDeck();
+    });list.append(row);
   }
-  return true;
+  clueArea.append(clueHeader,list);right.append(section,clueArea);body.append(portrait,right);card.append(header,body);return card;
+}
+function renderDeck(){
+  const dialog=document.getElementById(DIALOG_ID),state=gmState();if(!dialog)return;
+  if(!state){dialog.close();return}
+  activeNodeIds=activeNodeIds.filter(id=>currentNode(id));
+  if(!activeNodeIds.length){dialog.close();return}
+  const deck=document.getElementById('archives-brief-deck'),scroll=new Map();
+  for(const card of deck.children)scroll.set(card.dataset.nodeId,[card.querySelector('.brief-desc').scrollTop,card.querySelector('.brief-clue-list').scrollTop]);
+  deck.replaceChildren(...activeNodeIds.map((id,index)=>renderCard(currentNode(id),index)));
+  for(const card of deck.children){const saved=scroll.get(card.dataset.nodeId);if(saved){card.querySelector('.brief-desc').scrollTop=saved[0];card.querySelector('.brief-clue-list').scrollTop=saved[1]}}
+  dialog.dataset.count=String(activeNodeIds.length);deck.style.setProperty('--brief-count',activeNodeIds.length);
+  const select=document.getElementById('archives-brief-picker'),previous=select.value;
+  select.replaceChildren(el('option',null,'Choisir une cellule…'));select.firstChild.value='';
+  for(const node of state.nodes||[])if(!activeNodeIds.includes(String(node.id))){const option=el('option',null,node.title||'Cellule sans titre');option.value=String(node.id);select.append(option)}
+  if([...select.options].some(option=>option.value===previous))select.value=previous;
+  select.disabled=activeNodeIds.length>=4||select.options.length===1;
+  document.getElementById('archives-brief-add').disabled=select.disabled;
+  document.getElementById('archives-brief-deck-count').textContent=activeNodeIds.length+' / 4 fiches';
 }
 function open(nodeId,event){
-  event?.stopPropagation?.();
-  event?.preventDefault?.();
-  if(!gmState())return;
-  css();
-  const dialog=ensureDialog();
-  if(!render(nodeId))return;
-  activeNodeId=nodeId;
-  if(!dialog.open)dialog.showModal();
+  event?.stopPropagation?.();event?.preventDefault?.();
+  if(!gmState()){document.getElementById(DIALOG_ID)?.close();return}
+  if(!currentNode(nodeId))return;
+  css();const dialog=ensureDialog(),id=String(nodeId);
+  if(!activeNodeIds.includes(id)){
+    if(activeNodeIds.length>=4)return;
+    activeNodeIds.push(id);
+  }
+  renderDeck();if(!dialog.open)dialog.showModal();
 }
 function addButtons(){
   const state=gmState();
@@ -271,10 +297,11 @@ function install(){
   const schedule=()=>{
     if(queued)return;
     queued=true;
-    requestAnimationFrame(()=>{queued=false;addButtons()});
+    requestAnimationFrame(()=>{queued=false;addButtons();if(document.getElementById(DIALOG_ID)?.open)renderDeck()});
   };
   const layer=document.getElementById('nodes-layer');
   if(layer)new MutationObserver(schedule).observe(layer,{childList:true,subtree:true});
+  new MutationObserver(schedule).observe(document.body,{attributes:true,attributeFilter:['class']});
   schedule();
   window.addEventListener('archives:campaign-restored',schedule);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule()});

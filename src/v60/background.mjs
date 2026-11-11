@@ -1,5 +1,6 @@
 import { localRoom,roomMembers,roomChannel,release } from "../v57/room.mjs?v=4210";
-import { openFileLibrary,validateFile,validId,validPublication,publicFile,digest,fileChunks,fileReceiver,mediaChannel,mediaModal } from "./files.mjs";
+import { openFileLibrary,validateFile,validId,validPublication,publicFile,digest,fileChunks,fileReceiver,mediaChannel,mediaModal } from "./files.mjs?v=4420";
+import {installDossierFiles,dossierEntry} from '../v69/dossier-files.mjs?v=4420';
 
 export async function installFileLibrary(OBR) {
   const {channel,connectionId:initialConnection} = await localRoom(OBR);
@@ -14,8 +15,9 @@ export async function installFileLibrary(OBR) {
     store ||= await openFileLibrary(OBR.room.id,OBR.player.id);
     return store;
   }
+  const dossier=installDossierFiles(OBR,{channel,isMember,getStore:requireGM,getRole:()=>role,getConnection:()=>connectionId,isClosed:()=>closed});
   const metadata = entry => ({id:entry.id,title:entry.title,name:entry.name,mime:entry.mime,kind:entry.kind,size:entry.size,
-    created:entry.created,links:entry.links || [],released:entry.released === true,presented:publication?.fileId === entry.id});
+    created:entry.created,links:entry.links || [],released:entry.released === true,presented:publication?.fileId === entry.id,dossierShared:!!dossierEntry(entry)});
   function viewState() {
     if (!receive || !viewerSession || role !== "PLAYER" || closed) return;
     channel.postMessage({type:"media-view-state",id:receive.publication.id,session:viewerSession,
@@ -60,6 +62,7 @@ export async function installFileLibrary(OBR) {
     if (!validId(command.fileId)) throw Error("Document invalide.");
     const entry = await store.get(command.fileId);
     if (!entry) throw Error("Ce document n’est pas dans ta bibliothèque de cette salle.");
+    if (command.action === 'dossier-share' || command.action === 'dossier-unshare') return dossier.share(entry,command.action === 'dossier-unshare');
     if (command.action === "get") {
       const blob = await store.blob(entry.id);await requireGM();
       if (!blob) throw Error("Le fichier original est introuvable. Importe-le à nouveau.");
@@ -215,7 +218,7 @@ export async function installFileLibrary(OBR) {
   }));
   window.addEventListener("pagehide",() => {
     closed = true;epoch++;publication = null;clearTimeout(sendTimer);clearReception();
-    offs.forEach(off => off?.());isMember.dispose();channel.close();void commands.finally(() => store?.close());
+    dossier.dispose();offs.forEach(off => off?.());isMember.dispose();channel.close();void commands.finally(() => store?.close());
   },{once:true});
   if (role === "PLAYER") await send({type:"active",id:crypto.randomUUID()});
 }

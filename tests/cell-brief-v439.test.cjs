@@ -66,3 +66,18 @@ test('Google Drive launcher is no longer loaded; the new game brief is loaded',(
  assert.match(html,/src\/v68\/cell-brief\.mjs/);
  assert.match(html,/setBriefClueRevealed: function/);
 });
+
+test('Four MJ briefs keep clue changes scoped to their own cell and free slots when removed',async()=>{
+ const dom=new JSDOM('<html><head></head><body><div id="nodes-layer"></div></body></html>',{url:'https://archives.test/',runScripts:'outside-only',pretendToBeVisual:true});
+ const w=dom.window,state={playerMode:false,nodes:Array.from({length:5},(_,i)=>({id:'n'+i,title:'Fiche '+i,desc:'Description '+i,clues:[{id:'same-id',text:'Indice '+i,revealed:false}]}))};
+ w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'))};
+ w.DuneApp={getState:()=>state,setBriefClueRevealed:(nodeId,clueId,next)=>{const clue=state.nodes.find(n=>n.id===nodeId)?.clues.find(c=>c.id===clueId);if(!clue)return false;clue.revealed=next;return true}};
+ try{
+  w.eval(read('src/v68/cell-brief.mjs'));for(let i=0;i<5;i++)w.ArchivesCellBrief.open('n'+i);
+  const dlg=w.document.getElementById('archives-cell-brief');assert.equal(dlg.querySelectorAll('.brief-card').length,4);
+  const checkbox=dlg.querySelector('[data-node-id="n2"] input');checkbox.checked=true;checkbox.dispatchEvent(new w.Event('change'));
+  assert.equal(state.nodes[2].clues[0].revealed,true);assert.equal(state.nodes[0].clues[0].revealed,false);
+  dlg.querySelector('[data-node-id="n1"] button').click();w.ArchivesCellBrief.open('n4');assert.equal(dlg.querySelectorAll('.brief-card').length,4);assert.ok(dlg.querySelector('[data-node-id="n4"]'));
+  state.playerMode=true;w.ArchivesCellBrief.open('n0');assert.equal(dlg.open,false,'losing GM access closes every private fiche');assert.equal(dlg.querySelectorAll('.brief-card').length,0);
+ }finally{w.close()}
+});

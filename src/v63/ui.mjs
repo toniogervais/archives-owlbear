@@ -5,17 +5,19 @@ export function requireGM() { if (!isGM()) throw Error('Commande réservée au m
 export function nativeEditor() { return window.parent !== window && new URLSearchParams(location.search).get('owl-editor') === '1'; }
 export function request(kind,command = {}) {
   if (kind === 'campaign') { requireGM();if (!nativeEditor()) throw Error('Ouvre les Archives depuis le livre dans ta salle Owlbear pour sauvegarder les bibliothèques de cette salle.'); }
+  if(kind === 'dossier' && window.parent === window) throw Error('Ouvre les Archives dans ta salle Owlbear pour partager des fichiers avec les joueurs.');
+  const types = kind === 'campaign' ? ['owl-campaign-command','owl-campaign-result'] : kind === 'dossier' ? ['owl-dossier-command','owl-dossier-result'] : ['owl-public-items-request','owl-public-items-result'];
   const id = crypto.randomUUID();
   return new Promise((resolve,reject) => {
-    const timer = setTimeout(() => { pending.delete(id);reject(Error('La salle ne répond pas. Garde cet onglet ouvert et réessaie.')); },kind === 'campaign' ? 180000 : 15000);
-    pending.set(id,{resolve,reject,timer,kind});
-    window.parent.postMessage(packet(kind === 'campaign' ? 'owl-campaign-command' : 'owl-public-items-request',{id,command}),location.origin);
+    const timer = setTimeout(() => { pending.delete(id);reject(Error('La salle ne répond pas. Garde cet onglet ouvert et réessaie.')); },kind === 'campaign' || kind === 'dossier' ? 180000 : 15000);
+    pending.set(id,{resolve,reject,timer,kind,resultType:types[1]});
+    window.parent.postMessage(packet(types[0],{id,command}),location.origin);
   });
 }
 window.addEventListener('message',event => {
   if (event.source !== window.parent || event.origin !== location.origin || !isPacket(event.data)) return;
   const data = event.data,entry = pending.get(data.id);
-  if (!entry || data.type !== (entry.kind === 'campaign' ? 'owl-campaign-result' : 'owl-public-items-result')) return;
+  if (!entry || data.type !== entry.resultType) return;
   pending.delete(data.id);clearTimeout(entry.timer);
   if (data.safe) entry.resolve(data.result);else entry.reject(Error(data.message || 'Opération impossible.'));
 });
