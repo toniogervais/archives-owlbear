@@ -100,10 +100,12 @@ async def main():
     app.router.add_get('/test/player',player_html)
     app.router.add_get('/test/player.mjs',player_script)
     with tempfile.TemporaryDirectory(prefix='soundshow-video-test-') as folder:
-        video=Path(folder)/'test.mp4'
+        # Open-source Chromium builds omit MP4/H.264/AAC decoders. Exercise the
+        # real media transport with VP8/Opus; Windows Chrome also accepts MP4.
+        video=Path(folder)/'test.webm'
         subprocess.run([os.environ.get('ARCHIVES_FFMPEG','ffmpeg'),'-hide_banner','-loglevel','error','-f','lavfi','-i','testsrc2=size=320x180:rate=24',
-            '-f','lavfi','-i','sine=frequency=440:sample_rate=48000','-t','30','-c:v','libx264','-preset','ultrafast',
-            '-pix_fmt','yuv420p','-c:a','aac','-movflags','+faststart',str(video)],check=True)
+            '-f','lavfi','-i','sine=frequency=440:sample_rate=48000','-t','30','-c:v','libvpx','-deadline','realtime','-cpu-used','8',
+            '-pix_fmt','yuv420p','-c:a','libopus',str(video)],check=True)
         async with TestServer(fake_app,host='127.0.0.1') as soundshow,TestServer(app,host='127.0.0.1') as server:
             async with async_playwright() as p:
                 executable=os.environ.get('ARCHIVES_CHROMIUM') or (shutil.which('chromium') if not Path(p.chromium.executable_path).exists() else None)
@@ -209,7 +211,12 @@ async def main():
                         raise
                     print('Native connection and paired tablet: OK',flush=True)
                     await fake.emit(playing=True)
-                    await wait_expression(tablet,'document.querySelector("video").videoWidth>0')
+                    try:
+                        await wait_expression(tablet,'document.querySelector("video").videoWidth>0')
+                    except Exception:
+                        print('Source media:',await host.evaluate('''()=>{const v=document.getElementById('source');return{status:document.getElementById('stream-status').textContent,width:v.videoWidth,ready:v.readyState,paused:v.paused,error:v.error?.message};}'''),flush=True)
+                        print('Receiver media:',await tablet.evaluate('''()=>{const v=document.querySelector('video'),c=window.player.connection;return{status:document.querySelector('.soundshow-view footer').textContent,width:v.videoWidth,ready:v.readyState,paused:v.paused,muted:v.muted,tracks:v.srcObject?.getTracks().map(t=>({kind:t.kind,ready:t.readyState})),rtc:c.call?.peerConnection?.connectionState};}'''),flush=True)
+                        raise
                     await wait_expression(tablet,'document.querySelector("video").currentTime>0')
                     assert await host.locator('#source').evaluate('(video)=>video.muted')
                     assert await tablet.locator('video').evaluate('(video)=>video.srcObject.getAudioTracks().length')==1
