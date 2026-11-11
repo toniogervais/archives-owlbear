@@ -85,6 +85,6 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           if ! gh release view soundshow-bridge-v0.3.3 > /dev/null 2>&1; then
-            gh release create soundshow-bridge-v0.3.3 --target "$GITHUB_SHA" --prerelease --title "Connecteur SoundShow — essai 0.3.3" --notes "Lecteur SoundShow : boucle, pause, arrêt, fondu, volume, frise d'onde indicative et progression. Sons et vidéos, grille compacte, fenêtre mobile et redimensionnable, cellule avec déclenchement multi-médias. MJ uniquement. Essais sur matériel réel à confirmer."
+            gh release create soundshow-bridge-v0.3.3 --target "$GITHUB_SHA" --prerelease --title "Connecteur SoundShow — essai 0.3.3" --notes "Corrige la piste sonore muette : audio capturé séparément de l’aperçu, sans seconde lecture sur le PC. Vidéo avec son dans les Archives des joueurs, autorisation audio et liaison automatique. Conserve la télécommande SoundShow et les médias de cellules. Essais Windows/tablette à confirmer."
           fi
           gh release upload soundshow-bridge-v0.3.3 windows/Archives-SoundShow-Connecteur.exe --clobber

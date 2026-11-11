@@ -40,6 +40,7 @@ function isInsideOwlbear(candidate,root,depth=0){
   return false;
 }
 function openOwlbearAndLink(){
+  primeAudio();
   if(linkTimer){owlWindow?.focus();text('link-status','Liaison en cours. Rejoins ta salle Owlbear : l’extension se connectera automatiquement.');return;}
   if(owlLinked&&owlWindow&&!owlWindow.closed){owlWindow.focus();text('link-status','La salle est reliée. Lance les vidéos dans SoundShow.');return;}
   if(!['connected','simulation'].includes(show?.status)){
