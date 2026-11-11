@@ -1,5 +1,15 @@
 # Les Archives de l’Imaginaire
 
+## V4.44 — suppression des tokens et présentation d’images
+
+La suppression native d’un token transféré, dans Owlbear, retire désormais aussi son placement enregistré dans les Archives. Cela s’applique aux tokens cachés dans la couche locale MJ et aux tokens révélés. Ils restent supprimés après actualisation. Les rechargements ordinaires, les bascules caché/révélé, les changements de rôle et les changements de scène conservent les préparations privées. Les anciens placements marqués révélés mais absents de leur scène sont nettoyés au chargement, pour réparer les fantômes créés avant cette version. La cellule d’origine et les fichiers de la bibliothèque restent disponibles pour un nouveau transfert volontaire.
+
+Les menus clic droit de la bibliothèque utilisent leur taille réelle pour se placer dans la fenêtre, y compris près du bas ou du bord droit. Un menu trop haut pour l’écran peut défiler ; les boutons gardent leur hauteur.
+
+**Montrer aux joueurs** était relié à une méthode absente. Cette commande affiche maintenant l’image choisie dans les Archives des joueurs, avec un bouton pour la fermer. **Retirer de l’écran des joueurs** termine la présentation pour tous. Les nouveaux arrivants reçoivent la présentation en cours. La présentation n’ouvre aucune cellule secrète et transmet uniquement l’image choisie et un intitulé générique. Les noms de fichiers, liens privés et autres images de la bibliothèque restent privés. Les images volumineuses ou les formats non pris en charge sont adaptés pour l’affichage, sans modifier l’original de la bibliothèque. Une restauration ou une réouverture côté MJ ne relance pas une ancienne présentation.
+
+Actualiser la salle du MJ et les pages des joueurs. Après cette mise à jour, supprimer dans Owlbear les éventuels anciens tokens cachés à retirer définitivement. La commande **Owlbear : fichiers et transferts… → Retirer** reste également disponible dans la bibliothèque.
+
 ## V4.43 — images des cellules et classement multiple
 
 Dans **Réglages de la cellule active**, le bouton **Bibliothèque d’images** est placé à côté de l’import depuis l’ordinateur. La fenêtre de choix propose une recherche par nom, un type de cellule et une sous-catégorie. **Utiliser cette image** applique l’illustration à la cellule choisie, avec son aperçu, sans recréer la cellule ni modifier ses descriptions et indices. Le sélecteur d’image de la barre de raccourcis propose le même accès.
