@@ -152,8 +152,8 @@ test('Linked cell media remains GM-side and is limited to valid loaded SoundShow
 test('Movable Archives docks retain the Owlbear header back button without fullscreen',()=>{
   const layout=fs.readFileSync(new URL('../src/v66/workspace.mjs',import.meta.url),'utf8');
   const host=fs.readFileSync(new URL('../archives-host-v55.html',import.meta.url),'utf8');
-  assert.match(layout,/moveBar\('canvas-integrations-dock'/);
-  assert.match(layout,/moveBar\('top-hud'/);
+  assert.match(layout,/installMovableBar\('canvas-integrations-dock'/);
+  assert.match(layout,/installMovableBar\('top-hud'/);
   assert.doesNotMatch(layout,/requestFullscreen/);
   assert.match(host,/allowfullscreen/);
   assert.doesNotMatch(host,/<strong><img src="\.\/icon-archives-v43\.svg"[^>]*>Les Archives de l.Imaginaire/);

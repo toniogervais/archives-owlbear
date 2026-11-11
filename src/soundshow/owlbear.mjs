@@ -8,6 +8,7 @@ export async function installSoundShow(OBR) {
   let requestTimer,requestSerial=0,requestAttempts=0;
   let mainWindow,mainTimer,mainAttempts=0;
   let viewOpen=false,viewToken='',modalQueue=Promise.resolve(),sessionEpoch=0;
+  let archivesViewer='',archivesSeen=0;
   let localConnector=null,localChallenge=crypto.randomUUID(),localTimer=null,localLinkReady=false;
   let localControlToken='',localOrigin='',remoteState={connected:false,media:[],active:[]};
   const remotePending=new Map();
@@ -78,13 +79,17 @@ export async function installSoundShow(OBR) {
     localTimer=setInterval(tryLocalConnector,1200);
   }
   const viewerSession=()=>channel.postMessage({type:'soundshow-viewer-session',session});
+  const archivesSession=(reopen=false)=>{
+    if(archivesViewer)channel.postMessage({type:'soundshow-archives-session',viewer:archivesViewer,session,reopen});
+  };
   const playerReport=state=>{if(role==='PLAYER'&&session)void send({type:'player-status',peer:session.peer,state}).catch(console.warn);};
   async function roomStats(){
     let participants;
     try{participants=(await OBR.party.getPlayers()).filter(player=>player.role==='PLAYER');}
     catch{return {players:null,ready:0,connecting:0,error:0};}
     const states=participants.map(player=>receivers.get(player.connectionId));
-    return {players:participants.length,ready:states.filter(state=>state==='ready').length,
+    return {players:participants.length,ready:states.filter(state=>['ready','playing','blocked'].includes(state)).length,
+      playing:states.filter(state=>state==='playing').length,blocked:states.filter(state=>state==='blocked').length,
       connecting:states.filter(state=>state==='connecting').length,error:states.filter(state=>state==='error').length};
   }
   async function notifyRoom(){if(role==='GM')channel.postMessage({type:'soundshow-room-status',...await roomStats()});}
@@ -95,9 +100,9 @@ export async function installSoundShow(OBR) {
   }
   function openView(){
     modalQueue=modalQueue.catch(()=>{}).then(async()=>{
-      if(closed||role!=='PLAYER'||!session||viewOpen)return;
+      if(closed||role!=='PLAYER'||!session||viewOpen||archivesViewer)return;
       const token=crypto.randomUUID(),url=new URL('../../soundshow-player.html',import.meta.url);
-      url.searchParams.set('v','029');url.searchParams.set('viewer',token);viewToken=token;
+      url.searchParams.set('v','4400');url.searchParams.set('viewer',token);viewToken=token;
       try{
         await OBR.modal.open({id:soundShowModal,url:url.href,width:780,height:500,hideBackdrop:true,hidePaper:true});
         if(viewToken===token)viewOpen=true;
@@ -111,9 +116,13 @@ export async function installSoundShow(OBR) {
   }
   async function receiveSession(value,sender='',reopen=false) {
     if(value!==null&&!validSession(value))return;
-    if(sameSession(value,session)){if(reopen&&value&&role==='PLAYER'){await openView();channel.postMessage({type:'soundshow-viewer-report'});}return;}
+    if(sameSession(value,session)){
+      if(role==='PLAYER'&&archivesViewer)archivesSession(reopen);
+      else if(reopen&&value&&role==='PLAYER'){await openView();channel.postMessage({type:'soundshow-viewer-report'});}
+      return;
+    }
     const epoch=++sessionEpoch;
-    watcher?.stop();watcher=null;session=value;owner=sender;lastCue='';viewerSession();
+    watcher?.stop();watcher=null;session=value;owner=sender;lastCue='';viewerSession();archivesSession(reopen);
     if(role!=='PLAYER'||!value){await closeView();return;}
     // Show the receiving frame before trying the hidden background connection.
     // The visible reader can connect independently and show network errors.
@@ -138,15 +147,31 @@ export async function installSoundShow(OBR) {
   }
   channel.addEventListener('message',event=>{
     const data=event.data;
+    if(data?.type==='soundshow-archives-open'&&role==='PLAYER'&&
+      typeof data.viewer==='string'&&/^[0-9a-f-]{36}$/.test(data.viewer)){
+      const changed=archivesViewer!==data.viewer;archivesViewer=data.viewer;archivesSeen=Date.now();
+      // The Archives receiver takes over before the map receiver is closed.
+      // There is only one audible player on this device.
+      if(changed){if(viewOpen||viewToken)void closeView();playerReport('connecting');}
+      archivesSession();return;
+    }
+    if(data?.type==='soundshow-archives-status'&&role==='PLAYER'&&data.viewer===archivesViewer&&
+      ['ready','connecting','error','playing','blocked','closed'].includes(data.state)){
+      playerReport(data.state);return;
+    }
+    if(data?.type==='soundshow-archives-closed'&&role==='PLAYER'&&data.viewer===archivesViewer){
+      archivesViewer='';archivesSeen=0;playerReport('connecting');void openView();return;
+    }
     if(data?.type==='soundshow-viewer-ready'&&role==='PLAYER')viewerSession();
-    if(data?.type==='soundshow-viewer-status'&&role==='PLAYER'&&data.viewer===viewToken&&['ready','connecting','error'].includes(data.state))playerReport(data.state);
-    if(data?.type==='soundshow-viewer-closed'&&role==='PLAYER'&&data.viewer===viewToken){viewOpen=false;viewToken='';playerReport('closed');}
+    if(data?.type==='soundshow-viewer-status'&&role==='PLAYER'&&!archivesViewer&&data.viewer===viewToken&&['ready','connecting','error','playing','blocked'].includes(data.state))playerReport(data.state);
+    if(data?.type==='soundshow-viewer-closed'&&role==='PLAYER'&&data.viewer===viewToken){viewOpen=false;viewToken='';if(!archivesViewer)playerReport('closed');}
     if(data?.type==='soundshow-remote-get'||data?.type==='soundshow-remote-command'){
       void(async()=>{
         if(closed||role!=='GM'||await OBR.player.getRole()!=='GM')return;
         if(typeof data.id!=='string'||!/^[0-9a-f-]{36}$/.test(data.id))return;
         if(data.type==='soundshow-remote-get'){
           channel.postMessage({type:'soundshow-remote-result',id:data.id,safe:true,state:remoteState});
+          void notifyRoom();
           return;
         }
         if(!localLinkReady||!localConnector||!localControlToken||!remoteState.connected){
@@ -192,7 +217,7 @@ export async function installSoundShow(OBR) {
   });
   const offBroadcast=OBR.broadcast.onMessage(soundShowChannel,event=>{void(async()=>{
     const data=event.data;if(closed||!data)return;
-    if(role==='GM'&&data.type==='player-status'&&session&&data.peer===session.peer&&['ready','connecting','error','closed'].includes(data.state)&&await member(event.connectionId,'PLAYER')&&await OBR.player.getRole()==='GM'){
+    if(role==='GM'&&data.type==='player-status'&&session&&data.peer===session.peer&&['ready','connecting','error','playing','blocked','closed'].includes(data.state)&&await member(event.connectionId,'PLAYER')&&await OBR.player.getRole()==='GM'){
       receivers.set(event.connectionId,data.state);await notifyRoom();return;
     }
     if(role==='GM'&&data.type==='session-request'&&await member(event.connectionId,'PLAYER')&&await OBR.player.getRole()==='GM'){
@@ -207,6 +232,7 @@ export async function installSoundShow(OBR) {
     if(player.connectionId)connectionId=player.connectionId;
     if(role===player.role)return;
     role=player.role;receivers.clear();requestSerial++;requestAttempts=0;clearTimeout(requestTimer);
+    archivesViewer='';archivesSeen=0;
     localLinkReady=false;localControlToken='';localOrigin='';remoteState={connected:false,media:[],active:[]};clearInterval(localTimer);localTimer=null;
     if(role==='GM'){tryLocalConnector();localTimer=setInterval(tryLocalConnector,1200);}
     void receiveSession(null);void request().catch(console.warn);
@@ -237,8 +263,13 @@ export async function installSoundShow(OBR) {
     })().catch(console.warn);
   }
   window.addEventListener('message',fromMain);askMain();
+  const archivesTimer=setInterval(()=>{
+    if(archivesViewer&&Date.now()-archivesSeen>24000&&!document.hidden){
+      archivesViewer='';archivesSeen=0;void openView();
+    }
+  },8000);
   window.addEventListener('pagehide',()=>{
-    closed=true;clearTimeout(requestTimer);clearTimeout(mainTimer);clearInterval(localTimer);
+    closed=true;clearTimeout(requestTimer);clearTimeout(mainTimer);clearInterval(localTimer);clearInterval(archivesTimer);
     for(const timer of remotePending.values())clearTimeout(timer);remotePending.clear();
     watcher?.stop();member.dispose();offBroadcast?.();offParty?.();offRole?.();channel.close();
     window.removeEventListener('message',fromMain);

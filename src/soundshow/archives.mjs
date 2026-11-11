@@ -2,11 +2,25 @@ import {button,element,isGM,notice,requireGM,sheet} from '../v63/ui.mjs';
 import {isPacket,packet} from '../v56/link.mjs';
 import {decodeSession,encodeSession,validSession} from './protocol.mjs?v=017';
 import {mountRemote} from './remote.mjs?v=017';
-import {mountSoundDock} from './sounds-dock.mjs?v=031';
+import {mountSoundDock} from './sounds-dock.mjs?v=4400';
 import {mountCellMedia} from './cell-media.mjs?v=027';
 let session=null,player,liveSession=null,infoView=null;const pending=new Map(),roomFrames=new Map();
 const embedded=window.parent!==window;
-let remoteUi=null,linkInfoView=null,soundsDock=null,cellMedia=null,remoteState=null;
+let remoteUi=null,linkInfoView=null,soundsDock=null,cellMedia=null,remoteState=null,audienceState=null;
+let playerLoading=null,playerEpoch=0,playerReadyTimer;
+async function usePlayerSession(value,reopen=false){
+  if(isGM()||value!==null&&!validSession(value))return;
+  liveSession=value;const epoch=++playerEpoch;
+  if(!value&&!player&&!playerLoading)return;
+  if(!playerLoading)playerLoading=import('./player.mjs?v=4400').then(({mountPlayer})=>{
+    player=mountPlayer({onState:state=>{
+      if(embedded&&!isGM())window.parent.postMessage(packet('owl-soundshow-player-status',{state}),location.origin);
+    }});return player;
+  }).catch(error=>{playerLoading=null;throw error;});
+  const reader=await playerLoading;
+  if(epoch!==playerEpoch||isGM())return;
+  await reader.use(value);if(reopen)reader.reopen();
+}
 async function request(type,value) {
   const id=crypto.randomUUID();
   return new Promise((resolve,reject)=>{
@@ -47,7 +61,7 @@ function open() {
     }
     view.content.append(element('p','SoundShow se relie depuis Owlbear : ouvre Owlbear à partir du connecteur Windows, puis entre dans ta salle MJ. L’extension Les Archives relie les joueurs automatiquement. Aucun onglet Archives séparé.','studio-hint'));
     const simpleStatus=element('p',session?'SoundShow relié. Les prochaines vidéos s’ouvriront dans une fenêtre des Archives ou d’Owlbear.':'En attente du connecteur SoundShow. Aucun code à recopier.','studio-status');simpleStatus.setAttribute('role','status');linkInfoView=simpleStatus;view.content.append(simpleStatus);
-    const download=element('a','Télécharger le connecteur Windows');download.href='https://github.com/toniogervais/archives-owlbear/releases/download/soundshow-bridge-v0.3.2/Archives-SoundShow-Connecteur.exe';download.target='_blank';download.rel='noopener';view.content.append(download);
+    const download=element('a','Télécharger le connecteur Windows');download.href='https://github.com/toniogervais/archives-owlbear/releases/download/soundshow-bridge-v0.3.3/Archives-SoundShow-Connecteur.exe';download.target='_blank';download.rel='noopener';view.content.append(download);
     const advanced=element('details');const summary=element('summary','Dépannage : connexion manuelle avec un code');advanced.append(summary);
     const label=element('label','Code de connexion SoundShow'),input=element('input');input.type='password';input.autocomplete='off';input.placeholder='SS2.…';input.setAttribute('aria-label','Code de connexion SoundShow');input.value=session?encodeSession(session):'';label.append(input);advanced.append(label);
     const info=element('p',null,'studio-hint');info.id='soundshow-room-status';info.setAttribute('role','status');infoView=info;
@@ -73,7 +87,14 @@ window.addEventListener('message',event=>{
     return;
   }
   if(event.source!==window.parent||event.origin!==location.origin||!isPacket(event.data))return;
-  if(event.data.type==='owl-soundshow-status'){if(infoView?.isConnected&&Number.isInteger(event.data.players)){const data=event.data;infoView.textContent=data.players+' joueur(s) dans cette salle Owlbear · '+(data.ready||0)+' lecteur(s) relié(s) au connecteur.'+(data.players===0?' La tablette doit rejoindre la salle avec le rôle Joueur.':data.ready===data.players?' Connexion confirmée ; vérifie la lecture de la vidéo.':data.error?' '+data.error+' lecteur(s) signale(nt) une erreur. Vérifie la tablette.':' Si le nombre ne progresse pas, vérifie le message sur la tablette.');}return;}
+  if(event.data.type==='owl-soundshow-player-session'){
+    if(!isGM()&&(event.data.session===null||validSession(event.data.session))){
+      clearInterval(playerReadyTimer);
+      void usePlayerSession(event.data.session,event.data.reopen===true).catch(error=>notice(error.message));
+    }
+    return;
+  }
+  if(event.data.type==='owl-soundshow-status'){audienceState=event.data;soundsDock?.updateAudience(audienceState);if(infoView?.isConnected&&Number.isInteger(event.data.players)){const data=event.data;infoView.textContent=data.players+' joueur(s) dans cette salle Owlbear · '+(data.ready||0)+' lecteur(s) relié(s) au connecteur.'+(data.players===0?' La tablette doit rejoindre la salle avec le rôle Joueur.':data.ready===data.players?' Connexion confirmée ; vérifie la lecture de la vidéo.':data.error?' '+data.error+' lecteur(s) signale(nt) une erreur. Vérifie la tablette.':' Si le nombre ne progresse pas, vérifie le message sur la tablette.');}return;}
   if(event.data.type==='owl-soundshow-remote-state'){
     if(isGM()&&event.data.state){remoteState=event.data.state;remoteUi?.update(remoteState);soundsDock?.update(remoteState);}
     return;
@@ -84,15 +105,18 @@ window.addEventListener('message',event=>{
 });
 window.addEventListener('archives:soundshow-session',event=>{
   if(isGM())return; // Le joueur peut consulter les Archives même dans un cadre Owlbear.
-  const value=event.detail?.session;if(value!==null&&!validSession(value))return;liveSession=value;
-  void(async()=>{if(!player){const {mountPlayer}=await import('./player.mjs?v=028');player=mountPlayer();}await player.use(value);})().catch(error=>notice(error.message));
+  void usePlayerSession(event.detail?.session).catch(error=>notice(error.message));
 });
+if(embedded&&!isGM()){
+  const ready=()=>window.parent.postMessage(packet('owl-soundshow-player-ready'),location.origin);
+  ready();playerReadyTimer=setInterval(ready,3000);
+}
 // Ne jamais réinitialiser WebRTC lorsque l'utilisateur change d'onglet :
 // le lecteur gère déjà la mise en sourdine pendant que l'onglet est masqué.
 const control=document.querySelector('.canvas-integration-icon[aria-label^="Sound Show"]');
 if(control){
-  control.disabled=false;control.id='archives-soundshow-open';control.setAttribute('aria-label','SoundShow : sons, vidéos et télécommande');control.parentElement.title='SoundShow : sons, vidéos et télécommande MJ';control.onclick=()=>soundsDock?soundsDock.open():open;
-  const refresh=()=>{control.parentElement.hidden=!isGM();};refresh();
+  control.disabled=false;control.id='archives-soundshow-open';control.setAttribute('aria-label','SoundShow : sons, vidéos et télécommande');control.parentElement.title='SoundShow : sons, vidéos et télécommande MJ';control.onclick=()=>soundsDock?soundsDock.open():open();
+  const refresh=()=>{const gm=isGM();control.disabled=!gm;control.parentElement.hidden=!gm;control.parentElement.style.display=gm?'':'none';};refresh();
   new MutationObserver(refresh).observe(document.body,{attributes:true,attributeFilter:['class']});
 }
 function initializeSoundsDock(){
@@ -112,6 +136,7 @@ function initializeSoundsDock(){
     }
   });
   if(remoteState)soundsDock?.update(remoteState);
+  if(audienceState)soundsDock?.updateAudience(audienceState);
   if(soundsDock){
     cellMedia=mountCellMedia({
       embedded,isGM,
@@ -135,4 +160,4 @@ window.ArchivesSoundShow={open,session:()=>session,
   openSounds:()=>{initializeSoundsDock();soundsDock?.open();},
   openCellMedia:(source='editor')=>{initializeSoundsDock();cellMedia?.openPicker(source);},
   getSoundDock:()=>soundsDock};
-window.addEventListener('pagehide',()=>{player?.destroy();cellMedia?.destroy();soundsDock?.destroy();},{once:true});
+window.addEventListener('pagehide',()=>{playerEpoch++;clearInterval(playerReadyTimer);player?.destroy();cellMedia?.destroy();soundsDock?.destroy();},{once:true});

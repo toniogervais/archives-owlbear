@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -23,15 +23,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: python -m pip install -r soundshow-bridge/requirements.txt playwright
+      - run: python -m pip install -r soundshow-bridge/requirements.txt playwright==1.51.0 imageio-ffmpeg==0.6.0
       - run: npm ci
-      - run: python -m playwright install --with-deps chromium
       - run: npx playwright install chromium
-      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Préparer la vidéo de test sans modifier le système
+        run: |
+          python - <<'PY'
+          import imageio_ffmpeg, os
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write('ARCHIVES_FFMPEG=' + imageio_ffmpeg.get_ffmpeg_exe() + '\n')
+          PY
       - run: python -m unittest discover -s soundshow-bridge/tests -v
       - run: node --test tests/soundshow.test.mjs
       - run: python soundshow-bridge/tests/browser.py
       - run: node tests/browser-soundshow.cjs
+      - run: node tests/browser-soundshow-archives.cjs
       - run: node tests/browser-v65.cjs
       - run: node tests/browser-startup.cjs
   windows:
@@ -65,7 +71,7 @@ jobs:
   preview:
     if: github.event_name != 'pull_request'
     needs: windows
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
@@ -78,7 +84,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          if ! gh release view soundshow-bridge-v0.3.2 > /dev/null 2>&1; then
-            gh release create soundshow-bridge-v0.3.2 --target "$GITHUB_SHA" --prerelease --title "Connecteur SoundShow — essai 0.3.2" --notes "Lecteur SoundShow : boucle, pause, arrêt, fondu, volume, frise d'onde indicative et progression. Sons et vidéos, grille compacte, fenêtre mobile et redimensionnable, cellule avec déclenchement multi-médias. MJ uniquement. Essais sur matériel réel à confirmer."
+          if ! gh release view soundshow-bridge-v0.3.3 > /dev/null 2>&1; then
+            gh release create soundshow-bridge-v0.3.3 --target "$GITHUB_SHA" --prerelease --title "Connecteur SoundShow — essai 0.3.3" --notes "Corrige la piste sonore muette : audio capturé séparément de l’aperçu, sans seconde lecture sur le PC. Vidéo avec son dans les Archives des joueurs, autorisation audio et liaison automatique. Conserve la télécommande SoundShow et les médias de cellules. Essais Windows/tablette à confirmer."
           fi
-          gh release upload soundshow-bridge-v0.3.2 windows/Archives-SoundShow-Connecteur.exe --clobber
+          gh release upload soundshow-bridge-v0.3.3 windows/Archives-SoundShow-Connecteur.exe --clobber

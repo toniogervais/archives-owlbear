@@ -6,7 +6,8 @@ const read=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
 
 test('Hidden Owlbear token is an opaque GM-only local item, never shared while hidden',()=>{
   const code=read('src/v58/transfers.mjs');
-  assert.match(code,/if \(hidden\) item\.opacity = 1/);
+  assert.match(code,/\.layer\(hidden \? "POPOVER"/);
+  assert.doesNotMatch(code,/item\.opacity\s*=\s*0/);
   assert.match(code,/OBR\.scene\.local\.addItems\(\[desired\]\)/);
   assert.match(code,/OBR\.scene\.local\.getItems\(item=>item\.metadata\?\.\[assetKey\]\?\.id===item\.id\)/);
   assert.match(code,/if \(reveal\) \{/);
