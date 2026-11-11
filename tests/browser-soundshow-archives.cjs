@@ -71,6 +71,7 @@ const {owl,hub,configure}=require('./owlbear-fixture.cjs');
     await player.screenshot({path:'/tmp/archives-player-video.png'});
     await reader.getByRole('button',{name:'Revenir au jeu',exact:true}).click();
     await reader.locator('.soundshow-view').waitFor({state:'hidden'});
+    await app(gm).locator('#soundshow-audience').filter({hasText:'1 / 1 lecteur(s) joueurs relié(s)'}).waitFor({state:'attached'});
     await reader.getByRole('button',{name:'Afficher la vidéo du MJ',exact:true}).click();
     await reader.locator('.soundshow-view').waitFor({state:'visible'});
     await reader.evaluate(()=>window.__emitPlayback({type:'playback',active:false}));

@@ -22,5 +22,5 @@ jobs:
       - run: npm ci
       - run: node --test tests/bridge-v53.test.cjs tests/bridge-v52.test.cjs tests/security-v52.test.cjs
       - run: node tests/syntax.cjs
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install chromium
       - run: node tests/browser-v53.cjs

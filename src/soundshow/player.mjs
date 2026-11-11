@@ -55,7 +55,7 @@ export function mountPlayer({container=document.body,onPlayback=()=>{},onStatus=
   badge.onclick=reopen;
   back.onclick=()=>{
     dismissedId=playback.id;waitingDismissed=true;root.hidden=true;video.muted=true;
-    state('closed');refreshBadge();close?.();
+    state(close?'closed':connection.nonce?'ready':'connecting');refreshBadge();close?.();
   };
   allow.onclick=async()=>{
     // Keep play() in this gesture so Android/Chrome can unlock audible playback.
