@@ -101,7 +101,7 @@ async def main():
     app.router.add_get('/test/player.mjs',player_script)
     with tempfile.TemporaryDirectory(prefix='soundshow-video-test-') as folder:
         video=Path(folder)/'test.mp4'
-        subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-f','lavfi','-i','testsrc2=size=320x180:rate=24',
+        subprocess.run([os.environ.get('ARCHIVES_FFMPEG','ffmpeg'),'-hide_banner','-loglevel','error','-f','lavfi','-i','testsrc2=size=320x180:rate=24',
             '-f','lavfi','-i','sine=frequency=440:sample_rate=48000','-t','30','-c:v','libx264','-preset','ultrafast',
             '-pix_fmt','yuv420p','-c:a','aac','-movflags','+faststart',str(video)],check=True)
         async with TestServer(fake_app,host='127.0.0.1') as soundshow,TestServer(app,host='127.0.0.1') as server:
