@@ -32,6 +32,7 @@ jobs:
       - run: node --test tests/soundshow.test.mjs
       - run: python soundshow-bridge/tests/browser.py
       - run: node tests/browser-soundshow.cjs
+      - run: node tests/browser-soundshow-archives.cjs
       - run: node tests/browser-v65.cjs
       - run: node tests/browser-startup.cjs
   windows:

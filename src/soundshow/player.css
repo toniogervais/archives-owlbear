@@ -1,4 +1,4 @@
-.soundshow-view{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:90000;width:min(860px,calc(100vw - 32px));height:min(540px,calc(100vh - 32px));background:#09080df8;color:#eee4d2;font:15px/1.5 'Segoe UI',system-ui,sans-serif;display:flex;flex-direction:column;border:1px solid #d2b57570;border-radius:14px;box-shadow:0 24px 95px #000b;overflow:hidden}
+.soundshow-view{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1000002;width:min(860px,calc(100vw - 32px));height:min(540px,calc(100vh - 32px));background:#09080df8;color:#eee4d2;font:15px/1.5 'Segoe UI',system-ui,sans-serif;display:flex;flex-direction:column;border:1px solid #d2b57570;border-radius:14px;box-shadow:0 24px 95px #000b;overflow:hidden}
 .soundshow-view[hidden]{display:none!important}
 .soundshow-view header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 14px;border-bottom:1px solid #d2b57535;background:#1a1421}
 .soundshow-view h2{font-size:15px;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -8,6 +8,9 @@
 .soundshow-view footer{padding:9px 14px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;font-size:13px}
 .soundshow-view p{margin:0}
 .soundshow-view [hidden]{display:none!important}
+.soundshow-receive{position:fixed;right:12px;bottom:14px;z-index:1000001;border:1px solid #d2b57570;border-radius:20px;padding:9px 15px;min-height:42px;background:#21182ff2;color:#f7e6bd;font:13px/1.4 'Segoe UI',system-ui,sans-serif;cursor:pointer;box-shadow:0 4px 20px #0005}
+.soundshow-receive[hidden]{display:none!important}
+.soundshow-receive:focus-visible{outline:2px solid #f1cd86;outline-offset:3px}
 html.soundshow-obr-frame,html.soundshow-obr-frame body{margin:0;height:100%;overflow:hidden}
 html.soundshow-obr-frame .soundshow-view{inset:0;top:0;left:0;transform:none;width:100%;height:100%;border:0;border-radius:0;box-shadow:none}
 @media(max-width:600px){.soundshow-view{width:calc(100vw - 12px);height:min(62vh,470px)}.soundshow-view header{padding:6px 10px}.soundshow-view footer{padding:8px 10px}}

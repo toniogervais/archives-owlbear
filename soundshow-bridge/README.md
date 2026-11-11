@@ -1,5 +1,7 @@
 # SoundShow 2 → tablettes des joueurs
 
+**Archives V4.40 :** la vidéo et sa piste audio s’affichent directement dans le canevas joueur ouvert dans Les Archives. Le lecteur y reçoit automatiquement la session de la salle ; le retour à la carte passe la réception au lecteur Owlbear. Le bouton **Autoriser l’image et le son** déverrouille la lecture sonore sur tablette ; **Revoir la vidéo du MJ** réaffiche une vidéo masquée. Le connecteur 0.3.2 reste compatible. [Procédure complète](../README.md#v440--vidéo-et-son-directement-dans-les-archives-des-joueurs).
+
 Version d’essai 0.3.2. La nouveauté est une **télécommande complète pour les sons et les vidéos** directement dans Les Archives, au sein d'Owlbear. Le connecteur prépare la liaison vidéo automatiquement, retrouve les fichiers déjà autorisés et transmet la connexion à l'extension Les Archives **depuis Owlbear** sans codes manuels. Il conserve la correction de démarrage des vidéos en boucle. Les gains de temps dépendent du réseau et doivent être vérifiés sur la tablette. SoundShow reste le déclencheur : ses boutons, ses raccourcis clavier et sa télécommande lancent les vidéos. Le connecteur suit leur lecture et un onglet Chrome sur le PC diffuse la vidéo source aux lecteurs des Archives et d’Owlbear.
 
 ## Ce qu’il faut

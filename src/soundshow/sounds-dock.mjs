@@ -71,6 +71,7 @@ export function mountSoundDock({send,refresh,isGM}){
   const actionsHead=el('div','ss-head-actions');actionsHead.append(floatButton,close);
   header.append(title,actionsHead);
   const status=el('p','ss-status');status.setAttribute('role','status');status.textContent='Connexion SoundShow en cours…';
+  const audience=el('p','ss-status');audience.id='soundshow-audience';audience.setAttribute('role','status');audience.hidden=true;
   const resizer=el('div','ss-resize-handle');resizer.title='Redimensionner la fenêtre SoundShow';resizer.setAttribute('aria-label','Ajuster la largeur du panneau SoundShow');
   const playerHost=el('div','ss-player-host');
   const controls=el('div','ss-controls');
@@ -100,7 +101,7 @@ export function mountSoundDock({send,refresh,isGM}){
   }
   const hint=el('p','ss-help','Les boucles, fondus, volumes et sorties audio restent ceux du projet SoundShow. Les actions attribuées aux clics dans Les Archives sont enregistrées uniquement ici.');
   settings.append(summary,fields,hint);
-  panel.append(resizer,header,status,playerHost,controls,categories,scroll,settings);
+  panel.append(resizer,header,status,audience,playerHost,controls,categories,scroll,settings);
   app.append(panel);
   const miniPlayer=mountMiniPlayer(playerHost,{send,isGM,readState:()=>state});
   function clamp(x,min,max){return Math.max(min,Math.min(max,x));}
@@ -345,6 +346,13 @@ export function mountSoundDock({send,refresh,isGM}){
   const timer=setInterval(()=>{if(expanded&&isGM?.())void refresh?.();},9000);
   return {
     update,
+    updateAudience(value){
+      if(!Number.isInteger(value?.players))return;
+      audience.hidden=false;
+      audience.textContent=(value.ready||0)+' / '+value.players+' lecteur(s) joueurs relié(s)'+
+        (value.blocked?' · Son à autoriser sur '+value.blocked+' écran(s) joueur(s).':
+          value.error?' · Connexion à vérifier sur '+value.error+' écran(s).':'');
+    },
     open:()=>setExpanded(true),
     close:()=>setExpanded(false),
     isOpen:()=>expanded,
