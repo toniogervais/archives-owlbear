@@ -1,0 +1,29 @@
+name: Archives — gestion des sauvegardes
+on:
+  push:
+    branches: [main, codex/backup-management-v448]
+    paths: ['src/v71/**', 'src/v63/**', 'tests/*v448*', 'tests/cloud-fixture.cjs', 'sql/archives-cloud-backups-v448.sql', '.github/workflows/test-backup-management-v448.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: node --test tests/cloud-v446.test.mjs tests/cloud-sql-v446.test.mjs tests/backup-management-v448.test.mjs
+      - run: npx playwright install chromium
+      - run: node tests/browser-v448.cjs
+      - run: node tests/browser-v446.cjs
+      - run: node tests/browser-v63.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backup-management-diagnostics
+          path: /tmp/archives-backups-management*.png
+          retention-days: 3

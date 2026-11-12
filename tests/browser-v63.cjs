@@ -77,7 +77,7 @@ async function closePane(page,id){await pane(page,id).locator('header button').c
   await app(gm).evaluate(()=>new Promise(resolve=>{const open=indexedDB.open('archives-imaginaire-files',1);open.onsuccess=()=>{const db=open.result,tx=db.transaction(['entries','files'],'readwrite'),id=crypto.randomUUID(),entry={id,title:'AUTRE_COMPTE_285',name:'AUTRE_COMPTE_285.txt',scope:['another-room','another-owner'],mime:'text/plain',kind:'DOCUMENT',size:3,hash:'a'.repeat(64),links:[]};tx.objectStore('entries').put(entry,['another-room','another-owner',id]);tx.objectStore('files').put(new Blob(['bad']),['another-room','another-owner',id]);tx.oncomplete=()=>{db.close();resolve()}}}));
   await editor(gm).locator('#canvas-save-icon').click();
   const backup=()=>pane(gm,'archives-campaign-backup');
-  const [download]=await Promise.all([gm.waitForEvent('download'),backup().getByRole('button',{name:'Enregistrer la campagne',exact:true}).click()]);
+  const [download]=await Promise.all([gm.waitForEvent('download'),backup().getByRole('button',{name:'Sauvegarder sur cet appareil',exact:true}).click()]);
   const bytes=await downloadBytes(download),{inspectBackup}=await import('../src/v63/backup.mjs'),decoded=await inspectBackup(new Blob([bytes]));
   assert.equal(decoded.scenario.boards[0].nodes.length,3);assert.equal(decoded.files.length,2);assert.equal(decoded.images.length,1);
   assert.equal(decoded.presets.find(item=>item.source==='cell:act:alix-portrait').value.crop.zoom,1.4);

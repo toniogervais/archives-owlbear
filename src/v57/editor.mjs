@@ -27,7 +27,7 @@ export function installOwlEditor(api) {
       "Importer un scénario", () => { notice.hide(); document.getElementById("up-json").click(); },
       "Nouveau scénario", () => { notice.hide(); window.DuneApp.startNewScenario(false); },
       "Sauvegardes en ligne", () => {
-        void import('../v63/backup-ui.mjs?v=4460').then(module => { notice.hide();module.openBackup(); })
+        void import('../v63/backup-ui.mjs?v=4480').then(module => { notice.hide();module.openBackup(); })
           .catch(error => notice.show(error.message));
       });
   }

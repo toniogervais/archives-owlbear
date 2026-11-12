@@ -1,5 +1,5 @@
 import { liveRoomKey, validSession, viewerId } from "../v56/link.mjs";
-import { inviteId, localRoom, roomChannel, roomMembers, screenUrl, snapshotChunks, validSnapshot } from "./room.mjs?v=4470";
+import { inviteId, localRoom, roomChannel, roomMembers, screenUrl, snapshotChunks, validSnapshot } from "./room.mjs?v=4480";
 import {createPresence} from '../v63/presence.mjs?v=4210';
 import {screenCommand} from '../v65/screen-model.mjs';
 

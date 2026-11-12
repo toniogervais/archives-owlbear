@@ -20,8 +20,8 @@ export function autoBackup({cloud,capture,read,write,changed = () => {},timers =
         const data = await capture();check(current);
         if (data.fingerprint === binding.fingerprint) {
           // Still check the head: this device must learn about another writer.
-          const {rows} = await cloud.versions(current.campaignId);check(current);
-          if ((rows[0]?.revision || 0) !== current.revision) { const error = Error('Une version plus récente existe en ligne. Ouvre Sauvegardes pour la consulter ou conserve ton travail dans une nouvelle campagne.');error.code='CONFLICT';throw error; }
+          const {rows,revision} = await cloud.versions(current.campaignId);check(current);
+          if ((revision ?? rows[0]?.revision ?? 0) !== current.revision) { const error = Error('Une version plus récente existe en ligne ou les sauvegardes ont changé. Ouvre Sauvegardes pour les consulter ou conserve ton travail dans une nouvelle campagne.');error.code='CONFLICT';throw error; }
         } else {
           const saved = await cloud.save({...data,campaignId:current.campaignId,expectedRevision:current.revision,check:async () => check(current)});
           check(current);binding = {...binding,revision:saved.revision,fingerprint:data.fingerprint,savedAt:saved.created_at};persist();
@@ -53,6 +53,14 @@ export function autoBackup({cloud,capture,read,write,changed = () => {},timers =
       binding = {...value,enabled:true};blocked = false;persist();version++;report('pending');return save();
     },
     pause() { timers.clearTimeout(timer);binding = binding && {...binding,enabled:false};persist();report('off'); },
+    removed({campaignId,project,owner,previousRevision,revision,latestDeleted}) {
+      if(running)throw Error('Attends la fin de la sauvegarde en cours.');
+      if(!binding||binding.campaignId!==campaignId||binding.project!==project||binding.owner!==owner)return;
+      const known=binding.revision===previousRevision;
+      binding={...binding,revision:known?revision:binding.revision,enabled:known&&!latestDeleted&&binding.enabled,
+        fingerprint:latestDeleted?null:binding.fingerprint,savedAt:latestDeleted?null:binding.savedAt};
+      if(known)blocked=false;persist();report(binding.enabled?'pending':'off');
+    },
     hold() { held++;timers.clearTimeout(timer);return () => { held=Math.max(0,held-1);if (!held) schedule(); }; },
     dispose() { closed=true;timers.clearTimeout(timer); }
   };

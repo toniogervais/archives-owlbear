@@ -1,20 +1,20 @@
 import {sheet,button,element,requireGM,notice} from './ui.mjs';
 import {campaignRequest} from '../v71/campaign-io.mjs';
-import {mountCloudBackups,pauseCloudBackup} from '../v71/cloud-ui.mjs';
+import {mountCloudBackups,pauseCloudBackup} from '../v71/cloud-ui.mjs?v=4480';
+import {downloadArchive} from '../v71/download.mjs';
 const size = bytes => (bytes / 1024 / 1024).toLocaleString('fr',{maximumFractionDigits:1}) + ' Mo';
 export function openBackup() {
   requireGM();const view = sheet('archives-campaign-backup','Sauvegardes','Campagne privée');
   const {content,dialog,status} = view;
-  content.append(element('h3','Copie supplémentaire en fichier'),element('p','Un fichier .archives pour conserver aussi une copie indépendante du scénario, du journal MJ, des bibliothèques et des cadrages des tokens.','studio-hint'));
+  content.append(element('h3','Sauvegarde sur l’appareil'),element('p','Télécharge un fichier complet .archives à conserver sur ce PC, cette tablette ou ce téléphone. Il comprend le scénario, le journal MJ, les bibliothèques et les cadrages des tokens.','studio-hint'));
   const tools = element('div',null,'studio-actions'),preview = element('section');preview.hidden = true;
   const input = element('input');input.type = 'file';input.accept = '.archives';input.hidden = true;
-  const download = button('Enregistrer la campagne',async () => {
+  const download = button('Sauvegarder sur cet appareil',async () => {
     view.busy(true);status.textContent = 'Préparation et vérification des fichiers…';
     try {
       const result = await campaignRequest({action:'export',snapshot:window.ArchivesRelay.snapshot()});
       if (!dialog.open) return;
-      const url = URL.createObjectURL(result.blob),link = element('a');link.href = url;link.download = 'Campagne_Archives_'+new Date().toISOString().slice(0,10)+'.archives';
-      document.body.append(link);link.click();link.remove();setTimeout(() => URL.revokeObjectURL(url),10000);
+      downloadArchive(result.blob,'Campagne_Archives_'+new Date().toISOString().replace(/[:.]/g,'-'));
       status.textContent = 'Sauvegarde prête : '+result.summary.files+' fichier(s), '+result.summary.images+' image(s), '+size(result.blob.size)+'.';
     } catch (error) { status.textContent = error.message; }
     finally { view.busy(false); }
@@ -24,7 +24,7 @@ export function openBackup() {
   tools.append(download,choose);content.append(tools,input,preview);
   content.append(element('p','Les scènes et cartes natives d’Owlbear se conservent dans Owlbear. La sauvegarde inclut la bibliothèque d’images de cet appareil. Le fichier .archives est privé : il contient aussi les secrets du MJ.','studio-hint'));
   const recoveryRow = element('details'),summary = element('summary','Récupérer une version précédente');recoveryRow.append(summary,recover);content.append(recoveryRow);
-  mountCloudBackups(view,inspect);
+  mountCloudBackups(view,inspect,{localDownload:download});
   async function inspect(command,hooks = {}) {
     view.busy(true);status.textContent = 'Vérification de l’intégrité de la sauvegarde…';preview.hidden = true;
     try {
