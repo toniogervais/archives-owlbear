@@ -94,7 +94,13 @@ export function mountCloudBackups(view,inspect) {
       for(const item of campaigns)select.append(new Option(item.name || 'Campagne sans nom',item.id));
       const bound=engine?.binding();select.value=preferred || (bound?.project===ctx.project && bound?.owner===ctx.user.id ? bound.campaignId : campaigns.length===1 ? campaigns[0].id : '');
       const loaded=await list(generation);if(loaded!==false)status.textContent='Connecté avec '+ctx.user.email+'. Choisis une version à ouvrir ou active la sauvegarde de la campagne actuelle.';
-    } catch(error){ctx=null;fail(error)}
+    } catch(error){
+      ctx=null;fail(error);
+      // Keep the current campaign and its retry/pause actions accessible offline.
+      // This display context never authenticates a request: cloud rechecks Auth.
+      const bound=engine?.binding();
+      if(bound){ctx={project:bound.project,user:{id:bound.owner}};select.append(new Option(bound.name || 'Campagne de cet appareil',bound.campaignId));select.value=bound.campaignId;}
+    }
     renderControls();
   }
   async function list(generation=++sequence) {

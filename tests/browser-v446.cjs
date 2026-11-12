@@ -65,9 +65,20 @@ async function until(read,label){for(let i=0;i<140;i++){if(await read())return;a
   await online(second).getByRole('button',{name:'Ouvrir cette version…',exact:true}).first().click();
   await backup(second).locator('.studio-status').filter({hasText:'endommagée'}).waitFor();
   assert.equal(await app(second).evaluate(()=>DuneApp.getState().nodes.length),3);
+  // The same private campaign also opens in the standalone Archives, without an Owlbear room.
+  const independent=await device();await independent.page.goto(archives+'/archives-app-v64-v55.html?resume=1');
+  await independent.page.locator('#canvas-save-icon').click();
+  const independentBackups=independent.page.locator('#archives-campaign-backup');
+  const healthy=cloud.versions[1];
+  await independentBackups.locator('[data-backup-id="'+healthy.id+'"]').getByRole('button',{name:'Ouvrir cette version…',exact:true}).click();
+  await independentBackups.getByRole('button',{name:'Restaurer cette campagne',exact:true}).click();
+  await independentBackups.waitFor({state:'detached'});
+  assert.equal(await independent.page.evaluate(()=>DuneApp.getState().nodes.length),2);
+  assert.ok(await independent.page.evaluate(()=>JSON.stringify(DuneApp.getState().journalPages).includes('JOURNAL_MJ_446')));
+  await independent.context.close();
   const wire=JSON.stringify(await gm.evaluate(()=>window.fixture.wire()));for(const secret of ['SECRET_NUAGE_446','DESCRIPTION_MJ_446','INDICE_MJ_446','JOURNAL_MJ_446','ORIGINAL_PRIVE_NUAGE_446'])assert.ok(!wire.includes(secret),secret+' stays out of player broadcasts');
   assert.deepEqual(errors,[]);
-  console.log('V4.46: full campaign saved without downloads; a fresh tablet restores scenario, secrets, journal, image library and original files; auto checkpoints, stale device refusal, offline retry and corrupt-copy rejection verified.');
+  console.log('V4.46: full campaign saved without downloads; a fresh tablet and standalone Archives restore the campaign; secrets, journal, image library and original files, auto checkpoints, stale device refusal, offline retry and corrupt-copy rejection verified.');
  }catch(error){if(gm&&!gm.isClosed())await gm.screenshot({path:'/tmp/archives-cloud-failure-v446.png'}).catch(()=>{});if(second&&!second.isClosed())await second.screenshot({path:'/tmp/archives-cloud-second-failure-v446.png'}).catch(()=>{});throw error}
  finally{await browser.close()}
 })().catch(error=>{console.error(error);process.exitCode=1});
