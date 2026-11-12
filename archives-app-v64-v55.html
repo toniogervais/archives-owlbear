@@ -283,6 +283,7 @@ body.player-mode .node-cell.hidden-node { opacity: 0 !important; pointer-events:
 body.player-mode .gm-cell-btn,
 body.player-mode .selected-badge,
 body.player-mode .resize-handle:not(.player-cell-resize),
+body.player-mode .clues-render-list,
 body.player-mode .gm-secret-clue { display: none !important; }
 
 .node-cell.drop-valid {
@@ -372,7 +373,7 @@ body.player-mode .gm-secret-clue { display: none !important; }
 .bg3-sub-item.bg3-drop-invalid { outline: 2px solid #ff2222; background: rgba(255, 34, 34, 0.15); }
 
 .clues-render-list { margin-top: 4px; width: 100%; border-top: 1px solid rgba(212,175,55,0.35); padding-top: 3px; display: flex; flex-direction: column; gap: 2px; text-align: left; }
-.clue-item-line { font-size: 10px; color: #fff; background: rgba(0,0,0,0.65); padding: 2px 5px; border-left: 2px solid var(--skin-gold-main); border-radius: 2px; }
+.clue-item-line { font-size: 10px; line-height: 1.3; color: #fff; background: rgba(0,0,0,0.65); padding: 2px 5px; border-left: 2px solid var(--skin-gold-main); border-radius: 2px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; max-height: 2.6em; overflow: hidden; overflow-wrap: anywhere; }
 .clue-item-line.gm-secret-clue { opacity: 0.55; border-left-color: #888; font-style: italic; }
 
 .resize-handle {
@@ -3018,10 +3019,19 @@ window.DuneApp = (function() {
       var fSize = (ty.fontSize || 14) + "px";
 
       var cluesHtml = "";
-      for (var ci = 0; ci < n.clues.length; ci++) {
-        var cl = n.clues[ci];
-        if (cl.revealed) cluesHtml += '<div class="clue-item-line">▪ ' + esc(cl.text) + '</div>';
-        else if (!state.playerMode) cluesHtml += '<div class="clue-item-line gm-secret-clue">🔒 ' + esc(cl.text) + '</div>';
+      if (!state.playerMode && !state.strictReadOnly) {
+        var canvasClues = n.clues.filter(function(clue) { return clue.revealed; });
+        // Les anciennes campagnes sans ordre de révélation conservent l'ordre de leur liste.
+        if (canvasClues.length) {
+          canvasClues.sort(function(a, b) { return (Number(a.revOrder) || 0) - (Number(b.revOrder) || 0); });
+          canvasClues = canvasClues.slice(-2);
+        } else {
+          canvasClues = n.clues.filter(function(clue) { return !clue.revealed; }).slice(0, 2);
+        }
+        for (var ci = 0; ci < canvasClues.length; ci++) {
+          var cl = canvasClues[ci];
+          cluesHtml += '<div class="clue-item-line' + (cl.revealed ? '' : ' gm-secret-clue') + '" title="' + esc(cl.text) + '">' + (cl.revealed ? '▪ ' : '🔒 ') + esc(cl.text) + '</div>';
+        }
       }
 
       var containerHtml = "";
@@ -7310,7 +7320,7 @@ body.player-mode .player-cell-resize:hover{opacity:1}
 }
 </style>
 <script type="module" src="./src/v65/cell-picture.mjs?v=4430"></script>
-<script type="module" src="./src/v70/player-image.mjs?v=4440"></script>
+<script type="module" src="./src/v70/player-image.mjs?v=4450"></script>
 <script type="module" src="./src/v65/storage.mjs?v=4210"></script>
 <script type="module" src="./src/soundshow/archives.mjs?v=4420"></script>
 <script type="module" src="./src/v66/workspace.mjs?v=4281"></script>
