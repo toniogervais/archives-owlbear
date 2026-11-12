@@ -56,6 +56,7 @@ function storageFixture() {
  };
  const client={supabaseUrl:project,auth:{getUser:async()=>({data:{user:{id:uid}}})},from:query,storage:{from:()=>({upload:async(path,blob)=>{objects.set(path,blob);uploads++;return {data:{path}}},download:async path=>({data:objects.get(path)}),remove:async paths=>{for(const path of paths)objects.delete(path);return {data:[]}}})},
   rpc:async(name,args)=>{
+   if(name==='archives_backup_catalog')return {error:{code:'PGRST202',message:'Legacy project'}};
    let row=rows.find(row=>row.id===args.p_id);
    if(!row){if((rows.at(-1)?.revision||0)!==args.p_expected_revision)return {error:{message:'ARCHIVES_BACKUP_CONFLICT'}};
     row={id:args.p_id,campaign_id:campaign,owner_id:owner,revision:rows.length+1,byte_size:args.p_parts.reduce((sum,p)=>sum+p.bytes,0),sha256:args.p_sha256,fingerprint:args.p_fingerprint,parts:args.p_parts,summary:args.p_summary,created_at:'2026-11-12T15:00:00Z'};rows.push(row);

@@ -1,5 +1,14 @@
 # Les Archives de l’Imaginaire
 
+## V4.48 — gérer l’espace des sauvegardes et enregistrer sur l’appareil
+
+Dans **Sauvegardes**, chaque version datée peut être cochée. **Tout sélectionner** et **Supprimer la sélection** permettent d’effacer une ou plusieurs versions après confirmation. Le poids des versions et de la sélection est affiché. La suppression retire aussi les fichiers privés de Supabase ; un nettoyage interrompu reste suivi et peut reprendre avec **Libérer l’espace restant**. La campagne ouverte sur l’appareil reste disponible. Supprimer la dernière version suspend l’envoi automatique sur cet appareil ; le réactiver est un choix explicite. Le compteur serveur reste croissant même après suppression de toutes les copies, pour empêcher un autre appareil resté ouvert d’envoyer une ancienne version sans détection de conflit.
+
+Le bouton **Sauvegarder sur cet appareil**, visible en haut de la fenêtre, télécharge la campagne actuelle en fichier `.archives`, avec son journal, ses secrets et ses originaux. Le bouton **Télécharger sur cet appareil** d’une version en ligne conserve exactement cette copie plus ancienne, sans remplacer le scénario ouvert. **Restaurer une campagne…** permet de réouvrir un fichier local. Ces exports ne créent pas de version supplémentaire en ligne.
+
+**Une mise à jour Supabase est nécessaire pour la suppression** : exécuter [le script complet V4.48](sql/archives-cloud-backups-v448.sql) dans SQL Editor, une seule fois. Il installe aussi le stockage pour un nouveau projet et conserve les campagnes et les sauvegardes existantes. Les sauvegardes et téléchargements continuent à fonctionner avec l’installation V4.46 pendant cette transition. Dans les Archives, **Activer ou mettre à jour le stockage → Afficher le script** donne maintenant le texte sélectionnable, avec Ctrl+C ou Copier sur tablette lorsque le presse-papiers automatique est refusé.
+
+
 ## V4.47 — images entières dans les cellules
 
 Les nouvelles images choisies dans la bibliothèque, sur le PC ou par adresse directe s’affichent en entier et conservent leurs proportions. Le zoom et le déplacement de la photo précédente sont remis à zéro lors du remplacement. Dans les réglages de la cellule, **Image entière** rétablit l’affichage complet d’une photo déjà placée ; **Remplir la cellule** permet un recadrage volontaire. Le zoom et le déplacement restent disponibles. Le bouton **Adapter Auto** et la réinitialisation reviennent aussi à l’image entière. Les cadrages existants restent mémorisés tant que le MJ ne les modifie pas. Actualiser les Archives ; l’adresse de l’extension reste identique.

@@ -11,7 +11,7 @@ button:focus-visible{outline:3px solid white;outline-offset:4px}#error{display:n
 <h1 id="title">Le maître de jeu change d’espace</h1><p id="instruction"></p><button id="accept" type="button" disabled>Rejoindre</button><button id="dismiss" type="button" disabled>Rester sur cet écran</button><p id="error" role="alert"></p>
 </div></main><script type="module">
 import { O as OBR } from "./assets/index-BfJgTiPE.js";
-import { archivesUrl,localRoom } from "./src/v57/room.mjs?v=4470";
+import { archivesUrl,localRoom } from "./src/v57/room.mjs?v=4480";
 const [target,...parts]=location.hash.slice(1).split("&"),flags=new URLSearchParams(parts.join('&'));
 const archives=target==="ARCHIVES";
 const native=flags.get('room')==='1',required=flags.get('required')==='1',requestId=flags.get('id')||'';

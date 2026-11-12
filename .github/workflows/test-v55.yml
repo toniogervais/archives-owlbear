@@ -21,6 +21,8 @@ on:
       - 'src/v71/**'
       - 'sql/archives-cloud-backups-v446.sql'
       - 'tests/*v446*'
+      - 'tests/*v448*'
+      - 'sql/archives-cloud-backups-v448.sql'
       - 'tests/cloud-fixture.cjs'
       - 'tests/presentation-v444.test.cjs'
       - 'tests/browser-v444.cjs'
@@ -79,6 +81,7 @@ jobs:
       - run: npm ci
       - run: node --test tests/controls-v65.test.mjs tests/campaign-v63.test.mjs tests/crop-v61.test.mjs tests/files-v60.test.mjs tests/security-v58.test.cjs tests/room-v57.test.mjs tests/fallback-v56.test.mjs tests/transfer-v55.test.cjs tests/bridge-v55.test.cjs tests/visual-v54.test.cjs tests/bridge-v53.test.cjs tests/bridge-v52.test.cjs tests/security-v52.test.cjs tests/cell-brief-v439.test.cjs tests/dossier-v442.test.mjs tests/presentation-v444.test.cjs
       - run: node --test tests/cloud-v446.test.mjs tests/cloud-sql-v446.test.mjs
+      - run: node --test tests/backup-management-v448.test.mjs
       - run: node tests/syntax.cjs
       - run: node --test tests/settings-v59.test.cjs
       - id: browser
@@ -117,4 +120,7 @@ jobs:
         if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
 
       - run: node tests/browser-v446.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
+
+      - run: node tests/browser-v448.cjs
         if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
