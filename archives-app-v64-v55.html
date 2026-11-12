@@ -316,6 +316,13 @@ body.player-mode .gm-secret-clue { display: none !important; }
 .node-cell.shape-shield .cell-bg-clip { clip-path: polygon(50% 1.5%, 98% 20%, 88% 90%, 50% 98.5%, 12% 90%, 2% 20%); }
 
 .cell-bg-img-layer { position: absolute; inset: 0; background-repeat: no-repeat; }
+/* Keep the full rectangular photo inside each decorative cell frame. */
+.node-cell.shape-octagon .cell-bg-img-layer.picture-fit-entire { inset:2% 8.5%; }
+.node-cell.shape-hex .cell-bg-img-layer.picture-fit-entire { inset:2.5% 14.5%; }
+.node-cell.shape-diamond .cell-bg-img-layer.picture-fit-entire { inset:26%; }
+.node-cell.shape-circle .cell-bg-img-layer.picture-fit-entire { inset:17.5% 16.5%; }
+.node-cell.shape-rect .cell-bg-img-layer.picture-fit-entire { inset:2% 1.5%; }
+.node-cell.shape-shield .cell-bg-img-layer.picture-fit-entire { inset:20.5% 12.5%; }
 .cell-frame-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; overflow: visible; }
 
 .cell-inner {
@@ -3008,7 +3015,7 @@ window.DuneApp = (function() {
           bgSizing=n.bgFit==='contain'?'contain':'cover';bx=by='50%';
           pictureTransform='transform:translate('+(Number(n.bgOffsetX)||0)*100+'%,'+(Number(n.bgOffsetY)||0)*100+'%) scale('+Math.max(.15,Math.min(8,n.bgZoom))+');transform-origin:center;';
         }
-        bgImgLayerHtml = '<div class="cell-bg-img-layer" style="background-image:url(\'' + n.bgImg + '\'); opacity:' + op + '; background-size:' + bgSizing + '; background-position:' + bx + ' ' + by + ';'+pictureTransform+'"></div>';
+        bgImgLayerHtml = '<div class="cell-bg-img-layer'+(n.bgFit==='contain'?' picture-fit-entire':'')+'" style="background-image:url(\'' + n.bgImg + '\'); opacity:' + op + '; background-size:' + bgSizing + '; background-position:' + bx + ' ' + by + ';'+pictureTransform+'"></div>';
       }
 
       var ty = n.typo || defaultTypo();
@@ -4766,7 +4773,7 @@ window.DuneApp = (function() {
       var cellRatio = effSz.w / (effSz.h || 1);
       var img = new Image();
       img.onload = function() {
-        n.bgZoom=1;n.bgOffsetX=0;n.bgOffsetY=0;n.bgFit='cover';
+        n.bgZoom=1;n.bgOffsetX=0;n.bgOffsetY=0;n.bgFit='contain';
         var imgRatio = (img.naturalWidth || 1) / (img.naturalHeight || 1);
         if (cellRatio >= imgRatio) {
           n.bgW = 100;
@@ -4786,7 +4793,7 @@ window.DuneApp = (function() {
       var n = getNode(state.selectedId);
       if (!n) return;
       n.bgW = 100; n.bgH = 100; n.bgX = 50; n.bgY = 50; n.bgOp = 85;
-      n.bgZoom=1;n.bgOffsetX=0;n.bgOffsetY=0;n.bgFit='cover';
+      n.bgZoom=1;n.bgOffsetX=0;n.bgOffsetY=0;n.bgFit='contain';
       fillFormFromNode(n); renderAll(); saveState();
       setStatus("↺ Image réinitialisée.");
     },
@@ -7249,7 +7256,7 @@ body.player-mode .player-cell-resize:hover{opacity:1}
  function refreshSubcategories(){var select=el('archives-image-library-subcategory'),host=el('archives-image-library-subcategory-tabs');if(!select||!host)return;var names=savedSubcategories().slice();categoryItems().forEach(function(x){var n=(x.subcategory||'').trim();if(n&&names.indexOf(n)<0)names.push(n)});names.sort(function(a,b){return a.localeCompare(b,'fr')});if(activeSubcategory&&names.indexOf(activeSubcategory)<0)activeSubcategory='';select.innerHTML='<option value="">Toutes les images</option>'+names.map(function(n){return '<option value="'+esc(n)+'">'+esc(n)+'</option>'}).join('');select.value=activeSubcategory;var tabs=[{name:'',label:'Toutes les images'}].concat(names.map(function(n){return {name:n,label:n}}));host.innerHTML=tabs.map(function(t){var active=t.name===activeSubcategory;return '<button type="button" role="tab" aria-selected="'+active+'" data-subcategory="'+esc(t.name)+'" style="padding:8px 12px;border:1px solid '+(active?'#d4af37':'#75664d')+';border-radius:9px;background:'+(active?'#47391d':'#17121d')+';color:'+(active?'#ffe9a6':'#eee2c6')+';cursor:pointer;font-weight:700">'+esc(t.label)+'</button>'}).join('');host.querySelectorAll('button[data-subcategory]').forEach(function(b){b.addEventListener('click',function(){selectedImageIds.clear();activeSubcategory=b.getAttribute('data-subcategory')||'';render()})});host.querySelectorAll('button[data-subcategory]').forEach(function(b){b.addEventListener('contextmenu',function(e){e.preventDefault();activeSubcategory=b.getAttribute('data-subcategory')||'';render();showActionsMenu(activeSubcategory?'subcategory':'category',e)})});var has=!!activeSubcategory;['archives-image-library-subcategory-rename','archives-image-library-subcategory-clear'].forEach(function(id){var b=el(id);if(b)b.disabled=!has});var cat=el('archives-image-library-category-clear');if(cat)cat.disabled=categoryItems().length===0}
  function deleteImages(list,confirmText,successText){if(!list.length){status('Aucune image à supprimer dans cette sélection.');return}if(!window.confirm(confirmText+'\n\nCette action est définitive.'))return;var store=tx('readwrite'),remaining=list.length,failed=false;list.forEach(function(x){var r=store.delete(x.id);r.onsuccess=function(){remaining--;if(remaining===0&&!failed)all().then(function(){status(successText.replace('{n}',list.length))})};r.onerror=function(){failed=true;status('Certaines images n’ont pas pu être supprimées. Réessaie après vérification.')}})}
  function openPreview(id){var x=items.find(function(i){return i.id===id});if(!x)return;var old=document.getElementById('archives-image-full-preview');if(old)old.remove();var overlay=document.createElement('div');overlay.id='archives-image-full-preview';overlay.style.cssText='position:fixed;inset:0;z-index:30000;background:rgba(0,0,0,.94);display:flex;align-items:center;justify-content:center;padding:4vh 4vw;box-sizing:border-box';var dismiss=function(){document.removeEventListener('keydown',escHandler);if(window.ArchivesAppearance)window.ArchivesAppearance.dismiss(overlay);else overlay.remove()};overlay.addEventListener('click',function(e){if(e.target===overlay)dismiss()});var img=document.createElement('img');img.src=x.data;img.alt=x.name;img.style.cssText='max-width:100%;max-height:100%;object-fit:contain;box-shadow:0 8px 40px #000';var close=document.createElement('button');close.type='button';close.textContent='✕ Fermer';close.setAttribute('aria-label','Fermer l’aperçu complet');close.style.cssText='position:absolute;top:16px;right:18px;padding:10px 14px;border-radius:8px;background:#352914;color:#ffedbd;border:1px solid #b99b4b;cursor:pointer;font-size:15px';close.onclick=dismiss;overlay.appendChild(img);overlay.appendChild(close);document.body.appendChild(overlay);var escHandler=function(e){if(e.key==='Escape')dismiss()};document.addEventListener('keydown',escHandler)}
- function apply(id,target){var x=items.find(function(i){return i.id===id});if(!x)return;var app=window.DuneApp,st=app&&app.getState?app.getState():null;if(!st){status('Impossible d’accéder à l’état de l’application.');return}var urlInput=el('inp-web-url');if(urlInput)urlInput.value=x.data;if(target==='canvas'){if(typeof app.applyWebUrl==='function')app.applyWebUrl('canvasBg');else{st.bgImage=x.data;var layer=el('canvas-bg-layer');if(layer){layer.style.backgroundImage='url("'+x.data+'")';layer.style.backgroundSize='cover';layer.style.backgroundPosition='center'}}status('Image « '+x.name+' » appliquée comme fond du canevas.');return}var node=(st.nodes||[]).find(function(n){return n.id===st.selectedId});if(!node){status('Sélectionne d’abord une cellule sur le canevas, puis réessaie.');return}try{if(typeof app.applyWebUrl==='function')app.applyWebUrl('cellBg');else node.bgImg=x.data;status('Image « '+x.name+' » appliquée à la cellule « '+(node.title||'sans titre')+' ».')}catch(e){status('Image appliquée, mais le rafraîchissement a échoué. Sélectionne de nouveau la cellule.')}}
+ function apply(id,target){var x=items.find(function(i){return i.id===id});if(!x)return;var app=window.DuneApp,st=app&&app.getState?app.getState():null;if(!st){status('Impossible d’accéder à l’état de l’application.');return}var urlInput=el('inp-web-url');if(urlInput)urlInput.value=x.data;if(target==='canvas'){if(typeof app.applyWebUrl==='function')app.applyWebUrl('canvasBg');else{st.bgImage=x.data;var layer=el('canvas-bg-layer');if(layer){layer.style.backgroundImage='url("'+x.data+'")';layer.style.backgroundSize='cover';layer.style.backgroundPosition='center'}}status('Image « '+x.name+' » appliquée comme fond du canevas.');return}var node=(st.nodes||[]).find(function(n){return n.id===st.selectedId});if(!node){status('Sélectionne d’abord une cellule sur le canevas, puis réessaie.');return}try{window.ArchivesCellPicture?.finish?.();if(typeof app.commitCellPicture==='function')app.commitCellPicture(node.id,{bgImg:x.data,bgFit:'contain',bgZoom:1,bgOffsetX:0,bgOffsetY:0});else if(typeof app.applyWebUrl==='function')app.applyWebUrl('cellBg');else node.bgImg=x.data;status('Image « '+x.name+' » appliquée à la cellule « '+(node.title||'sans titre')+' ».')}catch(e){status('Image appliquée, mais le rafraîchissement a échoué. Sélectionne de nouveau la cellule.')}}
  function createCell(id){var x=items.find(function(i){return i.id===id});if(!x)return;var cellType=activeType;var app=window.DuneApp;if(!app||typeof app.importCatalogCell!=="function"){status("La création de cellule n’est pas disponible.");return}var allowedTypes=["personnage","groupe","lieu","objet","ressource","evenement"];cellType=allowedTypes.indexOf(cellType)>=0?cellType:"lieu";var node={title:x.name,category:cellType,shape:"rect",faction:"",desc:"",border:"solid",color:"#d4af37",w:280,h:190,bgImg:x.data,bgOp:100,bgW:100,bgH:100,bgX:50,bgY:50,bgFit:"contain",imageFit:"contain",typo:{textCase:"default",fontSize:14,bold:false,italic:false,underline:false},clues:[]};app.importCatalogCell(node);status("Cellule de type « "+({personnage:"Personnage",groupe:"Groupe",lieu:"Lieu",objet:"Objet",ressource:"Ressource",evenement:"Événement"}[cellType])+" » créée à partir de « "+x.name+" » avec l’image originale.");}
  window.ArchivesImageLibrary={pickForCell:function(id){var s=window.DuneApp?.getState?.();if(!s||s.playerMode||s.strictReadOnly)return;window.ArchivesCellPicture?.chooseLibrary(id,items);},refresh:all,openPreview:openPreview,apply:apply,createCell:createCell,sendToOwlbear:function(id,reveal,prepare){
  var x=items.find(function(i){return i.id===id});
@@ -7321,7 +7328,7 @@ body.player-mode .player-cell-resize:hover{opacity:1}
   #soundshow-sounds-dock > button {box-shadow:none!important}
 }
 </style>
-<script type="module" src="./src/v65/cell-picture.mjs?v=4430"></script>
+<script type="module" src="./src/v65/cell-picture.mjs?v=4470"></script>
 <script type="module" src="./src/v70/player-image.mjs?v=4450"></script>
 <script type="module" src="./src/v65/storage.mjs?v=4210"></script>
 <script type="module" src="./src/soundshow/archives.mjs?v=4420"></script>
