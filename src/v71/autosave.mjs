@@ -9,7 +9,7 @@ export function autoBackup({cloud,capture,read,write,changed = () => {},timers =
       throw Error('Sauvegarde suspendue. Les modifications restent sur cet appareil.');
   }
   async function save() {
-    clearTimeout(timer);timer = null;
+    timers.clearTimeout(timer);timer = null;
     if (running) return running;
     if (closed || held || !binding?.enabled || blocked) return;
     const current = {...binding},started = version;
@@ -41,7 +41,7 @@ export function autoBackup({cloud,capture,read,write,changed = () => {},timers =
   }
   function schedule() {
     if (closed || held || !binding?.enabled || blocked) return;
-    clearTimeout(timer);report('pending');timer = timers.setTimeout(() => { void save(); },delay);
+    timers.clearTimeout(timer);report('pending');timer = timers.setTimeout(() => { void save(); },delay);
   }
   return {
     status:() => status,
@@ -52,8 +52,8 @@ export function autoBackup({cloud,capture,read,write,changed = () => {},timers =
       if (running) throw Error('Attends la fin de la sauvegarde en cours.');
       binding = {...value,enabled:true};blocked = false;persist();version++;report('pending');return save();
     },
-    pause() { clearTimeout(timer);binding = binding && {...binding,enabled:false};persist();report('off'); },
-    hold() { held++;clearTimeout(timer);return () => { held=Math.max(0,held-1);if (!held) schedule(); }; },
-    dispose() { closed=true;clearTimeout(timer); }
+    pause() { timers.clearTimeout(timer);binding = binding && {...binding,enabled:false};persist();report('off'); },
+    hold() { held++;timers.clearTimeout(timer);return () => { held=Math.max(0,held-1);if (!held) schedule(); }; },
+    dispose() { closed=true;timers.clearTimeout(timer); }
   };
 }

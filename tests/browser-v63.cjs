@@ -117,7 +117,7 @@ async function closePane(page,id){await pane(page,id).locator('header button').c
   assert.ok((await app(gm).evaluate(()=>JSON.stringify(window.DuneApp.getState().journalPages))).includes('JOURNAL_PRIVE_588'));
   const restoredFiles=await app(gm).evaluate(async()=>{const {libraryRequest}=await import('./src/v60/request.mjs');return libraryRequest({action:'list'})});
   assert.equal(restoredFiles.entries.length,3,'restoring merges files without removing recent originals');
-  await editor(gm).locator('#canvas-save-icon').click();await backup().locator('summary').click();
+  await editor(gm).locator('#canvas-save-icon').click();await backup().getByText('Récupérer une version précédente',{exact:true}).click();
   await backup().getByRole('button',{name:'Copie précédant la dernière restauration',exact:true}).click();
   await backup().getByRole('button',{name:'Restaurer cette campagne',exact:true}).click();await backup().waitFor({state:'detached'});
   assert.equal(await app(gm).evaluate(()=>window.DuneApp.getState().nodes.length),4,'automatic recovery preserves the state before restoration');

@@ -51,7 +51,7 @@ export function installCloudBackup() {
   window.addEventListener('archives:restore-end',() => { releaseRestore?.();releaseRestore=null; });
   const title = document.querySelector('#archives-cloud-launch-title');
   if (title && window.parent===window) {
-    const open=button('☁ Sauvegardes',() => window.ArchivesWorkbench?.openBackup(),'archives-title-btn');open.id='archives-cloud-backups-title';title.insertAdjacentElement('afterend',open);
+    const open=button('☁ Sauvegardes',() => window.ArchivesWorkbench?.openBackup(),title.className);open.id='archives-cloud-backups-title';title.insertAdjacentElement('afterend',open);
   }
 }
 export function mountCloudBackups(view,inspect) {
@@ -93,7 +93,7 @@ export function mountCloudBackups(view,inspect) {
       ctx=result.ctx;campaigns=result.rows;
       for(const item of campaigns)select.append(new Option(item.name || 'Campagne sans nom',item.id));
       const bound=engine?.binding();select.value=preferred || (bound?.project===ctx.project && bound?.owner===ctx.user.id ? bound.campaignId : campaigns.length===1 ? campaigns[0].id : '');
-      await list(generation);
+      const loaded=await list(generation);if(loaded!==false)status.textContent='Connecté avec '+ctx.user.email+'. Choisis une version à ouvrir ou active la sauvegarde de la campagne actuelle.';
     } catch(error){ctx=null;fail(error)}
     renderControls();
   }
@@ -107,8 +107,8 @@ export function mountCloudBackups(view,inspect) {
           button('Ouvrir cette version…',() => { void openVersion(row); }));versions.append(card);
       }
       if(!rows.length)versions.append(element('p','Aucune version en ligne pour cette campagne.','studio-hint'));
-    } catch(error){fail(error)}
-    renderControls();
+    } catch(error){fail(error);renderControls();return false}
+    renderControls();return true;
   }
   async function bind(campaign,revision=0,fingerprint=null,savedAt=null) {
     if(!engine)throw Error('La campagne est en cours d’ouverture. Réessaie dans un instant.');

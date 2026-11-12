@@ -36,7 +36,7 @@ async function until(read,label){for(let i=0;i<140;i++){if(await read())return;a
   ({page:second}=await device({viewport:{width:820,height:1180},isMobile:true,hasTouch:true}));await second.goto(owl+'/room/one');await second.locator('#archives-tool').click();
   await editor(second).getByRole('button',{name:'Importer un scénario'}).waitFor();
   assert.equal(await app(second).evaluate(()=>DuneApp.getState().nodes.length),0);
-  await editor(second).locator('#canvas-save-icon').click();
+  await editor(second).getByRole('button',{name:'Sauvegardes en ligne',exact:true}).click();
   await online(second).getByRole('button',{name:'Ouvrir cette version…',exact:true}).first().waitFor();
   assert.equal(await online(second).getByRole('button',{name:'Activer la sauvegarde automatique',exact:true}).isDisabled(),true,'new device cannot overwrite a known online campaign before opening it');
   await online(second).getByRole('button',{name:'Ouvrir cette version…',exact:true}).first().click();

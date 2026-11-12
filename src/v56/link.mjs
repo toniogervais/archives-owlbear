@@ -65,10 +65,12 @@ export function createNotice() {
   text.setAttribute("role", "status");
   const action = document.createElement("button");
   const secondary = document.createElement("button");
+  const tertiary = document.createElement("button");
   action.type = "button";
   secondary.type = "button";
+  tertiary.type = "button";
   panel.tabIndex = -1;
-  panel.append(text, action, secondary);
+  panel.append(text, action, secondary, tertiary);
   document.body.append(panel);
   window.addEventListener("keydown", event => {
     if (!panel.hidden && !panel.contains(event.target) &&
@@ -78,7 +80,7 @@ export function createNotice() {
     }
   }, true);
   return {
-    show(message, label, callback, secondaryLabel, secondaryCallback) {
+    show(message, label, callback, secondaryLabel, secondaryCallback, tertiaryLabel, tertiaryCallback) {
       text.textContent = message;
       action.hidden = !label;
       action.textContent = label || "";
@@ -86,6 +88,9 @@ export function createNotice() {
       secondary.hidden = !secondaryLabel;
       secondary.textContent = secondaryLabel || "";
       secondary.onclick = secondaryCallback || null;
+      tertiary.hidden = !tertiaryLabel;
+      tertiary.textContent = tertiaryLabel || "";
+      tertiary.onclick = tertiaryCallback || null;
       panel.hidden = false;
       if (document.hasFocus() && !panel.contains(document.activeElement)) panel.focus();
     },

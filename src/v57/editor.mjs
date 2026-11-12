@@ -1,4 +1,4 @@
-import { createNotice, editEvent, isPacket, packet } from "../v56/link.mjs?v=4210";
+import { createNotice, editEvent, isPacket, packet } from "../v56/link.mjs?v=4460";
 import { installOwlPlayerInterface, installOwlSettings } from "../v59/settings.mjs?v=4210";
 import { installPlayerNotebook } from '../v64/player-notebook.mjs?v=4210';
 import {installScreenControls} from '../v65/screens.mjs?v=4210';
@@ -25,7 +25,11 @@ export function installOwlEditor(api) {
     api.apply({boards:[board], activeBoardId:board.id, journalPages:[], playerLayout:{}, bgImage:""});
     notice.show("Ouvre une campagne existante ou commence un nouveau scénario.",
       "Importer un scénario", () => { notice.hide(); document.getElementById("up-json").click(); },
-      "Nouveau scénario", () => { notice.hide(); window.DuneApp.startNewScenario(false); });
+      "Nouveau scénario", () => { notice.hide(); window.DuneApp.startNewScenario(false); },
+      "Sauvegardes en ligne", () => {
+        void import('../v63/backup-ui.mjs?v=4460').then(module => { notice.hide();module.openBackup(); })
+          .catch(error => notice.show(error.message));
+      });
   }
   window.addEventListener(editEvent, () => {
     if (!ready || restoring) return;
