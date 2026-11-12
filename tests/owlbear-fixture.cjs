@@ -4,7 +4,7 @@ const path=require("node:path");
 const archives="https://archives.test",owl="https://www.owlbear.rodeo";
 const viewerId="fr.archives-imaginaire.bridge/archives-viewer",inviteId="fr.archives-imaginaire.bridge/screen-invite-v55";
 
-function fixture({sceneReady=false,inviteReadyDelay=0}={}) {
+function fixture({sceneReady=false,inviteReadyDelay=0,captureRasters=false}={}) {
  return `<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Salle Owlbear</title>
  <button id="archives-tool" disabled>Afficher les Archives</button><script>
  const archives=${JSON.stringify(archives)},viewerId=${JSON.stringify(viewerId)},inviteId=${JSON.stringify(inviteId)};
@@ -77,7 +77,7 @@ function fixture({sceneReady=false,inviteReadyDelay=0}={}) {
      const bitmap=await createImageBitmap(upload.file),canvas=document.createElement("canvas");canvas.width=bitmap.width;canvas.height=bitmap.height;
      const ctx=canvas.getContext("2d");ctx.drawImage(bitmap,0,0);
      const hash=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",await upload.file.arrayBuffer())),n=>n.toString(16).padStart(2,"0")).join("");
-     uploads.push({name:upload.name,hash,pixels:[...ctx.getImageData(Math.floor(bitmap.width/2),Math.floor(bitmap.height/2),1,1).data],corner:[...ctx.getImageData(0,0,1,1).data],image:{url:"https://images.owlbear.test/"+crypto.randomUUID()+".png",mime:upload.file.type,width:bitmap.width,height:bitmap.height},typeHint:data.typeHint});bitmap.close()
+     uploads.push({name:upload.name,hash,pixels:[...ctx.getImageData(Math.floor(bitmap.width/2),Math.floor(bitmap.height/2),1,1).data],corner:[...ctx.getImageData(0,0,1,1).data],raster:${captureRasters}?canvas.toDataURL():undefined,image:{url:"https://images.owlbear.test/"+crypto.randomUUID()+".png",mime:upload.file.type,width:bitmap.width,height:bitmap.height},typeHint:data.typeHint});bitmap.close()
     }
     break;
    case "OBR_ASSETS_DOWNLOAD_IMAGES":pickers.download++;reply={images:cancelPick?[]:data.multiple?Array.from(new Map(uploads.filter(x=>x.name.startsWith(data.defaultSearch)).map(x=>[x.name,x])).values()):uploads.filter(x=>x.name===data.defaultSearch).slice(-1)};cancelPick=false;break;

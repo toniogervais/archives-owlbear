@@ -6,6 +6,11 @@ const app=page=>page.frames().find(frame=>/owl-(?:editor|view)=1/.test(frame.url
 const pane=(page,id)=>editor(page).locator('#'+id+'[open]');
 async function closePane(page,id){await pane(page,id).locator('header button').click();await pane(page,id).waitFor({state:'detached'})}
 async function notes(page){await page.bringToFront();await editor(page).getByRole('button',{name:'Mes notes',exact:true}).click();return pane(page,'archives-player-notebook').getByRole('textbox',{name:'Mes notes personnelles'})}
+async function contextAction(page,id){
+ await page.bringToFront();
+ await app(page).evaluate(()=>{window.DuneApp.closeActiveEditor();window.DuneApp.openCellContextMenu('portrait',350,250)});
+ await editor(page).locator('#'+id).click();
+}
 (async()=>{
  const browser=await chromium.launch({headless:true,...JSON.parse(process.env.ARCHIVES_CHROMIUM_OPTIONS||'{}')});let gm,player,bobPage;
  try{
@@ -23,21 +28,40 @@ async function notes(page){await page.bringToFront();await editor(page).getByRol
   const [chooser]=await Promise.all([gm.waitForEvent('filechooser'),editor(gm).getByRole('button',{name:'Importer un scénario'}).click()]);
   await chooser.setFiles({name:'scenario.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(scenario))});
   await editor(gm).locator('.cell-title-txt').filter({hasText:'Portrait du personnage'}).waitFor();
+  // A one-click transfer requires the private storage connection. Exercise
+  // that configuration with a local adapter, without contacting a real account.
+  await app(gm).evaluate(()=>{
+   const known=new Set();window.fixtureCloudUploads=[];
+   window.ArchivesCloudBridge={getClient:()=>({
+    auth:{getUser:async()=>({data:{user:{id:'12345678-1234-1234-1234-123456789abc'}}})},
+    storage:{from:bucket=>{
+     if(bucket!=='archives-owlbear-assets')throw Error('Unexpected bucket');
+     return {
+      upload:async(path,blob,options)=>{
+       if(options.upsert!==false)throw Error('Private uploads must preserve originals');
+       if(known.has(path))return {error:{statusCode:'409',message:'already exists'}};
+       known.add(path);window.fixtureCloudUploads.push({path,size:blob.size});return {data:{path}};
+      },
+      createSignedUrl:async path=>({data:{signedUrl:'https://fixture-project.supabase.co/storage/v1/object/sign/'+bucket+'/'+path+'?token=fixture-private-capability'}})
+     };
+    }}
+   })};
+  });
   await app(gm).evaluate(()=>{window.DuneApp.getState().selectedId='portrait';window.DuneApp.openActiveEditor()});
   await editor(gm).locator('#archives-v45-transfer-button').click();
   await gm.waitForFunction(()=>window.fixture.local().length===1);
-  // The first native import still needs Owlbear's folder and image pickers.
-  assert.deepEqual(await gm.evaluate(()=>window.fixture.pickers()),{upload:1,download:1});
+  assert.deepEqual(await gm.evaluate(()=>window.fixture.pickers()),{upload:0,download:0},'configured private hosting places directly without native pickers');
   assert.equal(await editor(gm).locator('#archives-owl-transfer').count(),0,'direct action skips the preview and its extra submit');
   const hidden=await gm.evaluate(()=>window.fixture.local()[0]);
   assert.equal((await gm.evaluate(()=>window.fixture.scene())).items.length,0);
   assert.equal(hidden.layer,'POPOVER');assert.equal(hidden.image.width,2048);
-  await editor(gm).locator('#archives-owl-direct-reveal:not([disabled])').click();
+  assert.ok(!JSON.stringify(await gm.evaluate(()=>window.fixture.wire())).includes(hidden.image.url),'a hidden signed image link stays private');
+  await contextAction(gm,'archives-ctx-owl-reveal');
   await gm.waitForFunction(()=>window.fixture.local().length===0);
   await gm.waitForFunction(async()=> (await window.fixture.scene()).items.length===1);
-  assert.deepEqual(await gm.evaluate(()=>window.fixture.pickers()),{upload:1,download:1},'existing crop places directly, without either native picker');
+  assert.deepEqual(await gm.evaluate(()=>window.fixture.pickers()),{upload:0,download:0},'existing crop places directly, without either native picker');
   assert.equal((await gm.evaluate(()=>window.fixture.scene())).items[0].id,hidden.id,'same character is updated without duplicating it');
-  await editor(gm).locator('#archives-owl-frame').click();
+  await contextAction(gm,'archives-ctx-owl-frame');
   await pane(gm,'archives-owl-transfer').locator('[data-submit]:not([disabled])').waitFor();
   await pane(gm,'archives-owl-transfer').locator('[data-zoom]').fill('175');
   await pane(gm,'archives-owl-transfer').locator('[data-zoom]').dispatchEvent('input');
@@ -45,10 +69,10 @@ async function notes(page){await page.bringToFront();await editor(page).getByRol
   await pane(gm,'archives-owl-transfer').waitFor({state:'detached'});
   await gm.waitForFunction(()=>window.fixture.local().length===1);
   const framed=await gm.evaluate(()=>window.fixture.local()[0].image.url);
-  assert.notEqual(framed,hidden.image.url);assert.deepEqual(await gm.evaluate(()=>window.fixture.pickers()),{upload:2,download:2});
-  await editor(gm).locator('#archives-owl-direct-reveal:not([disabled])').click();
+  assert.notEqual(framed,hidden.image.url);assert.deepEqual(await gm.evaluate(()=>window.fixture.pickers()),{upload:0,download:0});
+  await contextAction(gm,'archives-ctx-owl-reveal');
   await gm.waitForFunction(async framed=>(await window.fixture.scene()).items[0]?.image.url===framed,framed);
-  assert.deepEqual(await gm.evaluate(()=>window.fixture.pickers()),{upload:2,download:2},'direct placement reuses the manually adjusted framing');
+  assert.deepEqual(await gm.evaluate(()=>window.fixture.pickers()),{upload:0,download:0},'direct placement reuses the manually adjusted framing');
   await app(gm).evaluate(()=>window.DuneApp.closeActiveEditor());
   await editor(gm).locator('#archives-image-library-files').setInputFiles({name:'Portrait-bibliotheque.png',mimeType:'image/png',buffer:Buffer.from(image.split(',')[1],'base64')});
   await app(gm).waitForFunction(()=>document.getElementById('archives-image-library-status')?.textContent.includes('ajoutée'));
@@ -59,7 +83,8 @@ async function notes(page){await page.bringToFront();await editor(page).getByRol
   assert.equal(await editor(gm).locator('#archives-owl-transfer').count(),0,'library character also skips a mandatory preview');
   await libraryCard.getByRole('button',{name:'Owlbear · Placer et révéler',exact:true}).click();
   await gm.waitForFunction(async()=> (await window.fixture.scene()).items.length===2);
-  assert.deepEqual(await gm.evaluate(()=>window.fixture.pickers()),{upload:2,download:2},'same rendered portrait is reused across sources');
+  assert.deepEqual(await gm.evaluate(()=>window.fixture.pickers()),{upload:0,download:0},'same rendered portrait is reused across sources');
+  assert.equal(await app(gm).evaluate(()=>window.fixtureCloudUploads.length),2,'only the original and changed crop require distinct stored images');
   await player.frameLocator('#invite').getByRole('button',{name:'Afficher les Archives',exact:true}).click();
   await editor(player).locator('.cell-title-txt').filter({hasText:'Document connu'}).waitFor();
   const top=editor(player).locator('#top-hud .hud-row>.top-group:first-child');
