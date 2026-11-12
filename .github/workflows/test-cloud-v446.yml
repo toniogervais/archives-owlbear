@@ -1,0 +1,28 @@
+name: Archives — sauvegardes privées en ligne
+on:
+  push:
+    branches: [main, codex/cloud-backups-v446]
+    paths: ['src/v71/**', 'src/v63/**', 'src/v57/**', 'src/v56/**', 'tests/*v446*', 'tests/cloud-fixture.cjs', 'sql/archives-cloud-backups-v446.sql', 'archives-app-v64-v55.html', '.github/workflows/test-cloud-v446.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: node --test tests/cloud-v446.test.mjs tests/cloud-sql-v446.test.mjs
+      - run: npx playwright install chromium
+      - run: node tests/browser-v446.cjs
+      - run: node tests/browser-v63.cjs
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cloud-backups-diagnostics
+          path: /tmp/archives-cloud-*.png
+          retention-days: 3

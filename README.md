@@ -1,5 +1,18 @@
 # Les Archives de l’Imaginaire
 
+## V4.46 — sauvegardes privées en ligne
+
+Le bouton **Sauvegardes** propose maintenant l’enregistrement automatique de la campagne complète dans Supabase et les dix dernières versions datées. Le scénario, les secrets, le journal MJ, les images, les documents originaux et les cadrages sont inclus. Aucun fichier à télécharger pour sauvegarder ou ouvrir une version sur un autre appareil ; la copie indépendante `.archives` reste disponible.
+
+**Activation initiale** : exécuter [le script Supabase](sql/archives-cloud-backups-v446.sql) dans SQL Editor, une seule fois par projet. Dans les Archives, connecter le compte MJ dans **Comptes & campagnes**, ouvrir **Sauvegardes**, puis choisir une campagne sans sauvegarde ou **Sauvegarder dans une nouvelle campagne**. Sur un autre appareil, connecter le même compte au même projet, ouvrir **Sauvegardes**, choisir la campagne, puis **Ouvrir cette version…** et confirmer la restauration. Le nouveau navigateur doit recevoir les paramètres publics du même projet dans Comptes & campagnes, comme pour les transferts existants.
+
+Les changements de scénario déclenchent l’envoi après huit secondes de calme. Un contrôle chaque minute détecte aussi les changements des bibliothèques et des cadrages. Les données inchangées ne sont pas renvoyées. Les coupures conservent la copie locale ; une tentative reprend au retour du réseau ou à la réouverture. Attendre **Enregistré en ligne** avant de fermer le navigateur pour garantir que la toute dernière modification est disponible ailleurs. Un ancien appareil ne peut pas remplacer une révision plus récente : il doit ouvrir cette version ou conserver son travail dans une nouvelle campagne. La restauration préserve d’abord une copie de sécurité sur l’appareil. Créer un nouveau scénario ou importer un autre JSON suspend l’envoi de la campagne précédente ; choisir ensuite sa nouvelle campagne dans Sauvegardes.
+
+Le bucket reste privé et n’utilise aucun lien public ou signé. Seul le propriétaire Supabase de la campagne peut lire ou écrire ces sauvegardes ; les participants ne peuvent accéder ni aux métadonnées ni aux fichiers, même s’ils voient la campagne. Les envois sont découpés en blocs de 4 Mo pour respecter les limites par fichier ; la campagne complète garde la limite existante de 512 Mo et dépend de l’espace disponible sur le projet Supabase. La publication d’une version est atomique et contrôle tous les blocs ; les empreintes sont vérifiées avant toute restauration. Les scènes et cartes natives d’Owlbear restent sauvegardées dans Owlbear. Les fichiers SoundShow sur le disque Windows doivent rester présents sur le PC ; ils ne sont pas copiés automatiquement dans cette sauvegarde.
+
+Actualiser les pages MJ et joueurs ; aucune réinstallation de l’extension, ni mise à jour du connecteur SoundShow, n’est nécessaire. L’activation Supabase réelle et le premier envoi avec le compte utilisateur sont à confirmer après exécution du script.
+
+
 ## V4.45 — secrets discrets sur le canevas
 
 Les cellules du canevas MJ affichent au maximum deux secrets : les deux derniers révélés, selon leur ordre de révélation, ou les deux premiers non révélés si aucun n’a encore été découvert. Chaque extrait occupe au maximum deux lignes pour dégager l’illustration. La liste complète reste disponible dans les fiches MJ et les réglages de la cellule.

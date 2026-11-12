@@ -61,7 +61,10 @@ export async function packBackup(data) {
   const length = new Uint8Array(4);new DataView(length.buffer).setUint32(0,header.length,true);
   const blob = new Blob([signature,length,hexBytes(await digest(header)),header,...blobs],{type:'application/octet-stream'});
   if (blob.size > maxBackupBytes) throw Error('Cette sauvegarde dépasse 512 Mo. Enregistre séparément les médias les plus volumineux.');
-  return {blob,summary:backupSummary(manifest,blob.size)};
+  // The archive's creation date changes at every export; content identity must
+  // remain stable so an unchanged campaign does not upload another version.
+  const fingerprint = await digest(new TextEncoder().encode(JSON.stringify({...manifest,created:null})));
+  return {blob,summary:backupSummary(manifest,blob.size),fingerprint};
 }
 export async function inspectBackup(blob) {
   if (!(blob instanceof Blob) || blob.size > maxBackupBytes || blob.size < signature.length + 36)
