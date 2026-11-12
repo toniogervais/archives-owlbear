@@ -20,6 +20,7 @@ on:
       - 'src/v70/**'
       - 'tests/presentation-v444.test.cjs'
       - 'tests/browser-v444.cjs'
+      - 'tests/browser-v445.cjs'
       - 'tests/dossier-v442.test.mjs'
       - 'tests/browser-v442.cjs'
       - 'tests/browser-v443.cjs'
@@ -104,6 +105,8 @@ jobs:
       - run: node tests/browser-v443.cjs
         if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
       - run: node tests/browser-v444.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
+      - run: node tests/browser-v445.cjs
         if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
       - run: node tests/browser-startup.cjs
         if: ${{ !cancelled() && steps.browser.outcome == 'success' }}

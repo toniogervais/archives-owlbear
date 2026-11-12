@@ -1,5 +1,11 @@
 # Les Archives de l’Imaginaire
 
+## V4.45 — secrets discrets sur le canevas
+
+Les cellules du canevas MJ affichent au maximum deux secrets : les deux derniers révélés, selon leur ordre de révélation, ou les deux premiers non révélés si aucun n’a encore été découvert. Chaque extrait occupe au maximum deux lignes pour dégager l’illustration. La liste complète reste disponible dans les fiches MJ et les réglages de la cellule.
+
+Le canevas des joueurs n’affiche plus de secrets dans les cellules. Le double-clic ou double-tap ouvre toujours la fiche avec tous les secrets découverts. Les secrets non révélés restent privés. Actualiser les pages du MJ et des joueurs ; l’adresse de l’extension reste identique.
+
 ## V4.44 — suppression des tokens et présentation d’images
 
 La suppression native d’un token transféré, dans Owlbear, retire désormais aussi son placement enregistré dans les Archives. Cela s’applique aux tokens cachés dans la couche locale MJ et aux tokens révélés. Ils restent supprimés après actualisation. Les rechargements ordinaires, les bascules caché/révélé, les changements de rôle et les changements de scène conservent les préparations privées. Les anciens placements marqués révélés mais absents de leur scène sont nettoyés au chargement, pour réparer les fantômes créés avant cette version. La cellule d’origine et les fichiers de la bibliothèque restent disponibles pour un nouveau transfert volontaire.

@@ -2,10 +2,10 @@ import { O as OBR } from "../../assets/index-BfJgTiPE.js";
 import {
   isPacket, liveRoomKey, packet, pairingKey, readLocal, screenChannel, trustedOwlbearSdk,
   validLiveRoom, validPairing, viewerId, writeLocal
-} from "./link.mjs?v=4440";
-import { localEditor, localViewer, release } from "../v57/room.mjs?v=4440";
-import { makeEditorHost, makePlayerHost } from "../v57/room-host.mjs?v=4440";
-import {makeSoundShowPlayerHost} from '../soundshow/player-host.mjs?v=4440';
+} from "./link.mjs?v=4450";
+import { localEditor, localViewer, release } from "../v57/room.mjs?v=4450";
+import { makeEditorHost, makePlayerHost } from "../v57/room-host.mjs?v=4450";
+import {makeSoundShowPlayerHost} from '../soundshow/player-host.mjs?v=4450';
 
 const $ = id => document.getElementById(id);
 const frame = $("app"), message = $("message"), button = $("return");
