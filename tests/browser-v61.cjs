@@ -20,7 +20,7 @@ const pixel=page=>crop(page).evaluate(canvas=>[...canvas.getContext('2d').getIma
  let gm;
  try{
   const fixtureHub=hub(),gc=await browser.newContext({viewport:{width:1280,height:900},hasTouch:true}),pc=await browser.newContext();
-  await Promise.all([gc,pc].map(context=>configure(context,fixtureHub,{sceneReady:true})));
+  await Promise.all([gc,pc].map(context=>configure(context,fixtureHub,{sceneReady:true,captureRasters:true})));
   gm=await gc.newPage();const player=await pc.newPage(),errors=[];
   gm.on('pageerror',error=>errors.push(error.message));player.on('pageerror',error=>errors.push(error.message));
   await gm.goto(owl+'/room/one');await player.goto(owl+'/room/one?joueur=Alix');
@@ -61,14 +61,20 @@ const pixel=page=>crop(page).evaluate(canvas=>[...canvas.getContext('2d').getIma
   await dialog(gm).locator('[data-zoom-value]').filter({hasText:'220 %'}).waitFor();
   await gm.mouse.wheel(0,100);await dialog(gm).locator('[data-zoom-value]').filter({hasText:'180 %'}).waitFor();
   assert.deepEqual(await pixel(gm),[224,32,48,255]);
-  const expected=await crop(gm).evaluate(async canvas=>{
-   const blob=await(await fetch(canvas.toDataURL())).blob();
-   return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await blob.arrayBuffer())),n=>n.toString(16).padStart(2,'0')).join('');
-  });
+  const expected=await crop(gm).evaluate(canvas=>canvas.toDataURL());
   await dialog(gm).screenshot({path:'/tmp/archives-token-desktop-v61.png'});
   await place(gm);
   let uploaded=(await gm.evaluate(()=>window.fixture.uploads()))[0];
-  assert.equal(uploaded.hash,expected,'only the exact preview raster is uploaded');
+  assert.deepEqual([uploaded.image.width,uploaded.image.height],[2048,2048],'the transferred token keeps its full resolution');
+  const composition=await gm.evaluate(async({preview,raster})=>{
+   const decode=src=>new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=reject;image.src=src});
+   const [expected,actual]=await Promise.all([decode(preview),decode(raster)]),canvas=document.createElement('canvas');canvas.width=expected.width;canvas.height=expected.height;
+   const context=canvas.getContext('2d',{willReadFrequently:true});context.drawImage(expected,0,0);const before=context.getImageData(0,0,canvas.width,canvas.height).data;
+   context.clearRect(0,0,canvas.width,canvas.height);context.drawImage(actual,0,0,canvas.width,canvas.height);const after=context.getImageData(0,0,canvas.width,canvas.height).data;
+   let different=0;for(let i=0;i<before.length;i+=4)if(Math.max(...[0,1,2,3].map(c=>Math.abs(before[i+c]-after[i+c])))>16)different++;
+   return {agreement:1-different/(canvas.width*canvas.height),preview:[expected.width,expected.height]};
+  },{preview:expected,raster:uploaded.raster});
+  assert.deepEqual(composition.preview,[512,512]);assert.ok(composition.agreement>.99,'HD image and preview must show the same crop: '+JSON.stringify(composition));
   assert.deepEqual(uploaded.pixels,[224,32,48,255]);assert.equal(uploaded.corner[3],0,'outside the circular token stays transparent');
   assert.deepEqual(await gm.evaluate(()=>window.fixture.pickers()),{upload:1,download:1});
   const imageUrl=uploaded.image.url;

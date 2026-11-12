@@ -65,6 +65,7 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -74,19 +75,35 @@ jobs:
       - run: node --test tests/controls-v65.test.mjs tests/campaign-v63.test.mjs tests/crop-v61.test.mjs tests/files-v60.test.mjs tests/security-v58.test.cjs tests/room-v57.test.mjs tests/fallback-v56.test.mjs tests/transfer-v55.test.cjs tests/bridge-v55.test.cjs tests/visual-v54.test.cjs tests/bridge-v53.test.cjs tests/bridge-v52.test.cjs tests/security-v52.test.cjs tests/cell-brief-v439.test.cjs tests/dossier-v442.test.mjs tests/presentation-v444.test.cjs
       - run: node tests/syntax.cjs
       - run: node --test tests/settings-v59.test.cjs
-      - run: npx playwright install chromium
+      - id: browser
+        run: npx playwright install chromium
       - run: node tests/browser-v55.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
       - run: node tests/browser-v56.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
       - run: node tests/browser-v57.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
       - run: node tests/browser-v58.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
       - run: node tests/browser-v59.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
       - run: node tests/browser-v60.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
       - run: node tests/browser-v61.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
       - run: node tests/browser-v62.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
       - run: node tests/browser-v63.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
       - run: node tests/browser-v64.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
       - run: node tests/browser-v65.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
       - run: node tests/browser-v442.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
       - run: node tests/browser-v443.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
       - run: node tests/browser-v444.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
       - run: node tests/browser-startup.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
