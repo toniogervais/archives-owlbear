@@ -30,6 +30,9 @@ function start(value) {
       if (state.state==='conflict') notice(state.message);
     }
   });
+  // A browser may keep its preferences after its campaign database was cleared.
+  // Never send a newly generated blank canvas over a previous online campaign.
+  if(nativeEditor() && window.ArchivesCampaignHasLocal===false)engine.pause();
   // The regular check also catches changes to IndexedDB libraries and framing
   // which do not emit the canvas edit event. Identical exports never re-upload.
   interval = setInterval(() => { if (isGM() && !document.hidden) void engine.save(); },60000);
@@ -43,6 +46,7 @@ export function installCloudBackup() {
     window.addEventListener('archives:campaign-context',event => start(event.detail));
   } else if (window.parent === window) start('standalone');
   window.addEventListener(editEvent,() => { if (isGM()) engine?.change(); });
+  window.addEventListener('archives:scenario-replaced',() => { if(isGM())engine?.pause(); });
   window.addEventListener('online',() => { if (isGM()) void engine?.save(); });
   window.addEventListener('focus',() => { if (isGM()) void engine?.save(); });
   document.addEventListener('visibilitychange',() => { if (isGM()) void engine?.save(); });

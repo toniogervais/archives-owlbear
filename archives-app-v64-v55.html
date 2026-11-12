@@ -5989,6 +5989,7 @@ window.DuneApp = (function() {
       reader.onload = function(event) {
         try {
           window.ArchivesRelay.apply(JSON.parse(event.target.result));
+          window.dispatchEvent(new Event('archives:scenario-replaced'));
           saveState();
           setStatus("Scénario importé.");
         } catch (error) { setStatus("Ce fichier JSON ne contient pas un scénario lisible."); }
@@ -6079,6 +6080,7 @@ window.DuneApp = (function() {
     },
     startNewScenario: function(saveCurrent) {
       if (state.strictReadOnly) return;
+      window.dispatchEvent(new Event('archives:scenario-replaced'));
       if (saveCurrent) {
         var payload = {
           type: "les_archives_de_l_imaginaire_scenario", version: 17,
@@ -6488,7 +6490,7 @@ body.player-mode #clear-act-button, body.strict-readonly #clear-act-button { dis
       if(window.DuneApp&&typeof window.DuneApp.exportJson==="function"){window.DuneApp.exportJson();return true;}return false;
     },
     confirmSave:function(){this.closeSaveConfirm();if(this.downloadCurrent()){}else alert("La sauvegarde n’est pas disponible.");},
-    goHome:function(save){this.closeHomeConfirm();if(leaveIsolatedView())return;if(save){this.downloadCurrent();var screen=byId("archives-title-screen");if(screen){screen.hidden=false;screen.classList.remove("leaving");}}else{try{window.localStorage.removeItem("jdr_architect_save_v12");}catch(e){}try{if(window.syncChannel)window.syncChannel.close();}catch(e){}window.location.reload();} }
+    goHome:function(save){this.closeHomeConfirm();if(leaveIsolatedView())return;if(!save)window.dispatchEvent(new Event('archives:scenario-replaced'));if(save){this.downloadCurrent();var screen=byId("archives-title-screen");if(screen){screen.hidden=false;screen.classList.remove("leaving");}}else{try{window.localStorage.removeItem("jdr_architect_save_v12");}catch(e){}try{if(window.syncChannel)window.syncChannel.close();}catch(e){}window.location.reload();} }
   };
   function initArchivesTitleScreen(){
     var screen=byId("archives-title-screen");

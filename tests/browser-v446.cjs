@@ -75,6 +75,8 @@ async function until(read,label){for(let i=0;i<140;i++){if(await read())return;a
   await independentBackups.waitFor({state:'detached'});
   assert.equal(await independent.page.evaluate(()=>DuneApp.getState().nodes.length),2);
   assert.ok(await independent.page.evaluate(()=>JSON.stringify(DuneApp.getState().journalPages).includes('JOURNAL_MJ_446')));
+  await independent.page.evaluate(()=>DuneApp.startNewScenario(false));
+  assert.equal(await independent.page.evaluate(()=>JSON.parse(localStorage.getItem('archives-cloud-backup-v446:standalone')).enabled),false,'a new blank adventure must not overwrite the previous online campaign');
   await independent.context.close();
   const wire=JSON.stringify(await gm.evaluate(()=>window.fixture.wire()));for(const secret of ['SECRET_NUAGE_446','DESCRIPTION_MJ_446','INDICE_MJ_446','JOURNAL_MJ_446','ORIGINAL_PRIVE_NUAGE_446'])assert.ok(!wire.includes(secret),secret+' stays out of player broadcasts');
   assert.deepEqual(errors,[]);
