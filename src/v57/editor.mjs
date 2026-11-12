@@ -54,6 +54,7 @@ export function installOwlEditor(api) {
         ready = false;
         notice.show("Impossible de lire ce scénario. Retourne à Owlbear puis rouvre les Archives.");
       }
+      if(ready){window.ArchivesCampaignScope=data.scope;window.dispatchEvent(new CustomEvent('archives:campaign-context',{detail:data.scope}));}
     } else if (data.type === "return") {
       if (!ready) { post("return-result", {safe:true}); return; }
       returning = true;

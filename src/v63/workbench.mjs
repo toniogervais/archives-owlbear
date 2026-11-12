@@ -1,5 +1,6 @@
 import {button,element,isGM,nativeEditor,notice,request,requireGM,sheet} from './ui.mjs?v=4420';
 import {packet,editEvent} from '../v56/link.mjs';
+import {installCloudBackup} from '../v71/cloud-ui.mjs';
 import {sendScreenCommand,leaveToMap} from '../v65/screens.mjs?v=4210';
 import {dossierFilters,openAddFile,openSharedFile,removeSharedFile} from '../v69/dossier-ui.mjs?v=4420';
 let players = [];
@@ -13,7 +14,7 @@ function command(id,label,path,handler) {
   control.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">'+path+'</svg>';return control;
 }
 async function openBackup() {
-  try { requireGM();const module = await import('./backup-ui.mjs');module.openBackup(); }
+  try { requireGM();const module = await import('./backup-ui.mjs?v=4460');module.openBackup(); }
   catch (error) { notice(error.message); }
 }
 async function openBatch() {
@@ -156,4 +157,10 @@ function install() {
   }
 }
 install();
+if(isGM()) {
+  installCloudBackup();
+  if(window.parent===window) {
+    const save=document.getElementById('canvas-save-icon');if(save){save.onclick=openBackup;save.title='Sauvegardes';save.setAttribute('aria-label','Sauvegardes');}
+  }
+}
 window.addEventListener('archives:campaign-restored',() => { Promise.resolve(window.ArchivesImageLibrary?.refresh?.()).catch(() => {}); });

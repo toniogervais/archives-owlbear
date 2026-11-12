@@ -6622,7 +6622,7 @@ body.player-mode #clear-act-button, body.strict-readonly #clear-act-button { dis
 <div id="archives-cloud-panel" role="dialog" aria-modal="true" aria-label="Comptes et campagnes">
 <div class="ac-card">
 <div style="display:flex;gap:10px;align-items:center"><h2 style="flex:1">☁ Comptes & campagnes</h2><button id="ac-close" type="button">Fermer ✕</button></div>
-<p>Cette première étape permet de configurer Supabase, créer un compte ou se connecter, puis créer et consulter les campagnes accessibles. Elle ne synchronise pas encore les cellules ni les notes.</p>
+<p>Connecte ton compte MJ pour retrouver tes campagnes et leurs sauvegardes en ligne. Le bouton Sauvegardes permet d’activer l’enregistrement automatique ou d’ouvrir une version depuis un autre appareil.</p>
 <label for="ac-url">URL du projet Supabase</label><input id="ac-url" type="url" placeholder="https://votre-projet.supabase.co" autocomplete="url">
 <label for="ac-key">Clé publique (publishable / anon)</label><input id="ac-key" type="password" placeholder="sb_publishable_… ou ancienne clé anon" autocomplete="off">
 <div class="ac-row"><button class="primary" id="ac-save-config" type="button">Enregistrer la configuration</button><button id="ac-forget-config" type="button">Effacer la configuration locale</button></div>
@@ -6664,7 +6664,7 @@ var $=function(id){return document.getElementById(id)};
 var client=null, user=null, clientConfigKey=null;
 function status(s){$('archives-cloud-status').textContent=s}
 function config(){return {url:($('ac-url').value||'').trim().replace(/\/$/,''),key:($('ac-key').value||'').trim()}}
-function makeClient(){if(window.DuneApp?.getState?.().strictReadOnly)throw new Error('Accès aux campagnes réservé au MJ.');var c=config();if(!c.url||!c.key)throw new Error('Renseigne l’URL du projet et sa clé publique.');if(!/^https:\/\/[a-zA-Z0-9.-]+$/.test(c.url))throw new Error('L’URL doit commencer par https:// et ne contenir que le domaine du projet.');if(!window.supabase||!window.supabase.createClient)throw new Error('La bibliothèque Supabase ne s’est pas chargée. Vérifie ta connexion Internet.');var key=c.url+'|'+c.key;if(client&&clientConfigKey===key)return client;client=window.supabase.createClient(c.url,c.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});clientConfigKey=key;return client}
+function makeClient(){if(window.DuneApp?.getState?.().strictReadOnly)throw new Error('Accès aux campagnes réservé au MJ.');var c=config();if(!c.url||!c.key)throw new Error('Renseigne l’URL du projet et sa clé publique.');if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(c.url))throw new Error('L’URL doit commencer par https:// et ne contenir que le domaine du projet.');if(!window.supabase||!window.supabase.createClient)throw new Error('La bibliothèque Supabase ne s’est pas chargée. Vérifie ta connexion Internet.');var allowedKey=c.key.indexOf('sb_publishable_')===0;if(!allowedKey){try{allowedKey=JSON.parse(atob(c.key.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).role==='anon'}catch(e){}}if(!allowedKey)throw new Error('Utilise une clé publique anon ou publishable, jamais une clé secrète.');var key=c.url+'|'+c.key;if(client&&clientConfigKey===key)return client;client=window.supabase.createClient(c.url,c.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});clientConfigKey=key;return client}
 function saveConfig(){var c=config();if(!c.url||!c.key){status('Il manque l’URL ou la clé publique.');return}try{localStorage.setItem('archives_supabase_url',c.url);localStorage.setItem('archives_supabase_public_key',c.key);makeClient();status('Configuration enregistrée sur cet appareil. Vérification de la session…');refreshSession()}catch(e){status('Configuration non validée : '+e.message)}}
 async function refreshSession(){try{if(!client)makeClient();var r=await client.auth.getSession();if(r.error)throw r.error;user=r.data.session&&r.data.session.user||null;$('ac-user').textContent=user?'Connecté : '+user.email:'Non connecté.';if(user){await listCampaigns()}else{status('Configuration enregistrée. Aucune session ouverte : tu peux créer un compte ou te connecter.')}}catch(e){$('ac-user').textContent='Session non vérifiée.';status('Impossible de vérifier la session : '+(e&&e.message?e.message:String(e)))}}
 async function signup(){try{if(!client)makeClient();var email=$('ac-email').value.trim(),password=$('ac-password').value;if(!email||!password)throw new Error('Renseigne ton adresse e-mail et un mot de passe.');if(password.length<6)throw new Error('Choisis un mot de passe d’au moins 6 caractères.');var r=await client.auth.signUp({email:email,password:password});if(r.error)throw r.error;user=r.data.user||null;$('ac-user').textContent=r.data.session?'Connecté : '+email:'Compte créé. Si Supabase demande une confirmation par e-mail, ouvre le message reçu puis connecte-toi.';status(r.data.session?'Compte créé et session ouverte.':'Demande de création envoyée. Vérifie ta boîte e-mail si la confirmation est activée.')}catch(e){status('Création du compte impossible : '+e.message)}}
@@ -7056,14 +7056,14 @@ window.ArchivesRevealJournal={start,stop,refresh:()=>monitor?monitor.refresh():P
 })();
 </script>
 <link rel="stylesheet" href="./src/v56/bridge.css">
-<script type="module" src="./src/v56/relay.mjs?v=4221"></script>
+<script type="module" src="./src/v56/relay.mjs?v=4460"></script>
 <script type="module" src="./src/v56/navigation.mjs?v=4210"></script>
 <script type="module" src="./src/v58/main-relay.mjs?v=4310"></script>
 <script type="module" src="./src/v58/transfer-ui.mjs?v=4330"></script>
 <script type="module" src="./src/v60/library.mjs?v=4420"></script>
 <script defer src="./src/v54/polish.js"></script>
 <script type="module" src="./src/v62/motion.mjs?v=4210"></script>
-<script type="module" src="./src/v63/workbench.mjs?v=4420"></script>
+<script type="module" src="./src/v63/workbench.mjs?v=4460"></script>
 </body>
 </html>
 <style id="v19-player-reveal-transitions">

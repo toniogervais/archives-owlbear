@@ -3,7 +3,7 @@ import {
 } from "./link.mjs?v=4210";
 import { installCentral } from "./central.mjs?v=4221";
 import { dialFallback } from "./peer.mjs";
-import { installOwlEditor, installOwlPlayer } from "../v57/editor.mjs?v=4210";
+import { installOwlEditor, installOwlPlayer } from "../v57/editor.mjs?v=4460";
 import { localEditor, localViewer } from "../v57/room.mjs";
 
 const api = window.ArchivesRelay;
