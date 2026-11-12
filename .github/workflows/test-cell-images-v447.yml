@@ -1,0 +1,28 @@
+name: Archives — images entières dans les cellules
+on:
+  push:
+    branches: [main, codex/cell-images-v447]
+    paths: ['src/v65/cell-picture.mjs', 'archives-app-v64-v55.html', 'tests/browser-v443.cjs', '.github/workflows/test-cell-images-v447.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: node --check src/v65/cell-picture.mjs
+      - run: npx playwright install chromium
+      - run: node tests/browser-v443.cjs
+      - run: node tests/browser-v65.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cell-image-preview
+          path: /tmp/archives-image-entire-v447.png
+          retention-days: 3

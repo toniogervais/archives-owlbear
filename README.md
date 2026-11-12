@@ -1,5 +1,9 @@
 # Les Archives de l’Imaginaire
 
+## V4.47 — images entières dans les cellules
+
+Les nouvelles images choisies dans la bibliothèque, sur le PC ou par adresse directe s’affichent en entier et conservent leurs proportions. Le zoom et le déplacement de la photo précédente sont remis à zéro lors du remplacement. Dans les réglages de la cellule, **Image entière** rétablit l’affichage complet d’une photo déjà placée ; **Remplir la cellule** permet un recadrage volontaire. Le zoom et le déplacement restent disponibles. Le bouton **Adapter Auto** et la réinitialisation reviennent aussi à l’image entière. Les cadrages existants restent mémorisés tant que le MJ ne les modifie pas. Actualiser les Archives ; l’adresse de l’extension reste identique.
+
 ## V4.46 — sauvegardes privées en ligne
 
 Le bouton **Sauvegardes** propose maintenant l’enregistrement automatique de la campagne complète dans Supabase et les dix dernières versions datées. Le scénario, les secrets, le journal MJ, les images, les documents originaux et les cadrages sont inclus. Aucun fichier à télécharger pour sauvegarder ou ouvrir une version sur un autre appareil ; la copie indépendante `.archives` reste disponible.
