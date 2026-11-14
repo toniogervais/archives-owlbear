@@ -1,11 +1,19 @@
-import {isGM,notice} from '../v63/ui.mjs?v=4490';
-let operation=0,shown='',dismissed='',dialog;
-const state=()=>window.DuneApp?.getState?.();
+import {isGM,notice} from '../v63/ui.mjs?v=4500';
+import {fade,fadeDuration} from '../v73/fade.mjs?v=4500';
+let operation=0,shown='',requested='',dialog,epoch=0,animation;
+const dismissed=new Set(),state=()=>window.DuneApp?.getState?.();
+function remember(id){if(!id)return;dismissed.add(id);if(dismissed.size>128)dismissed.delete(dismissed.values().next().value)}
+function cancelFade(){animation?.cancel();animation=null}
 function ensureDialog(){
- if(dialog)return dialog;
+ if(dialog?.isConnected)return dialog;
  const style=document.createElement('style');style.textContent=`
  #archives-player-image{box-sizing:border-box;width:96vw;height:94dvh;max-width:98vw;max-height:96dvh;padding:12px;border:1px solid #c3a570;border-radius:14px;background:#100d17;color:#ffe7b5;font:14px system-ui;overflow:hidden}
  #archives-player-image::backdrop{background:#040309dd}
+ #archives-player-image[data-phase="opening"]::backdrop{animation:archives-image-backdrop-in .3s ease-in-out both}
+ #archives-player-image[data-phase="closing"]::backdrop{animation:archives-image-backdrop-out .3s ease-in-out both}
+ @keyframes archives-image-backdrop-in{from{opacity:0}to{opacity:1}}
+ @keyframes archives-image-backdrop-out{from{opacity:1}to{opacity:0}}
+ @media(prefers-reduced-motion:reduce){#archives-player-image::backdrop{animation:none!important}}
  #archives-player-image .player-image-shell{height:100%;display:flex;flex-direction:column;gap:10px;min-height:0}
  #archives-player-image header{display:flex;align-items:center;justify-content:space-between;gap:10px}
  #archives-player-image h2{margin:0;font-size:17px}
@@ -13,16 +21,35 @@ function ensureDialog(){
  #archives-player-image img{display:block;width:100%;flex:1;min-height:0;object-fit:contain;background:#07060b}
  `;document.head.append(style);
  dialog=document.createElement('dialog');dialog.id='archives-player-image';dialog.setAttribute('aria-label','Image présentée par le MJ');
- const shell=document.createElement('div');shell.className='player-image-shell';const header=document.createElement('header'),title=document.createElement('h2'),close=document.createElement('button');title.textContent='Image partagée par le MJ';close.type='button';close.textContent='×';close.setAttribute('aria-label','Fermer l’image');close.onclick=()=>dialog.close();header.append(title,close);
- const image=document.createElement('img');image.alt='Image présentée par le maître de jeu';image.referrerPolicy='no-referrer';image.onerror=()=>{image.alt='L’image n’a pas pu être chargée. Ferme-la et demande au MJ de la présenter à nouveau.'};shell.append(header,image);dialog.append(shell);document.body.append(dialog);
- dialog.addEventListener('close',()=>{dismissed=shown;image.removeAttribute('src')});return dialog;
+ const shell=document.createElement('div');shell.className='player-image-shell';const header=document.createElement('header'),title=document.createElement('h2'),close=document.createElement('button');title.textContent='Image partagée par le MJ';close.type='button';close.textContent='×';close.setAttribute('aria-label','Fermer l’image');close.onclick=()=>void dismiss();header.append(title,close);
+ const image=document.createElement('img');image.alt='Image présentée par le maître de jeu';image.referrerPolicy='no-referrer';shell.append(header,image);dialog.append(shell);document.body.append(dialog);
+ dialog.addEventListener('cancel',event=>{event.preventDefault();void dismiss()});
+ const owner=dialog;dialog.addEventListener('close',()=>{if(owner!==dialog||owner.open||!shown)return;remember(shown);shown=requested='';epoch++;cancelFade();image.removeAttribute('src')});return dialog;
 }
-function render(){
+async function dismiss(local=true){
+ if(dialog?.dataset.phase==='closing'&&!requested)return;
+ if(local){remember(shown);remember(requested)}
+ requested='';const version=++epoch;cancelFade();
+ if(!dialog?.open){shown='';return}
+ dialog.dataset.phase='closing';const opacity=Number(getComputedStyle(dialog).opacity);animation=fade(dialog,Number.isFinite(opacity)?opacity:1,0);
+ await animation.finished;if(epoch!==version)return;
+ cancelFade();shown='';dialog.querySelector('img').removeAttribute('src');dialog.close();dialog.dataset.phase='closed';
+}
+async function render(){
  const s=state(),presentation=s?.playerPresentation;
- if(!s||!(s.playerMode||s.strictReadOnly)||!presentation?.published){if(dialog?.open)dialog.close();shown='';return}
- if(presentation.id===dismissed||dialog?.open&&shown===presentation.id)return;
- const view=ensureDialog();shown=presentation.id;view.querySelector('img').src=presentation.image;
- if(!view.open)view.showModal();
+ if(!s||!(s.playerMode||s.strictReadOnly)||!presentation?.published){if(shown||requested)void dismiss(false);return}
+ if(dismissed.has(presentation.id)||presentation.id===requested||dialog?.open&&shown===presentation.id&&dialog.dataset.phase!=='closing')return;
+ requested=presentation.id;const version=++epoch;cancelFade();
+ // Preload before replacing the visible image; a later request cancels this one.
+ const picture=new Image();
+ try{await new Promise((resolve,reject)=>{picture.onload=resolve;picture.onerror=reject;picture.src=presentation.image})}
+ catch{if(epoch===version){requested='';notice('L’image présentée n’a pas pu être chargée.')}return}
+ if(epoch!==version||dismissed.has(presentation.id))return;
+ const view=ensureDialog(),image=view.querySelector('img'),replacing=view.open&&!!shown&&view.dataset.phase!=='closing';
+ if(replacing){animation=fade(image,1,0,140);await animation.finished;if(epoch!==version)return;cancelFade()}
+ image.src=presentation.image;shown=presentation.id;view.dataset.phase=replacing?'switching':'opening';if(!view.open)view.showModal();
+ animation=fade(replacing?image:view,0,1,fadeDuration);await animation.finished;if(epoch!==version)return;
+ cancelFade();view.dataset.phase='open';
 }
 async function prepare(source){
  if(typeof source!=='string')throw Error('Choisis une image.');

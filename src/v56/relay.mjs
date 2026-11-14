@@ -1,10 +1,10 @@
 import {
   createNotice, editEvent, isPacket, localWire, packet, validLiveRoom, validPairing, validRoomId
-} from "./link.mjs?v=4210";
-import { installCentral } from "./central.mjs?v=4221";
-import { dialFallback } from "./peer.mjs";
-import { installOwlEditor, installOwlPlayer } from "../v57/editor.mjs?v=4490";
-import { localEditor, localViewer } from "../v57/room.mjs";
+} from "./link.mjs?v=4500";
+import { installCentral } from "./central.mjs?v=4500";
+import { dialFallback } from "./peer.mjs?v=4500";
+import { installOwlEditor, installOwlPlayer } from "../v57/editor.mjs?v=4500";
+import { localEditor, localViewer } from "../v57/room.mjs?v=4500";
 
 const api = window.ArchivesRelay;
 const params = new URLSearchParams(location.search);

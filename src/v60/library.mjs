@@ -1,4 +1,4 @@
-import { requireEditor,libraryRequest } from "./request.mjs";
+import { requireEditor,libraryRequest } from "./request.mjs?v=4500";
 import { maxMediaBytes } from "./files.mjs";
 const $ = id => document.getElementById(id);
 const labels = {DOCUMENT:"Document",AUDIO:"Audio",VIDEO:"Vidéo"};

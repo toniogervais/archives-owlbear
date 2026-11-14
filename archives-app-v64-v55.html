@@ -2061,7 +2061,7 @@ window.DuneApp = (function() {
   }
 
   function applyIncomingSync(data) {
-    state.playerPresentation=playerImageProjection(data.playerPresentation);window.dispatchEvent(new CustomEvent('archives:player-image'));
+    if(Object.prototype.hasOwnProperty.call(data,'playerPresentation')){state.playerPresentation=playerImageProjection(data.playerPresentation);window.dispatchEvent(new CustomEvent('archives:player-image'));}
     if (state.isDraggingNode || state.isResizingCell) { state.pendingPlayerView=data;return; }
     preparePlayerLayout(data);
     var personalBoard = data.boards.some(function(board){return board.id===state.activeBoardId;}) ? state.activeBoardId : null;
@@ -2078,6 +2078,7 @@ window.DuneApp = (function() {
     applyCanvasBg();
     renderTabs();
     renderAll(data.revealedNodeId, data.revealedLinkId);
+    window.dispatchEvent(new CustomEvent('archives:public-view'));
   }
 
   function setStatus(txt) {
@@ -2230,13 +2231,19 @@ window.DuneApp = (function() {
         ['panX','panY','zoom'].forEach(function(key){if(Number.isFinite(saved[key]) && (key !== 'zoom' || saved[key]>0))state[key]=saved[key];});
       }
     },
-    apply: function(data){
+    present: function(value){
+      if(!state.playerMode&&!state.strictReadOnly)return false;
+      var presentation=playerImageProjection(value);if(value&&!presentation)return false;
+      state.playerPresentation=presentation;window.dispatchEvent(new CustomEvent('archives:player-image'));return true;
+    },
+    apply: function(data,options){
       if(!data || !Array.isArray(data.boards) || !data.boards.length ||
          !data.boards.every(function(b){return b && Array.isArray(b.nodes) && Array.isArray(b.links);}))
         throw Error("Scénario reçu invalide.");
       relayApplying=true;
       try {
-        state.playerPresentation=(state.playerMode||state.strictReadOnly)?playerImageProjection(data.playerPresentation):null;window.dispatchEvent(new CustomEvent('archives:player-image'));
+        var receivePresentation=state.playerMode||state.strictReadOnly||options&&options.keepPresentation;
+        if(Object.prototype.hasOwnProperty.call(data,'playerPresentation')||!receivePresentation){state.playerPresentation=receivePresentation?playerImageProjection(data.playerPresentation):null;window.dispatchEvent(new CustomEvent('archives:player-image'));}
         if ((state.playerMode || state.strictReadOnly) && (state.isDraggingNode || state.isResizingCell)) { state.pendingPlayerView=data;return; }
         preparePlayerLayout(data);
         var personalBoard = (state.playerMode || state.strictReadOnly) && data.boards.some(function(board){return board.id===state.activeBoardId;}) ? state.activeBoardId : null;
@@ -2250,6 +2257,7 @@ window.DuneApp = (function() {
          });
         applyThemeColors(state.skinName);applyCanvasBg();applyTransform();renderTabs();renderAll(state.strictReadOnly ? data.revealedNodeId : null,state.strictReadOnly ? data.revealedLinkId : null);saveState();
         if((state.playerMode||state.strictReadOnly)&&el('journal-modal')?.classList.contains('open')){DuneApp.renderRevelationLog();DuneApp.renderNarrativeJournal();}
+        window.dispatchEvent(new CustomEvent('archives:public-view'));
       } finally {relayApplying=false;}
     }
   };
@@ -7103,15 +7111,15 @@ window.ArchivesRevealJournal={start,stop,refresh:()=>monitor?monitor.refresh():P
 
 })();
 </script>
-<link rel="stylesheet" href="./src/v56/bridge.css">
-<script type="module" src="./src/v56/relay.mjs?v=4490"></script>
-<script type="module" src="./src/v56/navigation.mjs?v=4210"></script>
-<script type="module" src="./src/v58/main-relay.mjs?v=4310"></script>
-<script type="module" src="./src/v58/transfer-ui.mjs?v=4490"></script>
-<script type="module" src="./src/v60/library.mjs?v=4490"></script>
+<link rel="stylesheet" href="./src/v56/bridge.css?v=4500">
+<script type="module" src="./src/v56/relay.mjs?v=4500"></script>
+<script type="module" src="./src/v56/navigation.mjs?v=4500"></script>
+<script type="module" src="./src/v58/main-relay.mjs?v=4500"></script>
+<script type="module" src="./src/v58/transfer-ui.mjs?v=4500"></script>
+<script type="module" src="./src/v60/library.mjs?v=4500"></script>
 <script defer src="./src/v54/polish.js"></script>
 <script type="module" src="./src/v62/motion.mjs?v=4210"></script>
-<script type="module" src="./src/v63/workbench.mjs?v=4490"></script>
+<script type="module" src="./src/v63/workbench.mjs?v=4500"></script>
 </body>
 </html>
 <style id="v19-player-reveal-transitions">
@@ -7367,15 +7375,15 @@ body.player-mode .player-cell-resize:hover{opacity:1}
   #soundshow-sounds-dock > button {box-shadow:none!important}
 }
 </style>
-<script type="module" src="./src/v65/cell-picture.mjs?v=4490"></script>
-<script type="module" src="./src/v70/player-image.mjs?v=4490"></script>
-<script type="module" src="./src/v65/storage.mjs?v=4490"></script>
-<script type="module" src="./src/soundshow/archives.mjs?v=4420"></script>
-<script type="module" src="./src/v66/workspace.mjs?v=4490"></script>
-<script type="module" src="./src/v68/cell-brief.mjs?v=4490"></script>
+<script type="module" src="./src/v65/cell-picture.mjs?v=4500"></script>
+<script type="module" src="./src/v70/player-image.mjs?v=4500"></script>
+<script type="module" src="./src/v65/storage.mjs?v=4500"></script>
+<script type="module" src="./src/soundshow/archives.mjs?v=4500"></script>
+<script type="module" src="./src/v66/workspace.mjs?v=4500"></script>
+<script type="module" src="./src/v68/cell-brief.mjs?v=4500"></script>
 
 
-<script type="module" src="./src/v72/gm-details.mjs?v=4490"></script>
-<script type="module" src="./src/v72/selection.mjs?v=4490"></script>
-<script type="module" src="./src/v72/presentation.mjs?v=4490"></script>
-<script type="module" src="./src/v72/google-search.mjs?v=4490"></script>
+<script type="module" src="./src/v72/gm-details.mjs?v=4500"></script>
+<script type="module" src="./src/v72/selection.mjs?v=4500"></script>
+<script type="module" src="./src/v72/presentation.mjs?v=4500"></script>
+<script type="module" src="./src/v72/google-search.mjs?v=4500"></script>

@@ -1,4 +1,4 @@
-import { localRoom,roomMembers,roomChannel,release } from "../v57/room.mjs?v=4450";
+import { localRoom,roomMembers,roomChannel,release } from "../v57/room.mjs?v=4500";
 import { openFileLibrary,validateFile,validId,validSharedFile as validPublication,publicFile,digest,fileChunks,fileReceiver,mediaChannel,mediaModal } from "./files.mjs?v=4450";
 import {installDossierFiles,dossierEntry} from '../v69/dossier-files.mjs?v=4450';
 
@@ -8,6 +8,8 @@ export async function installFileLibrary(OBR) {
   let role = await OBR.player.getRole(),connectionId = initialConnection,closed = false,store;
   let commands = Promise.resolve(),receptionQueue = Promise.resolve();
   let publication,receive,epoch = 0,viewerSession = "",sending = false,sendTimer;
+  let viewerOpen=false,modalQueue=Promise.resolve();
+  function modalOperation(action){const result=modalQueue.catch(()=>{}).then(action);modalQueue=result.catch(()=>{});return result}
   const declined = new Set(),targets = new Set(),inProgress = new Set(),lastSent = new Map();
   const send = data => OBR.broadcast.sendMessage(mediaChannel,data);
   async function requireGM() {
@@ -23,12 +25,12 @@ export async function installFileLibrary(OBR) {
     channel.postMessage({type:"media-view-state",id:receive.publication.id,session:viewerSession,
       publication:publicFile(receive.publication),progress:receive.progress || 0,error:receive.error || "",blob:receive.blob});
   }
-  function clearReception() {
-    clearTimeout(receive?.timer);receive = null;viewerSession = "";
+  function clearReception(keepViewer=false) {
+    clearTimeout(receive?.timer);receive = null;if(!keepViewer)viewerSession = "";
   }
   async function closeViewer() {
-    clearReception();
-    try { await OBR.modal.close(mediaModal); } catch {}
+    clearReception();viewerOpen=false;
+    try { await modalOperation(()=>OBR.modal.close(mediaModal)); } catch {}
   }
   async function stop() {
     const previous = publication;
@@ -116,7 +118,7 @@ export async function installFileLibrary(OBR) {
       if (!receive.blob && !receive.requested) void requestFile();
     } else if (data.type === "media-view-retry" && data.session === viewerSession) void requestFile(true);
     else if (data.type === "media-view-closed" && data.session === viewerSession) {
-      declined.add(data.id);clearReception();
+      declined.add(data.id);void closeViewer();
     }
   });
   function requestFile(retry = false) {
@@ -178,12 +180,16 @@ export async function installFileLibrary(OBR) {
       if (data.type === "show" && (!data.to || data.to === connectionId) && validPublication(data)) {
         if (receive?.publication.id === data.id || declined.has(data.id)) return;
         if (declined.size > 100) declined.clear();
-        clearReception();receive = {publication:publicFile(data),sender:event.connectionId,progress:0};
+        const reuse=viewerOpen&&!!viewerSession;
+        clearReception(reuse);receive = {publication:publicFile(data),sender:event.connectionId,progress:0};
+        if(reuse){viewState();void requestFile();return}
+        viewerOpen=true;
         const url = new URL("../../media-view-v60.html",import.meta.url);url.searchParams.set("v",release);url.hash = data.id;
-        await OBR.modal.open({id:mediaModal,url:url.href,fullScreen:true,hideBackdrop:true,hidePaper:true});
+        await modalOperation(()=>receive?.publication.id===data.id&&role==='PLAYER'&&!closed?OBR.modal.open({id:mediaModal,url:url.href,fullScreen:true,hideBackdrop:true,hidePaper:true}):undefined);
       } else if (data.type === "hide" && receive?.publication.id === data.id &&
           receive.publication.version === data.version && receive.sender === event.connectionId) {
-        declined.add(data.id);await closeViewer();
+        declined.add(data.id);
+        if(viewerSession)channel.postMessage({type:'media-view-hide',id:data.id,session:viewerSession});else await closeViewer();
       } else if (data.type === "data" && Array.isArray(data.to) && data.to.includes(connectionId) && receive?.requested &&
           receive.publication.id === data.id && receive.publication.version === data.version && receive.sender === event.connectionId) {
         const state = receive;

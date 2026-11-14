@@ -57,10 +57,10 @@ export function localWire(port) {
   };
 }
 
-export function createNotice() {
+export function createNotice({passive=false}={}) {
   const panel = document.createElement("section");
   panel.className = "archives-bridge-notice";
-  panel.hidden = true;
+  panel.hidden = true;if(passive)panel.dataset.passive='true';
   const text = document.createElement("p");
   text.setAttribute("role", "status");
   const action = document.createElement("button");
@@ -71,9 +71,10 @@ export function createNotice() {
   tertiary.type = "button";
   panel.tabIndex = -1;
   panel.append(text, action, secondary, tertiary);
+  if(passive){const close=document.createElement('button');close.type='button';close.className='archives-connection-dismiss';close.textContent='×';close.setAttribute('aria-label','Fermer le message de connexion');close.onclick=()=>{panel.hidden=true};panel.append(close)}
   document.body.append(panel);
   window.addEventListener("keydown", event => {
-    if (!panel.hidden && !panel.contains(event.target) &&
+    if (!passive && !panel.hidden && !panel.contains(event.target) &&
       !event.target.closest?.('#canvas-integrations-dock .canvas-integration-item:first-child,.studio-screen-choice,.soundshow-view,.soundshow-receive')) {
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -92,7 +93,7 @@ export function createNotice() {
       tertiary.textContent = tertiaryLabel || "";
       tertiary.onclick = tertiaryCallback || null;
       panel.hidden = false;
-      if (document.hasFocus() && !panel.contains(document.activeElement)) panel.focus();
+      if (!passive && document.hasFocus() && !panel.contains(document.activeElement)) panel.focus();
     },
     hide() { panel.hidden = true; }
   };

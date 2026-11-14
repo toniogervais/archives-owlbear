@@ -1,8 +1,10 @@
 import {
   createNotice, editEvent, isPacket, localWire, packet, pairingKey, randomHex, readLocal,
   roomUrlKey, validPairing, validRoomId, validSession, writeLocal
-} from "./link.mjs?v=4210";
-import { listenForFallback } from "./peer.mjs";
+} from "./link.mjs?v=4500";
+import { listenForFallback } from "./peer.mjs?v=4500";
+
+import {installMainPublic} from '../v73/main-public.mjs?v=4500';
 
 const centralTabKey = pairingKey + ":central";
 const saveKey = "jdr_architect_save_v12";
@@ -137,7 +139,7 @@ export function installCentral(api) {
     }
     const before = readLocal(saveKey);
     try {
-      api.apply(data.payload);
+      api.apply(data.payload,{keepPresentation:true});
       const stored = readLocal(saveKey);
       if (!stored || stored !== JSON.stringify(api.current()))
         throw Error("La sauvegarde locale ne correspond pas aux modifications reçues.");
@@ -198,6 +200,7 @@ export function installCentral(api) {
     if (pairing.code && sessionStorage.getItem(centralTabKey) === "1" && canEdit()) enableFallback();
   } catch {}
 
+  installMainPublic(api);
   window.ArchivesOwlbearBridge = {
     authorizeSoundShowFrame(source, roomId) {
       if (!canEdit() || !validRoomId(roomId)) return false;

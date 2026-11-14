@@ -1,0 +1,28 @@
+name: Vérification V4.50 — présentations et fondus
+on:
+  push:
+    branches: ['codex/v450-*']
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: node --test tests/presentation-v450.test.cjs tests/presentation-v444.test.cjs tests/room-v57.test.mjs
+      - run: npx playwright install chromium
+      - run: node tests/browser-v450.cjs
+      - run: node tests/browser-v444.cjs
+        if: ${{ !cancelled() }}
+      - run: node tests/browser-v60.cjs
+        if: ${{ !cancelled() }}
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: archives-v450-focused
+          path: /tmp/archives-v450-*.png
+          if-no-files-found: ignore

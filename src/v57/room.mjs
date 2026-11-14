@@ -1,6 +1,6 @@
-import { validSession } from "../v56/link.mjs";
+import { validSession } from "../v56/link.mjs?v=4500";
 
-export const release = "4490";
+export const release = "4500";
 export const roomChannel = "fr.archives-imaginaire.bridge/room-v57";
 export const inviteId = "fr.archives-imaginaire.bridge/screen-invite-v55";
 export const localViewer = "owl-view";

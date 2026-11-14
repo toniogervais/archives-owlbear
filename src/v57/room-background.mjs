@@ -1,5 +1,5 @@
-import { liveRoomKey, validSession, viewerId } from "../v56/link.mjs";
-import { inviteId, localRoom, roomChannel, roomMembers, screenUrl, snapshotChunks, validSnapshot } from "./room.mjs?v=4490";
+import { liveRoomKey, validSession, viewerId } from "../v56/link.mjs?v=4500";
+import { inviteId, localRoom, roomChannel, roomMembers, screenUrl, snapshotChunks, validSnapshot } from "./room.mjs?v=4500";
 import {createPresence} from '../v63/presence.mjs?v=4210';
 import {screenCommand} from '../v65/screen-model.mjs';
 
@@ -9,6 +9,7 @@ export async function installRoomPlay(OBR) {
   const isMember = roomMembers(OBR);
   let role = await OBR.player.getRole();
   let screen, latest, serial = 0, timer, sending = false, sendAgain = false;
+  let picture, pictureKey='',pictureTimer,pictureSending=false,pictureAgain=false;
   let playerView = "", lastInvite = "";
   let pendingTarget = '',lastPresenceRequest = 0;
   let pendingInvite;
@@ -67,6 +68,25 @@ export async function installRoomPlay(OBR) {
     }
   }
 
+  function queuePicture(){
+    clearTimeout(pictureTimer);
+    if(role==='GM'&&picture&&readers.size)pictureTimer=setTimeout(()=>void publishPicture(),30);
+  }
+  async function publishPicture(){
+    if(pictureSending){pictureAgain=true;return}
+    if(role!=='GM'||!picture||!readers.size)return;
+    pictureSending=true;const current=picture,id=newId(),started=serial;
+    try {
+      const envelope={boards:[{id:'presentation',nodes:[],links:[]}],playerPresentation:current.value};
+      const parts=await(current.parts ||= snapshotChunks(envelope));
+      for(const part of parts){
+        if(role!=='GM'||started!==serial||picture!==current){pictureAgain=true;return}
+        await send({...part,type:'presentation',id,revision:current.revision});
+      }
+    }catch(error){current.parts=null;console.warn('Archives : présentation indisponible',error)}
+    finally{pictureSending=false;if(pictureAgain){pictureAgain=false;queuePicture()}}
+  }
+
   async function changeScreen(value) {
     const command=screenCommand(value),party=await OBR.party.getPlayers();
     if (role!=='GM' || await OBR.player.getRole()!=='GM') throw Error('Commande réservée au MJ.');
@@ -90,7 +110,10 @@ export async function installRoomPlay(OBR) {
         emitPresence();
         if (Date.now() - lastPresenceRequest > 1000) { lastPresenceRequest = Date.now();void send({type:'player-state-request',id:newId()}).catch(() => {}); }
       } else if (data?.type === "published" && validSnapshot(data.payload)) {
-        latest = {payload:data.payload, revision:newId()};
+        const {playerPresentation,...canvas}=data.payload;
+        latest = {payload:canvas, revision:newId()};
+        const key=playerPresentation?.id||'';
+        if(!picture||key!==pictureKey){pictureKey=key;picture={value:playerPresentation||null,revision:newId()};queuePicture()}
         queueSnapshot();
       } else if (data?.type==='gm-screen-command' && validSession(data.id)) {
         screenQueue=screenQueue.catch(()=>{}).then(()=>changeScreen(data.command));
@@ -128,6 +151,7 @@ export async function installRoomPlay(OBR) {
         readers.add(event.connectionId);
         if (!latest) await send({type:"waiting", id:newId(), to:event.connectionId});
         else if (data.have !== latest.revision) queueSnapshot();
+        if(picture&&data.presentation!==picture.revision)queuePicture();
       }
     } else if (await isMember(event.connectionId,'GM') && role === 'PLAYER') {
       if (data.type === 'player-state-request') announcePresence();
@@ -147,7 +171,7 @@ export async function installRoomPlay(OBR) {
     if (role === player.role) return;
     role = player.role;
     serial++;
-    latest = screen = null;
+    latest = screen = picture = null;pictureKey='';clearTimeout(pictureTimer);
     readers.clear();
     playerView = lastInvite = "";
     pendingInvite=null;pendingTarget = '';announcePresence();

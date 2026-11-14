@@ -1,5 +1,5 @@
-import {element,button,isGM,nativeEditor,notice} from '../v63/ui.mjs?v=4490';
-import {libraryRequest} from '../v60/request.mjs';
+import {element,button,isGM,nativeEditor,notice} from '../v63/ui.mjs?v=4500';
+import {libraryRequest} from '../v60/request.mjs?v=4500';
 let menu;
 function close(){menu?.hidePopover?.();menu?.remove();menu=null}
 async function present(source) {

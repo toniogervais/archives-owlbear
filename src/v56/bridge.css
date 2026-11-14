@@ -25,3 +25,6 @@
   font: inherit;
   cursor: pointer;
 }
+
+.archives-bridge-notice[data-passive="true"]{inset:auto 14px 14px auto;width:min(420px,calc(100vw - 28px));box-sizing:border-box;padding:14px 45px 14px 15px;gap:10px;align-items:flex-start;border:1px solid #c0a069;border-radius:11px;font-size:13px;text-align:left;box-shadow:0 8px 28px #0008;z-index:1200}
+.archives-bridge-notice[data-passive="true"] .archives-connection-dismiss{position:absolute;top:5px;right:5px;width:30px;height:30px;min-height:30px;padding:0;font-size:20px;background:transparent}
