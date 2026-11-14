@@ -38,6 +38,7 @@ document.addEventListener('pointerdown',event=>{if(menu&&!menu.contains(event.ta
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&menu){event.preventDefault();event.stopImmediatePropagation();close()}},true);
 function install(){
   const host=document.getElementById('cell-ctx-menu');if(!host)return;
+  const css=element('style');css.textContent='#cell-ctx-menu .ctx-item[hidden]{display:none!important}#cell-ctx-menu button[id^="archives-context-present"]{width:100%;border:0;background:transparent;color:inherit;font:inherit;text-align:left}#cell-ctx-menu button[id^="archives-context-present"]:hover{background:var(--skin-gold-main);color:#000}';document.head.append(css);
   const show=button('Montrer l’image aux joueurs',()=>{const s=window.DuneApp.getState(),n=s.nodes.find(n=>n.id===s.ctxTargetNodeId);window.DuneApp.closeContextMenus();if(n?.bgImg)void present({data:n.bgImg})},'ctx-item');show.id='archives-context-present-image';
   const text=button('Montrer la description aux joueurs',()=>{const s=window.DuneApp.getState(),n=s.nodes.find(n=>n.id===s.ctxTargetNodeId);window.DuneApp.closeContextMenus();if(n?.desc)void present({text:n.desc})},'ctx-item');text.id='archives-context-present-text';
   const anchor=host.querySelector('#ctx-send-to-owlbear');if(anchor)anchor.after(show,text);else host.append(show,text);
