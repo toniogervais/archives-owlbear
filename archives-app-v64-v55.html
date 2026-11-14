@@ -1276,7 +1276,7 @@ body.player-mode #archives-home-fab{display:flex!important}
         <label class="field-label" for="image-picker-url">Adresse de l'image (solution de secours)</label>
         <input id="image-picker-url" type="url" placeholder="https://site.fr/image.jpg" autocomplete="url">
         <button type="button" class="btn btn-gold" onclick="DuneApp.applyImagePickerUrl()">Appliquer à la cellule</button>
-        <details id="archives-google-config"><summary>Configurer Google intégré</summary><p>Renseigne l’identifiant (cx) d’un moteur Google Programmable Search avec la recherche d’images activée.</p><label for="archives-google-cx">Identifiant du moteur Google</label><input id="archives-google-cx" placeholder="Identifiant cx" autocomplete="off"><button id="archives-google-save" type="button" class="btn">Enregistrer et rechercher</button><p>À créer dans les paramètres de Google Programmable Search. Les nouveaux moteurs recherchent sur les sites que tu choisis (jusqu’à 50 domaines), selon les règles de Google.</p></details>
+        <details id="archives-google-config"><summary>Configurer Google intégré</summary><p>Renseigne l’identifiant (cx) d’un moteur Google Programmable Search avec la recherche d’images activée.</p><label for="archives-google-cx">Identifiant du moteur Google</label><input id="archives-google-cx" placeholder="Identifiant cx" autocomplete="off"><button id="archives-google-save" type="button" class="btn">Enregistrer et rechercher</button><p><a href="https://programmablesearchengine.google.com/controlpanel/all" target="_blank" rel="noopener">Créer ou ouvrir mon moteur Google</a>. Les nouveaux moteurs recherchent sur les sites que tu choisis (jusqu’à 50 domaines), selon les règles de Google.</p></details>
         <p>Les résultats apparaissent ici. Le bouton « Utiliser cette image » conserve l’original dans la cellule lorsque le site source autorise son téléchargement.</p>
       </div>
     </div>
@@ -5787,7 +5787,7 @@ window.DuneApp = (function() {
       roots.forEach(function(n){n.x=(n.x||0)-minX+right;n.y=(n.y||0)-minY+160;});
       target.nodes.push.apply(target.nodes,copies);
       source.links.slice().forEach(function(l){if(!map.has(l.from)||!map.has(l.to))return;var c=JSON.parse(JSON.stringify(l));c.id='l_'+crypto.randomUUID();c.from=map.get(l.from);c.to=map.get(l.to);c.originalId=same?c.id:(l.originalId||l.id);c.revealed=false;c.revOrder=null;(c.clues||[]).forEach(function(q){q.id='c_'+crypto.randomUUID();q.revealed=false;q.revOrder=null;});target.links.push(c);});
-      renderAll();saveState();setStatus(copies.length+' cellules copiées, masquées, dans « '+target.name+' ».');return copies.map(function(n){return n.id;});
+      if(same)centerViewOnCells();else renderAll();saveState();setStatus(copies.length+' cellules copiées, masquées, dans « '+target.name+' ».');return copies.map(function(n){return n.id;});
     },
     commitCellPicture: function(id,fields) {
       if(state.playerMode||state.strictReadOnly)return;

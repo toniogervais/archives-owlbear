@@ -60,6 +60,13 @@ const until=async(fn,message)=>{for(let i=0;i<150;i++){if(await fn())return;awai
   await editor(gm).locator('#nodes-layer .node-cell[data-id="n0"]').click({button:'right'});await editor(gm).locator('#archives-selection-menu').getByRole('button',{name:'Dupliquer la sélection',exact:true}).click();
   assert.equal(await app(gm).evaluate(()=>DuneApp.getState().nodes.length),10);assert.equal((await app(gm).evaluate(()=>ArchivesSelection.selected)).length,3);
   await gm.screenshot({path:'/tmp/archives-v449-selection.png'});await editor(gm).locator('#archives-select-trigger').click();
+  await editor(gm).locator('#archives-select-trigger').click();
+  const a=await editor(gm).locator('#nodes-layer .node-cell[data-id="n0"]').boundingBox(),b=await editor(gm).locator('#nodes-layer .node-cell[data-id="n1"]').boundingBox();
+  await gm.mouse.move(Math.min(a.x,b.x)-20,Math.min(a.y,b.y)-35);await gm.mouse.down();await gm.mouse.move(Math.max(a.x+a.width,b.x+b.width)+20,Math.max(a.y+a.height,b.y+b.height)+20,{steps:10});await gm.mouse.up();
+  const rectangle=await app(gm).evaluate(()=>ArchivesSelection.selected);assert.ok(rectangle.includes('n0')&&rectangle.includes('n1'),'rectangle selection follows the zoomed canvas');await editor(gm).locator('#archives-select-trigger').click();
+  await app(gm).evaluate(()=>{const r=document.querySelector('#nodes-layer .node-cell[data-id="n0"]').getBoundingClientRect();DuneApp.openCellContextMenu('n0',r.left+40,r.top+40)});
+  await editor(gm).locator('#archives-context-present-image').click();await shared.waitFor();await shared.getByRole('button',{name:'Fermer l’image',exact:true}).click();
+
   // The same settings control clears the background persistently.
   await app(gm).evaluate(()=>DuneApp.openSettings());await editor(gm).getByRole('button',{name:'Supprimer l’image du canevas',exact:true}).click();assert.equal(await app(gm).evaluate(()=>DuneApp.getState().bgImage),'');await app(gm).evaluate(()=>DuneApp.closeSettings());
   // Google remains in the app: configure once, query, choose the original image, no popup.

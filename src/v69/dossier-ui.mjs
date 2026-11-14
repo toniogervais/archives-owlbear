@@ -23,6 +23,10 @@ export function openAddFile(onShared){
 }
 export function openSharedFile(record){
   const view=sheet('archives-dossier-detail',record.title,'Dossier des joueurs · Autre');
+  if(isGM()){
+    view.dialog.archivesPresentationSource={fileId:record.file.id};
+    view.content.append(button('Montrer aux joueurs',()=>{void window.ArchivesPresentation?.present({fileId:record.file.id})}));
+  }
   let objectUrl='',media;
   view.cleanup(()=>{if(media){media.pause();media.removeAttribute('src');media.load()}if(objectUrl)URL.revokeObjectURL(objectUrl)});
   view.status.textContent='Chargement du fichier…';
