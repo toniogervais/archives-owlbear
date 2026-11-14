@@ -1,4 +1,4 @@
-import {element,button,sheet,isGM,notice} from '../v63/ui.mjs?v=4490';
+import {element,button,sheet,isGM,notice} from '../v63/ui.mjs?v=4500';
 function open() {
   if(!isGM())return;
   const state=window.DuneApp.getState(),node=state.nodes.find(n=>n.id===state.selectedId);

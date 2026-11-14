@@ -1,3 +1,11 @@
+## V4.50 — présentations successives et fondus
+
+Les images montrées aux joueurs ont maintenant leur propre transmission, séparée de la vue complète du scénario. Une vue trop volumineuse ne bloque plus les images suivantes. Le MJ peut les envoyer depuis l’onglet principal des Archives sans ouvrir un second éditeur dans Owlbear. La liaison ne transmet que la projection publique autorisée.
+
+Le lecteur conserve une seule fenêtre de présentation, précharge les images et annule les remplacements dépassés. Fermer une image ne peut plus fermer celle qui arrive ensuite. Les présentations natives de fichiers réutilisent aussi leur lecteur et confient la fermeture au gestionnaire de la présentation courante. Les fondus d’entrée et de sortie durent environ 300 ms, avec respect du réglage système de réduction des animations.
+
+Le message d’attente côté joueur disparaît dès que la vue est reçue. En cas de connexion encore en attente, il reste discret et refermable, sans bloquer le canevas ou le clavier. Les secrets MJ, titres privés et fichiers non présentés gardent les mêmes protections.
+
 ## V4.49 — grandes sauvegardes et préparation MJ
 
 - Sauvegardes `.archives` jusqu’à **2 Go**, avec les originaux de la bibliothèque et du scénario, déduplication des médias et vérification SHA-256 par blocs. Aucune réduction des images. Lecture des anciennes sauvegardes conservée.

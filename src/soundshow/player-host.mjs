@@ -1,4 +1,4 @@
-import {localRoom} from '../v57/room.mjs';
+import {localRoom} from '../v57/room.mjs?v=4500';
 import {validSession} from './protocol.mjs';
 
 // Only the player's own, same-origin Archives frame talks to this relay.

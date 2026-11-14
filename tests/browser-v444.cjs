@@ -54,7 +54,7 @@ async function openArchives(p){await p.locator('#archives-tool').click();await e
   const shown=editor(player).locator('#archives-player-image[open]');await shown.waitFor();assert.ok(await shown.locator('img').getAttribute('src')===pictures[0],'only the selected image is presented');
   assert.equal(await app(gm).evaluate(()=>DuneApp.getState().nodes[0].revealed),false);await editor(gm).locator('#archives-image-library-status').filter({hasText:'Image présentée'}).waitFor();
   const late=await pc.newPage();late.on('pageerror',e=>errors.push(e.message));await late.goto(owl+'/room/one?joueur=Bob');await late.frameLocator('#invite').getByRole('button',{name:'Afficher les Archives',exact:true}).click();await editor(late).locator('#archives-player-image[open]').waitFor();
-  await shown.getByRole('button',{name:'Fermer l’image',exact:true}).click();assert.equal(await shown.count(),0);
+  await shown.getByRole('button',{name:'Fermer l’image',exact:true}).click();await shown.waitFor({state:'hidden'});assert.equal(await shown.count(),0);
   await app(gm).evaluate(()=>DuneApp.commitCellPicture('secret',{bgZoom:1.1}));assert.equal(await shown.count(),0,'a regular campaign update must not reopen a dismissed image');
   await app(gm).evaluate(()=>ArchivesImageLibrary.showToPlayers([...document.querySelectorAll('#archives-image-library-grid article')].find(el=>el.querySelector('strong').textContent==='SECRET_FICHIER_PUBLIC_444').dataset.imageCard));await shown.waitFor();
   await app(gm).evaluate(()=>ArchivesImageLibrary.hideFromPlayers());await shown.waitFor({state:'hidden'});await editor(late).locator('#archives-player-image[open]').waitFor({state:'hidden'});

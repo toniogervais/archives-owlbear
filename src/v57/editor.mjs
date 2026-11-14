@@ -1,7 +1,7 @@
-import { createNotice, editEvent, isPacket, packet } from "../v56/link.mjs?v=4460";
+import { createNotice, editEvent, isPacket, packet } from "../v56/link.mjs?v=4500";
 import { installOwlPlayerInterface, installOwlSettings } from "../v59/settings.mjs?v=4210";
-import { installPlayerNotebook } from '../v64/player-notebook.mjs?v=4490';
-import {installScreenControls} from '../v65/screens.mjs?v=4490';
+import { installPlayerNotebook } from '../v64/player-notebook.mjs?v=4500';
+import {installScreenControls} from '../v65/screens.mjs?v=4500';
 
 export function installOwlEditor(api) {
   installScreenControls();
@@ -27,7 +27,7 @@ export function installOwlEditor(api) {
       "Importer un scénario", () => { notice.hide(); document.getElementById("up-json").click(); },
       "Nouveau scénario", () => { notice.hide(); window.DuneApp.startNewScenario(false); },
       "Sauvegardes en ligne", () => {
-        void import('../v63/backup-ui.mjs?v=4490').then(module => { notice.hide();module.openBackup(); })
+        void import('../v63/backup-ui.mjs?v=4500').then(module => { notice.hide();module.openBackup(); })
           .catch(error => notice.show(error.message));
       });
   }
@@ -96,20 +96,25 @@ export function installOwlPlayer(api) {
   installScreenControls();
   installOwlPlayerInterface();
   installPlayerNotebook();
-  const notice = createNotice();
+  const notice = createNotice({passive:true});
   const parent = window.parent;
   const post = type => parent.postMessage(packet(type), location.origin);
   let received = false;
+  const viewReady=()=>{received=true;notice.hide()};
+  window.addEventListener('archives:public-view',viewReady);
+  window.addEventListener('archives:player-image',()=>{if(window.DuneApp?.getState?.().playerPresentation?.published)notice.hide()});
   const retry = () => post("owl-player-retry");
   window.addEventListener("message", event => {
     if (event.source !== parent || event.origin !== location.origin || !isPacket(event.data)) return;
     const data = event.data;
     if (data.type === 'owl-player-identity') {
       api.setPlayerScope(data.scope);
+    } else if(data.type==='owl-player-presentation'){
+      if(api.present(data.presentation))notice.hide();
     } else if (data.type === "owl-player-snapshot") {
       try { api.apply(data.snapshot); received = true; notice.hide();window.dispatchEvent(new CustomEvent('archives:public-view')); }
       catch { if (!received) notice.show("La vue joueur n’a pas pu s’afficher.", "Réessayer", retry); }
-    } else if (!received && data.type === "owl-player-status") {
+    } else if (!received && !window.DuneApp?.getState?.().playerPresentation?.published && data.type === "owl-player-status") {
       notice.show(data.message, "Réessayer", retry);
     }
   });

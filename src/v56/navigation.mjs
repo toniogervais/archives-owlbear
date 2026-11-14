@@ -1,5 +1,5 @@
 // Les Archives demeurent l'application principale ; Owlbear est un onglet associé.
-import { owlRoomUrl, packet, readLocal, roomUrlKey, writeLocal } from "./link.mjs";
+import { owlRoomUrl, packet, readLocal, roomUrlKey, writeLocal } from "./link.mjs?v=4500";
 const MAP_TAB="archives-owlbear-room";
 if(window.parent===window)window.name="archives-main";
 let mapWindow=null;

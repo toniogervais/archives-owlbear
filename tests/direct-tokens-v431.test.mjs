@@ -48,7 +48,7 @@ test('Standalone Archives sends one-click commands to linked GM background and a
  assert.match(ui,/window\.ArchivesTokenBridge\?\.connected/);
  assert.match(ui,/tryDirectHosting\(art/);
  assert.match(ui,/🐻 Envoyer vers Owlbear/);
- assert.match(html,/src\/v58\/main-relay\.mjs\?v=4310/);
+ assert.match(html,/src\/v58\/main-relay\.mjs\?v=\d+/);
  assert.match(background,/if \(hosted\)/);
  assert.match(background,/safeHostedImage\(command\.hosted\)/);
  assert.match(background,/artwork-main-command/);

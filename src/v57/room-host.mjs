@@ -1,9 +1,9 @@
-import { localRoom, roomChannel, roomMembers, snapshotReader, validSnapshot } from "./room.mjs?v=4490";
+import { localRoom, roomChannel, roomMembers, snapshotReader, validSnapshot } from "./room.mjs?v=4500";
 import { openScenario } from "./storage.mjs";
-import { validSession } from "../v56/link.mjs";
-import {campaignHost} from '../v63/campaign-host.mjs?v=4490';
-import {dossierHost} from '../v69/dossier-host.mjs?v=4490';
-import {publicItems} from '../v63/public-items.mjs';
+import { validSession } from "../v56/link.mjs?v=4500";
+import {campaignHost} from '../v63/campaign-host.mjs?v=4500';
+import {dossierHost} from '../v69/dossier-host.mjs?v=4500';
+import {publicItems} from '../v63/public-items.mjs?v=4500';
 
 export async function makeEditorHost(OBR, post, canEdit) {
   const {channel} = await localRoom(OBR);
@@ -139,7 +139,7 @@ export async function makePlayerHost(OBR, post, canRead) {
   const id = crypto.randomUUID();
   const send = (type, fields) => OBR.broadcast.sendMessage(roomChannel, {type, id, ...fields});
   let ready = false, disposed = false, revision, interval, initialTimer;
-  let snapshot, gmConnection = "";
+  let snapshot, gmConnection = "",pictureRevision;
   const dossier=dossierHost(channel,post,()=>!disposed&&canRead());
   const received = snapshotReader((payload, version) => {
     if (disposed || !canRead()) return;
@@ -148,18 +148,24 @@ export async function makePlayerHost(OBR, post, canRead) {
     clearTimeout(initialTimer);
     if (ready) post("owl-player-snapshot", {snapshot});
   }, () => request());
+  const receivedPicture=snapshotReader((payload,version)=>{
+    if(disposed||!canRead())return;pictureRevision=version;
+    if(ready)post('owl-player-presentation',{presentation:payload.playerPresentation||null});
+  },()=>request());
   function request() {
-    if (!disposed && ready && canRead()) void send("snapshot-request", {have:revision}).catch(() => {});
+    if (!disposed && ready && canRead()) void send("snapshot-request", {have:revision,presentation:pictureRevision}).catch(() => {});
   }
   const off = OBR.broadcast.onMessage(roomChannel, event => {
     void (async () => {
       const data = event.data;
       if (disposed || !ready || !canRead() || !data ||
-          !["snapshot","snapshot-error","waiting","screen"].includes(data.type) ||
+          !["snapshot","presentation","snapshot-error","waiting","screen"].includes(data.type) ||
           (data.to && data.to !== connectionId) ||
           !await isMember(event.connectionId, "GM") || disposed || !canRead()) return;
       if (data.type === "screen" && data.target === "ARCHIVES") {
-        if (gmConnection !== event.connectionId) { gmConnection = event.connectionId; revision = null; request(); }
+        if (gmConnection !== event.connectionId) { gmConnection = event.connectionId; revision = pictureRevision = null; request(); }
+      } else if(data.type==='presentation'&&(!gmConnection||gmConnection===event.connectionId)){
+        gmConnection=event.connectionId;await receivedPicture(data,event.connectionId);
       } else if (data.type === "snapshot" && (!gmConnection || gmConnection === event.connectionId)) {
         gmConnection = event.connectionId;
         await received(data, event.connectionId);
@@ -171,7 +177,7 @@ export async function makePlayerHost(OBR, post, canRead) {
   const offParty = OBR.party.onChange(players => {
     if (gmConnection && !players.some(p => p.connectionId === gmConnection && p.role === "GM")) {
       gmConnection = "";
-      revision = null;
+      revision = pictureRevision = null;
       request();
     }
   });
