@@ -2242,7 +2242,8 @@ window.DuneApp = (function() {
         throw Error("Scénario reçu invalide.");
       relayApplying=true;
       try {
-        if(Object.prototype.hasOwnProperty.call(data,'playerPresentation')){state.playerPresentation=(state.playerMode||state.strictReadOnly||options&&options.keepPresentation)?playerImageProjection(data.playerPresentation):null;window.dispatchEvent(new CustomEvent('archives:player-image'));}
+        var receivePresentation=state.playerMode||state.strictReadOnly||options&&options.keepPresentation;
+        if(Object.prototype.hasOwnProperty.call(data,'playerPresentation')||!receivePresentation){state.playerPresentation=receivePresentation?playerImageProjection(data.playerPresentation):null;window.dispatchEvent(new CustomEvent('archives:player-image'));}
         if ((state.playerMode || state.strictReadOnly) && (state.isDraggingNode || state.isResizingCell)) { state.pendingPlayerView=data;return; }
         preparePlayerLayout(data);
         var personalBoard = (state.playerMode || state.strictReadOnly) && data.boards.some(function(board){return board.id===state.activeBoardId;}) ? state.activeBoardId : null;

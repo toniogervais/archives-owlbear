@@ -54,6 +54,9 @@ async function mainAndLargeView(browser){
   const {snapshotChunks}=await import('../src/v57/room.mjs');const parts=await snapshotChunks({boards:[{id:'forged',nodes:[],links:[]}],playerPresentation:{id:crypto.randomUUID(),image:pictures[2],published:true}}),id=crypto.randomUUID(),revision=crypto.randomUUID();
   for(const part of parts)await player.evaluate(({channel,data})=>window.fixture.publish(channel,data),{channel:roomChannel,data:{...part,type:'presentation',id,revision}});
   await app(late).evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));assert.equal(await app(late).evaluate(()=>DuneApp.getState().playerPresentation.id),unchanged);
+  // Replacing the GM scenario stops its old presentation, including legacy
+  // JSON files without a presentation field, and restores the genuine canvas.
+  await main.evaluate(s=>ArchivesRelay.apply(s),scenario);await picture(late).waitFor({state:'hidden'});await editor(late).locator('.cell-title-txt').filter({hasText:'Élément partagé'}).waitFor();assert.equal(await editor(late).locator('.archives-bridge-notice:not([hidden])').count(),0);
   const wire=JSON.stringify(await player.evaluate(()=>fixture.wire()));for(const secret of ['SECRET_ACTE_450','SECRET_CELLULE_450','SECRET_DESCRIPTION_450','SECRET_RUBRIQUE_450','SECRET_NOTES_450','SECRET_JOURNAL_450','NOM_PRIVE_'])assert.ok(!wire.includes(secret),'private data leaked: '+secret);
   assert.deepEqual(errors,[]);console.log('V4.50 main: source Archives without a second GM editor, multiple/different images, rapid replacements, close races, entry/exit fades, large-canvas independent delivery, dismissible recovered waiting state and GM-only privacy passed.');
  }catch(error){
