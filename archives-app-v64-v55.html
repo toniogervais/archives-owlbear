@@ -755,7 +755,7 @@ body.strict-readonly #quick-icon-dock #quick-player-center-cell,body.strict-read
 <style id="v43-canvas-integrations-style">
 #canvas-integrations-dock{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:130;display:flex;align-items:center;justify-content:center;gap:18px;padding:7px 14px;border:1px solid rgba(212,175,55,.25);border-radius:16px;background:rgba(12,10,18,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);pointer-events:auto;}
 .canvas-integration-item{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:78px;color:var(--skin-text-muted);font-size:10px;line-height:1.1;letter-spacing:.2px;}
-.canvas-integration-icon{width:34px;height:34px;display:grid;place-items:center;border:1px solid rgba(212,175,55,.25);border-radius:10px;background:rgba(255,255,255,.035);color:rgba(230,220,195,.48);opacity:.58;cursor:not-allowed;}
+.canvas-integration-icon{width:34px;height:34px;display:grid;place-items:center;border:1px solid rgba(212,175,55,.25);border-radius:10px;background:rgba(255,255,255,.035);color:rgba(230,220,195,.48);opacity:.58;cursor:default;}
 .canvas-integration-icon svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.45;stroke-linecap:round;stroke-linejoin:round;}
 .canvas-integration-icon:disabled{pointer-events:none;}
 /* V4.1 : Owlbear fonctionne : style actif et curseur cliquable. */
@@ -1267,7 +1267,7 @@ body.player-mode #archives-home-fab{display:flex!important}
     <div id="image-picker-target">Cellule sélectionnée : —</div>
     <div class="image-picker-search"><input id="image-picker-query" type="text" placeholder="Rechercher une image : portrait, lieu, ambiance…"><button type="button" class="btn btn-gold" onclick="DuneApp.runImageSearch()">🔍 Rechercher</button></div>
     <div class="image-picker-body">
-      <iframe id="image-search-frame" class="image-search-frame" title="Recherche d'images intégrée" referrerpolicy="no-referrer" src="about:blank"></iframe>
+      <iframe id="image-search-frame" class="image-search-frame" title="Recherche d'images intégrée" referrerpolicy="no-referrer" sandbox="allow-scripts allow-forms" src="about:blank"></iframe>
       <div class="image-picker-side">
         <strong>Appliquer à la cellule</strong>
         <p>La cellule choisie est mémorisée pendant cette opération. Tu peux importer un fichier directement ou coller l'adresse directe du fichier image (pas le lien d'une page web).</p>
@@ -1276,8 +1276,8 @@ body.player-mode #archives-home-fab{display:flex!important}
         <label class="field-label" for="image-picker-url">Adresse de l'image (solution de secours)</label>
         <input id="image-picker-url" type="url" placeholder="https://site.fr/image.jpg" autocomplete="url">
         <button type="button" class="btn btn-gold" onclick="DuneApp.applyImagePickerUrl()">Appliquer à la cellule</button>
-        <button type="button" class="btn" onclick="DuneApp.openGoogleImagesFallback()">Ouvrir Google Images dans un onglet</button>
-        <p>Remarque : certains navigateurs bloquent Google dans cette fenêtre. Ouvre Google Images dans un onglet, puis copie l’adresse directe de l’image. Un lien vers une page de site ne suffit pas ; si le site interdit l’accès direct, importe l’image depuis ton appareil.</p>
+        <details id="archives-google-config"><summary>Configurer Google intégré</summary><p>Renseigne l’identifiant (cx) d’un moteur Google Programmable Search avec la recherche d’images activée.</p><label for="archives-google-cx">Identifiant du moteur Google</label><input id="archives-google-cx" placeholder="Identifiant cx" autocomplete="off"><button id="archives-google-save" type="button" class="btn">Enregistrer et rechercher</button><p><a href="https://programmablesearchengine.google.com/controlpanel/all" target="_blank" rel="noopener">Créer ou ouvrir mon moteur Google</a>. Les nouveaux moteurs recherchent sur les sites que tu choisis (jusqu’à 50 domaines), selon les règles de Google.</p></details>
+        <p>Les résultats apparaissent ici. Le bouton « Utiliser cette image » conserve l’original dans la cellule lorsque le site source autorise son téléchargement.</p>
       </div>
     </div>
   </div>
@@ -1616,7 +1616,7 @@ body.player-mode #archives-home-fab{display:flex!important}
             <div class="field-row" style="margin-top:6px;">
               <label class="btn-upload" for="up-bg" style="margin:0;">📂 Image Fond Canevas</label>
               <input type="file" id="up-bg" accept="image/*" style="display:none" onchange="DuneApp.uploadCanvasBg(this)">
-              <button type="button" class="btn btn-inline" style="margin:0;" onclick="DuneApp.resetCanvasBg()">Défaut</button>
+              <button type="button" class="btn btn-inline" style="margin:0;" onclick="DuneApp.resetCanvasBg()">Supprimer l’image du canevas</button>
             </div>
             <div class="field-group" style="margin-bottom:0;">
               <label class="field-label">Opacité du canevas <span class="val-badge" id="lbl-canvas-bg-op">75%</span></label>
@@ -2150,11 +2150,11 @@ window.DuneApp = (function() {
           return out;
         });
       if(nodes.length||board.id===source.activeBoardId){
-        published.push({id:board.id,name:"Acte "+(index+1),nodes:nodes,links:links});
+        published.push({id:board.id,name:"Scène "+(index+1),nodes:nodes,links:links});
       }
     });
     if(!published.length){
-      published=[{id:"b_public",name:"Acte 1",nodes:[],links:[]}];
+      published=[{id:"b_public",name:"Scène 1",nodes:[],links:[]}];
     }
     var active=published.find(function(board){return board.id===source.activeBoardId});
     var playerLayout={};
@@ -2571,7 +2571,7 @@ window.DuneApp = (function() {
     for (var i = 0; i < state.boards.length; i++) {
       var b = state.boards[i];
       var cls = (b.id === state.activeBoardId) ? "tab-btn active" : "tab-btn";
-      var name = String(b.name || '').trim() || 'Acte sans nom';
+      var name = (state.playerMode || state.strictReadOnly) ? 'Scène ' + (i+1) : String(b.name || '').trim() || 'Acte sans nom';
       html += '<button type="button" class="' + cls + '" title="' + esc(name) + '" onclick="DuneApp.switchBoard(\'' + b.id + '\')">' + esc(name) + '</button>';
     }
     if (!state.playerMode && !state.strictReadOnly) {
@@ -3582,7 +3582,13 @@ window.DuneApp = (function() {
 
     function nodeSizeById(id) {
       var node = nodeById[id];
-      return node ? getEffectiveCellSize(node) : { w: 220, h: 140 };
+      if(!node)return {w:220,h:140};
+      var size=getEffectiveCellSize(node),children=getDirectChildren(node.id),zoom=node.innerZoom||1;
+      // Layout reserves the largest expanded size, including after centering changes zoom.
+      if(children.length && !(state.playerMode && state.playerLayout[node.id])){
+        size={w:Math.max(size.w,Math.round(410*zoom)),h:Math.max(size.h,Math.round((255+children.length*46)*zoom))};
+      }
+      return size;
     }
 
     function stableOldPositionSort(a, b) {
@@ -3743,11 +3749,16 @@ window.DuneApp = (function() {
       function getCrossingCount() {
         var idxMap = positionMaps();
         var points = Object.create(null);
+        var widths=layers.map(function(layer){return Math.max.apply(null,layer.map(function(id){return nodeSizeById(id).w;}));});
+        var heights=layers.map(function(layer){return layer.reduce(function(total,id){return total+nodeSizeById(id).h;},0)+Math.max(0,layer.length-1)*140;});
+        var fullHeight=Math.max.apply(null,heights),xx=0;
         for (var ridx = 0; ridx < layers.length; ridx++) {
+          var yy=(fullHeight-heights[ridx])/2;
           for (var nidx = 0; nidx < layers[ridx].length; nidx++) {
-            var nid = layers[ridx][nidx];
-            points[nid] = { x: rank[nid], y: (nidx + 0.5) / Math.max(1, layers[ridx].length) };
+            var nid = layers[ridx][nidx],size=nodeSizeById(nid);
+            points[nid] = { x: xx+size.w/2, y: yy+size.h/2 };yy+=size.h+140;
           }
+          xx+=widths[ridx]+220;
         }
         function orient(ax, ay, bx, by, cx, cy) {
           return (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
@@ -3805,7 +3816,7 @@ window.DuneApp = (function() {
         for (j = 0; j < layers[i].length; j++) {
           var sz = nodeSizeById(layers[i][j]);
           maxW = Math.max(maxW, sz.w);
-          height += sz.h + (j > 0 ? 92 : 0);
+          height += sz.h + (j > 0 ? 140 : 0);
         }
         layerWidths[i] = maxW;
         layerHeights[i] = Math.max(0, height);
@@ -3813,20 +3824,20 @@ window.DuneApp = (function() {
       var xCursor = 0;
       for (i = 0; i < layers.length; i++) {
         xForRank[i] = xCursor;
-        xCursor += layerWidths[i] + 185;
+        xCursor += layerWidths[i] + 220;
       }
       var positions = Object.create(null), compHeight = 0;
       for (i = 0; i < layers.length; i++) {
-        var yCursor = 0;
+        var yCursor = (Math.max.apply(null,layerHeights)-layerHeights[i])/2;
         for (j = 0; j < layers[i].length; j++) {
           var id = layers[i][j];
           positions[id] = { x: xForRank[i], y: yCursor };
           sz = nodeSizeById(id);
-          yCursor += sz.h + 92;
+          yCursor += sz.h + 140;
         }
-        compHeight = Math.max(compHeight, yCursor ? yCursor - 92 : 0);
+        compHeight = Math.max(compHeight, yCursor ? yCursor - 140 : 0);
       }
-      var compWidth = xCursor ? xCursor - 185 : 0;
+      var compWidth = xCursor ? xCursor - 220 : 0;
       return { positions: positions, width: compWidth, height: compHeight, ids: componentIds.slice(), crossings: currentCrossings };
     }
 
@@ -3905,7 +3916,7 @@ window.DuneApp = (function() {
     saveState();
     var crossingEstimate = 0;
     for (var ci2 = 0; ci2 < components.length; ci2++) crossingEstimate += components[ci2].crossings || 0;
-    setStatus("✨ Réorganisation optimisée : croisements réduits quand la structure du graphe le permet (estimation restante : " + crossingEstimate + ").");
+    setStatus("✨ Cellules espacées sans chevauchement ; croisements de flèches réduits (estimation restante : " + crossingEstimate + ").");
   }
 
   function setupSidebarResizer() {
@@ -4963,7 +4974,7 @@ window.DuneApp = (function() {
       var url = el("image-picker-url");
       if (url) url.value = "";
       var frame = el("image-search-frame");
-      if (frame) frame.src = "about:blank";
+
       if (el("image-picker-modal")) el("image-picker-modal").classList.add("open");
     },
     closeImagePicker: function() { if (el("image-picker-modal")) el("image-picker-modal").classList.remove("open"); },
@@ -4971,15 +4982,14 @@ window.DuneApp = (function() {
       var q = el("image-picker-query") ? el("image-picker-query").value.trim() : "";
       if (!q && imageTargetNodeId) { var n = getNode(imageTargetNodeId); q = n ? n.title : ""; }
       if (!q) q = "JDR concept art";
-      var frame = el("image-search-frame");
-      if (frame) frame.src = "https://www.google.com/search?tbm=isch&q=" + encodeURIComponent(q);
+      if(window.ArchivesGoogleSearch)window.ArchivesGoogleSearch.search(q,imageTargetNodeId);
       if (el("inp-google-q")) el("inp-google-q").value = q;
-      setStatus("Recherche d'images lancée. Si Google bloque l'intégration, utilise le bouton d'ouverture dans un onglet.");
+      setStatus("Recherche Google dans les Archives.");
     },
     openGoogleImagesFallback: function() {
       var q = el("image-picker-query") ? el("image-picker-query").value.trim() : "";
       if (!q && imageTargetNodeId) { var n = getNode(imageTargetNodeId); q = n ? n.title : ""; }
-      window.open("https://www.google.com/search?tbm=isch&q=" + encodeURIComponent(q || "JDR concept art"), "_blank", "noopener");
+      window.ArchivesGoogleSearch?.setup();
     },
     chooseLocalCellImage: function() {
       if (!imageTargetNodeId) { setStatus("Aucune cellule cible mémorisée."); return; }
@@ -5675,7 +5685,9 @@ window.DuneApp = (function() {
         return;
       }
       if (!q) q = "JDR concept art";
-      window.open("https://www.google.com/search?tbm=isch&q=" + encodeURIComponent(q), "_blank", "noopener");
+      if(el('image-picker-modal'))el('image-picker-modal').classList.add('open');
+      imageTargetNodeId=null;if(el('image-picker-query'))el('image-picker-query').value=q;
+      window.ArchivesGoogleSearch?.search(q,null);
     },
     applyWebUrl: function(target) {
       var url = el("inp-web-url") ? el("inp-web-url").value.trim() : "";
@@ -5749,6 +5761,33 @@ window.DuneApp = (function() {
       var presentation=playerImageProjection(value);if(value&&!presentation)return false;
       state.playerPresentation=presentation;saveState();
       setStatus(presentation?'Image présentée dans les Archives des joueurs.':'Image retirée de l’écran des joueurs.');return true;
+    },
+    setGmDetails: function(id,fields) {
+      if(state.playerMode||state.strictReadOnly)throw Error('Informations réservées au MJ.');
+      var node=getNode(id);if(!node||!Array.isArray(fields)||fields.length>128)throw Error('Cellule ou catégories invalides.');
+      var values=fields.map(function(field){
+        if(typeof field.title!=='string'||!field.title.trim()||field.title.length>120||typeof field.text!=='string'||field.text.length>100000)throw Error('Nomme chaque catégorie (120 caractères maximum).');
+        return {id:typeof field.id==='string'?field.id:crypto.randomUUID(),title:field.title.trim(),text:field.text};
+      });
+      pushUndoSnapshot();node.gmDetails=values;saveState();window.dispatchEvent(new Event('archives:gm-details'));return true;
+    },
+    copySelection: function(ids,targetId) {
+      if(state.playerMode||state.strictReadOnly)throw Error('Sélection réservée au MJ.');
+      var source=state.boards.find(function(b){return b.id===state.activeBoardId;}),target=state.boards.find(function(b){return b.id===targetId;});
+      if(!source||!target||!Array.isArray(ids)||!ids.length)return [];
+      var chosen=new Set(ids),changed=true;
+      while(changed){changed=false;source.nodes.forEach(function(n){if(n.parentId&&chosen.has(n.parentId)&&!chosen.has(n.id)){chosen.add(n.id);changed=true;}});}
+      var originals=source.nodes.filter(function(n){return chosen.has(n.id);});if(!originals.length)return [];
+      pushUndoSnapshot();var map=new Map(),same=target===source;
+      originals.forEach(function(n){map.set(n.id,'n_'+crypto.randomUUID());});
+      var copies=originals.map(function(n){var copy=JSON.parse(JSON.stringify(n));copy.id=map.get(n.id);copy.originalId=same?copy.id:(n.originalId||n.id);copy.parentId=map.get(n.parentId)||null;copy.revealed=false;copy.revOrder=null;
+        (copy.clues||[]).forEach(function(c){var old=c.originalId||c.id;c.id='c_'+crypto.randomUUID();c.originalId=same?c.id:old;c.revealed=false;c.revOrder=null;});return copy;});
+      var roots=copies.filter(function(n){return !n.parentId;}),minX=Math.min.apply(null,roots.map(function(n){return n.x||0;})),minY=Math.min.apply(null,roots.map(function(n){return n.y||0;}));
+      var existing=target.nodes.filter(function(n){return !n.parentId;}),right=Math.max.apply(null,[minX].concat(existing.map(function(n){return (n.x||0)+Math.max(n.w||250,getCellTextMinimumSize(n).w)+160;})));
+      roots.forEach(function(n){n.x=(n.x||0)-minX+right;n.y=(n.y||0)-minY+160;});
+      target.nodes.push.apply(target.nodes,copies);
+      source.links.slice().forEach(function(l){if(!map.has(l.from)||!map.has(l.to))return;var c=JSON.parse(JSON.stringify(l));c.id='l_'+crypto.randomUUID();c.from=map.get(l.from);c.to=map.get(l.to);c.originalId=same?c.id:(l.originalId||l.id);c.revealed=false;c.revOrder=null;(c.clues||[]).forEach(function(q){q.id='c_'+crypto.randomUUID();q.revealed=false;q.revOrder=null;});target.links.push(c);});
+      if(same)centerViewOnCells();else renderAll();saveState();setStatus(copies.length+' cellules copiées, masquées, dans « '+target.name+' ».');return copies.map(function(n){return n.id;});
     },
     commitCellPicture: function(id,fields) {
       if(state.playerMode||state.strictReadOnly)return;
@@ -7065,14 +7104,14 @@ window.ArchivesRevealJournal={start,stop,refresh:()=>monitor?monitor.refresh():P
 })();
 </script>
 <link rel="stylesheet" href="./src/v56/bridge.css">
-<script type="module" src="./src/v56/relay.mjs?v=4480"></script>
+<script type="module" src="./src/v56/relay.mjs?v=4490"></script>
 <script type="module" src="./src/v56/navigation.mjs?v=4210"></script>
 <script type="module" src="./src/v58/main-relay.mjs?v=4310"></script>
-<script type="module" src="./src/v58/transfer-ui.mjs?v=4330"></script>
-<script type="module" src="./src/v60/library.mjs?v=4420"></script>
+<script type="module" src="./src/v58/transfer-ui.mjs?v=4490"></script>
+<script type="module" src="./src/v60/library.mjs?v=4490"></script>
 <script defer src="./src/v54/polish.js"></script>
 <script type="module" src="./src/v62/motion.mjs?v=4210"></script>
-<script type="module" src="./src/v63/workbench.mjs?v=4480"></script>
+<script type="module" src="./src/v63/workbench.mjs?v=4490"></script>
 </body>
 </html>
 <style id="v19-player-reveal-transitions">
@@ -7229,7 +7268,7 @@ body.player-mode .player-cell-resize:hover{opacity:1}
  actions.push(['🗑️ Supprimer la sous-catégorie',function(){closeActionsMenu();window.ArchivesImageLibrary.deleteSubcategory()} ,!hasSub]);
  actions.push(['🗑️ Vider cette sous-catégorie',function(){closeActionsMenu();window.ArchivesImageLibrary.clearSubcategory()} ,!hasSub]);
  actions.push(['🗑️ Vider toute la catégorie',function(){closeActionsMenu();window.ArchivesImageLibrary.clearCategory()}]);
- actions.push(['Fermer',closeActionsMenu]);m.innerHTML='';actions.forEach(function(a){var b=document.createElement('button');b.type='button';b.textContent=a[0];b.disabled=!!a[2];b.style.cssText='padding:8px 10px;border-radius:7px;border:1px solid #75664d;background:#241c2b;color:#eee2c6;cursor:pointer';if(a[2])b.style.cssText+=';opacity:.4;cursor:not-allowed';if(a[0].indexOf('Vider')===0||a[0].indexOf('Supprimer')===0)b.style.cssText+=';border-color:#9b4545;background:#40151a;color:#ffe2e2';b.addEventListener('click',a[1]);m.appendChild(b)});m.hidden=false;m.style.cssText='position:fixed;z-index:35000;padding:9px;border:1px solid #b99b4b;border-radius:9px;background:#17121d;display:flex;flex-direction:column;gap:6px;min-width:210px;max-width:min(290px,calc(100vw - 20px));box-shadow:0 10px 30px #000;';m.scrollTop=0;positionLibraryMenu(m,event);}
+ actions.push(['Fermer',closeActionsMenu]);m.innerHTML='';actions.forEach(function(a){var b=document.createElement('button');b.type='button';b.textContent=a[0];b.disabled=!!a[2];b.style.cssText='padding:8px 10px;border-radius:7px;border:1px solid #75664d;background:#241c2b;color:#eee2c6;cursor:pointer';if(a[2])b.style.cssText+=';opacity:.4;cursor:default';if(a[0].indexOf('Vider')===0||a[0].indexOf('Supprimer')===0)b.style.cssText+=';border-color:#9b4545;background:#40151a;color:#ffe2e2';b.addEventListener('click',a[1]);m.appendChild(b)});m.hidden=false;m.style.cssText='position:fixed;z-index:35000;padding:9px;border:1px solid #b99b4b;border-radius:9px;background:#17121d;display:flex;flex-direction:column;gap:6px;min-width:210px;max-width:min(290px,calc(100vw - 20px));box-shadow:0 10px 30px #000;';m.scrollTop=0;positionLibraryMenu(m,event);}
  function showImageActionsMenu(id,event){
   var x=items.find(function(i){return i.id===id});if(!x)return;
   var m=el('archives-image-library-actions-menu');if(!m)return;
@@ -7328,10 +7367,15 @@ body.player-mode .player-cell-resize:hover{opacity:1}
   #soundshow-sounds-dock > button {box-shadow:none!important}
 }
 </style>
-<script type="module" src="./src/v65/cell-picture.mjs?v=4470"></script>
-<script type="module" src="./src/v70/player-image.mjs?v=4450"></script>
-<script type="module" src="./src/v65/storage.mjs?v=4210"></script>
+<script type="module" src="./src/v65/cell-picture.mjs?v=4490"></script>
+<script type="module" src="./src/v70/player-image.mjs?v=4490"></script>
+<script type="module" src="./src/v65/storage.mjs?v=4490"></script>
 <script type="module" src="./src/soundshow/archives.mjs?v=4420"></script>
-<script type="module" src="./src/v66/workspace.mjs?v=4281"></script>
-<script type="module" src="./src/v68/cell-brief.mjs?v=4420"></script>
+<script type="module" src="./src/v66/workspace.mjs?v=4490"></script>
+<script type="module" src="./src/v68/cell-brief.mjs?v=4490"></script>
 
+
+<script type="module" src="./src/v72/gm-details.mjs?v=4490"></script>
+<script type="module" src="./src/v72/selection.mjs?v=4490"></script>
+<script type="module" src="./src/v72/presentation.mjs?v=4490"></script>
+<script type="module" src="./src/v72/google-search.mjs?v=4490"></script>

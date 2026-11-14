@@ -113,7 +113,7 @@ body #soundshow-sounds-dock > button:not(:disabled):active{
 /* Ne jamais donner un effet actif à une intégration désactivée. */
 #canvas-integrations-dock .canvas-integration-icon:disabled{
   opacity:.45;filter:saturate(.45);
-  box-shadow:0 2px 5px rgba(0,0,0,.27);cursor:not-allowed;
+  box-shadow:0 2px 5px rgba(0,0,0,.27);cursor:default;
 }
 /* Les écrans tactiles ne déclenchent pas de halo collant. */
 @media(hover:none){

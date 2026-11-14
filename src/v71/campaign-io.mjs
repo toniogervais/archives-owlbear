@@ -1,5 +1,5 @@
-import {isGM,nativeEditor,request} from '../v63/ui.mjs';
-import {captureCampaign,packBackup,inspectBackup,recoveryCopy,restoreCampaign} from '../v63/backup.mjs?v=4460';
+import {isGM,nativeEditor,request} from '../v63/ui.mjs?v=4490';
+import {captureCampaign,packBackup,inspectBackup,recoveryCopy,restoreCampaign} from '../v63/backup.mjs?v=4490';
 const check = async () => { if (!isGM()) throw Error('Commande réservée au maître de jeu.'); };
 const scope = ['standalone','local'];
 const candidates = new Map();

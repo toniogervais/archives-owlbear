@@ -1,4 +1,4 @@
-import {button,element,notice,requireGM,sheet} from './ui.mjs';
+import {button,element,notice,requireGM,sheet} from './ui.mjs?v=4490';
 import {libraryRequest} from '../v60/request.mjs';
 import {prepareSource,renderSource,sourcePicture} from '../v58/media.mjs?v=4210';
 import {installCropEditor} from '../v61/token-crop.mjs';

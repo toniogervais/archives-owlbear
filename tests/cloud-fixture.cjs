@@ -2,7 +2,7 @@ const crypto=require('node:crypto');
 const owner='11111111-1111-4111-8111-111111111111';
 function backend(){
  const campaigns=[],versions=[],objects=new Map(),calls=[],heads=new Map(),jobs=new Map();let failRemove=false;
- const catalog=id=>({revision:heads.get(id)||0,backups:versions.filter(row=>row.campaign_id===id).slice().reverse(),cleanup_pending:[...jobs.values()].filter(job=>job.campaign_id===id).length,cleanup_bytes:[...jobs.values()].filter(job=>job.campaign_id===id).reduce((sum,job)=>sum+job.byte_size,0)});
+ const catalog=id=>({max_bytes:2147483648,revision:heads.get(id)||0,backups:versions.filter(row=>row.campaign_id===id).slice().reverse(),cleanup_pending:[...jobs.values()].filter(job=>job.campaign_id===id).length,cleanup_bytes:[...jobs.values()].filter(job=>job.campaign_id===id).reduce((sum,job)=>sum+job.byte_size,0)});
  async function receive(source,request){
   calls.push({op:request.op,table:request.table,source:source.page.url()});
   if(request.op==='auth')return {data:{user:{id:owner,email:'mj@example.test'}}};

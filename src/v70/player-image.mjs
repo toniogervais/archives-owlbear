@@ -1,4 +1,4 @@
-import {isGM,notice} from '../v63/ui.mjs?v=4420';
+import {isGM,notice} from '../v63/ui.mjs?v=4490';
 let operation=0,shown='',dismissed='',dialog;
 const state=()=>window.DuneApp?.getState?.();
 function ensureDialog(){
@@ -13,7 +13,7 @@ function ensureDialog(){
  #archives-player-image img{display:block;width:100%;flex:1;min-height:0;object-fit:contain;background:#07060b}
  `;document.head.append(style);
  dialog=document.createElement('dialog');dialog.id='archives-player-image';dialog.setAttribute('aria-label','Image présentée par le MJ');
- const shell=document.createElement('div');shell.className='player-image-shell';const header=document.createElement('header'),title=document.createElement('h2'),close=document.createElement('button');title.textContent='Image partagée par le MJ';close.type='button';close.textContent='Fermer l’image';close.onclick=()=>dialog.close();header.append(title,close);
+ const shell=document.createElement('div');shell.className='player-image-shell';const header=document.createElement('header'),title=document.createElement('h2'),close=document.createElement('button');title.textContent='Image partagée par le MJ';close.type='button';close.textContent='×';close.setAttribute('aria-label','Fermer l’image');close.onclick=()=>dialog.close();header.append(title,close);
  const image=document.createElement('img');image.alt='Image présentée par le maître de jeu';image.referrerPolicy='no-referrer';image.onerror=()=>{image.alt='L’image n’a pas pu être chargée. Ferme-la et demande au MJ de la présenter à nouveau.'};shell.append(header,image);dialog.append(shell);document.body.append(dialog);
  dialog.addEventListener('close',()=>{dismissed=shown;image.removeAttribute('src')});return dialog;
 }
@@ -25,7 +25,14 @@ function render(){
  if(!view.open)view.showModal();
 }
 async function prepare(source){
- if(typeof source!=='string'||!source.startsWith('data:image/'))throw Error('Choisis une image de la bibliothèque.');
+ if(typeof source!=='string')throw Error('Choisis une image.');
+ if(!source.startsWith('data:image/')) {
+  if(!/^(https:\/\/|blob:)/.test(source))throw Error('Cette image ne peut pas être présentée.');
+  let response;try{response=await fetch(source,{credentials:'omit',referrerPolicy:'no-referrer'})}catch{throw Error('Ce site empêche le partage de son image. Importe son original dans la bibliothèque pour le présenter.')}
+  if(!response.ok)throw Error('Le fichier de cette image n’est plus accessible.');
+  const blob=await response.blob();if(!/^image\/(png|jpeg|webp|gif)$/.test(blob.type))throw Error('Format d’image non pris en charge.');
+  source=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob)});
+ }
  const image=new Image();await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(Error('Cette image ne peut pas être présentée.'));image.src=source});
  // Keep the original library file; only a large or unsupported presentation is resized.
  if(source.length<=6*1024*1024&&/^data:image\/(png|jpeg|webp|gif);base64,/.test(source))return source;

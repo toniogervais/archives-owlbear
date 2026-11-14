@@ -1,3 +1,14 @@
+## V4.49 — grandes sauvegardes et préparation MJ
+
+- Sauvegardes `.archives` jusqu’à **2 Go**, avec les originaux de la bibliothèque et du scénario, déduplication des médias et vérification SHA-256 par blocs. Aucune réduction des images. Lecture des anciennes sauvegardes conservée.
+- Pour dépasser 512 Mo en ligne, exécuter une seule fois le script complet `sql/archives-cloud-backups-v449.sql` dans une nouvelle requête SQL Editor de Supabase. Les blocs envoyés restent de 4 Mo ; les versions, droits privés et suppressions existants sont conservés. La capacité disponible dépend toujours du quota du projet et de l’appareil.
+- Dans les réglages de toute cellule, l’icône **Catégories privées de la fiche MJ** permet d’ajouter des rubriques nommées. Elles apparaissent sous le portrait réduit, avec le titre centré dans son cadre ; aucune de ces rubriques n’entre dans la projection joueur.
+- **Sélectionner plusieurs cellules** : cliquer sur plusieurs cellules ou tracer un rectangle, puis clic droit pour dupliquer ou copier vers un autre acte. Groupes, enfants et flèches internes suivent ; les copies restent masquées. Échap quitte la sélection.
+- Réorganisation avec réserve pour les dimensions développées des groupes et estimation des croisements dans les dimensions réelles. Les joueurs voient uniquement « Scène 1 », « Scène 2 », etc.
+- Clic droit sur une image ouverte : **Montrer aux joueurs**. Dans l’aperçu des documents, sons ou vidéos : même action pour présenter l’original dans un lecteur que les joueurs peuvent fermer. Les documents affichent du texte inactif, des images ou un PDF ; aucun nom de fichier privé n’est requis pour la présentation. La bibliothèque propose aussi un bouton de présentation directe.
+- Paramètres / Apparence : **Supprimer l’image du canevas**. Le curseur d’interdiction des boutons d’intégration a été retiré, sans modifier les contrôles d’accès.
+- Google : recherche embarquée officielle, isolée de l’interface MJ, avec choix d’une image vers la cellule mémorisée. Elle nécessite un identifiant **Google Programmable Search (cx)** à configurer une fois, images activées. Depuis janvier 2026 les nouveaux moteurs Google sont limités aux sites configurés (50 domaines maximum) ; ce module ne promet pas l’accès universel à Google Images. Un téléchargement direct peut être bloqué par le site de l’image ; l’import d’un original reste disponible. Aucun onglet de recherche n’est ouvert.
+
 # Les Archives de l’Imaginaire
 
 ## V4.48 — gérer l’espace des sauvegardes et enregistrer sur l’appareil

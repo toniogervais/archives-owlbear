@@ -1,9 +1,9 @@
 // Complete campaigns stay in a private, owner-only bucket. No signed/public links
 // and no campaign bytes pass through Owlbear's shared metadata or player channels.
-import {digest} from '../v60/files.mjs';
+import {digest} from '../v72/integrity.mjs?v=4490';
 export const BACKUP_BUCKET = 'archives-campaign-backups';
 export const PART_BYTES = 4 * 1024 * 1024;
-const maxBytes = 512 * 1024 * 1024;
+const maxBytes = 2 * 1024 * 1024 * 1024;
 const uuid = value => /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(value || '');
 const hash = value => /^[a-f0-9]{64}$/.test(value || '');
 const unwrap = result => { if (result.error) throw result.error;return result.data; };
@@ -23,7 +23,7 @@ export function validCloudRecord(row,owner,campaign) {
   return !!row && uuid(row.id) && row.owner_id === owner && row.campaign_id === campaign &&
     Number.isSafeInteger(row.revision) && row.revision > 0 && hash(row.sha256) && hash(row.fingerprint) &&
     Number.isSafeInteger(row.byte_size) && row.byte_size > 0 && row.byte_size <= maxBytes &&
-    Array.isArray(row.parts) && row.parts.length > 0 && row.parts.length <= 128 &&
+    Array.isArray(row.parts) && row.parts.length > 0 && row.parts.length <= 512 &&
     row.parts.every(part => Number.isInteger(part.bytes) && part.bytes > 0 && part.bytes <= PART_BYTES && hash(part.hash)) &&
     row.parts.reduce((total,part) => total + part.bytes,0) === row.byte_size;
 }
@@ -56,7 +56,7 @@ export function createCloud(getClient) {
     if (!rows.every(row => validCloudRecord(row,ctx.user.id,id))) throw Error('La liste des sauvegardes est invalide.');
     const revision=supported?catalog.revision:(rows[0]?.revision || 0);
     if(!Number.isSafeInteger(revision)||revision<0||rows.some(row=>row.revision>revision))throw Error('Le compteur de sauvegarde est invalide.');
-    return {ctx,rows,revision,canDelete:supported,cleanupPending:catalog?.cleanup_pending || 0,cleanupBytes:catalog?.cleanup_bytes || 0};
+    return {ctx,rows,revision,capacity:catalog?.max_bytes || 512*1024*1024,canDelete:supported,cleanupPending:catalog?.cleanup_pending || 0,cleanupBytes:catalog?.cleanup_bytes || 0};
   }
   async function cleanup(campaignId,check=async()=>{}) {
     const ctx=await context();await owned(ctx,campaignId);const bucket=ctx.client.storage.from(BACKUP_BUCKET);
@@ -68,7 +68,7 @@ export function createCloud(getClient) {
       if(!jobs.length)break;
       for(const job of jobs) {
         const prefix=ctx.user.id+'/'+campaignId+'/'+job.id+'/';
-        if(!uuid(job.id)||!Array.isArray(job.paths)||!job.paths.length||job.paths.length>128||
+        if(!uuid(job.id)||!Array.isArray(job.paths)||!job.paths.length||job.paths.length>512||
           !job.paths.every(path=>typeof path==='string'&&path.startsWith(prefix)&&/^\d+$/.test(path.slice(prefix.length))))throw Error('Chemin de nettoyage invalide.');
         await same(ctx,check);unwrap(await bucket.remove(job.paths));
         await same(ctx,check);const remaining=unwrap(await bucket.list(prefix.slice(0,-1),{limit:200}));
@@ -115,6 +115,7 @@ export function createCloud(getClient) {
         throw Error('Sauvegarde invalide.');
       const heads = await versions(campaignId);
       if (heads.revision !== expectedRevision) throw cloudError({message:'ARCHIVES_BACKUP_CONFLICT'});
+      if(blob.size>heads.capacity){const error=Error('Cette sauvegarde nécessite la mise à jour Supabase pour les grandes campagnes (jusqu’à 2 Go). Ouvre « Activer ou mettre à jour le stockage » et exécute le nouveau script une fois.');error.code='SETUP';throw error;}
       const id = crypto.randomUUID(),prefix = ctx.user.id+'/'+campaignId+'/'+id+'/',bucket = ctx.client.storage.from(BACKUP_BUCKET),parts = [],uploaded = [];
       let publishing = false;
       try {

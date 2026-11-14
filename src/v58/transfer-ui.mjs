@@ -173,6 +173,7 @@ async function openSource(input,report = notify) {
     gmState();const context = await request({action:"context",sourceKey:input.key});
     view = buildDialog();const {ui,dialog,setBusy} = view;
     setBusy(true);source = await prepareSource(input);
+    dialog.archivesPresentationSource={file:input.file,data:input.data,text:source.text,title:source.title};
     if (!dialog.open) { source.release();return; }
     let rendering = Promise.resolve(),latest = 0,ready = false,working = false,renderError,lastInputSignature;
     const preset = context.preset?.identity === source.identity ? context.preset : null;

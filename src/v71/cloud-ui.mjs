@@ -1,8 +1,8 @@
-import {button,element,isGM,nativeEditor,notice,sheet} from '../v63/ui.mjs';
+import {button,element,isGM,nativeEditor,notice,sheet} from '../v63/ui.mjs?v=4490';
 import {editEvent} from '../v56/link.mjs';
-import {createCloud,cloudError} from './cloud.mjs?v=4480';
-import {autoBackup} from './autosave.mjs?v=4480';
-import {campaignRequest} from './campaign-io.mjs';
+import {createCloud,cloudError} from './cloud.mjs?v=4490';
+import {autoBackup} from './autosave.mjs?v=4490';
+import {campaignRequest} from './campaign-io.mjs?v=4490';
 import {downloadArchive} from './download.mjs';
 const cloud = createCloud(() => {
   if (!isGM()) throw Error('Commande réservée au maître de jeu.');
@@ -79,7 +79,7 @@ export function mountCloudBackups(view,inspect,{localDownload}={}) {
   const createRow=element('div',null,'studio-actions'),name=element('input');name.placeholder='Nom de la nouvelle campagne';name.setAttribute('aria-label','Nom de la nouvelle campagne en ligne');
   createRow.append(name,button('Sauvegarder dans une nouvelle campagne',() => { void create(); }));section.append(createRow);
   const setup=element('details'),summary=element('summary','Activer ou mettre à jour le stockage');
-  const link=element('a','Ouvrir le script SQL');link.href=new URL('../../sql/archives-cloud-backups-v448.sql',import.meta.url).href;link.target='_blank';link.rel='noopener';
+  const link=element('a','Ouvrir le script SQL');link.href=new URL('../../sql/archives-cloud-backups-v449.sql',import.meta.url).href;link.target='_blank';link.rel='noopener';
   const script=element('textarea');script.readOnly=true;script.hidden=true;script.setAttribute('aria-label','Script SQL des sauvegardes');script.style.cssText='display:block;width:100%;min-height:220px;margin-top:10px;font:12px/1.5 monospace';script.style.display='none';
   async function showScript(copy=false) {
     try {

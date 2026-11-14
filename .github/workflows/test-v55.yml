@@ -19,6 +19,11 @@ on:
       - 'src/v69/**'
       - 'src/v70/**'
       - 'src/v71/**'
+      - 'src/v72/**'
+      - 'src/vendor/**'
+      - 'google-search-v449.html'
+      - 'tests/*v449*'
+      - 'sql/archives-cloud-backups-v449.sql'
       - 'sql/archives-cloud-backups-v446.sql'
       - 'tests/*v446*'
       - 'tests/*v448*'
@@ -124,3 +129,14 @@ jobs:
 
       - run: node tests/browser-v448.cjs
         if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
+
+      - run: node --test tests/large-backup-v449.test.mjs tests/large-backup-sql-v449.test.mjs tests/privacy-v449.test.cjs
+        if: ${{ !cancelled() }}
+      - run: node tests/browser-v449.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: archives-v449-screenshots
+          path: /tmp/archives-v449-*.png
+          if-no-files-found: ignore

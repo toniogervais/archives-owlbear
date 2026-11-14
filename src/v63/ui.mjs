@@ -9,7 +9,7 @@ export function request(kind,command = {}) {
   const types = kind === 'campaign' ? ['owl-campaign-command','owl-campaign-result'] : kind === 'dossier' ? ['owl-dossier-command','owl-dossier-result'] : ['owl-public-items-request','owl-public-items-result'];
   const id = crypto.randomUUID();
   return new Promise((resolve,reject) => {
-    const timer = setTimeout(() => { pending.delete(id);reject(Error('La salle ne répond pas. Garde cet onglet ouvert et réessaie.')); },kind === 'campaign' || kind === 'dossier' ? 180000 : 15000);
+    const timer = setTimeout(() => { pending.delete(id);reject(Error('La salle ne répond pas. Garde cet onglet ouvert et réessaie.')); },kind === 'campaign' ? 900000 : kind === 'dossier' ? 180000 : 15000);
     pending.set(id,{resolve,reject,timer,kind,resultType:types[1]});
     window.parent.postMessage(packet(types[0],{id,command}),location.origin);
   });

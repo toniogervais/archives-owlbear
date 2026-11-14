@@ -1,4 +1,4 @@
-import {button,element,isGM,nativeEditor,requireGM,request,sheet} from '../v63/ui.mjs?v=4420';
+import {button,element,isGM,nativeEditor,requireGM,request,sheet} from '../v63/ui.mjs?v=4490';
 import {libraryRequest} from '../v60/request.mjs';
 const extensions={'application/pdf':'pdf','text/plain':'txt','image/png':'png','image/jpeg':'jpg','image/webp':'webp','audio/mpeg':'mp3','audio/wav':'wav','audio/x-wav':'wav','audio/ogg':'ogg','audio/mp4':'m4a','audio/webm':'webm','video/mp4':'mp4','video/webm':'webm','video/ogg':'ogv'};
 export function openAddFile(onShared){
@@ -23,6 +23,10 @@ export function openAddFile(onShared){
 }
 export function openSharedFile(record){
   const view=sheet('archives-dossier-detail',record.title,'Dossier des joueurs · Autre');
+  if(isGM()){
+    view.dialog.archivesPresentationSource={fileId:record.file.id};
+    view.content.append(button('Montrer aux joueurs',()=>{void window.ArchivesPresentation?.present({fileId:record.file.id})}));
+  }
   let objectUrl='',media;
   view.cleanup(()=>{if(media){media.pause();media.removeAttribute('src');media.load()}if(objectUrl)URL.revokeObjectURL(objectUrl)});
   view.status.textContent='Chargement du fichier…';

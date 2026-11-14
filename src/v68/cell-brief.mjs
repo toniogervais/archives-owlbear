@@ -177,6 +177,17 @@ function css(){
     #archives-cell-brief .brief-toolbar select {flex:1}
     #archives-cell-brief .brief-deck {grid-template-columns:repeat(var(--brief-count,1),minmax(280px,1fr));padding:8px;gap:8px}
   }
+  #archives-cell-brief .brief-portrait{overflow:auto;display:block}
+  #archives-cell-brief .brief-figure{position:relative;display:flex;flex-direction:column;flex:none;height:250px;min-height:180px}
+  #archives-cell-brief .brief-figure h2{flex:none;margin:0;padding:8px 35px;width:100%;text-align:center;font-size:17px;background:#2b2138}
+  #archives-cell-brief .brief-figure>.brief-close{position:absolute;right:4px;top:4px;width:28px;height:28px;font-size:18px;z-index:1}
+  #archives-cell-brief .brief-photo{flex:1;min-height:0;width:100%;display:grid;place-items:center;overflow:hidden}
+  #archives-cell-brief .brief-gm-field{margin-top:14px;padding-top:12px;border-top:1px solid #c5a76e55}
+  #archives-cell-brief .brief-gm-field h3{margin-bottom:5px}
+  #archives-cell-brief .brief-gm-text{white-space:pre-wrap;overflow-wrap:anywhere;user-select:text;font-size:13px;line-height:1.55}
+  #archives-cell-brief[data-count]:not([data-count="1"]) .brief-portrait{flex:0 1 40%;min-height:180px;overflow:auto}
+  #archives-cell-brief[data-count]:not([data-count="1"]) .brief-figure{height:150px;min-height:120px}
+  @media(max-width:690px){#archives-cell-brief .brief-portrait{max-height:none;min-height:180px}}
   @media(prefers-reduced-motion:reduce) {
     #archives-cell-brief::backdrop {backdrop-filter:none}
   }`;
@@ -213,14 +224,19 @@ function renderCard(node,index){
   card.setAttribute('aria-labelledby',title.id);
   const remove=el('button','brief-close','×');remove.type='button';remove.setAttribute('aria-label','Retirer la fiche '+(node.title||'sans titre'));
   remove.onclick=()=>{activeNodeIds=activeNodeIds.filter(value=>value!==String(node.id));if(!activeNodeIds.length)document.getElementById(DIALOG_ID).close();else renderDeck()};
-  header.append(title,remove);
+
   const body=el('div','brief-body'),portrait=el('aside','brief-portrait'),picture=el('div','brief-figure');picture.id=id('figure');
+  picture.append(title,remove);
+  const photo=el('div','brief-photo');picture.append(photo);
   const url=node.bgImg||node.image||node.imageData;
   if(typeof url==='string'&&url){
     const img=el('img','brief-picture');img.src=url;img.alt='Portrait ou illustration : '+(node.title||'cellule');
-    img.onerror=()=>picture.replaceChildren(el('span','brief-no-picture','Image indisponible'));picture.append(img);
-  }else picture.append(el('span','brief-no-picture','Aucun portrait ou illustration associé à cette cellule'));
+    img.onerror=()=>photo.replaceChildren(el('span','brief-no-picture','Image indisponible'));photo.append(img);
+  }else photo.append(el('span','brief-no-picture','Aucun portrait ou illustration associé à cette cellule'));
   const category=el('div','brief-subtitle',[node.category||'Cellule',node.faction||'',node.revealed?'Cellule révélée':'Cellule cachée'].filter(Boolean).join(' · '));category.id=id('category');portrait.append(picture,category);
+  for(const field of Array.isArray(node.gmDetails)?node.gmDetails:[]){
+    const section=el('section','brief-gm-field');section.append(el('h3',null,field.title),el('div','brief-gm-text',field.text||''));portrait.append(section);
+  }
   const right=el('div','brief-right'),section=el('section','brief-desc');
   const description=el('div','brief-description',node.desc?.trim()||'Aucune description générale renseignée.');description.id=id('description');
   if(!node.desc?.trim())description.classList.add('brief-hint');section.append(el('h3',null,'Description générale'),description);
@@ -239,7 +255,7 @@ function renderCard(node,index){
       renderDeck();
     });list.append(row);
   }
-  clueArea.append(clueHeader,list);right.append(section,clueArea);body.append(portrait,right);card.append(header,body);return card;
+  clueArea.append(clueHeader,list);right.append(section,clueArea);body.append(portrait,right);card.append(body);return card;
 }
 function renderDeck(){
   const dialog=document.getElementById(DIALOG_ID),state=gmState();if(!dialog)return;
@@ -304,6 +320,7 @@ function install(){
   new MutationObserver(schedule).observe(document.body,{attributes:true,attributeFilter:['class']});
   schedule();
   window.addEventListener('archives:campaign-restored',schedule);
+  window.addEventListener('archives:gm-details',schedule);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule()});
 }
 window.ArchivesCellBrief={open,close:()=>document.getElementById(DIALOG_ID)?.close()};
