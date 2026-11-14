@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {packBackup,inspectBackup,maxBackupBytes} from '../src/v63/backup.mjs';
 import {digest} from '../src/v72/integrity.mjs';
+import {createCloud} from '../src/v71/cloud.mjs';
 const scenario={boards:[{id:'act',name:'ACTE_PRIVE',nodes:[],links:[]}],activeBoardId:'act'};
 const sha=value=>createHash('sha256').update(value).digest('hex');
 test('Incremental SHA-256 matches WebCrypto vectors across unaligned chunks without reading a large Blob at once',async()=>{
@@ -16,7 +17,15 @@ test('A campaign and its library round-trip more than 64 MiB of original image b
  const result=await packBackup({scenario:input,images,files:[],presets:[]});assert.ok(result.blob.size>64*1024*1024);assert.ok(result.blob.size<73*1024*1024,'same originals must not be stored twice');assert.equal(maxBackupBytes,2*1024*1024*1024);
  const start=new TextEncoder().encode('ARCHIVES-CAMPAGNE/1\n').length,head=new Uint8Array(await result.blob.slice(0,start+36).arrayBuffer());
  const size=new DataView(head.buffer).getUint32(start,true);assert.ok(size<20000,'images no longer occupy the JSON index');
- const restored=await inspectBackup(result.blob);
+ const owner='11111111-1111-4111-8111-111111111111',campaign='22222222-2222-4222-8222-222222222222',objects=new Map();let row;
+ const client={supabaseUrl:'https://fixture.supabase.co',auth:{getUser:async()=>({data:{user:{id:owner}}})},from(){const q={select:()=>q,eq:()=>q,maybeSingle:async()=>({data:{id:campaign,owner_id:owner}})};return q},storage:{from:()=>({upload:async(path,blob)=>{objects.set(path,blob);return {data:{path}}},download:async path=>({data:objects.get(path)})})},rpc:async(name,args)=>{
+   if(name==='archives_backup_catalog')return {data:{max_bytes:2147483648,revision:row?1:0,backups:row?[row]:[]}};
+   if(name==='archives_pending_backup_cleanup')return {data:[]};
+   assert.equal(name,'archives_commit_backup');row={id:args.p_id,owner_id:owner,campaign_id:campaign,revision:1,sha256:args.p_sha256,fingerprint:args.p_fingerprint,byte_size:args.p_parts.reduce((n,p)=>n+p.bytes,0),parts:args.p_parts};return {data:{backup:row,removed:[]}};
+ }};
+ const cloud=createCloud(()=>client);await cloud.save({campaignId:campaign,expectedRevision:0,...result});assert.ok(row.parts.length>16,'large archives upload in independent 4 MiB parts');
+ const downloaded=await cloud.download(campaign,row.id);assert.equal(downloaded.blob.size,result.blob.size);
+ const restored=await inspectBackup(downloaded.blob);
  for(let i=0;i<images.length;i++){assert.equal(restored.images[i].data,images[i].data);assert.equal(restored.scenario.boards[0].nodes[i].bgImg,images[i].data)}
  assert.equal(restored.scenario.boards[0].nodes[0].gmDetails[0].text,'INFORMATION_MJ');
  const damaged=new Uint8Array(await result.blob.slice(-20).arrayBuffer());damaged[0]^=1;
