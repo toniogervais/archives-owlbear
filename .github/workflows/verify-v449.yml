@@ -15,6 +15,7 @@ jobs:
       - run: npm ci
       - run: node --test tests/large-backup-v449.test.mjs tests/large-backup-sql-v449.test.mjs tests/privacy-v449.test.cjs
       - run: npx playwright install chromium
+      - run: node tests/browser-v442.cjs
       - run: node tests/browser-v449.cjs
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}

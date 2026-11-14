@@ -42,7 +42,16 @@ function install(){
   const show=button('Montrer l’image aux joueurs',()=>{const s=window.DuneApp.getState(),n=s.nodes.find(n=>n.id===s.ctxTargetNodeId);window.DuneApp.closeContextMenus();if(n?.bgImg)void present({data:n.bgImg})},'ctx-item');show.id='archives-context-present-image';
   const text=button('Montrer la description aux joueurs',()=>{const s=window.DuneApp.getState(),n=s.nodes.find(n=>n.id===s.ctxTargetNodeId);window.DuneApp.closeContextMenus();if(n?.desc)void present({text:n.desc})},'ctx-item');text.id='archives-context-present-text';
   const anchor=host.querySelector('#ctx-send-to-owlbear');if(anchor)anchor.after(show,text);else host.append(show,text);
-  const refresh=()=>{const s=window.DuneApp?.getState?.(),n=s?.nodes.find(n=>n.id===s.ctxTargetNodeId);show.hidden=!isGM()||!n?.bgImg;text.hidden=!isGM()||!n?.desc};
+  const refresh=()=>{
+    const s=window.DuneApp?.getState?.(),n=s?.nodes.find(n=>n.id===s.ctxTargetNodeId);show.hidden=!isGM()||!n?.bgImg;text.hidden=!isGM()||!n?.desc;
+    // Conditional actions can change the height after the legacy menu opened.
+    // Re-clamp to the visual viewport after their visibility has been resolved.
+    if(host.classList.contains('open')){
+      const v=window.visualViewport,left=v?.offsetLeft||0,top=v?.offsetTop||0,width=v?.width||innerWidth,height=v?.height||innerHeight;
+      host.style.left=Math.max(left+8,Math.min(parseFloat(host.style.left)||left+8,left+width-host.offsetWidth-8))+'px';
+      host.style.top=Math.max(top+8,Math.min(parseFloat(host.style.top)||top+8,top+height-host.offsetHeight-8))+'px';
+    }
+  };
   new MutationObserver(refresh).observe(host,{attributes:true,attributeFilter:['class']});refresh();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
