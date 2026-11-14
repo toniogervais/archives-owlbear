@@ -51,3 +51,16 @@ test('The main Archives send only an explicit public projection to the authorize
   w.dispatchEvent(event(background,w.location.origin));assert.equal(sent.length,3,'unchanged handshakes do not re-send the scenario');
  }finally{w.close()}
 });
+test('The Owlbear background retains a public main view received before the room transport is ready',async()=>{
+ const dom=new JSDOM('<html><body></body></html>',{url:'https://archives.test/background-v55.html',runScripts:'outside-only'}),w=dom.window,posted=[],announced=[];
+ const primary={closed:false,location:{origin:w.location.origin,pathname:'/archives-app-v64-v55.html'},postMessage:data=>announced.push(data)},channel={postMessage:data=>posted.push(data),close(){}};
+ try{
+  w.opener=primary;w.crypto.randomUUID=()=> '11111111-1111-4111-8111-111111111111';w.localRoom=async()=>({channel});w.isPacket=d=>d?.protocol==='test';w.packet=(type,fields)=>({protocol:'test',type,...fields});w.validSnapshot=p=>Array.isArray(p?.boards);
+  w.eval(fs.readFileSync('src/v73/main-public-host.mjs','utf8').replace(/^import .*;\n/gm,'').replace('export async function ','async function '));
+  await w.installMainPublicHost({room:{id:'room'},player:{getRole:async()=> 'GM',onChange:()=>()=>{}}});
+  assert.equal(announced[0].type,'archives-main-public-ready');
+  const payload={boards:[{id:'public',nodes:[],links:[]}]};
+  w.dispatchEvent(new w.MessageEvent('message',{source:primary,origin:w.location.origin,data:{protocol:'test',type:'archives-main-public',roomId:'room',session:announced[0].session,payload}}));await flush();assert.equal(posted.length,1);
+  channel.onmessage({data:{type:'room-ready'}});await flush();assert.equal(posted.length,2);assert.deepEqual(posted[1].payload,payload);
+ }finally{w.close()}
+});
