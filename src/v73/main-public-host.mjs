@@ -2,7 +2,7 @@ import {isPacket,packet} from '../v56/link.mjs?v=4500';
 import {localRoom,validSnapshot} from '../v57/room.mjs?v=4500';
 export async function installMainPublicHost(OBR) {
   if(await OBR.player.getRole()!=='GM')return;
-  const {channel}=await localRoom(OBR);let primary,closed=false,connected=false,session=crypto.randomUUID(),lastAnnounce=0;
+  const {channel}=await localRoom(OBR);let primary,closed=false,connected=false,session=crypto.randomUUID(),lastAnnounce=0,latest;
   function announce(){
     if(closed||connected&&Date.now()-lastAnnounce<10000)return;
     try {
@@ -15,8 +15,9 @@ export async function installMainPublicHost(OBR) {
     const data=event.data;
     if(closed||event.source!==primary||event.origin!==location.origin||!isPacket(data)||!['archives-main-public','archives-main-public-ack'].includes(data.type)||data.roomId!==OBR.room.id||data.session!==session)return;
     if(await OBR.player.getRole()!=='GM'||closed)return;
-    connected=true;if(data.type==='archives-main-public'&&validSnapshot(data.payload))channel.postMessage({type:'published',payload:data.payload});
+    connected=true;if(data.type==='archives-main-public'&&validSnapshot(data.payload)){latest=data.payload;channel.postMessage({type:'published',payload:latest})}
   }
+  channel.onmessage=event=>{if(!closed&&event.data?.type==='room-ready'&&latest)void OBR.player.getRole().then(role=>{if(role==='GM'&&!closed)channel.postMessage({type:'published',payload:latest})})};
   window.addEventListener('message',receive);announce();
   const timer=setInterval(announce,1000),off=OBR.player.onChange(player=>{if(player.role==='GM'){session=crypto.randomUUID();connected=false;announce()}});
   window.addEventListener('pagehide',()=>{closed=true;clearInterval(timer);off?.();channel.close();window.removeEventListener('message',receive)},{once:true});

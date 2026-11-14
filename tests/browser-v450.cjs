@@ -10,13 +10,13 @@ async function show(main,data){await main.evaluate(data=>ArchivesPlayerImage.sho
 async function closeImage(player){await picture(player).getByRole('button',{name:'Fermer l’image',exact:true}).click();await picture(player).waitFor({state:'hidden'})}
 async function mainAndLargeView(browser){
  const fixture=hub(),gc=await browser.newContext({viewport:{width:1440,height:1000}}),pc=await browser.newContext({viewport:{width:820,height:1180},isMobile:true,hasTouch:true}),lc=await browser.newContext({viewport:{width:820,height:1180},isMobile:true,hasTouch:true});
- for(const c of [gc,pc,lc])await configure(c,fixture,{sceneReady:true});
- const main=await gc.newPage(),player=await pc.newPage(),late=await lc.newPage(),errors=[];for(const p of [main,player,late])p.on('pageerror',e=>errors.push(e.message));
+ for(const c of [gc,pc,lc]){await configure(c,fixture,{sceneReady:true});await c.addInitScript(()=>{window.mainPublicDebug=[];addEventListener('message',event=>{const d=event.data;if(typeof d?.type==='string'&&d.type.startsWith('archives-main-public')){let authorized;try{authorized=window.ArchivesOwlbearBridge?.authorizeSoundShowFrame?.(event.source,d.roomId)}catch{};mainPublicDebug.push({type:d.type,origin:event.origin,room:d.roomId,authorized,nodes:d.payload?.boards?.reduce((s,b)=>s+b.nodes.length,0)})}})})}
+ const main=await gc.newPage(),player=await pc.newPage(),late=await lc.newPage(),errors=[];let map;for(const p of [main,player,late])p.on('pageerror',e=>errors.push(e.message));
  try{
   await main.goto(archives+'/archives.html?resume=1');await main.waitForFunction(()=>window.ArchivesOwlbearBridge&&window.ArchivesPlayerImage);await main.evaluate(s=>ArchivesRelay.apply(s),scenario);
   const pictures=await graphics(main);
   main.once('dialog',dialog=>dialog.accept(owl+'/room/one'));
-  const [map]=await Promise.all([main.waitForEvent('popup'),main.getByRole('button',{name:'Owlbear — afficher la carte',exact:true}).click()]);map.on('pageerror',e=>errors.push(e.message));await map.waitForURL(owl+'/room/one');
+  [map]=await Promise.all([main.waitForEvent('popup'),main.getByRole('button',{name:'Owlbear — afficher la carte',exact:true}).click()]);map.on('pageerror',e=>errors.push(e.message));await map.waitForURL(owl+'/room/one');
   await player.goto(owl+'/room/one?joueur=Alix');await player.locator('#archives-tool').click();
   // No GM editor has been opened inside Owlbear. The main Archives are enough.
   await editor(player).locator('.cell-title-txt').filter({hasText:'Élément partagé'}).waitFor();assert.equal(await map.locator('#viewer').count(),0);
@@ -56,7 +56,12 @@ async function mainAndLargeView(browser){
   await app(late).evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));assert.equal(await app(late).evaluate(()=>DuneApp.getState().playerPresentation.id),unchanged);
   const wire=JSON.stringify(await player.evaluate(()=>fixture.wire()));for(const secret of ['SECRET_ACTE_450','SECRET_CELLULE_450','SECRET_DESCRIPTION_450','SECRET_RUBRIQUE_450','SECRET_NOTES_450','SECRET_JOURNAL_450','NOM_PRIVE_'])assert.ok(!wire.includes(secret),'private data leaked: '+secret);
   assert.deepEqual(errors,[]);console.log('V4.50 main: source Archives without a second GM editor, multiple/different images, rapid replacements, close races, entry/exit fades, large-canvas independent delivery, dismissible recovered waiting state and GM-only privacy passed.');
- }catch(error){await player.screenshot({path:'/tmp/archives-v450-main-failure.png'}).catch(()=>{});throw error}
+ }catch(error){
+  console.log('MAIN',await main.evaluate(()=>({messages:mainPublicDebug,ids:DuneApp.getState().nodes.map(n=>n.id),role:DuneApp.getState().playerMode})).catch(()=>null));
+  console.log('BACKGROUND',await map?.frames().find(f=>f.url().includes('/background-v55.html'))?.evaluate(()=>({messages:mainPublicDebug,opener:!!window.top.opener})).catch(()=>null));
+  console.log('PLAYER',await app(player)?.evaluate(()=>({ids:DuneApp.getState().nodes.map(n=>n.id),messages:mainPublicDebug})).catch(()=>null));
+  await player.screenshot({path:'/tmp/archives-v450-main-failure.png'}).catch(()=>{});throw error}
+
  finally{await Promise.all([gc.close(),pc.close(),lc.close()])}
 }
 async function nativeFiles(browser){
