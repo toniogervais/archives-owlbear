@@ -37,3 +37,9 @@ test('Existing schema 1 archives remain readable, including original inline imag
  const original=new Blob(['ARCHIVES-CAMPAGNE/1\n',length,Buffer.from(sha(header),'hex'),header]);
  const restored=await inspectBackup(original);assert.equal(restored.images[0].data,manifest.images[0].data);assert.deepEqual(restored.scenario,scenario);
 });
+
+test('Editing a canvas while its binary assets are being packed cannot alter the captured scenario',async()=>{
+ const current={...scenario,boards:[{...scenario.boards[0],nodes:[{id:'n',title:'Avant',bgImg:'data:image/png;base64,aGVsbG8=',gmDetails:[{title:'Voix',text:'Grave'}]}]}]};
+ const promise=packBackup({scenario:current,images:[],files:[],presets:[]});current.boards[0].nodes[0].title='Après';current.boards[0].nodes[0].gmDetails[0].text='Aiguë';
+ const restored=await inspectBackup((await promise).blob);assert.equal(restored.scenario.boards[0].nodes[0].title,'Avant');assert.equal(restored.scenario.boards[0].nodes[0].gmDetails[0].text,'Grave');
+});

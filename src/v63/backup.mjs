@@ -68,8 +68,17 @@ async function encodeDataUri(blob,prefix) {
   }
   return parts.join('');
 }
+function stableScenario(value,depth=0) {
+  if(!value||typeof value!=='object')return value; // immutable strings share their bytes
+  if(depth>100)throw Error('Le scénario contient trop de niveaux imbriqués.');
+  if(Array.isArray(value))return value.map(item=>stableScenario(item,depth+1));
+  return Object.fromEntries(Object.keys(value).filter(key=>!forbiddenPath(key)).map(key=>[key,stableScenario(value[key],depth+1)]));
+}
 export async function packBackup(data) {
   if(!validSnapshot(data.scenario))throw Error('Cette sauvegarde de campagne est invalide.');
+  // Packing yields during large media reads. Freeze structural values before the
+  // first yield so a concurrent canvas edit cannot produce a mixed checkpoint.
+  data={...data,scenario:stableScenario(data.scenario)};
   const assets=[],blobs=[],byHash=new Map(),seenUris=new Map(),dataUris=[],files=[];
   let total=0;
   async function asset(blob,knownHash) {
