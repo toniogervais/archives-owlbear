@@ -41,7 +41,7 @@ const until=async(fn,message)=>{for(let i=0;i<150;i++){if(await fn())return;awai
   for(let i=1;i<4;i++)await app(gm).evaluate(id=>ArchivesCellBrief.open(id),'n'+i);
   await gm.screenshot({path:'/tmp/archives-v449-fiches.png'});await brief.getByRole('button',{name:'Fermer les fiches MJ',exact:true}).click();
   // Layout reserves expanded group sizes and keeps every top-level bounding rectangle separated.
-  await app(gm).evaluate(()=>DuneApp.autoLayout());
+  await app(gm).evaluate(async()=>{DuneApp.autoLayout();await Promise.all([...document.querySelectorAll('#nodes-layer .node-cell')].flatMap(cell=>cell.getAnimations()).filter(a=>a.effect.getTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>{})))});
   const boxes=await editor(gm).locator('#nodes-layer>.node-cell').evaluateAll(cells=>cells.map(c=>{const r=c.getBoundingClientRect();return {id:c.dataset.id,x:r.x,y:r.y,right:r.right,bottom:r.bottom}}));
   for(let i=0;i<boxes.length;i++)for(let j=i+1;j<boxes.length;j++){const a=boxes[i],b=boxes[j];assert.ok(a.right<=b.x||b.right<=a.x||a.bottom<=b.y||b.bottom<=a.y,'layout overlap '+a.id+' '+b.id)}
   await editor(gm).locator('#archives-select-trigger').click();
