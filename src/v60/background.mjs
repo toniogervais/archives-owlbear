@@ -1,5 +1,5 @@
 import { localRoom,roomMembers,roomChannel,release } from "../v57/room.mjs?v=4450";
-import { openFileLibrary,validateFile,validId,validPublication,publicFile,digest,fileChunks,fileReceiver,mediaChannel,mediaModal } from "./files.mjs?v=4450";
+import { openFileLibrary,validateFile,validId,validSharedFile as validPublication,publicFile,digest,fileChunks,fileReceiver,mediaChannel,mediaModal } from "./files.mjs?v=4450";
 import {installDossierFiles,dossierEntry} from '../v69/dossier-files.mjs?v=4450';
 
 export async function installFileLibrary(OBR) {
@@ -85,7 +85,6 @@ export async function installFileLibrary(OBR) {
       await requireGM();await store.remove(entry.id);return {};
     }
     if (command.action === "present") {
-      if (!["AUDIO","VIDEO"].includes(entry.kind)) throw Error("Pour ce document, utilise le transfert document ou token.");
       const title = typeof command.title === "string" ? command.title.trim() : entry.title;
       if (!title || title.length > 120) throw Error("Donne un nom de 1 à 120 caractères.");
       // No announcement, filename, bytes or link leaves the GM before this explicit action.
@@ -124,7 +123,7 @@ export async function installFileLibrary(OBR) {
     const state = receive;
     if (!state || !viewerSession || closed || role !== "PLAYER") return Promise.resolve();
     if (state.requested && !retry) return Promise.resolve();
-    clearTimeout(state.timer);state.requested = true;state.receiver = fileReceiver(state.publication);state.error = "";state.progress = 0;
+    clearTimeout(state.timer);state.requested = true;state.receiver = fileReceiver(state.publication,validPublication);state.error = "";state.progress = 0;
     function timeout() {
       if (receive !== state || state.blob) return;
       state.error = "Le chargement s’est interrompu. Réessaie lorsque le MJ est connecté.";state.requested = false;viewState();

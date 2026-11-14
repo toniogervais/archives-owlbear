@@ -1,0 +1,24 @@
+name: Vérification V4.49 — grandes campagnes et outils MJ
+on:
+  push:
+    branches: ['codex/v449-*']
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: node --test tests/large-backup-v449.test.mjs tests/large-backup-sql-v449.test.mjs tests/privacy-v449.test.cjs
+      - run: npx playwright install chromium
+      - run: node tests/browser-v449.cjs
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: archives-v449-focused
+          path: /tmp/archives-v449-*.png
+          if-no-files-found: ignore

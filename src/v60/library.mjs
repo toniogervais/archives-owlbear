@@ -78,6 +78,7 @@ export async function openLibrary(context = {}) {
     setBusy(true);status("Ouverture de « " + entry.title + " »…");
     try {
       const file = await read(entry);if (!dialog.open) return;
+      dialog.archivesPresentationSource={file,fileId:entry.id,title:entry.title};
       if (entry.kind === "DOCUMENT") {
         dialog.close();await window.ArchivesCellTransfer.sendLibraryFile({id:entry.id,file,title:entry.title});return;
       }
@@ -135,6 +136,7 @@ export async function openLibrary(context = {}) {
       const info = document.createElement("p");info.textContent = labels[entry.kind] + " · " + sizeText(entry.size) + " · " + (entry.presented ? "présenté aux joueurs" : entry.released ? "présentation arrêtée" : entry.kind === "DOCUMENT" ? "original côté MJ" : "privé");
       const action = button(entry.kind === "DOCUMENT" ? "Aperçu et transfert…" : "Aperçu et présentation…",() => { void preview(entry); });action.className = "primary";
       card.append(title,info,action);
+      card.append(button('Montrer aux joueurs',()=>{void perform({action:'present',fileId:entry.id,title:entry.title},'Présentation envoyée aux joueurs. Ils peuvent la fermer avec la croix.');}));
       card.append(button(entry.dossierShared ? 'Retirer du dossier des joueurs' : 'Ajouter au dossier des joueurs',() => {
         void perform({action:entry.dossierShared ? 'dossier-unshare' : 'dossier-share',fileId:entry.id},entry.dossierShared ? 'Fichier retiré du dossier.' : 'Fichier partagé dans Autre. Les joueurs peuvent le consulter depuis leur dossier.');
       }));
