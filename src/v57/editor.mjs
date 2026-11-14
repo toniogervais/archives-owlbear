@@ -100,6 +100,9 @@ export function installOwlPlayer(api) {
   const parent = window.parent;
   const post = type => parent.postMessage(packet(type), location.origin);
   let received = false;
+  // Keep an unconnected player on an empty public canvas, never the built-in
+  // example campaign or another view cached before this room was identified.
+  api.apply({boards:[{id:'waiting',name:'Scène',nodes:[],links:[]}],activeBoardId:'waiting',playerPresentation:null,bgImage:''});
   const viewReady=()=>{received=true;notice.hide()};
   window.addEventListener('archives:public-view',viewReady);
   window.addEventListener('archives:player-image',()=>{if(window.DuneApp?.getState?.().playerPresentation?.published)notice.hide()});

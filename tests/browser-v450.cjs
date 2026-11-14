@@ -43,7 +43,7 @@ async function mainAndLargeView(browser){
   await main.evaluate(()=>ArchivesPlayerImage.hide());await app(player).waitForFunction(()=>DuneApp.getState().playerPresentation===null);
   await main.evaluate(data=>DuneApp.commitCellPicture('public',{bgImg:data}),large);
   await late.goto(owl+'/room/one?joueur=Noa');await late.locator('#archives-tool').click();await editor(late).locator('#world').waitFor();
-  const waiting=editor(late).locator('.archives-bridge-notice:not([hidden])');await waiting.waitFor();assert.equal(await waiting.getAttribute('data-passive'),'true');
+  const waiting=editor(late).locator('.archives-bridge-notice:not([hidden])');await waiting.waitFor();assert.equal(await editor(late).locator('#nodes-layer .node-cell').count(),0,'an initial waiting view cannot show the built-in example campaign');assert.equal(await waiting.getAttribute('data-passive'),'true');
   await waiting.getByRole('button',{name:'Fermer le message de connexion',exact:true}).click();await waiting.waitFor({state:'hidden'});
   await show(main,pictures[1]);await waitImage(player,pictures[1]);await waitImage(late,pictures[1]);assert.equal(await editor(late).locator('.archives-bridge-notice:not([hidden])').count(),0);
   // Periodic snapshot failures may not cover an already displayed presentation.
