@@ -16,7 +16,7 @@ test('Closing and immediately reopening a GM brief keeps only the new portrait',
   const state={nodes:[{id:'a',title:'Premier',clues:[]},{id:'b',title:'Deuxième',clues:[]}]};w.DuneApp={getState:()=>state};
   w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false;queueMicrotask(()=>this.dispatchEvent(new w.Event('close')))};
   w.eval(fs.readFileSync('src/v68/cell-brief.mjs','utf8'));w.ArchivesCellBrief.open('a');const dialog=w.document.getElementById('archives-cell-brief');dialog.close();w.ArchivesCellBrief.open('b');await Promise.resolve();
-  assert.equal(dialog.open,true);assert.equal(dialog.querySelectorAll('.brief-card').length,1);assert.equal(dialog.querySelector('h2').textContent,'Deuxième');
+  assert.equal(dialog.open,true);assert.equal(dialog.querySelectorAll('.brief-card').length,1);assert.equal(dialog.querySelector('.brief-card h2').textContent,'Deuxième');
  }finally{w.close()}
 });
 test('An explicit image publication does not save or reveal a hidden cell',()=>{
