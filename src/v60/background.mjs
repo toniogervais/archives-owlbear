@@ -1,13 +1,13 @@
-import { localRoom,roomMembers,roomChannel,release } from "../v57/room.mjs?v=4500";
-import { openFileLibrary,validateFile,validId,validSharedFile as validPublication,publicFile,digest,fileChunks,fileReceiver,mediaChannel,mediaModal } from "./files.mjs?v=4450";
-import {installDossierFiles,dossierEntry} from '../v69/dossier-files.mjs?v=4450';
+import { localRoom,roomMembers,roomChannel,release } from "../v57/room.mjs?v=4510";
+import { openFileLibrary,validateFile,validId,validSharedFile as validPublication,publicFile,digest,fileChunks,fileReceiver,mediaChannel,mediaModal } from "./files.mjs?v=4510";
+import {installDossierFiles,dossierEntry} from '../v69/dossier-files.mjs?v=4510';
 
 export async function installFileLibrary(OBR) {
   const {channel,connectionId:initialConnection} = await localRoom(OBR);
   const isMember = roomMembers(OBR),offs = [];
   let role = await OBR.player.getRole(),connectionId = initialConnection,closed = false,store;
   let commands = Promise.resolve(),receptionQueue = Promise.resolve();
-  let publication,receive,epoch = 0,viewerSession = "",sending = false,sendTimer;
+  let publication,publicationBlob,receive,epoch = 0,viewerSession = "",sending = false,sendTimer;
   let viewerOpen=false,modalQueue=Promise.resolve();
   function modalOperation(action){const result=modalQueue.catch(()=>{}).then(action);modalQueue=result.catch(()=>{});return result}
   const declined = new Set(),targets = new Set(),inProgress = new Set(),lastSent = new Map();
@@ -34,12 +34,32 @@ export async function installFileLibrary(OBR) {
   }
   async function stop() {
     const previous = publication;
-    publication = null;epoch++;targets.clear();lastSent.clear();
+    publication = null;publicationBlob = null;epoch++;targets.clear();lastSent.clear();
     if (previous && role === "GM" && !closed && await OBR.player.getRole() === "GM")
       await send({type:"hide",id:previous.id,version:previous.version});
   }
   async function execute(command) {
     await requireGM();
+    // A portrait presentation is temporary. It must not depend on saving the
+    // scenario, revealing its source cell, or adding another library copy.
+    if (command.action === 'present-image') {
+      if (!(command.file instanceof Blob)) throw Error('Choisis une image.');
+      const file = new File([command.file],'image-partagee',{type:command.file.type});
+      const {mime} = await validateFile(file);
+      if (!/^image\/(png|jpeg|webp|gif)$/.test(mime)) throw Error('Choisis une image PNG, JPEG, WebP ou GIF.');
+      const hash = await digest(file);
+      await stop();await requireGM();
+      const next = {id:crypto.randomUUID(),version:crypto.randomUUID(),fileId:crypto.randomUUID(),title:'Image partagée par le MJ',mime,size:file.size,hash};
+      if (!validPublication(next)) throw Error('Cette image ne peut pas être présentée.');
+      publicationBlob = file;publication = {...next,transient:true};
+      try { await send({type:'show',...publicFile(next)}); }
+      catch (error) { publication = publicationBlob = null;throw error; }
+      return {publication:publicFile(next)};
+    }
+    if (command.action === 'stop-image') {
+      if (publication?.transient) await stop();
+      return {};
+    }
     if (command.action === "list") return {entries:(await store.list()).map(metadata)};
     if (command.action === "import") {
       if (!(command.file instanceof Blob)) throw Error("Choisis un fichier sur ton appareil.");
@@ -146,7 +166,7 @@ export async function installFileLibrary(OBR) {
         for (const id of selected) if (await isMember(id,"PLAYER")) allowed.push(id);
         if (!allowed.length) continue;
         await requireGM();
-        const blob = await store.blob(active.fileId);
+        const blob = active.transient ? publicationBlob : await store.blob(active.fileId);
         if (!blob || publication !== active || start !== epoch || closed) continue;
         const transfer = crypto.randomUUID();allowed.forEach(id => { inProgress.add(id);lastSent.set(id,Date.now()); });
         try {
@@ -219,10 +239,10 @@ export async function installFileLibrary(OBR) {
   offs.push(OBR.player.onChange(player => {
     if (player.connectionId) connectionId = player.connectionId;
     if (role === player.role) return;
-    role = player.role;epoch++;publication = null;targets.clear();void closeViewer();
+    role = player.role;epoch++;publication = publicationBlob = null;targets.clear();void closeViewer();
   }));
   window.addEventListener("pagehide",() => {
-    closed = true;epoch++;publication = null;clearTimeout(sendTimer);clearReception();
+    closed = true;epoch++;publication = publicationBlob = null;clearTimeout(sendTimer);clearReception();
     dossier.dispose();offs.forEach(off => off?.());isMember.dispose();channel.close();void commands.finally(() => store?.close());
   },{once:true});
   if (role === "PLAYER") await send({type:"active",id:crypto.randomUUID()});

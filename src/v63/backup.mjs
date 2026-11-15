@@ -1,7 +1,7 @@
-import {validSnapshot} from '../v57/room.mjs?v=4500';
+import {validSnapshot} from '../v57/room.mjs?v=4510';
 import {openFileLibrary,validateFile,validId} from '../v60/files.mjs?v=4210';
-import {privateArtworkStore} from '../v58/model.mjs?v=4500';
-import {digest} from '../v72/integrity.mjs?v=4500';
+import {privateArtworkStore} from '../v58/model.mjs?v=4510';
+import {digest} from '../v72/integrity.mjs?v=4510';
 import {normalizeCrop} from '../v61/token-crop.mjs';
 
 const signature = new TextEncoder().encode('ARCHIVES-CAMPAGNE/1\n');

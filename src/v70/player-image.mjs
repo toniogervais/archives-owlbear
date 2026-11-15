@@ -1,6 +1,7 @@
-import {isGM,notice} from '../v63/ui.mjs?v=4500';
-import {fade,fadeDuration} from '../v73/fade.mjs?v=4500';
-let operation=0,shown='',requested='',dialog,epoch=0,animation;
+import {isGM,nativeEditor,notice} from '../v63/ui.mjs?v=4510';
+import {libraryRequest} from '../v60/request.mjs?v=4510';
+import {fade,fadeDuration} from '../v73/fade.mjs?v=4510';
+let operation=0,shown='',requested='',dialog,epoch=0,animation,nativePresentation=false,nativePublishedId='';
 const dismissed=new Set(),state=()=>window.DuneApp?.getState?.();
 function remember(id){if(!id)return;dismissed.add(id);if(dismissed.size>128)dismissed.delete(dismissed.values().next().value)}
 function cancelFade(){animation?.cancel();animation=null}
@@ -37,6 +38,7 @@ async function dismiss(local=true){
 }
 async function render(){
  const s=state(),presentation=s?.playerPresentation;
+ if(isGM()&&nativePublishedId&&presentation?.id!==nativePublishedId){nativePublishedId='';hide();return}
  if(!s||!(s.playerMode||s.strictReadOnly)||!presentation?.published){if(shown||requested)void dismiss(false);return}
  if(dismissed.has(presentation.id)||presentation.id===requested||dialog?.open&&shown===presentation.id&&dialog.dataset.phase!=='closing')return;
  requested=presentation.id;const version=++epoch;cancelFade();
@@ -70,10 +72,26 @@ async function show(item){
  if(!isGM())return;const current=++operation;
  try{
   const image=await prepare(item?.data);if(operation!==current||!isGM())return;
-  if(!window.DuneApp.commitPlayerPresentation({id:crypto.randomUUID(),image,published:true}))throw Error('La présentation de cette image a échoué.');
+  const request=nativeEditor()?libraryRequest:window.ArchivesPresentationBridge?.connected?command=>window.ArchivesPresentationBridge.request(command):null;
+  if(request){
+   nativePresentation=true;
+   const mime=image.slice(5,image.indexOf(';')),bytes=Uint8Array.from(atob(image.split(',')[1]),c=>c.charCodeAt(0));
+   await request({action:'present-image',file:new Blob([bytes],{type:mime})});
+   if(operation!==current||!isGM())return;
+  }
+  // Salon Live clients retain their own image viewer. Native Owlbear clients
+  // use the independent media viewer, including while their canvas is closed.
+  const id=crypto.randomUUID();nativePublishedId=request?id:'';
+  if(!window.DuneApp.commitPlayerPresentation({id,image,published:true,delivery:request?'media':'inline'}))throw Error('La présentation de cette image a échoué.');
+  notice('Image envoyée aux joueurs. La cellule et ses indices restent inchangés.');
   return true;
  }catch(error){if(operation===current)notice(error.message);return false}
 }
-function hide(){if(!isGM())return;operation++;return window.DuneApp.commitPlayerPresentation(null)}
+function hide(){
+ if(!isGM())return;operation++;nativePublishedId='';
+ if(nativePresentation){nativePresentation=false;const request=nativeEditor()?libraryRequest:window.ArchivesPresentationBridge?.connected?command=>window.ArchivesPresentationBridge.request(command):null;void request?.({action:'stop-image'}).catch(error=>notice(error.message))}
+ return window.DuneApp.commitPlayerPresentation(null);
+}
 window.ArchivesPlayerImage={show,hide};window.addEventListener('archives:player-image',render);
 window.addEventListener('archives:public-view',render);render();
+if(state()?.playerMode||state()?.strictReadOnly){try{const channel=new BroadcastChannel('jdr_architect_sync_v12');channel.postMessage({type:'archives:player-image-request:v1'});channel.close()}catch{}}

@@ -6,11 +6,11 @@ export const chunkBytes = 9000;
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 export const validId = value => typeof value === "string" && uuid.test(value);
 const types = {
-  "application/pdf":"DOCUMENT", "text/plain":"DOCUMENT", "image/png":"DOCUMENT", "image/jpeg":"DOCUMENT", "image/webp":"DOCUMENT",
+  "application/pdf":"DOCUMENT", "text/plain":"DOCUMENT", "image/png":"DOCUMENT", "image/jpeg":"DOCUMENT", "image/webp":"DOCUMENT", "image/gif":"DOCUMENT",
   "audio/mpeg":"AUDIO", "audio/wav":"AUDIO", "audio/x-wav":"AUDIO", "audio/ogg":"AUDIO", "audio/mp4":"AUDIO", "audio/webm":"AUDIO",
   "video/mp4":"VIDEO", "video/webm":"VIDEO", "video/ogg":"VIDEO"
 };
-const extensions = {pdf:"application/pdf",txt:"text/plain",png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",webp:"image/webp",
+const extensions = {pdf:"application/pdf",txt:"text/plain",png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",webp:"image/webp",gif:"image/gif",
   mp3:"audio/mpeg",wav:"audio/wav",ogg:"audio/ogg",m4a:"audio/mp4",mp4:"video/mp4",webm:"video/webm",ogv:"video/ogg"};
 const aliases = {"audio/mp3":"audio/mpeg","audio/x-m4a":"audio/mp4","audio/wave":"audio/wav",
   "audio/x-pn-wav":"audio/wav","application/ogg":"audio/ogg","image/jpg":"image/jpeg"};
@@ -32,6 +32,7 @@ export async function validateFile(file) {
     mime === "image/png" && bytes[0] === 137 && ascii(1,4) === "PNG" ||
     mime === "image/jpeg" && bytes[0] === 255 && bytes[1] === 216 ||
     mime === "image/webp" && ascii(0,4) === "RIFF" && ascii(8,12) === "WEBP" ||
+    mime === "image/gif" && ["GIF87a","GIF89a"].includes(ascii(0,6)) ||
     mime === "audio/mpeg" && (ascii(0,3) === "ID3" || bytes[0] === 255 && (bytes[1] & 224) === 224) ||
     ["audio/wav","audio/x-wav"].includes(mime) && ascii(0,4) === "RIFF" && ascii(8,12) === "WAVE" ||
     ["audio/ogg","video/ogg"].includes(mime) && ascii(0,4) === "OggS" ||

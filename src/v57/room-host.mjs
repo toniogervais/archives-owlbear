@@ -1,9 +1,9 @@
-import { localRoom, roomChannel, roomMembers, snapshotReader, validSnapshot } from "./room.mjs?v=4500";
+import { localRoom, roomChannel, roomMembers, snapshotReader, validSnapshot } from "./room.mjs?v=4510";
 import { openScenario } from "./storage.mjs";
-import { validSession } from "../v56/link.mjs?v=4500";
-import {campaignHost} from '../v63/campaign-host.mjs?v=4500';
-import {dossierHost} from '../v69/dossier-host.mjs?v=4500';
-import {publicItems} from '../v63/public-items.mjs?v=4500';
+import { validSession } from "../v56/link.mjs?v=4510";
+import {campaignHost} from '../v63/campaign-host.mjs?v=4510';
+import {dossierHost} from '../v69/dossier-host.mjs?v=4510';
+import {publicItems} from '../v63/public-items.mjs?v=4510';
 
 export async function makeEditorHost(OBR, post, canEdit) {
   const {channel} = await localRoom(OBR);

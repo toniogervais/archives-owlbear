@@ -1,4 +1,4 @@
-import { validSession } from "../v56/link.mjs?v=4500";
+import { validSession } from "../v56/link.mjs?v=4510";
 
 export const assetKey = "fr.archives-imaginaire.bridge/artwork-v58";
 export const sceneKey = "fr.archives-imaginaire.bridge/scene-key";

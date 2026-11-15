@@ -1,5 +1,5 @@
-import { liveRoomKey, validSession, viewerId } from "../v56/link.mjs?v=4500";
-import { inviteId, localRoom, roomChannel, roomMembers, screenUrl, snapshotChunks, validSnapshot } from "./room.mjs?v=4500";
+import { liveRoomKey, validSession, viewerId } from "../v56/link.mjs?v=4510";
+import { inviteId, localRoom, roomChannel, roomMembers, screenUrl, snapshotChunks, validSnapshot } from "./room.mjs?v=4510";
 import {createPresence} from '../v63/presence.mjs?v=4210';
 import {screenCommand} from '../v65/screen-model.mjs';
 
@@ -112,8 +112,9 @@ export async function installRoomPlay(OBR) {
       } else if (data?.type === "published" && validSnapshot(data.payload)) {
         const {playerPresentation,...canvas}=data.payload;
         latest = {payload:canvas, revision:newId()};
-        const key=playerPresentation?.id||'';
-        if(!picture||key!==pictureKey){pictureKey=key;picture={value:playerPresentation||null,revision:newId()};queuePicture()}
+        const inline=playerPresentation?.delivery==='media'?null:playerPresentation;
+        const key=inline?.id||'';
+        if(!picture||key!==pictureKey){pictureKey=key;picture={value:inline||null,revision:newId()};queuePicture()}
         queueSnapshot();
       } else if (data?.type==='gm-screen-command' && validSession(data.id)) {
         screenQueue=screenQueue.catch(()=>{}).then(()=>changeScreen(data.command));

@@ -147,6 +147,10 @@ jobs:
         if: ${{ !cancelled() }}
       - run: node tests/browser-v450.cjs
         if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
+      - run: node --test tests/presentation-v451.test.cjs
+        if: ${{ !cancelled() }}
+      - run: node tests/browser-v451.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:

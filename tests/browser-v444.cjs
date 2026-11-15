@@ -1,3 +1,4 @@
+const {media,surface,waitMedia,closeMedia}=require('./presented-image.cjs');
 const assert=require('node:assert/strict'),{chromium}=require('playwright'),{owl,hub,configure}=require('./owlbear-fixture.cjs');
 const editor=p=>p.frameLocator('#viewer').frameLocator('#app'),app=p=>p.frames().find(f=>/owl-(?:editor|view)=1/.test(f.url()));
 const until=async(fn,label)=>{for(let i=0;i<120;i++){if(await fn())return;await new Promise(r=>setTimeout(r,100))}throw Error(label)};
@@ -51,13 +52,13 @@ async function openArchives(p){await p.locator('#archives-tool').click();await e
    await menu.getByRole('button',{name:'Supprimer',exact:false}).scrollIntoViewIfNeeded();assert.equal(await menu.getByRole('button',{name:'Supprimer',exact:false}).isVisible(),true);await editor(gm).locator('#archives-image-library-search').click();
   }
   await gm.setViewportSize({width:1280,height:900});await publicCard.locator('img').click({button:'right'});await editor(gm).locator('#archives-image-library-actions-menu').getByRole('button',{name:'Montrer aux joueurs',exact:false}).click();
-  const shown=editor(player).locator('#archives-player-image[open]');await shown.waitFor();assert.ok(await shown.locator('img').getAttribute('src')===pictures[0],'only the selected image is presented');
+  const shown=surface(player);await waitMedia(player,pictures[0]);
   assert.equal(await app(gm).evaluate(()=>DuneApp.getState().nodes[0].revealed),false);await editor(gm).locator('#archives-image-library-status').filter({hasText:'Image présentée'}).waitFor();
-  const late=await pc.newPage();late.on('pageerror',e=>errors.push(e.message));await late.goto(owl+'/room/one?joueur=Bob');await late.frameLocator('#invite').getByRole('button',{name:'Afficher les Archives',exact:true}).click();await editor(late).locator('#archives-player-image[open]').waitFor();
-  await shown.getByRole('button',{name:'Fermer l’image',exact:true}).click();await shown.waitFor({state:'hidden'});assert.equal(await shown.count(),0);
+  const late=await pc.newPage();late.on('pageerror',e=>errors.push(e.message));await late.goto(owl+'/room/one?joueur=Bob');await waitMedia(late,pictures[0]);
+  await closeMedia(player);assert.equal(await shown.count(),0);
   await app(gm).evaluate(()=>DuneApp.commitCellPicture('secret',{bgZoom:1.1}));assert.equal(await shown.count(),0,'a regular campaign update must not reopen a dismissed image');
-  await app(gm).evaluate(()=>ArchivesImageLibrary.showToPlayers([...document.querySelectorAll('#archives-image-library-grid article')].find(el=>el.querySelector('strong').textContent==='SECRET_FICHIER_PUBLIC_444').dataset.imageCard));await shown.waitFor();
-  await app(gm).evaluate(()=>ArchivesImageLibrary.hideFromPlayers());await shown.waitFor({state:'hidden'});await editor(late).locator('#archives-player-image[open]').waitFor({state:'hidden'});
+  await app(gm).evaluate(()=>ArchivesImageLibrary.showToPlayers([...document.querySelectorAll('#archives-image-library-grid article')].find(el=>el.querySelector('strong').textContent==='SECRET_FICHIER_PUBLIC_444').dataset.imageCard));await waitMedia(player,pictures[0]);
+  await app(gm).evaluate(()=>ArchivesImageLibrary.hideFromPlayers());await shown.waitFor({state:'hidden'});await surface(late).waitFor({state:'detached'});
   // Ending a presentation while its image loads cancels the pending publication.
   await app(gm).evaluate(async()=>{const result=ArchivesPlayerImage.show({data:document.querySelector('#archives-image-library-grid img').src});ArchivesPlayerImage.hide();await result});assert.equal(await shown.count(),0);
   const wire=JSON.stringify(await player.evaluate(()=>window.fixture.wire()));for(const secret of ['SECRET_ACTE_444','SECRET_CELLULE_444','SECRET_DESCRIPTION_444','SECRET_FICHIER_PUBLIC_444','SECRET_FICHIER_PRIVE_444',pictures[1]])assert.ok(!wire.includes(secret),'private data leak: '+secret.slice(0,40));

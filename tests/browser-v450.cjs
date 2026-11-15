@@ -6,7 +6,7 @@ const until=async(fn,label)=>{for(let i=0;i<180;i++){if(await fn())return;await 
 const scenario={activeBoardId:'a',boards:[{id:'a',name:'SECRET_ACTE_450',nodes:[{id:'public',title:'Élément partagé',category:'lieu',desc:'Visible',revealed:true,x:100,y:100,w:260,h:180,clues:[]},{id:'hidden',title:'SECRET_CELLULE_450',desc:'SECRET_DESCRIPTION_450',category:'personnage',revealed:false,x:500,y:100,w:250,h:160,clues:[],gmDetails:[{title:'SECRET_RUBRIQUE_450',text:'SECRET_NOTES_450'}]}],links:[]}],journalPages:[{text:'SECRET_JOURNAL_450'}]};
 async function graphics(page){return page.evaluate(()=>['#df4532','#325ce0','#38b77c'].map(color=>{const c=document.createElement('canvas');c.width=320;c.height=480;const x=c.getContext('2d');x.fillStyle=color;x.fillRect(0,0,c.width,c.height);return c.toDataURL()}))}
 async function waitImage(p,data){await picture(p).locator('img').waitFor();await app(p).waitForFunction(src=>{const v=document.getElementById('archives-player-image');return v?.open&&v.dataset.phase==='open'&&v.querySelector('img').src===src},data)}
-async function show(main,data){await main.evaluate(data=>ArchivesPlayerImage.show({data}),data)}
+async function show(main,data){await main.evaluate(image=>DuneApp.commitPlayerPresentation({id:crypto.randomUUID(),image,published:true}),data)}
 async function closeImage(player){await picture(player).getByRole('button',{name:'Fermer l’image',exact:true}).click();await picture(player).waitFor({state:'hidden'})}
 async function mainAndLargeView(browser){
  const fixture=hub(),gc=await browser.newContext({viewport:{width:1440,height:1000}}),pc=await browser.newContext({viewport:{width:820,height:1180},isMobile:true,hasTouch:true}),lc=await browser.newContext({viewport:{width:820,height:1180},isMobile:true,hasTouch:true});
@@ -22,20 +22,16 @@ async function mainAndLargeView(browser){
   await editor(player).locator('.cell-title-txt').filter({hasText:'Élément partagé'}).waitFor();assert.equal(await map.locator('#viewer').count(),0);
   assert.equal(await editor(player).locator('.archives-bridge-notice:not([hidden])').count(),0);
   await app(player).evaluate(()=>{window.presentationPhases=[];new MutationObserver(records=>{for(const r of records)if(r.target.id==='archives-player-image'&&r.attributeName==='data-phase')presentationPhases.push(r.target.dataset.phase)}).observe(document.body,{subtree:true,attributes:true,attributeFilter:['data-phase']})});
-  // Exercise the real image-library menu, then open-image context menu.
-  await main.evaluate(()=>ArchivesCatalogue.libraryPanel('images'));await main.locator('#archives-image-library-files').setInputFiles(pictures.map((data,i)=>({name:'NOM_PRIVE_'+i+'_450.png',mimeType:'image/png',buffer:Buffer.from(data.split(',')[1],'base64')})));
-  await until(()=>main.locator('#archives-image-library-grid article').count().then(n=>n===3),'library images');
-  const first=main.locator('#archives-image-library-grid article').filter({has:main.getByText('NOM_PRIVE_0_450',{exact:true})});
-  await first.locator('img').click({button:'right'});await main.locator('#archives-image-library-actions-menu').getByRole('button',{name:'Montrer aux joueurs',exact:false}).click();await waitImage(player,pictures[0]);
-  await picture(player).getByRole('button',{name:'Fermer l’image',exact:true}).click();assert.equal(await picture(player).getAttribute('data-phase'),'closing');assert.equal(await picture(player).count(),1,'the modal stays open while its exit fades');await picture(player).waitFor({state:'hidden'});
-  const second=main.locator('#archives-image-library-grid article').filter({has:main.getByText('NOM_PRIVE_1_450',{exact:true})});await second.locator('img').dblclick();await main.locator('#archives-image-full-preview img').waitFor();
-  await main.locator('#archives-image-full-preview img').click({button:'right'});await main.locator('#archives-presentation-menu').getByRole('button',{name:'Montrer aux joueurs',exact:true}).click();await waitImage(player,pictures[1]);
-  await main.getByRole('button',{name:'Fermer l’aperçu complet',exact:true}).click();await main.evaluate(()=>ArchivesCatalogue.close());
+  // The independent inline transport is retained for Salon Live clients.
+  // Real library and hidden-cell menus use the native media viewer in V4.51.
+  await show(main,pictures[0]);await waitImage(player,pictures[0]);
+  await picture(player).getByRole('button',{name:'Fermer l’image',exact:true}).click();assert.equal(await picture(player).getAttribute('data-phase'),'closing');assert.equal(await picture(player).count(),1);await picture(player).waitFor({state:'hidden'});
+  await show(main,pictures[1]);await waitImage(player,pictures[1]);
   await show(main,pictures[2]);await waitImage(player,pictures[2]);
   // A new image during the old exit fade must cancel the old close operation.
   await picture(player).getByRole('button',{name:'Fermer l’image',exact:true}).click();await show(main,pictures[0]);await waitImage(player,pictures[0]);assert.equal(await editor(player).locator('#archives-player-image').count(),1);
   await closeImage(player);await main.evaluate(()=>DuneApp.commitCellPicture('public',{bgZoom:1.1}));await app(player).waitForFunction(()=>DuneApp.getState().nodes.find(n=>n.id==='public')?.bgZoom===1.1);assert.equal(await picture(player).count(),0);
-  await main.evaluate(async data=>Promise.all(data.map(value=>ArchivesPlayerImage.show({data:value}))),pictures);await waitImage(player,pictures[2]);await closeImage(player);
+  for(const image of pictures)await show(main,image);await waitImage(player,pictures[2]);await closeImage(player);
   const phases=await app(player).evaluate(()=>presentationPhases);for(const phase of ['opening','open','closing','closed'])assert.ok(phases.includes(phase),'missing fade phase '+phase);
   // A full player canvas over the existing 18 MiB transport cap used to block
   // every following image and leave a permanent waiting overlay after reopening.

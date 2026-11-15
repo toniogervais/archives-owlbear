@@ -1,8 +1,8 @@
-import {button,element,isGM,nativeEditor,notice,sheet} from '../v63/ui.mjs?v=4500';
-import {editEvent} from '../v56/link.mjs?v=4500';
-import {createCloud,cloudError} from './cloud.mjs?v=4500';
-import {autoBackup} from './autosave.mjs?v=4500';
-import {campaignRequest} from './campaign-io.mjs?v=4500';
+import {button,element,isGM,nativeEditor,notice,sheet} from '../v63/ui.mjs?v=4510';
+import {editEvent} from '../v56/link.mjs?v=4510';
+import {createCloud,cloudError} from './cloud.mjs?v=4510';
+import {autoBackup} from './autosave.mjs?v=4510';
+import {campaignRequest} from './campaign-io.mjs?v=4510';
 import {downloadArchive} from './download.mjs';
 const cloud = createCloud(() => {
   if (!isGM()) throw Error('Commande réservée au maître de jeu.');
