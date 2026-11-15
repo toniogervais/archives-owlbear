@@ -1,4 +1,5 @@
 const assert=require('node:assert/strict');
+const zlib=require('node:zlib');
 const mediaId='fr.archives-imaginaire.bridge/media-view-v60';
 const media=p=>p.frameLocator('[id="'+mediaId+'"]');
 const surface=p=>p.locator('[id="'+mediaId+'"]');
@@ -11,6 +12,13 @@ async function waitMedia(p,data){
   const value=await new Promise(resolve=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.readAsDataURL(blob)});
   return value===expected&&document.body.dataset.phase==='open';
  },data);
+ await frame(p).waitForFunction(()=>document.getAnimations().every(a=>a.playState!=='running'));
+ const box=await media(p).locator('#media img').boundingBox();
+ const expected=await frame(p).evaluate(()=>{const c=document.createElement('canvas');c.width=c.height=1;const x=c.getContext('2d');x.drawImage(document.querySelector('#media img'),0,0,1,1);return [...x.getImageData(0,0,1,1).data].slice(0,3)});
+ // Inspect the screen's centre pixel, not merely the decoded hidden IMG.
+ const png=await p.screenshot({clip:{x:Math.floor(box.x+box.width/2),y:Math.floor(box.y+box.height/2),width:1,height:1}}),chunks=[];
+ for(let offset=8;offset<png.length;){const length=png.readUInt32BE(offset),type=png.toString('ascii',offset+4,offset+8);if(type==='IDAT')chunks.push(png.subarray(offset+8,offset+8+length));offset+=length+12}
+ const raw=zlib.inflateSync(Buffer.concat(chunks));assert.deepEqual([...raw.subarray(1,4)],expected,'the chosen picture must actually be visible after both fades');
 }
 async function closeMedia(p){
  await media(p).getByRole('button',{name:'Fermer la présentation',exact:true}).click();
