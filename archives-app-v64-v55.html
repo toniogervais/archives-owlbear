@@ -1793,7 +1793,7 @@ window.DuneApp = (function() {
       "--skin-bg-deep": "#120904", "--skin-bg-canvas": "radial-gradient(circle at center, #381b09 0%, #120803 100%)",
       "--skin-bg-sidebar": "linear-gradient(180deg, #241208 0%, #120804 100%)", "--skin-bg-section": "#1c0e06",
       "--skin-bg-input": "#0f0703", "--skin-cell-fill": "rgba(28, 14, 7, 0.92)", "--skin-gold-main": "#e87a24",
-      "--skin-gold-bright": "#ffd29e", "--skin-gold-dim": "#7d3e0d", "--skin-accent-glow": "#ff4500",
+      "--skin-gold-bright": "#ffd29e", "--skin-gold-dim": "#7d3e0d", "--skin-accent-glow": "#ff4510",
       "--skin-text-main": "#ffeedb", "--skin-text-muted": "#c79973", "--skin-grid-color": "rgba(232, 122, 36, 0.07)"
     },
     harkonnen: {
@@ -2044,8 +2044,9 @@ window.DuneApp = (function() {
       syncChannel.onmessage = function(e) {
         // This channel carries a PLAYER-ONLY projection. Never overwrite an
         // editing MJ tab, which must retain its complete private campaign.
-        if ((state.playerMode || state.strictReadOnly) && e.data && e.data.boards)
+        if ((state.playerMode || state.strictReadOnly) && e.data && (e.data.boards || e.data.type==='archives:player-image:v1'))
           applyIncomingSync(e.data);
+        else if(!state.playerMode&&!state.strictReadOnly&&e.data?.type==='archives:player-image-request:v1')syncChannel.postMessage({type:'archives:player-image:v1',playerPresentation:playerImageProjection(state.playerPresentation)});
       };
     }
   } catch (err) {}
@@ -2061,6 +2062,7 @@ window.DuneApp = (function() {
   }
 
   function applyIncomingSync(data) {
+    if(data?.type==='archives:player-image:v1'){if(state.playerMode||state.strictReadOnly)window.ArchivesRelay.present(data.playerPresentation);return;}
     if(Object.prototype.hasOwnProperty.call(data,'playerPresentation')){state.playerPresentation=playerImageProjection(data.playerPresentation);window.dispatchEvent(new CustomEvent('archives:player-image'));}
     if (state.isDraggingNode || state.isResizingCell) { state.pendingPlayerView=data;return; }
     preparePlayerLayout(data);
@@ -2091,7 +2093,7 @@ window.DuneApp = (function() {
   function playerImageProjection(value){
     if(!value||value.published!==true||typeof value.id!=='string'||!/^[0-9a-f-]{36}$/.test(value.id)||
        typeof value.image!=='string'||value.image.length>8*1024*1024||!/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+=*$/.test(value.image))return null;
-    return {id:value.id,image:value.image,published:true,title:'Image partagée'};
+    return {id:value.id,image:value.image,published:true,title:'Image partagée',delivery:value.delivery==='media'?'media':'inline'};
   }
   // Projection on the SENDER's side, before broadcasting over WebRTC or BroadcastChannel.
   // The MJ's local save remains complete. Never send unpublished or unknown fields.
@@ -5767,8 +5769,18 @@ window.DuneApp = (function() {
     commitPlayerPresentation: function(value) {
       if(state.playerMode||state.strictReadOnly)return false;
       var presentation=playerImageProjection(value);if(value&&!presentation)return false;
-      state.playerPresentation=presentation;saveState();
-      setStatus(presentation?'Image présentée dans les Archives des joueurs.':'Image retirée de l’écran des joueurs.');return true;
+      state.playerPresentation=presentation;
+      if(remoteEditor&&!owlEditor)saveState();
+      else {
+        if(relayPayload)relayPayload.playerPresentation=presentation;
+        var message={type:'archives:player-image:v1',playerPresentation:presentation};
+        if(!remoteEditor){
+          try{syncChannel?.postMessage(message);}catch(error){}
+          peerConns.filter(function(conn){return conn&&conn.open;}).forEach(function(conn){try{conn.send(message);}catch(error){}});
+        }
+        window.dispatchEvent(new CustomEvent('archives:presentation'));
+      }
+      setStatus(presentation?'Image envoyée aux joueurs.':'Image retirée de l’écran des joueurs.');return true;
     },
     setGmDetails: function(id,fields) {
       if(state.playerMode||state.strictReadOnly)throw Error('Informations réservées au MJ.');
@@ -7111,15 +7123,15 @@ window.ArchivesRevealJournal={start,stop,refresh:()=>monitor?monitor.refresh():P
 
 })();
 </script>
-<link rel="stylesheet" href="./src/v56/bridge.css?v=4500">
-<script type="module" src="./src/v56/relay.mjs?v=4500"></script>
-<script type="module" src="./src/v56/navigation.mjs?v=4500"></script>
-<script type="module" src="./src/v58/main-relay.mjs?v=4500"></script>
-<script type="module" src="./src/v58/transfer-ui.mjs?v=4500"></script>
-<script type="module" src="./src/v60/library.mjs?v=4500"></script>
+<link rel="stylesheet" href="./src/v56/bridge.css?v=4510">
+<script type="module" src="./src/v56/relay.mjs?v=4510"></script>
+<script type="module" src="./src/v56/navigation.mjs?v=4510"></script>
+<script type="module" src="./src/v58/main-relay.mjs?v=4510"></script>
+<script type="module" src="./src/v58/transfer-ui.mjs?v=4510"></script>
+<script type="module" src="./src/v60/library.mjs?v=4510"></script>
 <script defer src="./src/v54/polish.js"></script>
 <script type="module" src="./src/v62/motion.mjs?v=4210"></script>
-<script type="module" src="./src/v63/workbench.mjs?v=4500"></script>
+<script type="module" src="./src/v63/workbench.mjs?v=4510"></script>
 </body>
 </html>
 <style id="v19-player-reveal-transitions">
@@ -7375,15 +7387,15 @@ body.player-mode .player-cell-resize:hover{opacity:1}
   #soundshow-sounds-dock > button {box-shadow:none!important}
 }
 </style>
-<script type="module" src="./src/v65/cell-picture.mjs?v=4500"></script>
-<script type="module" src="./src/v70/player-image.mjs?v=4500"></script>
-<script type="module" src="./src/v65/storage.mjs?v=4500"></script>
-<script type="module" src="./src/soundshow/archives.mjs?v=4500"></script>
-<script type="module" src="./src/v66/workspace.mjs?v=4500"></script>
-<script type="module" src="./src/v68/cell-brief.mjs?v=4500"></script>
+<script type="module" src="./src/v65/cell-picture.mjs?v=4510"></script>
+<script type="module" src="./src/v70/player-image.mjs?v=4510"></script>
+<script type="module" src="./src/v65/storage.mjs?v=4510"></script>
+<script type="module" src="./src/soundshow/archives.mjs?v=4510"></script>
+<script type="module" src="./src/v66/workspace.mjs?v=4510"></script>
+<script type="module" src="./src/v68/cell-brief.mjs?v=4510"></script>
 
 
-<script type="module" src="./src/v72/gm-details.mjs?v=4500"></script>
-<script type="module" src="./src/v72/selection.mjs?v=4500"></script>
-<script type="module" src="./src/v72/presentation.mjs?v=4500"></script>
-<script type="module" src="./src/v72/google-search.mjs?v=4500"></script>
+<script type="module" src="./src/v72/gm-details.mjs?v=4510"></script>
+<script type="module" src="./src/v72/selection.mjs?v=4510"></script>
+<script type="module" src="./src/v72/presentation.mjs?v=4510"></script>
+<script type="module" src="./src/v72/google-search.mjs?v=4510"></script>

@@ -1,3 +1,4 @@
+const {surface,waitMedia,closeMedia}=require('./presented-image.cjs');
 const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
 const {archives,owl,hub,configure}=require('./owlbear-fixture.cjs');
@@ -37,7 +38,7 @@ const until=async(fn,message)=>{for(let i=0;i<150;i++){if(await fn())return;awai
   assert.equal(await brief.locator('.brief-card-header').count(),0);assert.equal(await brief.locator('.brief-figure h2').textContent(),'Cellule 0');assert.equal(await brief.locator('.brief-gm-field h3').textContent(),'DESCRIPTION_PRIVEE_449_0');
   assert.ok((await brief.locator('.brief-figure').boundingBox()).height<=260);
   await brief.locator('.brief-picture').click({button:'right'});await editor(gm).locator('#archives-presentation-menu').getByRole('button',{name:'Montrer aux joueurs',exact:true}).click();
-  const shared=pane(player,'archives-player-image');await shared.waitFor();await shared.getByRole('button',{name:'Fermer l’image',exact:true}).click();await shared.waitFor({state:'hidden'});
+  await waitMedia(player,image);await closeMedia(player);
   for(let i=1;i<4;i++)await app(gm).evaluate(id=>ArchivesCellBrief.open(id),'n'+i);
   await gm.screenshot({path:'/tmp/archives-v449-fiches.png'});await brief.getByRole('button',{name:'Fermer les fiches MJ',exact:true}).click();
   // Layout reserves expanded group sizes and keeps every top-level bounding rectangle separated.
@@ -65,7 +66,7 @@ const until=async(fn,message)=>{for(let i=0;i<150;i++){if(await fn())return;awai
   await gm.mouse.move(Math.min(a.x,b.x)-20,Math.min(a.y,b.y)-35);await gm.mouse.down();await gm.mouse.move(Math.max(a.x+a.width,b.x+b.width)+20,Math.max(a.y+a.height,b.y+b.height)+20,{steps:10});await gm.mouse.up();
   const rectangle=await app(gm).evaluate(()=>ArchivesSelection.selected);assert.ok(rectangle.includes('n0')&&rectangle.includes('n1'),'rectangle selection follows the zoomed canvas');await editor(gm).locator('#archives-select-trigger').click();
   await app(gm).evaluate(()=>{const r=document.querySelector('#nodes-layer .node-cell[data-id="n0"]').getBoundingClientRect();DuneApp.openCellContextMenu('n0',r.left+40,r.top+40)});
-  await editor(gm).locator('#archives-context-present-image').click();await shared.waitFor();await shared.getByRole('button',{name:'Fermer l’image',exact:true}).click();
+  await editor(gm).locator('#archives-context-present-image').click();await waitMedia(player,image);await closeMedia(player);
 
   // The same settings control clears the background persistently.
   await app(gm).evaluate(()=>DuneApp.openSettings());await editor(gm).getByRole('button',{name:'Supprimer l’image du canevas',exact:true}).click();assert.equal(await app(gm).evaluate(()=>DuneApp.getState().bgImage),'');await app(gm).evaluate(()=>DuneApp.closeSettings());

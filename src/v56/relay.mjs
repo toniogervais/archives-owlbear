@@ -1,10 +1,10 @@
 import {
   createNotice, editEvent, isPacket, localWire, packet, validLiveRoom, validPairing, validRoomId
-} from "./link.mjs?v=4500";
-import { installCentral } from "./central.mjs?v=4500";
-import { dialFallback } from "./peer.mjs?v=4500";
-import { installOwlEditor, installOwlPlayer } from "../v57/editor.mjs?v=4500";
-import { localEditor, localViewer } from "../v57/room.mjs?v=4500";
+} from "./link.mjs?v=4510";
+import { installCentral } from "./central.mjs?v=4510";
+import { dialFallback } from "./peer.mjs?v=4510";
+import { installOwlEditor, installOwlPlayer } from "../v57/editor.mjs?v=4510";
+import { localEditor, localViewer } from "../v57/room.mjs?v=4510";
 
 const api = window.ArchivesRelay;
 const params = new URLSearchParams(location.search);
@@ -209,7 +209,7 @@ function installViewer() {
     if (!returning) return;
     clearTimeout(closeTimer);
     if (dirty() && !exportConfirmed) {
-      closeTimer = setTimeout(() => finishReturn(false), 4500);
+      closeTimer = setTimeout(() => finishReturn(false), 4510);
       return;
     }
     if (!wire) { finishReturn(true); return; }
@@ -306,6 +306,7 @@ function installPlayer() {
             window.dispatchEvent(new CustomEvent("archives:invite:v40", {detail:data}));
             return;
           }
+          if(data?.type==='archives:player-image:v1'){if(api.present(data.playerPresentation))notice.hide();return}
           try { api.apply(data); clearTimeout(timer); notice.hide(); }
           catch { retryMessage("Les données du Salon Live n’ont pas pu s’ouvrir.", current); }
         });

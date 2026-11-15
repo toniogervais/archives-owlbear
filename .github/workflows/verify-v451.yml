@@ -1,0 +1,30 @@
+name: Vérification V4.51 — portraits cachés indépendants
+on:
+  push:
+    branches: ['codex/v451-*']
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: node --test tests/presentation-v451.test.cjs tests/presentation-v450.test.cjs tests/presentation-v444.test.cjs tests/files-v60.test.mjs
+      - run: npx playwright install chromium
+      - run: node tests/browser-v451.cjs
+      - run: node tests/browser-v444.cjs
+        if: ${{ !cancelled() }}
+      - run: node tests/browser-v449.cjs
+        if: ${{ !cancelled() }}
+      - run: node tests/browser-v450.cjs
+        if: ${{ !cancelled() }}
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: archives-v451-focused
+          path: /tmp/archives-v451-*.png
+          if-no-files-found: ignore

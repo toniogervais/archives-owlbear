@@ -1,5 +1,5 @@
-import { liveRoomKey, validSession, viewerId } from "../v56/link.mjs?v=4500";
-import { inviteId, localRoom, roomChannel, roomMembers, screenUrl, snapshotChunks, validSnapshot } from "./room.mjs?v=4500";
+import { liveRoomKey, validSession, viewerId } from "../v56/link.mjs?v=4510";
+import { inviteId, localRoom, roomChannel, roomMembers, screenUrl, snapshotChunks, validSnapshot } from "./room.mjs?v=4510";
 import {createPresence} from '../v63/presence.mjs?v=4210';
 import {screenCommand} from '../v65/screen-model.mjs';
 
@@ -10,7 +10,7 @@ export async function installRoomPlay(OBR) {
   let role = await OBR.player.getRole();
   let screen, latest, serial = 0, timer, sending = false, sendAgain = false;
   let picture, pictureKey='',pictureTimer,pictureSending=false,pictureAgain=false;
-  let playerView = "", lastInvite = "";
+  let playerView = "", lastInvite = "",presentation = '';
   let pendingTarget = '',lastPresenceRequest = 0;
   let pendingInvite;
   let screenQueue=Promise.resolve();
@@ -29,15 +29,17 @@ export async function installRoomPlay(OBR) {
   async function closeInvite() {
     try { await OBR.modal.close(inviteId); } catch {}
   }
-  async function applyScreen(data) {
-    if (data.id === lastInvite || (data.to && data.to !== connectionId)) return;
+  async function applyScreen(data,resume=false) {
+    if ((!resume && data.id === lastInvite) || (data.to && data.to !== connectionId)) return;
     lastInvite = data.id;
     await closeInvite();
     if (lastInvite !== data.id) return;
+    if(presentation){pendingTarget=data.target;pendingInvite=data;announcePresence();return}
     if ((data.target === "ARCHIVES") === Boolean(playerView)) { pendingInvite=null;pendingTarget = '';announcePresence();return; }
     pendingTarget = data.target;pendingInvite = data;
     await OBR.modal.open({id:inviteId, url:screenUrl(data.target,true,data),
       fullScreen:true, hideBackdrop:true, hidePaper:true});
+    if(presentation)await closeInvite();
     announcePresence();
   }
 
@@ -112,8 +114,9 @@ export async function installRoomPlay(OBR) {
       } else if (data?.type === "published" && validSnapshot(data.payload)) {
         const {playerPresentation,...canvas}=data.payload;
         latest = {payload:canvas, revision:newId()};
-        const key=playerPresentation?.id||'';
-        if(!picture||key!==pictureKey){pictureKey=key;picture={value:playerPresentation||null,revision:newId()};queuePicture()}
+        const inline=playerPresentation?.delivery==='media'?null:playerPresentation;
+        const key=inline?.id||'';
+        if(!picture||key!==pictureKey){pictureKey=key;picture={value:inline||null,revision:newId()};queuePicture()}
         queueSnapshot();
       } else if (data?.type==='gm-screen-command' && validSession(data.id)) {
         screenQueue=screenQueue.catch(()=>{}).then(()=>changeScreen(data.command));
@@ -122,6 +125,10 @@ export async function installRoomPlay(OBR) {
       } else if (data?.type==='gm-screen-presence' && ['ARCHIVES','OWLBEAR'].includes(data.target)) {
         if(screen && screen.target!==data.target)screen=null;
       }
+    } else if(data?.type==='media-active'&&validSession(data.id)){
+      presentation=data.id;void closeInvite();
+    } else if(data?.type==='media-inactive'&&data.id===presentation){
+      presentation='';if(pendingInvite)void applyScreen(pendingInvite,true).catch(console.warn);
     } else if (data?.type === "viewer-open" && validSession(data.id)) {
       playerView = data.id;
       pendingInvite=null;pendingTarget = '';announcePresence();
@@ -132,7 +139,7 @@ export async function installRoomPlay(OBR) {
     } else if (data?.type === 'screen-invite-dismissed' && pendingInvite?.id===data.id && !pendingInvite.required) { pendingInvite=null;pendingTarget = '';announcePresence(); }
     else if (data?.type==='screen-invite-closed' && pendingInvite?.id===data.id && pendingInvite.required) {
       const current=pendingInvite;
-      setTimeout(()=>{if(role==='PLAYER' && pendingInvite===current)void OBR.modal.open({id:inviteId,url:screenUrl(current.target,true,current),fullScreen:true,hideBackdrop:true,hidePaper:true}).catch(console.warn);},250);
+      setTimeout(()=>{if(role==='PLAYER' && !presentation && pendingInvite===current)void OBR.modal.open({id:inviteId,url:screenUrl(current.target,true,current),fullScreen:true,hideBackdrop:true,hidePaper:true}).catch(console.warn);},250);
     }
   };
 
@@ -173,7 +180,7 @@ export async function installRoomPlay(OBR) {
     serial++;
     latest = screen = picture = null;pictureKey='';clearTimeout(pictureTimer);
     readers.clear();
-    playerView = lastInvite = "";
+    playerView = lastInvite = presentation = "";
     pendingInvite=null;pendingTarget = '';announcePresence();
     clearTimeout(timer);
     requestScreen();

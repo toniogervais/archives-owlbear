@@ -1,6 +1,11 @@
-import {element,button,isGM,nativeEditor,notice} from '../v63/ui.mjs?v=4500';
-import {libraryRequest} from '../v60/request.mjs?v=4500';
+import {element,button,isGM,nativeEditor,notice} from '../v63/ui.mjs?v=4510';
+import {libraryRequest} from '../v60/request.mjs?v=4510';
 let menu;
+const imageOf=node=>node?.bgImg||node?.image||node?.imageData;
+function presentCell(id){
+ const state=window.DuneApp?.getState?.(),node=state?.boards?.flatMap(board=>board.nodes).find(node=>node.id===id);
+ if(imageOf(node))return present({data:imageOf(node)});
+}
 function close(){menu?.hidePopover?.();menu?.remove();menu=null}
 async function present(source) {
   if(!isGM())return;
@@ -16,12 +21,12 @@ async function present(source) {
 function descriptor(target) {
   if(target.closest?.('#archives-image-library-grid'))return null;
   const peek=target.closest?.('.node-cell.peek-bg-only');
-  if(peek){const node=window.DuneApp.getState().nodes.find(n=>n.id===peek.dataset.id);if(node?.bgImg)return {data:node.bgImg}}
+  if(peek){const node=window.DuneApp.getState().nodes.find(n=>n.id===peek.dataset.id);if(imageOf(node))return {data:imageOf(node)}}
   const dialog=target.closest?.('dialog');
   if(dialog?.archivesPresentationSource)return dialog.archivesPresentationSource;
   const img=target.closest?.('img');if(img&&img.getBoundingClientRect().width>60&&img.getBoundingClientRect().height>60)return {data:img.currentSrc||img.src};
   // The editor preview uses a CSS image, not an IMG element.
-  if(target.closest?.('#active-editor-preview-stage')){const s=window.DuneApp.getState(),n=s.nodes.find(n=>n.id===s.selectedId);if(n?.bgImg)return {data:n.bgImg}}
+  if(target.closest?.('#active-editor-preview-stage')){const s=window.DuneApp.getState(),n=s.nodes.find(n=>n.id===s.selectedId);if(imageOf(n))return {data:imageOf(n)}}
   return null;
 }
 document.addEventListener('contextmenu',event=>{
@@ -39,11 +44,11 @@ document.addEventListener('keydown',event=>{if(event.key==='Escape'&&menu){event
 function install(){
   const host=document.getElementById('cell-ctx-menu');if(!host)return;
   const css=element('style');css.textContent='#cell-ctx-menu .ctx-item[hidden]{display:none!important}#cell-ctx-menu button[id^="archives-context-present"]{width:100%;border:0;background:transparent;color:inherit;font:inherit;text-align:left}#cell-ctx-menu button[id^="archives-context-present"]:hover{background:var(--skin-gold-main);color:#000}';document.head.append(css);
-  const show=button('Montrer l’image aux joueurs',()=>{const s=window.DuneApp.getState(),n=s.nodes.find(n=>n.id===s.ctxTargetNodeId);window.DuneApp.closeContextMenus();if(n?.bgImg)void present({data:n.bgImg})},'ctx-item');show.id='archives-context-present-image';
+  const show=button('Montrer l’image aux joueurs',()=>{const id=window.DuneApp.getState().ctxTargetNodeId;window.DuneApp.closeContextMenus();void presentCell(id)},'ctx-item');show.id='archives-context-present-image';
   const text=button('Montrer la description aux joueurs',()=>{const s=window.DuneApp.getState(),n=s.nodes.find(n=>n.id===s.ctxTargetNodeId);window.DuneApp.closeContextMenus();if(n?.desc)void present({text:n.desc})},'ctx-item');text.id='archives-context-present-text';
   const anchor=host.querySelector('#ctx-send-to-owlbear');if(anchor)anchor.after(show,text);else host.append(show,text);
   const refresh=()=>{
-    const s=window.DuneApp?.getState?.(),n=s?.nodes.find(n=>n.id===s.ctxTargetNodeId);show.hidden=!isGM()||!n?.bgImg;text.hidden=!isGM()||!n?.desc;
+    const s=window.DuneApp?.getState?.(),n=s?.nodes.find(n=>n.id===s.ctxTargetNodeId);show.hidden=!isGM()||!imageOf(n);text.hidden=!isGM()||!n?.desc;
     // Conditional actions can change the height after the legacy menu opened.
     // Re-clamp to the visual viewport after their visibility has been resolved.
     if(host.classList.contains('open')){
@@ -55,4 +60,4 @@ function install(){
   new MutationObserver(refresh).observe(host,{attributes:true,attributeFilter:['class']});refresh();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
-window.ArchivesPresentation={present};
+window.ArchivesPresentation={present,presentCell};

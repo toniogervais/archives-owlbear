@@ -2,10 +2,10 @@ import { O as OBR } from "../../assets/index-BfJgTiPE.js";
 import {
   isPacket, liveRoomKey, packet, pairingKey, readLocal, screenChannel, trustedOwlbearSdk,
   validLiveRoom, validPairing, viewerId, writeLocal
-} from "./link.mjs?v=4500";
-import { localEditor, localViewer, release } from "../v57/room.mjs?v=4500";
-import { makeEditorHost, makePlayerHost } from "../v57/room-host.mjs?v=4500";
-import {makeSoundShowPlayerHost} from '../soundshow/player-host.mjs?v=4500';
+} from "./link.mjs?v=4510";
+import { localEditor, localViewer, release } from "../v57/room.mjs?v=4510";
+import { makeEditorHost, makePlayerHost } from "../v57/room-host.mjs?v=4510";
+import {makeSoundShowPlayerHost} from '../soundshow/player-host.mjs?v=4510';
 
 const $ = id => document.getElementById(id);
 const frame = $("app"), message = $("message"), button = $("return");
@@ -79,7 +79,7 @@ window.addEventListener("message", event => {
     soundShowPlayerHost?.receive(data);return;
   }
   if (gm && ['owl-soundshow-command','owl-soundshow-query','owl-soundshow-remote-command','owl-soundshow-remote-get'].includes(data.type)) {
-    void import('../soundshow/host.mjs?v=4500').then(module => module.forwardSoundShow(OBR,data,post))
+    void import('../soundshow/host.mjs?v=4510').then(module => module.forwardSoundShow(OBR,data,post))
       .catch(error => post(data.type.startsWith('owl-soundshow-remote-')?'owl-soundshow-remote-result':'owl-soundshow-result',{id:data.id,safe:false,message:error.message}));
     return;
   }

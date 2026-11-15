@@ -78,6 +78,8 @@ function css(){
     flex:0 0 auto;max-width:100%;padding:10px 3px 2px;overflow-wrap:anywhere;
     color:#dbc69d;font-size:12px;
   }
+  #archives-cell-brief .brief-share-image {flex:0 0 auto;padding:7px 9px;margin:6px 0;border:1px solid #bca06a80;border-radius:7px;background:#2a2034;color:#f2d9a5;font-size:12px}
+  #archives-cell-brief .brief-share-image:hover {background:#49334f}
   #archives-cell-brief .brief-right {display:flex;flex-direction:column;min-width:0;min-height:0}
   #archives-cell-brief .brief-desc {
     display:flex;flex-direction:column;min-height:120px;flex:1 1 46%;
@@ -214,7 +216,7 @@ function ensureDialog(){
   footer.append(el('span',null,'Cocher révèle un indice aux joueurs si la cellule leur est visible. Décocher le masque.'));
   const back=el('button',null,'Fermer');back.type='button';back.onclick=()=>dialog.close();footer.append(back);
   shell.append(header,deck,footer);dialog.append(shell);document.body.append(dialog);
-  dialog.addEventListener('close',()=>{activeNodeIds=[];deck.replaceChildren()});
+  dialog.addEventListener('close',()=>{if(dialog.open)return;activeNodeIds=[];deck.replaceChildren()});
   return dialog;
 }
 function renderCard(node,index){
@@ -234,6 +236,11 @@ function renderCard(node,index){
     img.onerror=()=>photo.replaceChildren(el('span','brief-no-picture','Image indisponible'));photo.append(img);
   }else photo.append(el('span','brief-no-picture','Aucun portrait ou illustration associé à cette cellule'));
   const category=el('div','brief-subtitle',[node.category||'Cellule',node.faction||'',node.revealed?'Cellule révélée':'Cellule cachée'].filter(Boolean).join(' · '));category.id=id('category');portrait.append(picture,category);
+  if(typeof url==='string'&&url){
+    const show=el('button','brief-share-image','▣ Montrer l’image aux joueurs');show.type='button';
+    show.title='Présenter uniquement l’image, sans révéler la cellule ni ses indices';
+    show.onclick=()=>void window.ArchivesPresentation?.presentCell(node.id);portrait.append(show);
+  }
   for(const field of Array.isArray(node.gmDetails)?node.gmDetails:[]){
     const section=el('section','brief-gm-field');section.append(el('h3',null,field.title),el('div','brief-gm-text',field.text||''));portrait.append(section);
   }
@@ -280,6 +287,7 @@ function open(nodeId,event){
   if(!gmState()){document.getElementById(DIALOG_ID)?.close();return}
   if(!currentNode(nodeId))return;
   css();const dialog=ensureDialog(),id=String(nodeId);
+  if(!dialog.open)activeNodeIds=[];
   if(!activeNodeIds.includes(id)){
     if(activeNodeIds.length>=4)return;
     activeNodeIds.push(id);
