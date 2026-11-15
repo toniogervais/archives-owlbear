@@ -1,6 +1,6 @@
-import {isGM,nativeEditor,notice} from '../v63/ui.mjs?v=4510';
-import {libraryRequest} from '../v60/request.mjs?v=4510';
-import {fade,fadeDuration} from '../v73/fade.mjs?v=4510';
+import {isGM,nativeEditor,notice} from '../v63/ui.mjs?v=4520';
+import {libraryRequest} from '../v60/request.mjs?v=4520';
+import {fade,fadeDuration} from '../v73/fade.mjs?v=4520';
 let operation=0,shown='',requested='',dialog,epoch=0,animation,nativePresentation=false,nativePublishedId='';
 const dismissed=new Set(),state=()=>window.DuneApp?.getState?.();
 function remember(id){if(!id)return;dismissed.add(id);if(dismissed.size>128)dismissed.delete(dismissed.values().next().value)}

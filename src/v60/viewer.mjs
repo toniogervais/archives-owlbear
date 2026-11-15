@@ -1,8 +1,8 @@
 import OBR from "../../assets/owlbear-transfer-sdk-v55.mjs";
-import { trustedOwlbearSdk } from "../v56/link.mjs?v=4510";
-import { localRoom } from "../v57/room.mjs?v=4510";
-import { validId,validSharedFile as validPublication,mediaModal } from "./files.mjs?v=4510";
-import {fade} from '../v73/fade.mjs?v=4510';
+import { trustedOwlbearSdk } from "../v56/link.mjs?v=4520";
+import { localRoom } from "../v57/room.mjs?v=4520";
+import { validId,validSharedFile as validPublication,mediaModal } from "./files.mjs?v=4520";
+import {fade} from '../v73/fade.mjs?v=4520';
 const $ = id => document.getElementById(id);
 let channel,media,url,readyTimer,closed = false,received = false;
 const session=crypto.randomUUID();let id=location.hash.slice(1),closing=false,epoch=0,motion;
@@ -49,7 +49,7 @@ async function start() {
     if(closed||data?.session!==session)return;
     if(data.type==='media-view-hide'&&data.id===id){void close();return}
     if(data.type!=='media-view-state'||!validId(data.id)||!validPublication(data.publication)||data.publication.id!==data.id)return;
-    if(data.id!==id){epoch++;id=data.id;closing=false;received=false;cleanup();enter()}
+    if(data.id!==id){epoch++;id=data.id;closing=false;received=false;cleanup();media=null;$('media').replaceChildren();$('progress').hidden=false;$('retry').hidden=true;$('play').hidden=true;enter()}
     const version=epoch;
 
     clearTimeout(readyTimer);$("title").textContent = data.publication.title;

@@ -1,0 +1,28 @@
+name: Vérification V4.52 — transferts et réserve de cellules
+on:
+  push:
+    branches: ['codex/v452-*']
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: node --test tests/media-v452.test.cjs tests/reserve-v452.test.mjs tests/campaign-v63.test.mjs
+      - run: npx playwright install chromium
+      - run: node tests/browser-v452.cjs
+      - run: node tests/browser-v451.cjs
+        if: ${{ !cancelled() }}
+      - run: node tests/browser-v60.cjs
+        if: ${{ !cancelled() }}
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: archives-v452-focused
+          path: /tmp/archives-v452-*.png
+          if-no-files-found: ignore

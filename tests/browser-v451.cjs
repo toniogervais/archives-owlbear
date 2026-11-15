@@ -48,7 +48,7 @@ async function main(browser){
  const fixture=hub(),gc=await browser.newContext({viewport:{width:1440,height:1000}}),pc=await browser.newContext({viewport:{width:820,height:1180},isMobile:true,hasTouch:true});for(const c of [gc,pc])await configure(c,fixture,{sceneReady:true});
  const gm=await gc.newPage(),player=await pc.newPage(),errors=[];let map;for(const p of [gm,player])p.on('pageerror',e=>errors.push(e.message));
  try{
-  await gm.goto(archives+'/archives.html?resume=1&v=old');await gm.waitForFunction(()=>window.ArchivesPresentation&&window.ArchivesPresentationBridge);assert.equal(new URL(gm.url()).searchParams.get('v'),'4510');
+  await gm.goto(archives+'/archives.html?resume=1&v=old');await gm.waitForFunction(()=>window.ArchivesPresentation&&window.ArchivesPresentationBridge);assert.equal(new URL(gm.url()).searchParams.get('v'),require('../package.json').version.replaceAll('.',''));
   const data=await graphics(gm);await gm.evaluate(s=>ArchivesRelay.apply(s),scenario(data));
   gm.once('dialog',d=>d.accept(owl+'/room/one'));[map]=await Promise.all([gm.waitForEvent('popup'),gm.getByRole('button',{name:'Owlbear — afficher la carte',exact:true}).click()]);await map.waitForURL(owl+'/room/one');
   await gm.waitForFunction(()=>ArchivesPresentationBridge.connected);await player.goto(owl+'/room/one?joueur=Noa');await player.locator('#archives-tool').click();await editor(player).locator('#world').waitFor();
