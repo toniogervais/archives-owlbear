@@ -39,7 +39,7 @@ async function reserve(browser){
  const fixture=hub(),gc=await browser.newContext({viewport:{width:1440,height:1000}}),pc=await browser.newContext();for(const c of [gc,pc])await configure(c,fixture,{sceneReady:true});
  const gm=await gc.newPage(),player=await pc.newPage(),errors=[];for(const p of [gm,player])p.on('pageerror',e=>errors.push(e.message));
  try{
-  await openGM(gm);await player.goto(owl+'/room/one?joueur=Alix');await player.locator('#archives-tool').click();await editor(player).locator('#world').waitFor({state:'attached'});
+  await openGM(gm);await player.goto(owl+'/room/one?joueur=Alix');await player.frameLocator('#invite').getByRole('button',{name:'Afficher les Archives',exact:true}).click();await editor(player).locator('#world').waitFor({state:'attached'});
   const original=await gm.evaluate(()=>{const c=document.createElement('canvas');c.width=160;c.height=200;const x=c.getContext('2d');x.fillStyle='#26ab65';x.fillRect(0,0,160,200);return c.toDataURL()});
   const open=async()=>{await app(gm).evaluate(()=>ArchivesCellReserve.open());await editor(gm).locator('#archives-reserve-grid').waitFor()};await open();
   for(const [i,category]of ['lieu','objet','evenement'].entries()){
