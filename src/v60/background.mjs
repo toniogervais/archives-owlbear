@@ -1,6 +1,6 @@
-import { localRoom,roomMembers,roomChannel,release } from "../v57/room.mjs?v=4510";
-import { openFileLibrary,validateFile,validId,validSharedFile as validPublication,publicFile,digest,fileChunks,fileReceiver,mediaChannel,mediaModal } from "./files.mjs?v=4510";
-import {installDossierFiles,dossierEntry} from '../v69/dossier-files.mjs?v=4510';
+import { localRoom,roomMembers,roomChannel,release } from "../v57/room.mjs?v=4520";
+import { openFileLibrary,validateFile,validId,validSharedFile as validPublication,publicFile,digest,fileChunks,fileReceiver,mediaChannel,mediaModal } from "./files.mjs?v=4520";
+import {installDossierFiles,dossierEntry} from '../v69/dossier-files.mjs?v=4520';
 
 export async function installFileLibrary(OBR) {
   const {channel,connectionId:initialConnection} = await localRoom(OBR);
@@ -10,7 +10,7 @@ export async function installFileLibrary(OBR) {
   let publication,publicationBlob,receive,epoch = 0,viewerSession = "",sending = false,sendTimer;
   let viewerOpen=false,modalQueue=Promise.resolve();
   function modalOperation(action){const result=modalQueue.catch(()=>{}).then(action);modalQueue=result.catch(()=>{});return result}
-  const declined = new Set(),targets = new Set(),inProgress = new Set(),lastSent = new Map();
+  const declined = new Set(),targets = new Set();
   const send = data => OBR.broadcast.sendMessage(mediaChannel,data);
   async function requireGM() {
     if (closed || role !== "GM" || await OBR.player.getRole() !== "GM") throw Error("Bibliothèque réservée au maître de jeu de cette salle.");
@@ -36,7 +36,7 @@ export async function installFileLibrary(OBR) {
   }
   async function stop() {
     const previous = publication;
-    publication = null;publicationBlob = null;epoch++;targets.clear();lastSent.clear();
+    publication = null;publicationBlob = null;epoch++;targets.clear();
     if (previous && role === "GM" && !closed && await OBR.player.getRole() === "GM")
       await send({type:"hide",id:previous.id,version:previous.version});
   }
@@ -144,19 +144,22 @@ export async function installFileLibrary(OBR) {
       declined.add(data.id);void closeViewer();
     }
   });
-  function requestFile(retry = false) {
+  function requestFile(retry = false,automatic = false) {
     const state = receive;
     if (!state || !viewerSession || closed || role !== "PLAYER") return Promise.resolve();
     if (state.requested && !retry) return Promise.resolve();
+    if(!automatic)state.attempts=0;state.attempts=(state.attempts||0)+1;
     clearTimeout(state.timer);state.requested = true;state.receiver = fileReceiver(state.publication,validPublication);state.error = "";state.progress = 0;
     function timeout() {
       if (receive !== state || state.blob) return;
+      if(state.attempts<3){state.requested=false;void requestFile(true,true);return}
       state.error = "Le chargement s’est interrompu. Réessaie lorsque le MJ est connecté.";state.requested = false;viewState();
     }
+    state.retry=timeout;
     state.resetTimer = () => { clearTimeout(state.timer);state.timer = setTimeout(timeout,20000); };
     state.resetTimer();viewState();
     return send({type:"request",id:state.publication.id,version:state.publication.version,to:state.sender})
-      .catch(() => { state.error = "Chargement impossible. Réessaie.";state.requested = false;viewState(); });
+      .catch(() => { if(receive!==state)return;state.requested=false;if(state.attempts<3){state.timer=setTimeout(timeout,1500)}else{state.error="Chargement impossible. Réessaie.";viewState()} });
   }
   async function sendPending() {
     if (sending || closed) return;
@@ -171,21 +174,21 @@ export async function installFileLibrary(OBR) {
         await requireGM();
         const blob = active.transient ? publicationBlob : await store.blob(active.fileId);
         if (!blob || publication !== active || start !== epoch || closed) continue;
-        const transfer = crypto.randomUUID();allowed.forEach(id => { inProgress.add(id);lastSent.set(id,Date.now()); });
-        try {
-          for await (const part of fileChunks(blob)) {
+        const transfer = crypto.randomUUID();
+        for await (const part of fileChunks(blob)) {
             if (closed || role !== "GM" || publication !== active || start !== epoch) break;
             if (part.index % 32 === 0) await requireGM();
             await send({type:"data",id:active.id,version:active.version,transfer,to:allowed,...part});
             if (part.index % 8 === 7) await new Promise(resolve => setTimeout(resolve,30));
-          }
-        } finally { allowed.forEach(id => inProgress.delete(id)); }
+        }
       }
     } catch (error) { console.warn("Présentation du média",error); }
     finally { sending = false; }
   }
   function scheduleFile(id) {
-    if (inProgress.has(id) || Date.now() - (lastSent.get(id) || 0) < 3000) return;
+    // Keep one pending request per player, including a newer photograph or a
+    // retry arriving while another transfer is still awaiting Owlbear.
+    // The single sender drains this queue after the in-flight chunk completes.
     targets.add(id);clearTimeout(sendTimer);sendTimer = setTimeout(() => { void sendPending(); },40);
   }
   const offMedia = OBR.broadcast.onMessage(mediaChannel,event => {
@@ -225,7 +228,7 @@ export async function installFileLibrary(OBR) {
             state.resetTimer();
             if (result.blob) { clearTimeout(state.timer);state.blob = result.blob;state.progress = 100;viewState(); }
             else if (result.progress >= (state.progress || 0) + 5) { state.progress = result.progress;viewState(); }
-          } catch (error) { clearTimeout(state.timer);state.error = error.message;state.requested = false;viewState(); }
+          } catch (error) { clearTimeout(state.timer);state.retry(); }
         }).catch(console.warn);
       }
     })().catch(console.warn);

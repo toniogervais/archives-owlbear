@@ -1,4 +1,4 @@
-import {isPacket,packet} from '../v56/link.mjs?v=4510';
+import {isPacket,packet} from '../v56/link.mjs?v=4520';
 const pending = new Map();
 export const isGM = () => { const state = window.DuneApp?.getState?.();return !!state && !state.playerMode && !state.strictReadOnly; };
 export function requireGM() { if (!isGM()) throw Error('Commande réservée au maître de jeu.'); }

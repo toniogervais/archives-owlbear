@@ -1,8 +1,9 @@
-import {validSnapshot} from '../v57/room.mjs?v=4510';
-import {openFileLibrary,validateFile,validId} from '../v60/files.mjs?v=4210';
-import {privateArtworkStore} from '../v58/model.mjs?v=4510';
-import {digest} from '../v72/integrity.mjs?v=4510';
+import {validSnapshot} from '../v57/room.mjs?v=4520';
+import {openFileLibrary,validateFile,validId} from '../v60/files.mjs?v=4520';
+import {privateArtworkStore} from '../v58/model.mjs?v=4520';
+import {digest} from '../v72/integrity.mjs?v=4520';
 import {normalizeCrop} from '../v61/token-crop.mjs';
+import {openCellReserve,validateReserve} from '../v74/cell-reserve.mjs?v=4520';
 
 const signature = new TextEncoder().encode('ARCHIVES-CAMPAGNE/1\n');
 export const maxBackupBytes = 2 * 1024 * 1024 * 1024;
@@ -17,6 +18,7 @@ function validateManifest(value) {
   if (value?.format !== 'archives-campagne' || value.schema !== 1 || !validSnapshot(value.scenario) ||
       !Array.isArray(value.files) || value.files.length > 1000 || !Array.isArray(value.images) || value.images.length > 2000 ||
       !Array.isArray(value.presets) || value.presets.length > 10000) throw Error('Cette sauvegarde de campagne est invalide.');
+  if(value.scenario.cellReserve!==undefined)validateReserve(value.scenario.cellReserve);
   const ids = new Set();
   for (const entry of value.files) {
     if (!validId(entry.id) || ids.has(entry.id) || !safeText(entry.title,120) || !safeText(entry.name,240) ||
@@ -43,7 +45,7 @@ function validateManifest(value) {
 }
 export function backupSummary(manifest,bytes) {
   return {boards:manifest.scenario.boards.length,cells:manifest.scenario.boards.reduce((total,board) => total + board.nodes.length,0),
-    files:manifest.files.length,images:manifest.images.length,presets:manifest.presets.length,created:manifest.created,bytes};
+    files:manifest.files.length,images:manifest.images.length,presets:manifest.presets.length,reserve:(manifest.scenario.cellReserve||[]).length,created:manifest.created,bytes};
 }
 // Schema 2 stores original binary assets once, outside the small JSON index.
 // Exact data-URI prefixes and explicit paths restore the original snapshot byte for byte.
@@ -230,7 +232,9 @@ export async function captureCampaign(room,owner,scenario,check = async () => {}
       originals.push({entry,blob});
     }
     let subcategories = {};try { subcategories = JSON.parse(localStorage.getItem(keyName) || '{}'); } catch {}
-    const result = {scenario,files:originals,images:await imagesRead(images),presets:await art.exportPresets(),subcategories};
+    const reserve=await openCellReserve(room,owner);let cells;
+    try{cells=await reserve.list()}finally{reserve.close()}
+    const result = {scenario:{...scenario,cellReserve:cells},files:originals,images:await imagesRead(images),presets:await art.exportPresets(),subcategories};
     await check();return result;
   } finally { files.close();art.close();images.close(); }
 }
@@ -254,20 +258,22 @@ export async function restoreCampaign(room,owner,incoming,scenarioStore,currentS
   await check();const previous = await captureCampaign(room,owner,currentScenario,check);
   const copy = await packBackup(previous),recovery = await checkpointStore(room,owner);
   try { await check();await recovery.put(copy.blob); } finally { recovery.close(); }
-  const files = await openFileLibrary(room,owner),art = await privateArtworkStore(room,owner),images = await imageLibrary();
+  const files = await openFileLibrary(room,owner),art = await privateArtworkStore(room,owner),images = await imageLibrary(),reserve=await openCellReserve(room,owner);
   const restoreSubcategories = value => localStorage.setItem(keyName,JSON.stringify(value));
   try {
     await check();await files.restore(incoming.files);
     await check();await art.restorePresets(incoming.presets);
     await check();await imagesWrite(images,incoming.images);
     await check();restoreSubcategories({...previous.subcategories,...incoming.subcategories});
+    await check();await reserve.restore(incoming.scenario.cellReserve||[]);
     await check();await scenarioStore.save(incoming.scenario);
     return {snapshot:incoming.scenario,summary:incoming.summary};
   } catch (error) {
     try {
       await files.restore(previous.files,true);await art.restorePresets(previous.presets,true);await imagesWrite(images,previous.images,true);
       restoreSubcategories(previous.subcategories);
+      await reserve.restore(previous.scenario.cellReserve||[],true);
     } catch { throw Error('Restauration interrompue. La copie de sécurité précédente est conservée dans Sauvegardes.'); }
     throw error;
-  } finally { files.close();art.close();images.close(); }
+  } finally { files.close();art.close();images.close();reserve.close(); }
 }

@@ -1,7 +1,7 @@
-import { isPacket, packet } from "../v56/link.mjs?v=4510";
-import { prepareSource,renderSource,sourcePicture } from "./media.mjs?v=4510";
+import { isPacket, packet } from "../v56/link.mjs?v=4520";
+import { prepareSource,renderSource,sourcePicture } from "./media.mjs?v=4520";
 import { installCropEditor } from "../v61/token-crop.mjs";
-import {ensureHostedArtwork} from "./hosted-assets.mjs?v=4510";
+import {ensureHostedArtwork} from "./hosted-assets.mjs?v=4520";
 
 const pending = new Map();
 const $ = id => document.getElementById(id);

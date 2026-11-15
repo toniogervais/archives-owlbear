@@ -21,6 +21,8 @@ on:
       - 'src/v71/**'
       - 'src/v72/**'
       - 'src/v73/**'
+      - 'src/v74/**'
+      - 'tests/*v452*'
       - 'tests/*v450*'
       - 'tests/*v451*'
       - 'tests/presented-image.cjs'
@@ -159,3 +161,8 @@ jobs:
           name: archives-v450-screenshots
           path: /tmp/archives-v450-*.png
           if-no-files-found: ignore
+
+      - run: node --test tests/media-v452.test.cjs tests/reserve-v452.test.mjs
+        if: ${{ !cancelled() }}
+      - run: node tests/browser-v452.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}

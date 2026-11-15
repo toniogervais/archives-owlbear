@@ -1,8 +1,8 @@
-import {button,element,isGM,nativeEditor,notice,sheet} from '../v63/ui.mjs?v=4510';
-import {editEvent} from '../v56/link.mjs?v=4510';
-import {createCloud,cloudError} from './cloud.mjs?v=4510';
-import {autoBackup} from './autosave.mjs?v=4510';
-import {campaignRequest} from './campaign-io.mjs?v=4510';
+import {button,element,isGM,nativeEditor,notice,sheet} from '../v63/ui.mjs?v=4520';
+import {editEvent} from '../v56/link.mjs?v=4520';
+import {createCloud,cloudError} from './cloud.mjs?v=4520';
+import {autoBackup} from './autosave.mjs?v=4520';
+import {campaignRequest} from './campaign-io.mjs?v=4520';
 import {downloadArchive} from './download.mjs';
 const cloud = createCloud(() => {
   if (!isGM()) throw Error('Commande réservée au maître de jeu.');
@@ -47,6 +47,7 @@ export function installCloudBackup() {
     window.addEventListener('archives:campaign-context',event => start(event.detail));
   } else if (window.parent === window) start('standalone');
   window.addEventListener(editEvent,() => { if (isGM()) engine?.change(); });
+  window.addEventListener('archives:reserve-changed',() => { if(isGM())engine?.change(); });
   window.addEventListener('archives:scenario-replaced',() => { if(isGM())engine?.pause(); });
   window.addEventListener('online',() => { if (isGM()) void engine?.save(); });
   window.addEventListener('focus',() => { if (isGM()) void engine?.save(); });
