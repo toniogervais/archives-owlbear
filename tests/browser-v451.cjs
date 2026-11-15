@@ -29,9 +29,9 @@ async function native(browser){
   // Every legacy image field works. The brief button does not reveal the cell.
   await app(gm).evaluate(()=>ArchivesCellBrief.open('hidden1'));const brief=editor(gm).locator('#archives-cell-brief[open]');
   await brief.getByRole('button',{name:'Montrer l’image aux joueurs',exact:false}).click();await waitMedia(player,data[1]);const firstFrame=frame(player);
-  await brief.getByRole('button',{name:'Fermer les fiches MJ',exact:true}).click();await app(gm).evaluate(()=>ArchivesCellBrief.open('hidden2'));
+  await brief.getByRole('button',{name:'Fermer les fiches MJ',exact:true}).click();await brief.waitFor({state:'hidden'});await app(gm).evaluate(()=>ArchivesCellBrief.open('hidden2'));
   await brief.locator('.brief-picture').click({button:'right'});await editor(gm).locator('#archives-presentation-menu').getByRole('button',{name:'Montrer aux joueurs',exact:true}).click();await waitMedia(player,data[2]);assert.equal(frame(player),firstFrame);
-  await brief.getByRole('button',{name:'Fermer les fiches MJ',exact:true}).click();
+  await brief.getByRole('button',{name:'Fermer les fiches MJ',exact:true}).click();await brief.waitFor({state:'hidden'});
   await app(gm).evaluate(()=>DuneApp.openCellContextMenu('hidden1',300,200));await editor(gm).locator('#archives-context-present-image').click();await waitMedia(player,data[1]);
   // Closed Archives canvas: the media still appears while the player is on the map.
   await closeMedia(player);await player.evaluate(()=>document.querySelector('#viewer')?.remove());
