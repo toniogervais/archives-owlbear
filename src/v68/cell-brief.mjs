@@ -216,7 +216,7 @@ function ensureDialog(){
   footer.append(el('span',null,'Cocher révèle un indice aux joueurs si la cellule leur est visible. Décocher le masque.'));
   const back=el('button',null,'Fermer');back.type='button';back.onclick=()=>dialog.close();footer.append(back);
   shell.append(header,deck,footer);dialog.append(shell);document.body.append(dialog);
-  dialog.addEventListener('close',()=>{activeNodeIds=[];deck.replaceChildren()});
+  dialog.addEventListener('close',()=>{if(dialog.open)return;activeNodeIds=[];deck.replaceChildren()});
   return dialog;
 }
 function renderCard(node,index){
@@ -287,6 +287,7 @@ function open(nodeId,event){
   if(!gmState()){document.getElementById(DIALOG_ID)?.close();return}
   if(!currentNode(nodeId))return;
   css();const dialog=ensureDialog(),id=String(nodeId);
+  if(!dialog.open)activeNodeIds=[];
   if(!activeNodeIds.includes(id)){
     if(activeNodeIds.length>=4)return;
     activeNodeIds.push(id);

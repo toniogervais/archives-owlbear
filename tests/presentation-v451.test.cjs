@@ -7,6 +7,17 @@ test('The launcher and every current player entry point use the same release',()
  for(const file of ['archives.html','archives-host-v55.html','background-v55.html','media-view-v60.html']){
   const versions=[...fs.readFileSync(file,'utf8').matchAll(/\?v=(\d+)/g)].map(m=>m[1]);assert.ok(versions.length);assert.ok(versions.every(v=>v===release),file);
  }
+ const manifest=JSON.parse(fs.readFileSync('manifest-v55.json','utf8'));
+ for(const url of [manifest.background_url,manifest.action.popover])assert.equal(new URL(url).searchParams.get('v'),release);
+});
+test('Closing and immediately reopening a GM brief keeps only the new portrait',async()=>{
+ const dom=new JSDOM('<html><head></head><body></body></html>',{runScripts:'outside-only',pretendToBeVisual:true}),w=dom.window;
+ try{
+  const state={nodes:[{id:'a',title:'Premier',clues:[]},{id:'b',title:'Deuxième',clues:[]}]};w.DuneApp={getState:()=>state};
+  w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false;queueMicrotask(()=>this.dispatchEvent(new w.Event('close')))};
+  w.eval(fs.readFileSync('src/v68/cell-brief.mjs','utf8'));w.ArchivesCellBrief.open('a');const dialog=w.document.getElementById('archives-cell-brief');dialog.close();w.ArchivesCellBrief.open('b');await Promise.resolve();
+  assert.equal(dialog.open,true);assert.equal(dialog.querySelectorAll('.brief-card').length,1);assert.equal(dialog.querySelector('h2').textContent,'Deuxième');
+ }finally{w.close()}
 });
 test('An explicit image publication does not save or reveal a hidden cell',()=>{
  const start=html.indexOf('commitPlayerPresentation: function(value)'),end=html.indexOf('setGmDetails: function',start);

@@ -22,6 +22,8 @@ on:
       - 'src/v72/**'
       - 'src/v73/**'
       - 'tests/*v450*'
+      - 'tests/*v451*'
+      - 'tests/presented-image.cjs'
       - 'src/vendor/**'
       - 'google-search-v449.html'
       - 'tests/*v449*'
