@@ -9,6 +9,8 @@ test('Every reserve cell type retains its description, original image and GM not
   assert.equal(node.category,category);assert.equal(node.desc,source.desc);assert.equal(node.bgImg,source.bgImg);assert.equal(node.gmDetails[0].text,'Note MJ');assert.equal(node.revealed,false);assert.equal(node.clues[0].revealed,false);assert.notEqual(copy.clues[0].id,node.clues[0].id);for(const key of ['id','originalId','parentId','x','y'])assert.equal(node[key],undefined);
   assert.equal(source.clues[0].revealed,true,'the source is never mutated');
  }
+ assert.throws(()=>reserveNode({title:'Unsafe',bgImg:'data:image/png;base64,x" onerror="alert(1)'}),/image/);
+ assert.ok(!reserveNode({title:'HTTPS',bgImg:"https://images.test/file')<test>.png"}).bgImg.includes("'"));
 });
 test('A complete backup restores reserve originals while leaving the canvas empty and public projection unaware of the reserve',async()=>{
  const entry={id:crypto.randomUUID(),node:reserveNode({title:'LIEU_SECRET_RESERVE',category:'lieu',desc:'NOTE_SECRETE_RESERVE',bgImg:'data:image/png;base64,aGVsbG8=',clues:[]}),created:10,updated:10};validateReserve([entry]);

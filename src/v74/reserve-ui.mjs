@@ -74,5 +74,13 @@ function install(){
  const original=window.ArchivesCatalogue.libraryPanel;window.ArchivesCatalogue.libraryPanel=function(which){if(!isGM())return;original.call(this,which);const head=document.querySelector('#archives-library-popout>div>div');if(head){const switcher=button(which==='images'?'Réserve de cellules':'Bibliothèque d’images',()=>window.ArchivesCatalogue.libraryPanel(which==='images'?'cells':'images'));head.insertBefore(switcher,head.lastElementChild)}if(which!=='images')void refresh()};
  window.ArchivesCellReserve={open:()=>window.ArchivesCatalogue.libraryPanel('cells'),refresh,keep};
  window.addEventListener('archives:campaign-restored',()=>void refresh());
+ const hidePrivate=()=>{
+  if(isGM())return;sequence++;records=[];grid.replaceChildren();
+  for(const id of ['archives-reserve-editor','archives-reserve-images','archives-reserve-delete'])document.getElementById(id)?.close();
+  const pop=document.getElementById('archives-library-popout');
+  if(pop?.contains(section)){const home=document.getElementById('catalogue-json-panel-home');home?.parentNode.insertBefore(section,home.nextSibling);section.hidden=true;pop.remove()}
+ };
+ new MutationObserver(hidePrivate).observe(document.body,{attributes:true,attributeFilter:['class']});
+ window.addEventListener('archives:public-view',hidePrivate);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
