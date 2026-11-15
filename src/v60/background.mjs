@@ -29,8 +29,10 @@ export async function installFileLibrary(OBR) {
     clearTimeout(receive?.timer);receive = null;if(!keepViewer)viewerSession = "";
   }
   async function closeViewer() {
+    const previous=receive?.publication.id;
     clearReception();viewerOpen=false;
     try { await modalOperation(()=>OBR.modal.close(mediaModal)); } catch {}
+    if(previous)channel.postMessage({type:'media-inactive',id:previous});
   }
   async function stop() {
     const previous = publication;
@@ -124,6 +126,7 @@ export async function installFileLibrary(OBR) {
   channel.addEventListener("message",event => {
     const data = event.data;
     if (closed || !data) return;
+    if(role==='PLAYER'&&data.type==='room-ready'&&receive)channel.postMessage({type:'media-active',id:receive.publication.id});
     if (data.type === "library-command" && role === "GM" && validId(data.id)) {
       commands = commands.then(async () => {
         try {
@@ -202,6 +205,7 @@ export async function installFileLibrary(OBR) {
         if (declined.size > 100) declined.clear();
         const reuse=viewerOpen&&!!viewerSession;
         clearReception(reuse);receive = {publication:publicFile(data),sender:event.connectionId,progress:0};
+        channel.postMessage({type:'media-active',id:data.id});
         if(reuse){viewState();void requestFile();return}
         viewerOpen=true;
         const url = new URL("../../media-view-v60.html",import.meta.url);url.searchParams.set("v",release);url.hash = data.id;

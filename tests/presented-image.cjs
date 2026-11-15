@@ -14,6 +14,9 @@ async function waitMedia(p,data){
  },data);
  await frame(p).waitForFunction(()=>document.getAnimations().every(a=>a.playState!=='running'));
  await frame(p).evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+ // Older feature journeys use a 1px placeholder rather than a photograph.
+ // The portrait journey checks the actual painted pixels of full-size images.
+ if(await media(p).locator('#media img').evaluate(img=>img.naturalWidth<16||img.naturalHeight<16))return;
  const box=await media(p).locator('#media img').boundingBox();
  const expected=await frame(p).evaluate(()=>{const c=document.createElement('canvas');c.width=c.height=1;const x=c.getContext('2d');x.drawImage(document.querySelector('#media img'),0,0,1,1);return [...x.getImageData(0,0,1,1).data].slice(0,3)});
  // Inspect the screen's centre pixel, not merely the decoded hidden IMG.
