@@ -24,6 +24,7 @@ async function inBounds(p){return editor(p).locator('#archives-player-tools').ev
   await chooser.setFiles({name:'scenario.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({activeBoardId:'a',boards:[{id:'a',name:'ACTE_PRIVE_455',nodes,links:[]}]}))});await editor(gm).locator('.node-cell[data-id="n"]').waitFor();
   await openPlayer(p,'Alix');await openPlayer(q,'Noa');const cdp=await contexts[1].newCDPSession(p);
   for(const player of [p,q]){
+   for(const id of ['top-hud','quick-icon-dock','canvas-integrations-dock'])assert.equal(await editor(player).locator('#'+id).isVisible(),false,'the obsolete toolbar must not remain on screen');
    assert.equal(await editor(player).getByRole('button',{name:'Mes notes',exact:true}).count(),1);assert.equal(await editor(player).getByRole('button',{name:'Owlbear — afficher la carte',exact:true}).count(),1);
    assert.equal(await editor(player).getByRole('button',{name:'Déplacer la barre de lecture',exact:true}).isVisible(),true);assert.equal(await editor(player).getByRole('button',{name:'Déplacer la barre de zoom',exact:true}).isVisible(),true);
    assert.ok(await inBounds(player));

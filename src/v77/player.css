@@ -1,5 +1,5 @@
 :root{--player-safe-top:env(safe-area-inset-top,0px);--player-safe-bottom:env(safe-area-inset-bottom,0px);--player-safe-left:env(safe-area-inset-left,0px);--player-safe-right:env(safe-area-inset-right,0px)}
-body.archives-player-ui #top-hud,body.archives-player-ui #quick-icon-dock,body.archives-player-ui #canvas-integrations-dock,body.archives-player-ui #status-banner{display:none!important}
+html body.archives-player-ui #top-hud,html body.archives-player-ui #quick-icon-dock,html body.archives-player-ui #canvas-integrations-dock,html body.archives-player-ui #status-banner{display:none!important}
 body.player-icons-hidden .cell-actions,body.player-icons-hidden .player-cell-resize{display:none!important}
 #archives-player-tools[hidden],#archives-player-tools [hidden]{display:none!important}
 #archives-player-tools{font:14px/1.4 'Segoe UI',system-ui,sans-serif;color:#f8ead5}
@@ -16,6 +16,7 @@ body.player-icons-hidden .cell-actions,body.player-icons-hidden .player-cell-res
 #archives-player-tools svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .player-action-caption{display:block;font-size:10px;line-height:1.1;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 #archives-player-display-open{font-size:24px!important;line-height:1}
+#archives-player-display-open svg{stroke-width:3}
 #archives-player-display-open .player-action-caption{font-size:10px;line-height:1}
 #archives-player-zoom-bar .player-bar-actions>#archives-player-zoom-value{width:54px;font-size:13px;font-weight:750;color:#bde3d4!important;font-variant-numeric:tabular-nums}
 #archives-player-zoom-bar .player-bar-actions>button:not(#archives-player-zoom-value){height:48px}

@@ -2,7 +2,7 @@ import {isPacket} from '../v56/link.mjs?v=4550';
 import {dockPosition,zoomCamera} from './geometry.mjs?v=4550';
 const el=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node};
 const player=()=>{const s=window.DuneApp?.getState?.();return !!s&&(s.playerMode||s.strictReadOnly)};
-const icons={minus:'M5 12h14',plus:'M5 12h14M12 5v14',fit:'M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5M8 8h8v8H8z',eye:'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z M15 12a3 3 0 1 0-6 0 3 3 0 0 0 6 0'};
+const icons={minus:'M5 12h14',plus:'M5 12h14M12 5v14',fit:'M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5M8 8h8v8H8z',more:'M4 12h.01M12 12h.01M20 12h.01',eye:'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z M15 12a3 3 0 1 0-6 0 3 3 0 0 0 6 0'};
 function icon(name){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',icons[name]);svg.append(path);return svg}
 function button(label,text,handler){const b=el('button',null,text);b.type='button';b.setAttribute('aria-label',label);b.title=label;b.onclick=handler;return b}
 function viewport(){const v=window.visualViewport,css=getComputedStyle(document.documentElement),safe=edge=>parseFloat(css.getPropertyValue('--player-safe-'+edge))||0;return {left:(v?.offsetLeft||0)+safe('left'),top:(v?.offsetTop||0)+safe('top'),width:(v?.width||innerWidth)-safe('left')-safe('right'),height:(v?.height||innerHeight)-safe('top')-safe('bottom')}}
@@ -24,7 +24,7 @@ function install(){
  const reset=button('Remettre les barres en place','Remettre les barres en place',()=>{prefs=defaults();paint();save();menu.close()});
  menu.append(header,note,zoomSection,menuActions,arrange,sceneSection,reset);
  const reading=makeBar('reading','de lecture'),zoom=makeBar('zoom','de zoom');
- const more=button('Options de mon affichage','⋯',()=>openMenu());more.id='archives-player-display-open';more.className='player-command';more.append(el('span','player-action-caption','Options'));
+ const more=button('Options de mon affichage','',()=>openMenu());more.id='archives-player-display-open';more.className='player-command';more.append(icon('more'),el('span','player-action-caption','Options'));
  const minus=button('Dézoomer la vue','',()=>step(-1)),plus=button('Zoomer la vue','',()=>step(1)),fit=button('Afficher toutes les cellules','',()=>{api.resetView();api.setCanvasCamera(camera(),true)});
  minus.id='archives-player-zoom-out';plus.id='archives-player-zoom-in';fit.id='archives-player-fit';minus.append(icon('minus'));plus.append(icon('plus'));fit.append(icon('fit'));
  const percent=button('Régler précisément le zoom','100 %',()=>openMenu(true));percent.id='archives-player-zoom-value';zoom.actions.append(minus,percent,plus,fit);
@@ -93,7 +93,7 @@ function install(){
   queued=false;const next=player();
   if(!next){if(active){active=false;arranging=false;root.hidden=true;menu.close();document.body.classList.remove('archives-player-ui','player-arrange-cells','player-icons-hidden');for(const [control,record]of originals){record.label?.remove();control.classList.remove('player-command','player-menu-command');if(record.marker.isConnected)record.marker.replaceWith(control)}originals.clear()}return}
   active=true;root.hidden=false;document.body.classList.add('archives-player-ui');load();
-  move('archives-dossier-open',reading.actions,'Dossier');move('quick-player-journal',reading.actions,'Journal');move('quick-player-notes',reading.actions,'Mes notes');
+  move('archives-dossier-open',reading.actions,'Dossier');move('quick-player-journal',reading.actions,'Journal');move('quick-player-notes',reading.actions,'Notes');
   owlControl=document.querySelector('#canvas-integrations-dock .canvas-integration-item:first-child button')||owlControl;if(owlControl?.isConnected&&!owlControl.disabled){decorate(owlControl,'Carte');reading.actions.append(owlControl)}
   if(!api.getState().strictReadOnly)move('quick-mode-switch',reading.actions,'Mode MJ');
   reading.actions.append(more);
