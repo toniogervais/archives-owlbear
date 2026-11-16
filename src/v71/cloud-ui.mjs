@@ -30,7 +30,7 @@ function stateText(state) {
 }
 function start(value) {
   if (!isGM() || !value || scope === value) return;
-  engine?.dispose();clearInterval(interval);scope = value;
+  dismissChoice();engine?.dispose();clearInterval(interval);scope = value;
   const key = 'archives-cloud-backup-v446:'+scope;
   let previousBinding;
   engine = autoBackup({cloud,
@@ -53,7 +53,7 @@ function start(value) {
   interval = setInterval(() => { if (isGM() && !document.hidden) void engine.save(); },60000);
   engine.change();
 }
-export function pauseCloudBackup() { engine?.pause(); }
+export function pauseCloudBackup() { dismissChoice();engine?.pause(); }
 export function installCloudBackup() {
   if (!isGM()) return;
   if (nativeEditor()) {
@@ -62,7 +62,7 @@ export function installCloudBackup() {
   } else if (window.parent === window) start('standalone');
   window.addEventListener(editEvent,() => { if (isGM()) engine?.change(); });
   window.addEventListener('archives:reserve-changed',() => { if(isGM())engine?.change(); });
-  window.addEventListener('archives:scenario-replaced',() => { if(isGM())engine?.pause(); });
+  window.addEventListener('archives:scenario-replaced',() => { if(isGM())pauseCloudBackup(); });
   window.addEventListener('online',() => { if (isGM()) void engine?.save(); });
   window.addEventListener('focus',() => { if (isGM()) void engine?.save(); });
   document.addEventListener('visibilitychange',() => { if (isGM()) void engine?.save(); });
