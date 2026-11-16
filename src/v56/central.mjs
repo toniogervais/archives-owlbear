@@ -1,14 +1,14 @@
 import {
   createNotice, editEvent, isPacket, localWire, packet, pairingKey, randomHex, readLocal,
   roomUrlKey, validPairing, validRoomId, validSession, writeLocal
-} from "./link.mjs?v=4520";
-import { listenForFallback } from "./peer.mjs?v=4520";
+} from "./link.mjs?v=4530";
+import { listenForFallback } from "./peer.mjs?v=4530";
 
-import {installMainPublic} from '../v73/main-public.mjs?v=4520';
+import {installMainPublic} from '../v73/main-public.mjs?v=4530';
 
 const centralTabKey = pairingKey + ":central";
 const saveKey = "jdr_architect_save_v12";
-const leaseTime = 45200;
+const leaseTime = 45300;
 
 function savedPairing() {
   try {

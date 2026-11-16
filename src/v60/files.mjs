@@ -56,19 +56,26 @@ export function validSharedFile(value) {
     typeof value.hash === "string" && /^[a-f0-9]{64}$/.test(value.hash);
 }
 // Explicit allowlist: never publish a library record, filename, linked cell or campaign.
-export const publicFile = ({id,version,title,mime,size,hash}) => ({id,version,title,mime,size,hash});
-export async function* fileChunks(blob) {
-  const bytes = new Uint8Array(await blob.arrayBuffer());
-  for (let offset = 0,index = 0;offset < bytes.length;offset += chunkBytes,index++) {
-    yield {index,chunk:btoa(String.fromCharCode(...bytes.subarray(offset,offset + chunkBytes)))};
+export const publicFile = ({id,version,title,mime,size,hash,transferMode}) => ({id,version,title,mime,size,hash,...(transferMode==='window-v1'?{transferMode}: {})});
+export async function* fileChunks(blob,indices) {
+  const count=Math.ceil(blob.size/chunkBytes);
+  for (const index of indices||Array.from({length:count},(_,i)=>i)) {
+    if(!Number.isInteger(index)||index<0||index>=count)throw Error('Morceau de fichier invalide.');
+    const bytes=new Uint8Array(await blob.slice(index*chunkBytes,Math.min(blob.size,(index+1)*chunkBytes)).arrayBuffer());
+    yield {index,chunk:btoa(String.fromCharCode(...bytes))};
   }
 }
-export function fileReceiver(publication,validate = validPublication) {
+export function fileReceiver(publication,validate = validPublication,options={}) {
   if (!validate(publication)) throw Error("Présentation invalide.");
   const bytes = new Uint8Array(publication.size),seen = new Set();
   const count = Math.ceil(publication.size / chunkBytes);
-  let transfer,finished = false;
+  let transfer=options.transfer,finished = false,cursor=0;
+  if(transfer!==undefined&&!validId(transfer))throw Error('Transfert invalide.');
   return {
+    has:index=>seen.has(index),
+    received:()=>seen.size,
+    missing(limit=16){const out=[];for(let i=cursor;i<count&&out.length<limit;i++)if(!seen.has(i))out.push(i);return out},
+    progress:()=>Math.floor(seen.size/count*100),
     async push(data) {
       if (finished || data?.id !== publication.id || data.version !== publication.version || !validId(data.transfer) ||
           !Number.isInteger(data.index) || data.index < 0 || data.index >= count ||
@@ -79,6 +86,7 @@ export function fileReceiver(publication,validate = validPublication) {
       const decoded = atob(data.chunk),length = Math.min(chunkBytes,publication.size - data.index * chunkBytes);
       if (decoded.length !== length) return null;
       bytes.set(Uint8Array.from(decoded,ch => ch.charCodeAt(0)),data.index * chunkBytes);seen.add(data.index);
+      while(seen.has(cursor))cursor++;
       if (seen.size !== count) return {progress:Math.floor(seen.size / count * 100)};
       finished = true;
       if (await digest(bytes) !== publication.hash) throw Error("Le fichier reçu est incomplet. Réessaie.");

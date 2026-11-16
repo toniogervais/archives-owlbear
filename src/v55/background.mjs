@@ -1,6 +1,6 @@
 import OBR from "../../assets/owlbear-transfer-sdk-v55.mjs";
-import { archivesUrl, screenUrl } from "../v57/room.mjs?v=4520";
-import { trustedOwlbearSdk } from "../v56/link.mjs?v=4520";
+import { archivesUrl, screenUrl } from "../v57/room.mjs?v=4530";
+import { trustedOwlbearSdk } from "../v56/link.mjs?v=4530";
 const channel="fr.archives-imaginaire.bridge/screen-v55";
 const viewer="fr.archives-imaginaire.bridge/archives-viewer";
 const invite="fr.archives-imaginaire.bridge/screen-invite-v55";
@@ -52,9 +52,9 @@ function unavailable(moduleName,error) {
  if(stopped)return;
  void OBR.notification.show("Archives — module "+moduleName+" : "+details, "WARNING").catch(console.warn);
 }
-void import("../v58/transfers.mjs?v=4520").then(module => module.installArtworkTransfers()).catch(error=>unavailable("Tokens",error));
-void import("../v57/room-background.mjs?v=4520").then(module => module.installRoomPlay(OBR)).catch(error=>unavailable("Synchronisation",error));
-void import("../v60/background.mjs?v=4520").then(module => module.installFileLibrary(OBR)).catch(error=>unavailable("Bibliothèque",error));
-void import("../soundshow/owlbear.mjs?v=4520").then(module => module.installSoundShow(OBR)).catch(error=>unavailable("SoundShow",error));
+void import("../v58/transfers.mjs?v=4530").then(module => module.installArtworkTransfers()).catch(error=>unavailable("Tokens",error));
+void import("../v57/room-background.mjs?v=4530").then(module => module.installRoomPlay(OBR)).catch(error=>unavailable("Synchronisation",error));
+void import("../v60/background.mjs?v=4530").then(module => module.installFileLibrary(OBR)).catch(error=>unavailable("Bibliothèque",error));
+void import("../soundshow/owlbear.mjs?v=4530").then(module => module.installSoundShow(OBR)).catch(error=>unavailable("SoundShow",error));
 
-void import('../v73/main-public-host.mjs?v=4520').then(module=>module.installMainPublicHost(OBR)).catch(error=>unavailable('Archives principales',error));
+void import('../v73/main-public-host.mjs?v=4530').then(module=>module.installMainPublicHost(OBR)).catch(error=>unavailable('Archives principales',error));

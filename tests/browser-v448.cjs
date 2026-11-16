@@ -26,7 +26,7 @@ async function downloadBytes(download){const stream=await download.createReadStr
   await editor(gm).locator('#canvas-save-icon').click();
   await online(gm).getByLabel('Nom de la nouvelle campagne en ligne').fill('Mes sauvegardes');
   await online(gm).getByRole('button',{name:'Sauvegarder dans une nouvelle campagne',exact:true}).click();
-  await until(()=>cloud.versions.length===1,'first cloud copy');
+  await until(()=>cloud.versions.length===1,'first cloud copy');await online(gm).getByRole('button',{name:'Activer la sauvegarde automatique',exact:true}).click();
   for(let n=2;n<=3;n++){
    await backup(gm).locator('header button').click();
    await app(gm).evaluate(n=>DuneApp.importCatalogCell({title:'Ajout '+n,category:'objet',clues:[],desc:'',w:250,h:160}),n);

@@ -1,9 +1,9 @@
-import {validSnapshot} from '../v57/room.mjs?v=4520';
-import {openFileLibrary,validateFile,validId} from '../v60/files.mjs?v=4520';
-import {privateArtworkStore} from '../v58/model.mjs?v=4520';
-import {digest} from '../v72/integrity.mjs?v=4520';
+import {validSnapshot} from '../v57/room.mjs?v=4530';
+import {openFileLibrary,validateFile,validId} from '../v60/files.mjs?v=4530';
+import {privateArtworkStore} from '../v58/model.mjs?v=4530';
+import {digest} from '../v72/integrity.mjs?v=4530';
 import {normalizeCrop} from '../v61/token-crop.mjs';
-import {openCellReserve,validateReserve} from '../v74/cell-reserve.mjs?v=4520';
+import {openCellReserve,validateReserve} from '../v74/cell-reserve.mjs?v=4530';
 
 const signature = new TextEncoder().encode('ARCHIVES-CAMPAGNE/1\n');
 export const maxBackupBytes = 2 * 1024 * 1024 * 1024;

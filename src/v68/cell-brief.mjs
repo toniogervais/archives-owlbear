@@ -247,6 +247,10 @@ function renderCard(node,index){
   const right=el('div','brief-right'),section=el('section','brief-desc');
   const description=el('div','brief-description',node.desc?.trim()||'Aucune description générale renseignée.');description.id=id('description');
   if(!node.desc?.trim())description.classList.add('brief-hint');section.append(el('h3',null,'Description générale'),description);
+  if(node.gmDescription?.trim()){
+    const privateDescription=el('div','brief-gm-description',node.gmDescription);privateDescription.style.whiteSpace='pre-wrap';privateDescription.style.marginTop='8px';
+    section.append(el('h3',null,'Description MJ'),privateDescription);
+  }
   const clues=Array.isArray(node.clues)?node.clues:[],clueArea=el('section','brief-clues'),clueHeader=el('div','brief-clues-header');
   const counter=el('span','brief-count',clues.filter(c=>c.revealed).length+' / '+clues.length+' révélés');counter.id=id('count');
   clueHeader.append(el('h3',null,'Indices et révélations'),counter);
