@@ -24,6 +24,8 @@ on:
       - 'src/v74/**'
       - 'src/v75/**'
       - 'src/v76/**'
+      - 'src/v77/**'
+      - 'tests/*v455*'
       - 'tests/*v454*'
       - 'tests/*v453*'
       - 'tests/*v452*'
@@ -179,4 +181,9 @@ jobs:
       - run: node --test tests/direct-files-v454.test.mjs
         if: ${{ !cancelled() }}
       - run: node tests/browser-v454.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
+
+      - run: node --test tests/mobile-v455.test.mjs
+        if: ${{ !cancelled() }}
+      - run: node tests/browser-v455.cjs
         if: ${{ !cancelled() && steps.browser.outcome == 'success' }}

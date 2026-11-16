@@ -1,6 +1,6 @@
 // Complete campaigns stay in a private, owner-only bucket. No signed/public links
 // and no campaign bytes pass through Owlbear's shared metadata or player channels.
-import {digest} from '../v72/integrity.mjs?v=4540';
+import {digest} from '../v72/integrity.mjs?v=4550';
 export const BACKUP_BUCKET = 'archives-campaign-backups';
 export const PART_BYTES = 4 * 1024 * 1024;
 const maxBytes = 2 * 1024 * 1024 * 1024;
