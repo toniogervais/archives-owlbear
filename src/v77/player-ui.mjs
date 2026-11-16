@@ -24,7 +24,7 @@ function install(){
  const reset=button('Remettre les barres en place','Remettre les barres en place',()=>{prefs=defaults();paint();save();menu.close()});
  menu.append(header,note,zoomSection,menuActions,arrange,sceneSection,reset);
  const reading=makeBar('reading','de lecture'),zoom=makeBar('zoom','de zoom');
- const more=button('Options de mon affichage','',()=>openMenu());more.id='archives-player-display-open';more.className='player-command';more.append(icon('more'),el('span','player-action-caption','Options'));
+ const more=button('Options de mon affichage','',()=>openMenu());more.id='archives-player-display-open';more.className='player-command';more.append(icon('more'),el('span','player-action-caption','Plus'));
  const minus=button('Dézoomer la vue','',()=>step(-1)),plus=button('Zoomer la vue','',()=>step(1)),fit=button('Afficher toutes les cellules','',()=>{api.resetView();api.setCanvasCamera(camera(),true)});
  minus.id='archives-player-zoom-out';plus.id='archives-player-zoom-in';fit.id='archives-player-fit';minus.append(icon('minus'));plus.append(icon('plus'));fit.append(icon('fit'));
  const percent=button('Régler précisément le zoom','100 %',()=>openMenu(true));percent.id='archives-player-zoom-value';zoom.actions.append(minus,percent,plus,fit);
@@ -53,6 +53,7 @@ function install(){
  }
  function save(){if(!active||!storageKey)return;try{localStorage.setItem(storageKey,JSON.stringify(prefs));localStorage.setItem(visibilityKey,String(prefs.hidden))}catch{}}
  function place(node,position){
+  if(node.dataset.dragging==='true')return;
   const v=viewport(),width=node.offsetWidth||44,height=node.offsetHeight||44;
   const p=dockPosition({x:v.left+8+position.x*Math.max(0,v.width-width-16),y:v.top+8+position.y*Math.max(0,v.height-height-16)},width,height,v);
   node.style.left=p.x+'px';node.style.top=p.y+'px';
@@ -65,20 +66,21 @@ function install(){
    bar.actions.hidden=p.collapsed;bar.collapse.textContent=p.collapsed?'＋':'−';bar.collapse.setAttribute('aria-label',(p.collapsed?'Déployer':'Réduire')+' la barre '+bar.caption);bar.collapse.title=bar.collapse.getAttribute('aria-label');bar.collapse.setAttribute('aria-expanded',String(!p.collapsed));
   }
   toggle.setAttribute('aria-label',prefs.hidden?'Afficher les icônes':'Masquer les icônes');toggle.title=toggle.getAttribute('aria-label');toggle.setAttribute('aria-pressed',String(!prefs.hidden));toggleCaption.textContent=prefs.hidden?'Afficher':'Masquer';
-  if(layoutFrame)cancelAnimationFrame(layoutFrame);layoutFrame=requestAnimationFrame(()=>{layoutFrame=0;place(reading.node,prefs.reading);place(zoom.node,prefs.zoom);place(toggle,prefs.toggle)});
+  const position=()=>{place(reading.node,prefs.reading);place(zoom.node,prefs.zoom);place(toggle,prefs.toggle)};
+  position();if(layoutFrame)cancelAnimationFrame(layoutFrame);layoutFrame=requestAnimationFrame(()=>{layoutFrame=0;position()});
  }
  function normalized(node,x,y){const v=viewport();return {x:Math.max(0,Math.min(1,(x-v.left-8)/Math.max(1,v.width-node.offsetWidth-16))),y:Math.max(0,Math.min(1,(y-v.top-8)/Math.max(1,v.height-node.offsetHeight-16)))}}
  function movable(grip,node,name){
   let drag,suppress=false;
-  grip.addEventListener('pointerdown',e=>{if(!active||e.button!==0)return;e.preventDefault();const r=node.getBoundingClientRect();drag={id:e.pointerId,x:e.clientX,y:e.clientY,left:r.left,top:r.top,moved:false};grip.setPointerCapture(e.pointerId)});
+  grip.addEventListener('pointerdown',e=>{if(!active||e.button!==0)return;e.preventDefault();const r=node.getBoundingClientRect();drag={id:e.pointerId,x:e.clientX,y:e.clientY,left:r.left,top:r.top,moved:false};node.dataset.dragging='true';grip.setPointerCapture(e.pointerId)});
   grip.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;e.preventDefault();const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.hypot(dx,dy)>5)drag.moved=true;if(!drag.moved)return;const p=dockPosition({x:drag.left+dx,y:drag.top+dy},node.offsetWidth,node.offsetHeight,viewport());node.style.left=p.x+'px';node.style.top=p.y+'px'});
   function end(e){
-   if(!drag||e.pointerId!==drag.id)return;const moved=drag.moved;drag=null;if(!moved)return;suppress=e.type==='pointerup';
+   if(!drag||e.pointerId!==drag.id)return;const moved=drag.moved;drag=null;delete node.dataset.dragging;if(!moved)return;suppress=e.type==='pointerup';
    let rect=node.getBoundingClientRect();const v=viewport(),cx=rect.x+rect.width/2,cy=rect.y+rect.height/2;
    if(name!=='toggle'){prefs[name].vertical=Math.min(cx-v.left,v.left+v.width-cx)<Math.min(cy-v.top,v.top+v.height-cy);node.classList.toggle('player-bar-vertical',prefs[name].vertical);}
    const p=dockPosition({x:cx-node.offsetWidth/2,y:cy-node.offsetHeight/2},node.offsetWidth,node.offsetHeight,v);Object.assign(prefs[name],normalized(node,p.x,p.y));paint();save();
   }
-  grip.addEventListener('pointerup',end);grip.addEventListener('pointercancel',end);
+  grip.addEventListener('pointerup',end);grip.addEventListener('pointercancel',end);grip.addEventListener('lostpointercapture',end);
   grip.addEventListener('click',e=>{if(suppress){e.preventDefault();e.stopImmediatePropagation();suppress=false}},true);
   grip.addEventListener('keydown',e=>{const shifts={ArrowLeft:[-12,0],ArrowRight:[12,0],ArrowUp:[0,-12],ArrowDown:[0,12]},shift=shifts[e.key];if(!shift)return;e.preventDefault();const r=node.getBoundingClientRect(),p=dockPosition({x:r.x+shift[0],y:r.y+shift[1]},r.width,r.height,viewport());Object.assign(prefs[name],normalized(node,p.x,p.y));paint();save()});
  }
