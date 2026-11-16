@@ -19,8 +19,8 @@ export function mountAccount(view,onChange){
   config=element('details',null,'backup-connection');config.id='archives-backup-connection';config.append(element('summary','Configuration de la connexion'));
   const nodes=['label[for="ac-url"]','#ac-url','label[for="ac-key"]','#ac-key','#ac-save-config'].map(s=>card.querySelector(s));const row=nodes.pop()?.parentElement;
   config.append(...nodes.filter(Boolean));if(row)config.append(row);configHome.after(config);
-  config.open=!document.getElementById('ac-url').value||!document.getElementById('ac-key').value;
-  const oldRow=document.getElementById('ac-create-campaign')?.parentElement;if(oldRow)oldRow.classList.add('backup-old-campaign-actions');
+  config.open=!panel.querySelector('#ac-url').value||!panel.querySelector('#ac-key').value;
+  const oldRow=panel.querySelector('#ac-create-campaign')?.parentElement;if(oldRow)oldRow.classList.add('backup-old-campaign-actions');
  }
  const share=button('Lien pour un autre appareil',async()=>{
   try{
