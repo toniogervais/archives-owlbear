@@ -1,0 +1,17 @@
+name: Vérification V4.57 — commandes Archives et conflits de sauvegarde
+on:
+  push:
+    branches: ['codex/v457-*']
+  workflow_dispatch:
+jobs:
+  players:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: node tests/browser-v457.cjs
