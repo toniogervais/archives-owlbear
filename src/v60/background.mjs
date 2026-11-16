@@ -279,6 +279,7 @@ export async function installFileLibrary(OBR) {
   const offMedia = OBR.broadcast.onMessage(mediaChannel,onMedia);
   offs.push(offMedia);
   offs.push(OBR.party.onChange(players => {
+    direct.retain(players.filter(player=>player.role===(role==='GM'?'PLAYER':'GM')).map(player=>player.connectionId));
     for(const id of targets.keys())if(!players.some(player=>player.connectionId===id&&player.role==='PLAYER')){targets.delete(id);direct.disconnect(id)}
     if (receive && !players.some(player => player.connectionId === receive.sender && player.role === "GM")) void closeViewer();
   }));

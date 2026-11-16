@@ -2,7 +2,6 @@
 // reliable, ordered WebRTC channel, with bounded buffering on slower devices.
 const label='archives-original-files-v1';
 const uuid=value=>/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(value||'');
-const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 export function createDirectFiles({self,role,authorize,signal,onData,makePeer=()=>new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]})}){
  const peers=new Map();let disposed=false;
  function close(entry){
@@ -83,7 +82,8 @@ export function createDirectFiles({self,role,authorize,signal,onData,makePeer=()
  }
  return {
   connect,handle,send,
-  async wait(remote,milliseconds=1200){const ready=connect(remote);return Promise.race([ready,pause(milliseconds).then(()=>false)])},
+  async wait(remote,milliseconds=1200){let timer;try{return await Promise.race([connect(remote),new Promise(resolve=>{timer=setTimeout(()=>resolve(false),milliseconds)})])}finally{clearTimeout(timer)}},
+  retain(remotes){const keep=new Set(remotes);for(const [remote,entry]of peers)if(!keep.has(remote))close(entry)},
   disconnect:remote=>close(peers.get(remote)),
   dispose(){disposed=true;for(const entry of [...peers.values()])close(entry)}
  };

@@ -43,3 +43,9 @@ test('The direct channel admits only bounded file protocol messages and keeps se
   h.transport.dispose();message(JSON.stringify(data));assert.equal(h.received.length,1);
  }finally{h.transport.dispose()}
 });
+test('Leaving the authenticated room closes the corresponding direct connection',async()=>{
+ const h=setup();try{
+  await h.offer();const c=h.attach();h.transport.retain(['player']);assert.equal(c.readyState,'open');
+  h.transport.retain([]);assert.equal(c.readyState,'closed');assert.equal(await h.transport.send('player',{type:'data'}),false);
+ }finally{h.transport.dispose()}
+});
