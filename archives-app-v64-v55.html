@@ -2082,6 +2082,7 @@ window.DuneApp = (function() {
     applyCanvasBg();
     renderTabs();
     renderAll(data.revealedNodeId, data.revealedLinkId);
+    saveState();
     window.dispatchEvent(new CustomEvent('archives:public-view'));
   }
 
@@ -5930,6 +5931,9 @@ window.DuneApp = (function() {
                 clearTimeout(connTimer);
                 peerConns.push(conn);
                 finished = true;
+                window.ArchivesRelay.setPlayerScope('live:'+roomCode+':'+String(window.__archivesLivePlayerName||'Joueur'));
+                state.boards=[{id:'waiting',name:'Scène',nodes:[],links:[]}];state.activeBoardId='waiting';state.selectedId=null;state.selectedLinkId=null;state.bgImage='';
+                bindActiveBoardRefs();applyCanvasBg();renderTabs();renderAll();saveState();
                 done(true, "Connecté au salon " + roomCode + ". En attente des données du maître de jeu…");
               });
               conn.on("data", function(data){

@@ -12,6 +12,7 @@ async function run(browser,mode,mobile=true){
   if(mode==='live'){await use(p.locator('#archives-role-player'));await p.locator('#archives-player-code').fill('JDR-ABCDEFGHJKLM');await use(p.locator('#archives-player-connect'));await p.locator('#archives-title-screen').waitFor({state:'hidden'})}
   else await p.evaluate(data=>ArchivesRelay.apply(data),packet);
   await p.locator('.node-cell[data-id=a]').waitFor();await p.locator('#archives-player-reading-bar').waitFor();
+  await use(p.locator('#archives-dossier-open'));await p.locator('#archives-player-dossier[open]').waitFor();assert.ok((await p.locator('#archives-player-dossier').innerText()).includes('Le témoin'),mode+' dossier works on the first received live snapshot, before any canvas action');await use(p.locator('#archives-player-dossier header button'));
   const diagnostics=async()=>p.locator('#archives-player-tools button').evaluateAll(nodes=>nodes.filter(n=>n.getClientRects().length).map(n=>{const r=n.getBoundingClientRect(),at=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return {id:n.id||n.getAttribute('aria-label'),disabled:n.disabled,handler:typeof n.onclick,hit:at?.closest('button')?.id,top:at?.id||at?.className}}));
   assert.ok((await diagnostics()).every(c=>!c.disabled),mode+' visible player commands are enabled');
   await use(p.locator('#archives-player-icons-toggle'));assert.ok(await p.locator('body').evaluate(e=>e.classList.contains('player-icons-hidden')),mode+' eye hides all');

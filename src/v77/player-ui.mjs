@@ -115,6 +115,7 @@ function install(){
  function reconcile(){
   queued=false;const next=player();
   if(!next){if(active){active=false;setArrange(false);root.hidden=true;menu.close();document.body.classList.remove('archives-player-ui','player-arrange-cells','player-icons-hidden');for(const [control,record]of originals){record.label?.remove();control.classList.remove('player-command','player-menu-command');if(record.marker.isConnected)record.marker.replaceWith(control)}originals.clear()}return}
+  const route=new URLSearchParams(location.search);if(window.parent===window&&(route.get('ro')==='1'||route.get('player')==='1')&&!window.ArchivesPlayerScope)window.ArchivesRelay?.setPlayerScope('live:'+(api.getState().liveRoomId||route.get('room')||'second-ecran')+':'+(window.__archivesLivePlayerName||'Joueur'));
   active=true;root.hidden=false;document.body.classList.add('archives-player-ui');window.ArchivesPlayerNotebook?.refresh();load();
   move('archives-dossier-open',reading.actions,'Dossier');move('quick-player-journal',reading.actions,'Journal');move('quick-player-notes',reading.actions,'Notes');
   owlControl=document.querySelector('#canvas-integrations-dock .canvas-integration-item:first-child button')||owlControl;if(owlControl?.isConnected&&!owlControl.disabled){decorate(owlControl,'Carte');reading.actions.append(owlControl)}

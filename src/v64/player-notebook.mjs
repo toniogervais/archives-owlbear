@@ -29,9 +29,11 @@ export function installPlayerNotebook() {
   }
   function bind() {
     const state=window.DuneApp?.getState?.();if(!state||!state.playerMode&&!state.strictReadOnly){view?.dialog.close();return;}
+    const previousScope=scope;
     if(window.ArchivesPlayerScope)scope=window.ArchivesPlayerScope;
     else if(new URLSearchParams(location.search).get('owl-view')==='1')scope='';
     else scope=(state.strictReadOnly?'live:':'preview:')+(state.liveRoomId||new URLSearchParams(location.search).get('room')||location.pathname)+':'+(window.__archivesLivePlayerName||'Joueur');
+    if(previousScope&&previousScope!==scope)view?.dialog.close();
     let control = document.getElementById('quick-player-notes');
     if(!control){const journal=document.getElementById('quick-player-journal');if(!journal)return;control=journal.cloneNode(true);control.id='quick-player-notes';control.removeAttribute('onclick');control.innerHTML='<svg class="quick-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5 5 5M4 20l4-1 12-12a2 2 0 0 0-5-5L3 14zM3 21h18"/></svg>';journal.after(control);}
     control.title = 'Mes notes';control.setAttribute('aria-label','Mes notes');control.disabled = !scope;
