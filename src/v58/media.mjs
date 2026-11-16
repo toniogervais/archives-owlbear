@@ -1,4 +1,4 @@
-import { blobDigest,maxImageBytes } from "./model.mjs?v=4520";
+import { blobDigest,maxImageBytes } from "./model.mjs?v=4530";
 import { drawToken } from "../v61/token-crop.mjs?v=4300";
 
 const rasterTypes = ["image/png","image/jpeg","image/webp"];

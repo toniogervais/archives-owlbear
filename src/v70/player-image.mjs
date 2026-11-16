@@ -1,6 +1,7 @@
-import {isGM,nativeEditor,notice} from '../v63/ui.mjs?v=4520';
-import {libraryRequest} from '../v60/request.mjs?v=4520';
-import {fade,fadeDuration} from '../v73/fade.mjs?v=4520';
+import {isGM,nativeEditor,notice} from '../v63/ui.mjs?v=4530';
+import {libraryRequest} from '../v60/request.mjs?v=4530';
+import {maxDocumentBytes} from '../v60/files.mjs?v=4530';
+import {fade,fadeDuration} from '../v73/fade.mjs?v=4530';
 let operation=0,shown='',requested='',dialog,epoch=0,animation,nativePresentation=false,nativePublishedId='';
 const dismissed=new Set(),state=()=>window.DuneApp?.getState?.();
 function remember(id){if(!id)return;dismissed.add(id);if(dismissed.size>128)dismissed.delete(dismissed.values().next().value)}
@@ -63,10 +64,10 @@ async function prepare(source){
   source=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob)});
  }
  const image=new Image();await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(Error('Cette image ne peut pas être présentée.'));image.src=source});
- // Keep the original library file; only a large or unsupported presentation is resized.
- if(source.length<=6*1024*1024&&/^data:image\/(png|jpeg|webp|gif);base64,/.test(source))return source;
- const scale=Math.min(1,1920/Math.max(image.naturalWidth,image.naturalHeight)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
- const result=canvas.toDataURL('image/webp',.9);if(result.length>8*1024*1024)throw Error('L’image est trop volumineuse. Choisis une illustration plus petite.');return result;
+ if(!/^data:image\/(png|jpeg|webp|gif);base64,/.test(source))throw Error('Présente une image PNG, JPEG, WebP ou GIF.');
+ const encoded=source.slice(source.indexOf(',')+1),bytes=Math.floor(encoded.length*3/4)-(encoded.endsWith('==')?2:encoded.endsWith('=')?1:0);
+ if(bytes>maxDocumentBytes)throw Error('Ce fichier dépasse la limite actuelle de 25 Mo. Aucun redimensionnement n’a été effectué.');
+ return source;
 }
 async function show(item){
  if(!isGM())return;const current=++operation;

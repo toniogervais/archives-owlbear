@@ -1,0 +1,30 @@
+name: Vérification V4.53 — originaux haute résolution et choix MJ
+on:
+  push:
+    branches: ['codex/v453-*']
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: node --test tests/high-resolution-v453.test.mjs tests/cloud-v446.test.mjs tests/media-v452.test.cjs
+      - run: npx playwright install chromium
+      - run: node tests/browser-v453.cjs
+      - run: node tests/browser-v446.cjs
+        if: ${{ !cancelled() }}
+      - run: node tests/browser-v448.cjs
+        if: ${{ !cancelled() }}
+      - run: node tests/browser-v452.cjs
+        if: ${{ !cancelled() }}
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: archives-v453-focused
+          path: /tmp/archives-v453-*.png
+          if-no-files-found: ignore

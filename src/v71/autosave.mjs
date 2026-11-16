@@ -4,27 +4,28 @@ export function autoBackup({cloud,capture,read,write,changed = () => {},timers =
   let status = {state:binding?.enabled ? 'pending' : 'off',binding};
   function report(state,message = '') { status = {state,message,binding:binding && {...binding}};changed(status); }
   function persist() { write(binding); }
-  function check(expected) {
-    if (closed || held || !binding?.enabled || binding.campaignId !== expected.campaignId || binding.owner !== expected.owner || binding.project !== expected.project)
+  function check(expected,manual=false) {
+    if (closed || held || !binding || (!binding.enabled&&!manual) || binding.campaignId !== expected.campaignId || binding.owner !== expected.owner || binding.project !== expected.project)
       throw Error('Sauvegarde suspendue. Les modifications restent sur cet appareil.');
   }
-  async function save() {
+  async function save(manual=false) {
+    manual=manual===true;
     timers.clearTimeout(timer);timer = null;
     if (running) return running;
-    if (closed || held || !binding?.enabled || blocked) return;
+    if (closed || held || !binding || (!binding.enabled&&!manual) || blocked) return;
     const current = {...binding},started = version;
     running = (async () => {
       try {
-        report('saving');const ctx = await cloud.context();check(current);
+        report('saving');const ctx = await cloud.context();check(current,manual);
         if (ctx.user.id !== current.owner || ctx.project !== current.project) throw Error('Reconnecte le compte MJ associé à cette sauvegarde.');
-        const data = await capture();check(current);
+        const data = await capture();check(current,manual);
         if (data.fingerprint === binding.fingerprint) {
           // Still check the head: this device must learn about another writer.
-          const {rows,revision} = await cloud.versions(current.campaignId);check(current);
+          const {rows,revision} = await cloud.versions(current.campaignId);check(current,manual);
           if ((revision ?? rows[0]?.revision ?? 0) !== current.revision) { const error = Error('Une version plus récente existe en ligne ou les sauvegardes ont changé. Ouvre Sauvegardes pour les consulter ou conserve ton travail dans une nouvelle campagne.');error.code='CONFLICT';throw error; }
         } else {
-          const saved = await cloud.save({...data,campaignId:current.campaignId,expectedRevision:current.revision,check:async () => check(current)});
-          check(current);binding = {...binding,revision:saved.revision,fingerprint:data.fingerprint,savedAt:saved.created_at};persist();
+          const saved = await cloud.save({...data,campaignId:current.campaignId,expectedRevision:current.revision,check:async () => check(current,manual)});
+          check(current,manual);binding = {...binding,revision:saved.revision,fingerprint:data.fingerprint,savedAt:saved.created_at};persist();
         }
         report(started === version ? 'saved' : 'pending');
       } catch (error) {
@@ -48,9 +49,11 @@ export function autoBackup({cloud,capture,read,write,changed = () => {},timers =
     binding:() => binding && {...binding},
     change() { version++;schedule(); },
     save,
-    async bind(value) {
+    manualSave:()=>save(true),
+    async bind(value,options={}) {
       if (running) throw Error('Attends la fin de la sauvegarde en cours.');
-      binding = {...value,enabled:true};blocked = false;persist();version++;report('pending');return save();
+      binding = {...value,enabled:options.automatic!==false};blocked = false;persist();version++;report(binding.enabled?'pending':'off');
+      if(options.save===false)return status;return save(!binding.enabled);
     },
     pause() { timers.clearTimeout(timer);binding = binding && {...binding,enabled:false};persist();report('off'); },
     removed({campaignId,project,owner,previousRevision,revision,latestDeleted}) {

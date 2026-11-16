@@ -1,8 +1,8 @@
-import {button,element,isGM,nativeEditor,notice,sheet} from '../v63/ui.mjs?v=4520';
-import {editEvent} from '../v56/link.mjs?v=4520';
-import {createCloud,cloudError} from './cloud.mjs?v=4520';
-import {autoBackup} from './autosave.mjs?v=4520';
-import {campaignRequest} from './campaign-io.mjs?v=4520';
+import {button,element,isGM,nativeEditor,notice,sheet} from '../v63/ui.mjs?v=4530';
+import {editEvent} from '../v56/link.mjs?v=4530';
+import {createCloud,cloudError} from './cloud.mjs?v=4530';
+import {autoBackup} from './autosave.mjs?v=4530';
+import {campaignRequest} from './campaign-io.mjs?v=4530';
 import {downloadArchive} from './download.mjs';
 const cloud = createCloud(() => {
   if (!isGM()) throw Error('Commande réservée au maître de jeu.');
@@ -11,6 +11,18 @@ const cloud = createCloud(() => {
 });
 const labels = {off:'Sauvegarde en ligne désactivée',pending:'Modifications en attente d’envoi',saving:'Enregistrement en ligne…',saved:'Enregistré en ligne',error:'Envoi en attente — copie conservée sur cet appareil',conflict:'Une version plus récente existe en ligne'};
 let engine,scope,interval,releaseRestore;
+function dismissChoice(){document.getElementById('archives-autosave-choice')?.remove()}
+function chooseAutosave(binding,currentEngine){
+ if(!binding?.campaignId)return;
+ dismissChoice();const panel=element('section'),status=element('p'),actions=element('div',null,'studio-actions');panel.id='archives-autosave-choice';panel.setAttribute('aria-label','Choix de la sauvegarde automatique');panel.setAttribute('role','region');
+ panel.style.cssText='position:fixed;left:18px;bottom:18px;z-index:55000;max-width:min(480px,90vw);padding:18px;border:1px solid #c5a366;border-radius:12px;background:#211827;color:#f6e2bd;box-shadow:0 14px 50px #0009;font:14px/1.5 system-ui';
+ panel.append(element('strong','Sauvegarde automatique pour cette ouverture ?'),element('p','Choisis la sauvegarde automatique ou les enregistrements manuels. Ce choix sera redemandé à la prochaine ouverture.'),actions,status);
+ actions.append(button('Rester en sauvegarde manuelle',()=>{currentEngine.pause();dismissChoice()}),button('Activer pour cette ouverture',async()=>{
+  try{if(engine!==currentEngine||!isGM()||currentEngine.binding()?.campaignId!==binding.campaignId)throw Error('La campagne a changé. Choisis sa sauvegarde dans les réglages.');await currentEngine.bind(binding);dismissChoice()}catch(e){status.textContent=e.message}
+ },'primary'));document.body.append(panel);
+ const title=document.getElementById('archives-title-screen');const draw=()=>{if(!panel.isConnected){observer.disconnect();return}if(!isGM()){panel.remove();observer.disconnect();return}panel.hidden=!!title&&!title.hidden};
+ const observer=new MutationObserver(draw);if(title)observer.observe(title,{attributes:true,attributeFilter:['hidden','style','class']});observer.observe(document.body,{attributes:true,attributeFilter:['class']});draw();
+}
 const date = value => value ? new Date(value).toLocaleString('fr-FR') : '';
 const bytes = value => (value/1024/1024).toLocaleString('fr-FR',{maximumFractionDigits:1})+' Mo';
 function stateText(state) {
@@ -20,8 +32,9 @@ function start(value) {
   if (!isGM() || !value || scope === value) return;
   engine?.dispose();clearInterval(interval);scope = value;
   const key = 'archives-cloud-backup-v446:'+scope;
+  let previousBinding;
   engine = autoBackup({cloud,
-    read:() => { try { const saved=JSON.parse(localStorage.getItem(key)||'null');return saved && typeof saved.campaignId==='string' && Number.isSafeInteger(saved.revision) ? saved : null; } catch { return null; } },
+    read:() => { try { const saved=JSON.parse(localStorage.getItem(key)||'null');previousBinding=saved && typeof saved.campaignId==='string' && Number.isSafeInteger(saved.revision) ? saved : null;return previousBinding?{...previousBinding,enabled:false}:null; } catch { return null; } },
     write:value => { if (value) localStorage.setItem(key,JSON.stringify(value));else localStorage.removeItem(key); },
     capture:() => campaignRequest({action:'export',snapshot:window.ArchivesRelay.snapshot()}),
     changed:state => {
@@ -33,7 +46,8 @@ function start(value) {
   });
   // A browser may keep its preferences after its campaign database was cleared.
   // Never send a newly generated blank canvas over a previous online campaign.
-  if(nativeEditor() && window.ArchivesCampaignHasLocal===false)engine.pause();
+  engine.pause();
+  if(!(nativeEditor()&&window.ArchivesCampaignHasLocal===false))chooseAutosave(previousBinding,engine);
   // The regular check also catches changes to IndexedDB libraries and framing
   // which do not emit the canvas edit event. Identical exports never re-upload.
   interval = setInterval(() => { if (isGM() && !document.hidden) void engine.save(); },60000);
@@ -112,8 +126,8 @@ export function mountCloudBackups(view,inspect,{localDownload}={}) {
   function renderControls() {
     const bound=engine?.binding(),active=matches() && bound.enabled;
     enable.hidden=!!active;enable.disabled=!ctx || !select.value || (!!rows.length && !matches());
-    save.hidden=pause.hidden=!active;
-    hint.textContent=rows.length&&!matches() ? 'Ouvre une version ci-dessous pour reprendre cette campagne sur cet appareil. Pour garder le scénario actuellement ouvert, sauvegarde-le dans une nouvelle campagne.' : '';
+    save.hidden=!matches();pause.hidden=!active;
+    hint.textContent=rows.length&&!matches() ? 'Ouvre une version ci-dessous pour reprendre cette campagne sur cet appareil. Pour garder le scénario actuellement ouvert, sauvegarde-le dans une nouvelle campagne.' : matches()&&!active?'Sauvegarde automatique désactivée pour cette ouverture. Tu peux enregistrer manuellement.':'';
   }
   async function load(preferred) {
     const generation=++sequence;versions.replaceChildren();rows=[];select.replaceChildren(new Option('Choisir une campagne…',''));
@@ -149,10 +163,10 @@ export function mountCloudBackups(view,inspect,{localDownload}={}) {
     } catch(error){fail(error);renderControls();syncSelection();return false}
     renderControls();syncSelection();return true;
   }
-  async function bind(campaign,revision=0,fingerprint=null,savedAt=null) {
+  async function bind(campaign,revision=0,fingerprint=null,savedAt=null,options={automatic:false}) {
     if(!engine)throw Error('La campagne est en cours d’ouverture. Réessaie dans un instant.');
     const current=await cloud.context();
-    return engine.bind({campaignId:campaign.id,name:campaign.name,owner:current.user.id,project:current.project,revision,fingerprint,savedAt});
+    dismissChoice();return engine.bind({campaignId:campaign.id,name:campaign.name,owner:current.user.id,project:current.project,revision,fingerprint,savedAt},options);
   }
   async function enableSelected() {
     view.busy(true);
@@ -161,10 +175,10 @@ export function mountCloudBackups(view,inspect,{localDownload}={}) {
       const latest=await cloud.versions(campaign.id),bound=engine?.binding();
       if(latest.rows.length&&(!matches()||bound.revision!==latest.revision))throw Error('Ouvre d’abord une version en ligne de cette campagne.');
       const resume=matches()&&latest.rows.length>0;
-      await bind(campaign,latest.revision,resume?bound.fingerprint:null,resume?bound.savedAt:null);await list();
+      await bind(campaign,latest.revision,resume?bound.fingerprint:null,resume?bound.savedAt:null,{automatic:true});await list();
     } catch(error){fail(error)}finally{view.busy(false);renderControls();syncSelection()}
   }
-  async function saveNow() { view.busy(true);try{await engine.save();await list()}catch(error){fail(error)}finally{view.busy(false);renderControls();syncSelection()} }
+  async function saveNow() { view.busy(true);try{await engine.manualSave();await list()}catch(error){fail(error)}finally{view.busy(false);renderControls();syncSelection()} }
   async function create() {
     view.busy(true);status.textContent='Création de la campagne et de sa première sauvegarde…';
     try { const campaign=await cloud.create(name.value);await bind(campaign);name.value='';await load(campaign.id); }
@@ -182,7 +196,7 @@ export function mountCloudBackups(view,inspect,{localDownload}={}) {
           if(latest.ctx.user.id!==result.ctx.user.id||latest.ctx.project!==result.ctx.project||latest.revision!==result.revision)
             throw Error('La version en ligne ou le compte a changé. Actualise la liste avant de restaurer.');
         },
-        after:async()=>{releasePreview?.();releasePreview=null;await bind(campaign,result.revision,null,result.head.created_at);}
+        after:async()=>{releasePreview?.();releasePreview=null;await bind(campaign,result.revision,row.fingerprint,result.head.created_at,{automatic:false,save:false});}
       });
     }catch(error){releasePreview?.();releasePreview=null;fail(error)}finally{view.busy(false);renderControls();syncSelection()}
   }

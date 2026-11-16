@@ -1,6 +1,6 @@
-import { localRoom,roomMembers,roomChannel,release } from "../v57/room.mjs?v=4520";
-import { openFileLibrary,validateFile,validId,validSharedFile as validPublication,publicFile,digest,fileChunks,fileReceiver,mediaChannel,mediaModal } from "./files.mjs?v=4520";
-import {installDossierFiles,dossierEntry} from '../v69/dossier-files.mjs?v=4520';
+import { localRoom,roomMembers,roomChannel,release } from "../v57/room.mjs?v=4530";
+import { openFileLibrary,validateFile,validId,validSharedFile as validPublication,publicFile,digest,fileChunks,fileReceiver,mediaChannel,mediaModal } from "./files.mjs?v=4530";
+import {installDossierFiles,dossierEntry} from '../v69/dossier-files.mjs?v=4530';
 
 export async function installFileLibrary(OBR) {
   const {channel,connectionId:initialConnection} = await localRoom(OBR);
@@ -10,8 +10,10 @@ export async function installFileLibrary(OBR) {
   let publication,publicationBlob,receive,epoch = 0,viewerSession = "",sending = false,sendTimer;
   let viewerOpen=false,modalQueue=Promise.resolve();
   function modalOperation(action){const result=modalQueue.catch(()=>{}).then(action);modalQueue=result.catch(()=>{});return result}
-  const declined = new Set(),targets = new Set();
-  const send = data => OBR.broadcast.sendMessage(mediaChannel,data);
+  const declined = new Set(),targets = new Map();
+  const send = data => {
+    let timer;return Promise.race([OBR.broadcast.sendMessage(mediaChannel,data),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('La salle ne confirme plus les envois.')),10000)})]).finally(()=>clearTimeout(timer));
+  };
   async function requireGM() {
     if (closed || role !== "GM" || await OBR.player.getRole() !== "GM") throw Error("Bibliothèque réservée au maître de jeu de cette salle.");
     store ||= await openFileLibrary(OBR.room.id,OBR.player.id);
@@ -51,7 +53,7 @@ export async function installFileLibrary(OBR) {
       if (!/^image\/(png|jpeg|webp|gif)$/.test(mime)) throw Error('Choisis une image PNG, JPEG, WebP ou GIF.');
       const hash = await digest(file);
       await stop();await requireGM();
-      const next = {id:crypto.randomUUID(),version:crypto.randomUUID(),fileId:crypto.randomUUID(),title:'Image partagée par le MJ',mime,size:file.size,hash};
+      const next = {id:crypto.randomUUID(),version:crypto.randomUUID(),fileId:crypto.randomUUID(),title:'Image partagée par le MJ',mime,size:file.size,hash,transferMode:'window-v1'};
       if (!validPublication(next)) throw Error('Cette image ne peut pas être présentée.');
       publicationBlob = file;publication = {...next,transient:true};
       try { await send({type:'show',...publicFile(next)}); }
@@ -113,7 +115,7 @@ export async function installFileLibrary(OBR) {
       if (!title || title.length > 120) throw Error("Donne un nom de 1 à 120 caractères.");
       // No announcement, filename, bytes or link leaves the GM before this explicit action.
       await stop();await requireGM();
-      const next = {id:crypto.randomUUID(),version:crypto.randomUUID(),fileId:entry.id,title,mime:entry.mime,size:entry.size,hash:entry.hash};
+      const next = {id:crypto.randomUUID(),version:crypto.randomUUID(),fileId:entry.id,title,mime:entry.mime,size:entry.size,hash:entry.hash,transferMode:'window-v1'};
       if (!validPublication(next)) throw Error("Ce média ne peut pas être présenté.");
       await requireGM();await store.put({...entry,released:true});
       publication = next;
@@ -148,6 +150,18 @@ export async function installFileLibrary(OBR) {
     const state = receive;
     if (!state || !viewerSession || closed || role !== "PLAYER") return Promise.resolve();
     if (state.requested && !retry) return Promise.resolve();
+    if(state.publication.transferMode==='window-v1'){
+      if(!state.receiver){state.transfer=crypto.randomUUID();state.receiver=fileReceiver(state.publication,validPublication,{transfer:state.transfer});state.attempts=0}
+      const missing=state.receiver.missing(16);if(!missing.length)return Promise.resolve();
+      clearTimeout(state.timer);state.requested=true;state.batch=missing;state.error='';state.progress=state.receiver.progress();
+      const received=state.receiver.received();
+      if(automatic&&received===(state.lastCount||0))state.attempts++;else state.attempts=0;state.lastCount=received;
+      if(state.attempts>8){state.requested=false;state.error='Le transfert attend la reconnexion du MJ. Réessaie pour reprendre les morceaux manquants.';viewState();return Promise.resolve()}
+      state.resetTimer=()=>{};state.retry=()=>{if(receive===state&&!state.blob){state.requested=false;void requestFile(true,true)}};
+      state.round=(state.round||0)+1;state.timer=setTimeout(state.retry,8000);viewState();
+      return send({type:'request',id:state.publication.id,version:state.publication.version,to:state.sender,transfer:state.transfer,round:state.round,missing})
+        .catch(()=>{if(receive===state){clearTimeout(state.timer);state.timer=setTimeout(state.retry,1500)}});
+    }
     if(!automatic)state.attempts=0;state.attempts=(state.attempts||0)+1;
     clearTimeout(state.timer);state.requested = true;state.receiver = fileReceiver(state.publication,validPublication);state.error = "";state.progress = 0;
     function timeout() {
@@ -167,29 +181,30 @@ export async function installFileLibrary(OBR) {
     try {
       while (targets.size && publication && role === "GM" && !closed) {
         const active = publication,start = epoch;
-        const selected = Array.from(targets).slice(0,8);selected.forEach(id => targets.delete(id));
+        const selected = Array.from(targets.keys()).slice(0,1),request=targets.get(selected[0]);selected.forEach(id => targets.delete(id));
         const allowed = [];
         for (const id of selected) if (await isMember(id,"PLAYER")) allowed.push(id);
         if (!allowed.length) continue;
         await requireGM();
         const blob = active.transient ? publicationBlob : await store.blob(active.fileId);
         if (!blob || publication !== active || start !== epoch || closed) continue;
-        const transfer = crypto.randomUUID();
-        for await (const part of fileChunks(blob)) {
+        const transfer = request?.transfer||crypto.randomUUID();
+        for await (const part of fileChunks(blob,request?.missing)) {
             if (closed || role !== "GM" || publication !== active || start !== epoch) break;
             if (part.index % 32 === 0) await requireGM();
             await send({type:"data",id:active.id,version:active.version,transfer,to:allowed,...part});
-            if (part.index % 8 === 7) await new Promise(resolve => setTimeout(resolve,30));
+            if (part.index % 4 === 3) await new Promise(resolve => setTimeout(resolve,25));
         }
+        if(request&&publication===active&&start===epoch&&!closed)await send({type:'batch-end',id:active.id,version:active.version,transfer,round:request.round,to:allowed});
       }
     } catch (error) { console.warn("Présentation du média",error); }
     finally { sending = false; }
   }
-  function scheduleFile(id) {
+  function scheduleFile(id,request) {
     // Keep one pending request per player, including a newer photograph or a
     // retry arriving while another transfer is still awaiting Owlbear.
     // The single sender drains this queue after the in-flight chunk completes.
-    targets.add(id);clearTimeout(sendTimer);sendTimer = setTimeout(() => { void sendPending(); },40);
+    targets.set(id,request||null);clearTimeout(sendTimer);sendTimer = setTimeout(() => { void sendPending(); },40);
   }
   const offMedia = OBR.broadcast.onMessage(mediaChannel,event => {
     const data = event.data;
@@ -199,7 +214,16 @@ export async function installFileLibrary(OBR) {
         if (!await isMember(event.connectionId,"PLAYER") || closed || role !== "GM" || !publication) return;
         if (data.type === "active") await send({type:"show",...publicFile(publication),to:event.connectionId});
         else if (data.type === "request" && data.id === publication.id && data.version === publication.version &&
-            data.to === connectionId) scheduleFile(event.connectionId);
+            data.to === connectionId) {
+          let request;
+          if(data.missing!==undefined){
+            const count=Math.ceil(publication.size/9000);
+            if(!validId(data.transfer)||!Array.isArray(data.missing)||!data.missing.length||data.missing.length>16||!data.missing.every(i=>Number.isInteger(i)&&i>=0&&i<count)||new Set(data.missing).size!==data.missing.length)return;
+            if(!Number.isSafeInteger(data.round)||data.round<1)return;
+            request={transfer:data.transfer,round:data.round,missing:data.missing};
+          }
+          scheduleFile(event.connectionId,request);
+        }
         return;
       }
       if (role !== "PLAYER" || !await isMember(event.connectionId,"GM") || closed || role !== "PLAYER") return;
@@ -217,6 +241,9 @@ export async function installFileLibrary(OBR) {
           receive.publication.version === data.version && receive.sender === event.connectionId) {
         declined.add(data.id);
         if(viewerSession)channel.postMessage({type:'media-view-hide',id:data.id,session:viewerSession});else await closeViewer();
+      } else if(data.type==='batch-end'&&Array.isArray(data.to)&&data.to.includes(connectionId)&&receive?.publication.id===data.id&&receive.publication.version===data.version&&receive.sender===event.connectionId&&receive.transfer===data.transfer&&receive.round===data.round&&!receive.blob){
+        // Finish processing the batch before acknowledging its missing chunks.
+        const state=receive;receptionQueue=receptionQueue.then(()=>{if(receive===state&&!state.blob&&state.round===data.round){clearTimeout(state.timer);state.requested=false;void requestFile(true,true)}}).catch(console.warn);
       } else if (data.type === "data" && Array.isArray(data.to) && data.to.includes(connectionId) && receive?.requested &&
           receive.publication.id === data.id && receive.publication.version === data.version && receive.sender === event.connectionId) {
         const state = receive;
@@ -227,8 +254,14 @@ export async function installFileLibrary(OBR) {
             if (!result || receive !== state || closed || role !== "PLAYER") return;
             state.resetTimer();
             if (result.blob) { clearTimeout(state.timer);state.blob = result.blob;state.progress = 100;viewState(); }
-            else if (result.progress >= (state.progress || 0) + 5) { state.progress = result.progress;viewState(); }
-          } catch (error) { clearTimeout(state.timer);state.retry(); }
+            else {
+              if(result.progress >= (state.progress || 0) + 1){state.progress=result.progress;viewState()}
+              if(state.publication.transferMode==='window-v1'&&state.batch.every(i=>state.receiver.has(i))){clearTimeout(state.timer);state.requested=false;void requestFile()}
+            }
+          } catch (error) {
+            clearTimeout(state.timer);state.receiver=null;state.requested=false;state.integrityErrors=(state.integrityErrors||0)+1;
+            if(state.integrityErrors<3)state.retry();else{state.error='Le fichier reçu ne correspond pas à l’original. Réessaie lorsque la connexion est rétablie.';viewState()}
+          }
         }).catch(console.warn);
       }
     })().catch(console.warn);

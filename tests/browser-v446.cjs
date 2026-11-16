@@ -29,7 +29,7 @@ async function until(read,label){for(let i=0;i<140;i++){if(await read())return;a
   await editor(gm).locator('#canvas-save-icon').click();
   await online(gm).getByLabel('Nom de la nouvelle campagne en ligne').fill('Campagne retrouvée partout');
   await online(gm).getByRole('button',{name:'Sauvegarder dans une nouvelle campagne',exact:true}).click();
-  await online(gm).getByRole('button',{name:'Ouvrir cette version…',exact:true}).waitFor();assert.equal(cloud.versions.length,1);assert.equal(downloads,0);
+  await online(gm).getByRole('button',{name:'Ouvrir cette version…',exact:true}).waitFor();assert.equal(cloud.versions.length,1);assert.equal(downloads,0);await online(gm).getByRole('button',{name:'Activer la sauvegarde automatique',exact:true}).click();
   await backup(gm).locator('header button').click();
   await app(gm).evaluate(()=>DuneApp.importCatalogCell({title:'AJOUT_AUTOMATIQUE_446',category:'objet',clues:[],desc:'',w:250,h:160}));
   await until(()=>cloud.versions.length===2,'automatic checkpoint without a save click');
@@ -48,7 +48,7 @@ async function until(read,label){for(let i=0;i<140;i++){if(await read())return;a
   const original=await second.frames().find(frame=>frame.url().includes('/archives-host-v55.html')).evaluate(async id=>{const {openFileLibrary}=await import('./src/v60/files.mjs');const lib=await openFileLibrary('fixture-single-room','fixture-MJ');try{return await(await lib.blob(id)).text()}finally{lib.close()}},file[0].id);
   assert.equal(original,'ORIGINAL_PRIVE_NUAGE_446');
   assert.equal(await app(second).evaluate(()=>new Promise(resolve=>{const open=indexedDB.open('ArchivesImaginaireImageLibrary',1);open.onsuccess=()=>{const db=open.result,tx=db.transaction('images'),read=tx.objectStore('images').getAll();tx.oncomplete=()=>{db.close();resolve(read.result.length)}}})),1);
-  await until(()=>cloud.versions.length===3,'restored campaign checkpoint');
+  assert.equal(cloud.versions.length,2,'restoring alone must not create another checkpoint');await editor(second).locator('#canvas-save-icon').click();await app(second).evaluate(()=>DuneApp.setGmDescription('secret','PRISE_EN_MAIN_PRIVEE_446'));await online(second).getByRole('button',{name:'Enregistrer maintenant',exact:true}).click();await until(()=>cloud.versions.length===3,'explicit manual checkpoint after restore');await backup(second).locator('header button').click();
   await app(gm).evaluate(()=>DuneApp.importCatalogCell({title:'VIEIL_APPAREIL_446',category:'objet',clues:[],desc:'',w:250,h:160}));
   await editor(gm).locator('#canvas-save-icon').click();await online(gm).getByRole('button',{name:'Enregistrer maintenant',exact:true}).click();
   await online(gm).getByText(/Une version plus récente existe en ligne/).first().waitFor();assert.equal(cloud.versions.length,3);
@@ -56,7 +56,7 @@ async function until(read,label){for(let i=0;i<140;i++){if(await read())return;a
   await app(second).evaluate(()=>{window.__cloudOffline=true;DuneApp.importCatalogCell({title:'HORS_LIGNE_446',category:'objet',clues:[],desc:'',w:250,h:160})});
   await editor(second).locator('#canvas-save-icon').click();await online(second).getByRole('button',{name:'Enregistrer maintenant',exact:true}).click();
   await online(second).getByText(/Envoi en attente/).waitFor();assert.equal(cloud.versions.length,3);
-  await app(second).evaluate(()=>{window.__cloudOffline=false;window.dispatchEvent(new Event('online'))});await until(()=>cloud.versions.length===4,'network return checkpoint');
+  await app(second).evaluate(()=>{window.__cloudOffline=false;window.dispatchEvent(new Event('online'))});await new Promise(r=>setTimeout(r,250));assert.equal(cloud.versions.length,3,'a manual session does not upload on reconnect');await online(second).getByRole('button',{name:'Enregistrer maintenant',exact:true}).click();await until(()=>cloud.versions.length===4,'explicit retry after reconnect');
   await online(second).getByRole('button',{name:'Actualiser',exact:true}).click();
   await online(second).getByRole('button',{name:'Ouvrir cette version…',exact:true}).first().waitFor();
   await second.screenshot({path:'/tmp/archives-cloud-tablet-v446.png'});

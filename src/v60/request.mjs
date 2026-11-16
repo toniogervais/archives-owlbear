@@ -1,4 +1,4 @@
-import { isPacket,packet } from "../v56/link.mjs?v=4520";
+import { isPacket,packet } from "../v56/link.mjs?v=4530";
 const pending = new Map();
 export function requireEditor() {
   const state = window.DuneApp?.getState?.();

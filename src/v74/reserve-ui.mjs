@@ -1,5 +1,5 @@
-import {isGM,nativeEditor,element as el,button,sheet,notice} from '../v63/ui.mjs?v=4520';
-import {cellTypes,reserveNode,openCellReserve} from './cell-reserve.mjs?v=4520';
+import {isGM,nativeEditor,element as el,button,sheet,notice} from '../v63/ui.mjs?v=4530';
+import {cellTypes,reserveNode,openCellReserve} from './cell-reserve.mjs?v=4530';
 const state=()=>window.DuneApp?.getState?.();let records=[],sequence=0;
 function scope(){
  if(!isGM())throw Error('Réserve réservée au maître de jeu.');
@@ -38,6 +38,7 @@ function edit(record){
  const name=field('Nom de la cellule',el('input'));name.value=original.title;name.maxLength=500;
  const type=field('Type de cellule',el('select'));types(type);type.value=original.category||'personnage';
  const description=field('Description générale',el('textarea'));description.rows=6;description.value=original.desc||'';
+ const gmDescription=field('Description MJ — privée',el('textarea'));gmDescription.rows=5;gmDescription.maxLength=100000;gmDescription.value=original.gmDescription||'';
  const faction=field('Faction ou groupe',el('input'));faction.value=original.faction||'';
  let picture=original.bgImg||original.image||original.imageData||'';
  const preview=el('img');preview.className='reserve-preview';preview.alt='Illustration de la cellule en préparation';function image(value){picture=value;preview.src=value;preview.hidden=!value}image(picture);form.append(preview);
@@ -53,7 +54,7 @@ function edit(record){
  function detail(value={}){const row=el('div'),title=el('input'),text=el('textarea');title.value=value.title||'';title.setAttribute('aria-label','Nom de la catégorie MJ');text.value=value.text||'';text.rows=3;text.setAttribute('aria-label','Informations réservées au MJ');row.append(title,text,button('Retirer cette catégorie',()=>row.remove()));details.append(row)}(original.gmDetails||[]).forEach(detail);form.append(button('Nouvelle catégorie MJ',()=>detail()));
  const save=button('Enregistrer dans la réserve',async()=>{
   view.busy(true);try{
-   const node=reserveNode({...original,title:name.value,category:type.value,desc:description.value,faction:faction.value,bgImg:picture,
+   const node=reserveNode({...original,title:name.value,category:type.value,desc:description.value,gmDescription:gmDescription.value,faction:faction.value,bgImg:picture,
     clues:[...clues.children].map(r=>({text:r.querySelector('textarea').value})),gmDetails:[...details.children].map(r=>({title:r.querySelector('input').value,text:r.querySelector('textarea').value}))});
    if(type.value!==original.category){const t=cellTypes.find(t=>t[0]===type.value);node.shape=t[2];node.color=t[3]}
    await useStore(s=>s.put({id:record?.id||crypto.randomUUID(),node,created:record?.created||Date.now(),updated:Date.now()}));changed();view.dialog.close();await refresh();notice('Cellule enregistrée dans la réserve, sans ajout au canevas.');
