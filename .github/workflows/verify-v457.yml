@@ -1,0 +1,46 @@
+name: Vérification V4.57 — commandes Archives et conflits de sauvegarde
+on:
+  push:
+    branches: ['codex/v457-*']
+  workflow_dispatch:
+jobs:
+  unit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: node tests/syntax.cjs
+      - run: node --test tests/conflicts-v457.test.mjs tests/session-v456.test.mjs tests/cloud-v446.test.mjs tests/backup-management-v448.test.mjs tests/mobile-v455.test.mjs
+  players:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: node tests/browser-v457.cjs
+      - run: node tests/browser-v455.cjs
+      - run: node tests/browser-v64.cjs
+      - run: node tests/browser-v65.cjs
+  backups:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: node tests/browser-conflicts-v457.cjs
+      - run: node tests/browser-v456.cjs
+      - run: node tests/browser-v446.cjs
+      - run: node tests/browser-v448.cjs
+      - run: node tests/browser-v453.cjs

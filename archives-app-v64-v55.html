@@ -6,8 +6,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="./src/v77/player.css?v=4560">
-<link rel="stylesheet" href="./src/v78/responsive.css?v=4560">
+<link rel="stylesheet" href="./src/v77/player.css?v=4570">
+<link rel="stylesheet" href="./src/v78/responsive.css?v=4570">
 <title>Les Archives de l’Imaginaire — Jeu de rôle</title>
 <style id="core-styles">
 :root {
@@ -2082,6 +2082,7 @@ window.DuneApp = (function() {
     applyCanvasBg();
     renderTabs();
     renderAll(data.revealedNodeId, data.revealedLinkId);
+    saveState();
     window.dispatchEvent(new CustomEvent('archives:public-view'));
   }
 
@@ -5068,6 +5069,7 @@ window.DuneApp = (function() {
     },
     centerOnSelectedCell: function() {
       var n = getNode(state.selectedId);
+      if((state.playerMode||state.strictReadOnly)&&(!n||!n.revealed)){n=state.nodes.find(function(node){return node.revealed;});if(n){state.selectedId=n.id;state.selectedLinkId=null;}}
       if (!n) { setStatus("Sélectionne une cellule pour la centrer."); return; }
       var pos = getEffPos(n), sz = getEffectiveCellSize(n);
       var mainArea = el("main-area");
@@ -5929,6 +5931,9 @@ window.DuneApp = (function() {
                 clearTimeout(connTimer);
                 peerConns.push(conn);
                 finished = true;
+                window.ArchivesRelay.setPlayerScope('live:'+roomCode+':'+String(window.__archivesLivePlayerName||'Joueur'));
+                state.boards=[{id:'waiting',name:'Scène',nodes:[],links:[]}];state.activeBoardId='waiting';state.selectedId=null;state.selectedLinkId=null;state.bgImage='';
+                bindActiveBoardRefs();applyCanvasBg();renderTabs();renderAll();saveState();
                 done(true, "Connecté au salon " + roomCode + ". En attente des données du maître de jeu…");
               });
               conn.on("data", function(data){
@@ -7170,15 +7175,15 @@ window.ArchivesRevealJournal={start,stop,refresh:()=>monitor?monitor.refresh():P
 
 })();
 </script>
-<link rel="stylesheet" href="./src/v56/bridge.css?v=4560">
-<script type="module" src="./src/v56/relay.mjs?v=4560"></script>
-<script type="module" src="./src/v56/navigation.mjs?v=4560"></script>
-<script type="module" src="./src/v58/main-relay.mjs?v=4560"></script>
-<script type="module" src="./src/v58/transfer-ui.mjs?v=4560"></script>
-<script type="module" src="./src/v60/library.mjs?v=4560"></script>
+<link rel="stylesheet" href="./src/v56/bridge.css?v=4570">
+<script type="module" src="./src/v56/relay.mjs?v=4570"></script>
+<script type="module" src="./src/v56/navigation.mjs?v=4570"></script>
+<script type="module" src="./src/v58/main-relay.mjs?v=4570"></script>
+<script type="module" src="./src/v58/transfer-ui.mjs?v=4570"></script>
+<script type="module" src="./src/v60/library.mjs?v=4570"></script>
 <script defer src="./src/v54/polish.js"></script>
 <script type="module" src="./src/v62/motion.mjs?v=4210"></script>
-<script type="module" src="./src/v63/workbench.mjs?v=4560"></script>
+<script type="module" src="./src/v63/workbench.mjs?v=4570"></script>
 </body>
 </html>
 <style id="v19-player-reveal-transitions">
@@ -7434,22 +7439,22 @@ body.player-mode .player-cell-resize:hover{opacity:1}
   #soundshow-sounds-dock > button {box-shadow:none!important}
 }
 </style>
-<script type="module" src="./src/v65/cell-picture.mjs?v=4560"></script>
-<script type="module" src="./src/v70/player-image.mjs?v=4560"></script>
-<script type="module" src="./src/v65/storage.mjs?v=4560"></script>
-<script type="module" src="./src/soundshow/archives.mjs?v=4560"></script>
-<script type="module" src="./src/v66/workspace.mjs?v=4560"></script>
-<script type="module" src="./src/v68/cell-brief.mjs?v=4560"></script>
+<script type="module" src="./src/v65/cell-picture.mjs?v=4570"></script>
+<script type="module" src="./src/v70/player-image.mjs?v=4570"></script>
+<script type="module" src="./src/v65/storage.mjs?v=4570"></script>
+<script type="module" src="./src/soundshow/archives.mjs?v=4570"></script>
+<script type="module" src="./src/v66/workspace.mjs?v=4570"></script>
+<script type="module" src="./src/v68/cell-brief.mjs?v=4570"></script>
 
 
-<script type="module" src="./src/v72/gm-details.mjs?v=4560"></script>
-<script type="module" src="./src/v72/selection.mjs?v=4560"></script>
-<script type="module" src="./src/v72/presentation.mjs?v=4560"></script>
-<script type="module" src="./src/v72/google-search.mjs?v=4560"></script>
+<script type="module" src="./src/v72/gm-details.mjs?v=4570"></script>
+<script type="module" src="./src/v72/selection.mjs?v=4570"></script>
+<script type="module" src="./src/v72/presentation.mjs?v=4570"></script>
+<script type="module" src="./src/v72/google-search.mjs?v=4570"></script>
 
-<script type="module" src="./src/v74/reserve-ui.mjs?v=4560"></script>
+<script type="module" src="./src/v74/reserve-ui.mjs?v=4570"></script>
 
-<script type="module" src="./src/v75/gm-description.mjs?v=4560"></script>
-<script type="module" src="./src/v77/touch-canvas.mjs?v=4560"></script>
-<script type="module" src="./src/v77/player-ui.mjs?v=4560"></script>
-<script type="module" src="./src/v78/responsive.mjs?v=4560"></script>
+<script type="module" src="./src/v75/gm-description.mjs?v=4570"></script>
+<script type="module" src="./src/v77/touch-canvas.mjs?v=4570"></script>
+<script type="module" src="./src/v77/player-ui.mjs?v=4570"></script>
+<script type="module" src="./src/v78/responsive.mjs?v=4570"></script>

@@ -1,5 +1,5 @@
 /* V4.28.1 : déplacement direct des véritables barres visibles. */
-import {isGM} from '../v63/ui.mjs?v=4560';
+import {isGM} from '../v63/ui.mjs?v=4570';
 const storagePrefix='archives:dock-location:v426:';
 const clamp=(value,minimum,maximum)=>Math.max(minimum,Math.min(Math.max(minimum,maximum),value));
 

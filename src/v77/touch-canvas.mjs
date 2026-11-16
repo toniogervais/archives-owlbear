@@ -1,4 +1,4 @@
-import {pinchCamera} from './geometry.mjs?v=4560';
+import {pinchCamera} from './geometry.mjs?v=4570';
 function install(){
  const viewport=document.getElementById('viewport'),api=window.DuneApp;if(!viewport||!api?.setCanvasCamera)return;
  let gesture=null,pending=null,frame=0;const canvasTouches=new Set();

@@ -72,3 +72,5 @@ body.archives-player-ui #viewport{cursor:grab}
 @media print{#archives-player-tools{display:none!important}}
 
 #archives-player-layout-bar .player-action-caption{font-size:10px}
+
+#archives-player-tools{position:fixed;inset:0;z-index:9800;pointer-events:none}#archives-player-tools .archives-player-dock,#archives-player-tools #archives-player-icons-toggle,#archives-player-tools dialog{pointer-events:auto}

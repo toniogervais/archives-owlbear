@@ -1,5 +1,5 @@
 /* Fichiers du dossier : publication explicite, consultation à la demande, contrôle du rôle à chaque transfert. */
-import {validId,validSharedFile,publicFile,fileChunks,fileReceiver} from '../v60/files.mjs?v=4560';
+import {validId,validSharedFile,publicFile,fileChunks,fileReceiver} from '../v60/files.mjs?v=4570';
 const network='fr.archives-imaginaire.bridge/dossier-v442';
 export const dossierEntry=entry=>entry?.dossier?.version && validSharedFile({...entry,version:entry.dossier.version})
   ? publicFile({...entry,version:entry.dossier.version}) : null;

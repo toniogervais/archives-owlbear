@@ -98,3 +98,5 @@
  #archives-campaign-backup .studio-actions{gap:8px}
  #archives-campaign-backup .studio-actions button{white-space:normal}
 }
+
+#archives-backup-conflict{padding:14px;border:1px solid #d5b275;border-radius:12px;background:#4a382b44;margin:12px 0}#archives-backup-conflict[hidden]{display:none!important}#archives-backup-conflict h4{margin:0 0 8px;font-size:17px}#archives-backup-conflict button{display:block;width:100%;margin:8px 0;min-height:48px}
