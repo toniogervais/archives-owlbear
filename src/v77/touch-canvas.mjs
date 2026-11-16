@@ -51,6 +51,7 @@ function install(){
  window.addEventListener('touchcancel',event=>{for(const touch of event.changedTouches)canvasTouches.delete(touch.identifier);if(gesture){claim(event);finish(true)}},{capture:true,passive:false});
  window.addEventListener('blur',()=>{canvasTouches.clear();finish(true)});window.addEventListener('pagehide',()=>{canvasTouches.clear();finish(true)},{once:true});
  document.addEventListener('visibilitychange',()=>{if(document.hidden){canvasTouches.clear();finish(true)}});
+ window.addEventListener('resize',()=>{canvasTouches.clear();finish(true)});
  window.ArchivesTouchCanvas={handles:true};
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();

@@ -9,9 +9,9 @@ function viewport(){const v=window.visualViewport,css=getComputedStyle(document.
 const orientation=()=>innerWidth>innerHeight?'landscape':'portrait';
 const defaults=()=>({hidden:false,reading:{x:.5,y:0,vertical:false,collapsed:false},zoom:{x:.5,y:1,vertical:false,collapsed:false},toggle:{x:1,y:.72}});
 function install(){
- if(!window.DuneApp)return;const api=window.DuneApp,originals=new Map();let active=false,storageKey='',visibilityKey='',prefs=defaults(),arranging=false,queued=false,layoutFrame=0,owlControl;
+ if(!window.DuneApp)return;const api=window.DuneApp,originals=new Map();let active=false,storageKey='',visibilityKey='',prefs=defaults(),arranging=false,queued=false,layoutFrame=0,owlControl,fittedCamera=null,lastViewport=viewport(),lastOrientation=orientation();
  const root=el('div');root.id='archives-player-tools';root.hidden=true;
- const toggle=button('Masquer les icônes','',()=>{prefs.hidden=!prefs.hidden;if(prefs.hidden)setArrange(false);else for(const bar of [prefs.reading,prefs.zoom])bar.collapsed=false;paint();save()});toggle.id='archives-player-icons-toggle';toggle.append(icon('eye'));
+ const toggle=button('Masquer les icônes','',()=>{const refit=isFitted();prefs.hidden=!prefs.hidden;if(prefs.hidden)setArrange(false);else for(const bar of [prefs.reading,prefs.zoom])bar.collapsed=false;paint();save();if(refit)fitView()});toggle.id='archives-player-icons-toggle';toggle.append(icon('eye'));
  const toggleCaption=el('span',null,'Icônes');toggle.append(toggleCaption);
  const menu=el('dialog');menu.id='archives-player-display';menu.setAttribute('aria-label','Mon affichage');
  const header=el('header'),title=el('h2',null,'Mon affichage'),close=button('Fermer mon affichage','×',()=>menu.close());header.append(title,close);
@@ -25,17 +25,19 @@ function install(){
  menu.append(header,note,zoomSection,menuActions,arrange,sceneSection,reset);
  const reading=makeBar('reading','de lecture'),zoom=makeBar('zoom','de zoom');
  const more=button('Options de mon affichage','',()=>openMenu());more.id='archives-player-display-open';more.className='player-command';more.append(icon('more'),el('span','player-action-caption','Plus'));
- const minus=button('Dézoomer la vue','',()=>step(-1)),plus=button('Zoomer la vue','',()=>step(1)),fit=button('Afficher toutes les cellules','',()=>{api.resetView();api.setCanvasCamera(camera(),true)});
+ const minus=button('Dézoomer la vue','',()=>step(-1)),plus=button('Zoomer la vue','',()=>step(1)),fit=button('Afficher toutes les cellules','',fitView);
  minus.id='archives-player-zoom-out';plus.id='archives-player-zoom-in';fit.id='archives-player-fit';minus.append(icon('minus'));plus.append(icon('plus'));fit.append(icon('fit'));
  const percent=button('Régler précisément le zoom','100 %',()=>openMenu(true));percent.id='archives-player-zoom-value';zoom.actions.append(minus,percent,plus,fit);
  root.append(reading.node,zoom.node,toggle,menu);document.body.append(root);
  function makeBar(id,caption){
   const node=el('nav','archives-player-dock');node.id='archives-player-'+id+'-bar';node.setAttribute('aria-label','Barre '+caption);
   const grip=button('Déplacer la barre '+caption,'⠿',()=>{});grip.className='player-bar-grip';
-  const actions=el('div','player-bar-actions'),collapse=button('Réduire la barre '+caption,'−',()=>{prefs[id].collapsed=!prefs[id].collapsed;paint();save()});collapse.className='player-bar-collapse';
+  const actions=el('div','player-bar-actions'),collapse=button('Réduire la barre '+caption,'−',()=>{const refit=isFitted();prefs[id].collapsed=!prefs[id].collapsed;paint();save();if(refit)fitView()});collapse.className='player-bar-collapse';
   node.append(grip,actions,collapse);movable(grip,node,id);return {node,actions,collapse,caption};
  }
  function camera(){const s=api.getState();return {panX:s.panX,panY:s.panY,zoom:s.zoom}}
+ function isFitted(){const c=camera();return fittedCamera&&['panX','panY','zoom'].every(key=>Math.abs(c[key]-fittedCamera[key])<1e-9)}
+ function fitView(){api.resetView();api.setCanvasCamera(camera(),true);fittedCamera=camera();save()}
  function zoomTo(value){const box=document.getElementById('viewport').getBoundingClientRect();api.setCanvasCamera(zoomCamera(camera(),value,{x:box.width/2,y:box.height/2}),true)}
  function step(direction){zoomTo(camera().zoom*(direction>0?1.1:1/1.1))}
  function repeat(control,direction){
@@ -49,10 +51,10 @@ function install(){
  repeat(minus,-1);repeat(plus,1);
  function sourceScope(){const params=new URLSearchParams(location.search);return window.ArchivesPlayerScope||((api.getState().strictReadOnly?'player:':'preview:')+(api.getState().liveRoomId||params.get('room')||'local'))}
  function load(){
-  const base='archives:player-tools:v455:'+sourceScope(),next=base+':'+orientation();if(next===storageKey)return;storageKey=next;visibilityKey=base+':visibility';prefs=defaults();
-  try{const saved=JSON.parse(localStorage.getItem(storageKey)||'null');if(saved){prefs.hidden=saved.hidden===true;for(const name of ['reading','zoom','toggle'])if(saved[name]&&Number.isFinite(saved[name].x)&&Number.isFinite(saved[name].y))prefs[name]={...prefs[name],x:Math.max(0,Math.min(1,saved[name].x)),y:Math.max(0,Math.min(1,saved[name].y)),vertical:saved[name].vertical===true,collapsed:saved[name].collapsed===true}}const hidden=localStorage.getItem(visibilityKey);if(hidden!==null)prefs.hidden=hidden==='true';}catch{}
+  const base='archives:player-tools:v455:'+sourceScope(),next=base+':'+orientation();if(next===storageKey)return;const scopeChanged=visibilityKey!==base+':visibility';storageKey=next;visibilityKey=base+':visibility';prefs=defaults();if(scopeChanged)fittedCamera=null;
+  try{const saved=JSON.parse(localStorage.getItem(storageKey)||'null');if(saved){prefs.hidden=saved.hidden===true;for(const name of ['reading','zoom','toggle'])if(saved[name]&&Number.isFinite(saved[name].x)&&Number.isFinite(saved[name].y))prefs[name]={...prefs[name],x:Math.max(0,Math.min(1,saved[name].x)),y:Math.max(0,Math.min(1,saved[name].y)),vertical:saved[name].vertical===true,collapsed:saved[name].collapsed===true};if(scopeChanged&&saved.fitCamera&&['panX','panY','zoom'].every(key=>Number.isFinite(saved.fitCamera[key])))fittedCamera={...saved.fitCamera};}const hidden=localStorage.getItem(visibilityKey);if(hidden!==null)prefs.hidden=hidden==='true';}catch{}
  }
- function save(){if(!active||!storageKey)return;try{localStorage.setItem(storageKey,JSON.stringify(prefs));localStorage.setItem(visibilityKey,String(prefs.hidden))}catch{}}
+ function save(){if(!active||!storageKey)return;try{localStorage.setItem(storageKey,JSON.stringify({...prefs,fitCamera:isFitted()?camera():null}));localStorage.setItem(visibilityKey,String(prefs.hidden))}catch{}}
  function place(node,position){
   if(node.dataset.dragging==='true')return;
   const v=viewport(),width=node.offsetWidth||44,height=node.offsetHeight||44;
@@ -118,7 +120,13 @@ function install(){
  new MutationObserver(()=>{if(player()!==active)schedule()}).observe(document.body,{attributes:true,attributeFilter:['class']});
  window.addEventListener('archives:camera',updateZoom);window.addEventListener('archives:player-scope',schedule);window.addEventListener('archives:public-view',schedule);
  window.addEventListener('message',event=>{if(event.source===window.parent&&event.origin===location.origin&&isPacket(event.data)&&event.data.type==='owl-player-identity')schedule()});
- const resized=()=>{if(!active)return;load();paint()};window.addEventListener('resize',resized);window.visualViewport?.addEventListener('resize',resized);window.visualViewport?.addEventListener('scroll',resized);
+ const resized=()=>{
+  const before=lastViewport,after=viewport(),rotated=Math.abs(after.width-before.width)>40&&lastOrientation!==orientation();lastViewport=after;lastOrientation=orientation();
+  if(!active)return;load();paint();
+  if(rotated&&!menu.open&&!document.querySelector('dialog[open],.modal-overlay.open,#player-cell-detail.open')){
+   if(isFitted())fitView();else {const c=camera();api.setCanvasCamera({...c,panX:c.panX+(after.width-before.width)/2,panY:c.panY+(after.height-before.height)/2},true)}
+  }
+ };window.addEventListener('resize',resized);window.visualViewport?.addEventListener('resize',resized);window.visualViewport?.addEventListener('scroll',resized);
  schedule();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
