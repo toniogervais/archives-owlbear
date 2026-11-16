@@ -36,11 +36,11 @@ async function inBounds(p){return editor(p).locator('#archives-player-tools').ev
   await touch(cdp,'touchStart',[a]);await touch(cdp,'touchStart',[a,b]);await app(p).evaluate(()=>window.__touchNode=document.querySelector('.node-cell[data-id="n"]'));
   const endMid={x:mid.x+21,y:mid.y+29},nextA={id:1,x:endMid.x-64,y:endMid.y},nextB={id:2,x:endMid.x+64,y:endMid.y};
   for(let i=1;i<=6;i++)await touch(cdp,'touchMove',[{id:1,x:a.x+(nextA.x-a.x)*i/6,y:a.y+(nextA.y-a.y)*i/6},{id:2,x:b.x+(nextB.x-b.x)*i/6,y:b.y+(nextB.y-b.y)*i/6}]);
-  const zoomed=await camera(p);near(zoomed.zoom,2,'2x pinch');
+  const zoomed=await camera(p);assert.ok(Math.abs(zoomed.zoom-2)<.001,'the finger distance produces the exact zoom');
   near((mid.x-vp.x-initial.panX)/initial.zoom,(endMid.x-vp.x-zoomed.panX)/zoomed.zoom,'world X under the fingers');near((mid.y-vp.y-initial.panY)/initial.zoom,(endMid.y-vp.y-zoomed.panY)/zoomed.zoom,'world Y under the fingers');
   assert.deepEqual(await layout(p),before,'pinching over a cell never drags or resizes it');assert.equal(await app(p).evaluate(()=>window.__touchNode===document.querySelector('.node-cell[data-id="n"]')),true,'the canvas is not rebuilt on every touch move');
   await app(gm).evaluate(()=>{DuneApp.getState().nodes.find(n=>n.id==='n').desc+=' Mise à jour pendant le zoom.';DuneApp.commitCellPicture('n',{bgZoom:1})});
-  await app(p).waitForFunction(()=>!!DuneApp.getState().pendingPlayerView);await touch(cdp,'touchEnd',[nextA]);const one=await camera(p);near(one.panX,zoomed.panX,'lifting a finger does not jump X');near(one.panY,zoomed.panY,'lifting a finger does not jump Y');
+  await app(p).waitForFunction(()=>!!DuneApp.getState().pendingPlayerView);await touch(cdp,'touchMove',[nextA]);const one=await camera(p);near(one.panX,zoomed.panX,'lifting a finger does not jump X');near(one.panY,zoomed.panY,'lifting a finger does not jump Y');
   await touch(cdp,'touchMove',[{...nextA,x:nextA.x+24,y:nextA.y+16}]);const panned=await camera(p);near(panned.panX,zoomed.panX+24,'one-finger continuation X');near(panned.panY,zoomed.panY+16,'one-finger continuation Y');await touch(cdp,'touchEnd',[]);
   await app(p).waitForFunction(()=>!DuneApp.getState().isNavigatingCanvas&&!DuneApp.getState().pendingPlayerView&&DuneApp.getState().nodes.find(n=>n.id==='n').desc.includes('Mise à jour pendant le zoom.'));
   assert.deepEqual(await layout(p),before);assert.equal(await app(p).evaluate(()=>visualViewport.scale),1,'the gesture zooms the canvas, not the browser page');

@@ -9,7 +9,7 @@ function viewport(){const v=window.visualViewport,css=getComputedStyle(document.
 const orientation=()=>innerWidth>innerHeight?'landscape':'portrait';
 const defaults=()=>({hidden:false,reading:{x:.5,y:0,vertical:false,collapsed:false},zoom:{x:.5,y:1,vertical:false,collapsed:false},toggle:{x:1,y:.72}});
 function install(){
- if(!window.DuneApp)return;const api=window.DuneApp,originals=new Map();let active=false,storageKey='',visibilityKey='',prefs=defaults(),arranging=false,queued=false,layoutFrame=0;
+ if(!window.DuneApp)return;const api=window.DuneApp,originals=new Map();let active=false,storageKey='',visibilityKey='',prefs=defaults(),arranging=false,queued=false,layoutFrame=0,owlControl;
  const root=el('div');root.id='archives-player-tools';root.hidden=true;
  const toggle=button('Masquer les icônes','',()=>{prefs.hidden=!prefs.hidden;if(prefs.hidden)setArrange(false);else for(const bar of [prefs.reading,prefs.zoom])bar.collapsed=false;paint();save()});toggle.id='archives-player-icons-toggle';toggle.append(icon('eye'));
  const toggleCaption=el('span',null,'Icônes');toggle.append(toggleCaption);
@@ -94,7 +94,7 @@ function install(){
   if(!next){if(active){active=false;arranging=false;root.hidden=true;menu.close();document.body.classList.remove('archives-player-ui','player-arrange-cells','player-icons-hidden');for(const [control,record]of originals){record.label?.remove();control.classList.remove('player-command','player-menu-command');if(record.marker.isConnected)record.marker.replaceWith(control)}originals.clear()}return}
   active=true;root.hidden=false;document.body.classList.add('archives-player-ui');load();
   move('archives-dossier-open',reading.actions,'Dossier');move('quick-player-journal',reading.actions,'Journal');move('quick-player-notes',reading.actions,'Mes notes');
-  const owl=document.querySelector('#canvas-integrations-dock .canvas-integration-item:first-child button');if(owl&&!owl.disabled){decorate(owl,'Carte');if(owl.parentElement!==reading.actions)reading.actions.append(owl)}
+  owlControl=document.querySelector('#canvas-integrations-dock .canvas-integration-item:first-child button')||owlControl;if(owlControl?.isConnected&&!owlControl.disabled){decorate(owlControl,'Carte');reading.actions.append(owlControl)}
   if(!api.getState().strictReadOnly)move('quick-mode-switch',reading.actions,'Mode MJ');
   reading.actions.append(more);
   move('quick-player-center-cell',menuActions,'Recentrer la cellule sélectionnée',true);move('quick-grid-toggle',menuActions,'Afficher ou masquer la grille',true);move('quick-player-layout',menuActions,'Réorganiser mes cellules',true);move('quick-player-undo',menuActions,'Annuler mon déplacement',true);
