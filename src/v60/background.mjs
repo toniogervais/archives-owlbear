@@ -198,7 +198,7 @@ export async function installFileLibrary(OBR) {
         if(request&&publication===active&&start===epoch&&!closed)await send({type:'batch-end',id:active.id,version:active.version,transfer,round:request.round,to:allowed});
       }
     } catch (error) { console.warn("Présentation du média",error); }
-    finally { sending = false; }
+    finally { sending = false;if(targets.size&&publication&&role==='GM'&&!closed){clearTimeout(sendTimer);sendTimer=setTimeout(()=>void sendPending(),40)} }
   }
   function scheduleFile(id,request) {
     // Keep one pending request per player, including a newer photograph or a
