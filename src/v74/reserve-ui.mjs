@@ -1,5 +1,5 @@
-import {isGM,nativeEditor,element as el,button,sheet,notice} from '../v63/ui.mjs?v=4540';
-import {cellTypes,reserveNode,openCellReserve} from './cell-reserve.mjs?v=4540';
+import {isGM,nativeEditor,element as el,button,sheet,notice} from '../v63/ui.mjs?v=4550';
+import {cellTypes,reserveNode,openCellReserve} from './cell-reserve.mjs?v=4550';
 const state=()=>window.DuneApp?.getState?.();let records=[],sequence=0;
 function scope(){
  if(!isGM())throw Error('Réserve réservée au maître de jeu.');

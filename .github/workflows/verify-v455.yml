@@ -1,0 +1,33 @@
+name: Vérification V4.55 — tactile et commandes joueurs
+on:
+  push:
+    branches: ['codex/v455-*']
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/mobile-v455.test.mjs
+      - run: npm ci
+      - run: node tests/syntax.cjs
+      - id: browser
+        run: npx playwright install chromium
+      - run: node tests/browser-v455.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
+      - run: node tests/browser-v64.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
+      - run: node tests/browser-v65.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
+      - run: node tests/browser-v445.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: archives-v455-focused
+          path: /tmp/archives-v455-*.png
+          if-no-files-found: ignore

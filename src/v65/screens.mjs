@@ -1,5 +1,5 @@
-import {isPacket,packet} from '../v56/link.mjs?v=4540';
-import {button,element,notice,requireGM} from '../v63/ui.mjs?v=4540';
+import {isPacket,packet} from '../v56/link.mjs?v=4550';
+import {button,element,notice,requireGM} from '../v63/ui.mjs?v=4550';
 import {clampPanel,screenCommand} from './screen-model.mjs';
 
 const pending = new Map();let scope = '',panel,entryTimer;

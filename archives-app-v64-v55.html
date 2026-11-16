@@ -2,10 +2,11 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="./src/v77/player.css?v=4550">
 <title>Les Archives de l’Imaginaire — Jeu de rôle</title>
 <style id="core-styles">
 :root {
@@ -1793,7 +1794,7 @@ window.DuneApp = (function() {
       "--skin-bg-deep": "#120904", "--skin-bg-canvas": "radial-gradient(circle at center, #381b09 0%, #120803 100%)",
       "--skin-bg-sidebar": "linear-gradient(180deg, #241208 0%, #120804 100%)", "--skin-bg-section": "#1c0e06",
       "--skin-bg-input": "#0f0703", "--skin-cell-fill": "rgba(28, 14, 7, 0.92)", "--skin-gold-main": "#e87a24",
-      "--skin-gold-bright": "#ffd29e", "--skin-gold-dim": "#7d3e0d", "--skin-accent-glow": "#ff4540",
+      "--skin-gold-bright": "#ffd29e", "--skin-gold-dim": "#7d3e0d", "--skin-accent-glow": "#ff4550",
       "--skin-text-main": "#ffeedb", "--skin-text-muted": "#c79973", "--skin-grid-color": "rgba(232, 122, 36, 0.07)"
     },
     harkonnen: {
@@ -2064,7 +2065,7 @@ window.DuneApp = (function() {
   function applyIncomingSync(data) {
     if(data?.type==='archives:player-image:v1'){if(state.playerMode||state.strictReadOnly)window.ArchivesRelay.present(data.playerPresentation);return;}
     if(Object.prototype.hasOwnProperty.call(data,'playerPresentation')){state.playerPresentation=playerImageProjection(data.playerPresentation);window.dispatchEvent(new CustomEvent('archives:player-image'));}
-    if (state.isDraggingNode || state.isResizingCell) { state.pendingPlayerView=data;return; }
+    if (state.isDraggingNode || state.isResizingCell || state.isNavigatingCanvas) { state.pendingPlayerView=data;return; }
     preparePlayerLayout(data);
     var personalBoard = data.boards.some(function(board){return board.id===state.activeBoardId;}) ? state.activeBoardId : null;
     state.boards = data.boards;
@@ -2210,6 +2211,7 @@ window.DuneApp = (function() {
     });});
   }
   function finishPlayerInteraction() {
+    if (state.isNavigatingCanvas) return;
     if (!state.pendingPlayerView) return;
     var pending = state.pendingPlayerView;state.pendingPlayerView = null;
     window.ArchivesRelay.apply(pending);window.dispatchEvent(new CustomEvent('archives:public-view'));
@@ -2225,6 +2227,7 @@ window.DuneApp = (function() {
     setPlayerScope: function(scope){
       if (!state.strictReadOnly || typeof scope !== 'string' || !scope || scope.length > 500) return;
       playerPersonalKey = 'archives:player-view:v1:'+scope;
+      window.ArchivesPlayerScope=scope;window.dispatchEvent(new CustomEvent('archives:player-scope',{detail:scope}));
       var saved = null;try { saved = JSON.parse(localStorage.getItem(playerPersonalKey)); } catch (error) {}
       state.playerLayout = saved && saved.layout && typeof saved.layout === 'object' ? saved.layout : {};
       state.journalPages = saved && Array.isArray(saved.journalPages) ? saved.journalPages : [];
@@ -2246,7 +2249,7 @@ window.DuneApp = (function() {
       try {
         var receivePresentation=state.playerMode||state.strictReadOnly||options&&options.keepPresentation;
         if(Object.prototype.hasOwnProperty.call(data,'playerPresentation')||!receivePresentation){state.playerPresentation=receivePresentation?playerImageProjection(data.playerPresentation):null;window.dispatchEvent(new CustomEvent('archives:player-image'));}
-        if ((state.playerMode || state.strictReadOnly) && (state.isDraggingNode || state.isResizingCell)) { state.pendingPlayerView=data;return; }
+        if ((state.playerMode || state.strictReadOnly) && (state.isDraggingNode || state.isResizingCell || state.isNavigatingCanvas)) { state.pendingPlayerView=data;return; }
         preparePlayerLayout(data);
         var personalBoard = (state.playerMode || state.strictReadOnly) && data.boards.some(function(board){return board.id===state.activeBoardId;}) ? state.activeBoardId : null;
         state.boards=data.boards;
@@ -3241,6 +3244,7 @@ window.DuneApp = (function() {
     });
 
     elCell.addEventListener("touchstart", function(e) {
+      if (e.touches.length !== 1) return;
       if (e.target.tagName === "BUTTON" || e.target.closest(".sub-cell-card") || e.target.closest(".child-chip") || e.target.closest(".resize-handle")) return;
       e.stopPropagation();
       var t = e.touches[0];
@@ -3256,6 +3260,7 @@ window.DuneApp = (function() {
     pushUndoSnapshot();state.isResizingCell = node.id;
     if (!playerResize) { resetLinkClickTracking();state.selectedId = node.id;state.selectedLinkId = null; }
     var currentSize = getEffectiveCellSize(node),origW = currentSize.w || 250,origH = currentSize.h || 160;
+    var previousLayout=state.playerLayout[node.id]?Object.assign({},state.playerLayout[node.id]):null;
     if (playerResize && !state.playerLayout[node.id]) state.playerLayout[node.id] = {x:node.x,y:node.y,parentId:node.parentId||null};
     handle.classList.add('resizing');
     function move(x,y) {
@@ -3272,15 +3277,21 @@ window.DuneApp = (function() {
     function pointerMove(ev) { if(ev.pointerId===pointerId){ev.preventDefault();move(ev.clientX,ev.clientY);} }
     function touchMove(ev) { if(ev.touches.length){ev.preventDefault();move(ev.touches[0].clientX,ev.touches[0].clientY);} }
     function mouseMove(ev) { move(ev.clientX,ev.clientY); }
-    function end(ev) {
+    function cancelTouchResize(){
+      if(playerResize){if(previousLayout)state.playerLayout[node.id]=previousLayout;else delete state.playerLayout[node.id];}
+      else{node.w=origW;node.h=origH;}
+      end(null,true);renderAll();
+    }
+    function end(ev,cancelled) {
       if (finished || (ev && ev.pointerId!==undefined && ev.pointerId!==pointerId)) return;
       finished=true;state.isResizingCell=null;handle.classList.remove('resizing');
       handle.removeEventListener('pointermove',pointerMove);handle.removeEventListener('pointerup',end);
       handle.removeEventListener('pointercancel',end);handle.removeEventListener('lostpointercapture',end);
       window.removeEventListener('touchmove',touchMove);window.removeEventListener('touchend',end);window.removeEventListener('touchcancel',end);
       window.removeEventListener('mousemove',mouseMove);window.removeEventListener('mouseup',end);window.removeEventListener('blur',end);
+      window.removeEventListener('archives:cancel-cell-touch',cancelTouchResize);
       if (pointerId!==undefined && handle.hasPointerCapture(pointerId)) handle.releasePointerCapture(pointerId);
-      saveState();finishPlayerInteraction();
+      if(!cancelled)saveState();finishPlayerInteraction();
     }
     if (pointerId!==undefined) {
       handle.setPointerCapture(pointerId);handle.addEventListener('pointermove',pointerMove);
@@ -3289,6 +3300,7 @@ window.DuneApp = (function() {
       window.addEventListener('touchmove',touchMove,{passive:false});window.addEventListener('touchend',end);window.addEventListener('touchcancel',end);
     } else { window.addEventListener('mousemove',mouseMove);window.addEventListener('mouseup',end); }
     window.addEventListener('blur',end);
+    if(event.pointerType==='touch'||event.touches)window.addEventListener('archives:cancel-cell-touch',cancelTouchResize);
   }
 
   /* PAS DE RÉPULSION AUTOMATIQUE : les cellules voisines restent strictement immobiles.
@@ -3355,6 +3367,7 @@ window.DuneApp = (function() {
 
     var origPos = getEffPos(node);
     var origX = origPos.x, origY = origPos.y, moved = false;
+    var previousPersonal=state.playerLayout[node.id]?Object.assign({},state.playerLayout[node.id]):null,cancelled=false;
     var hoveredTarget = null;
     var snapshotSaved = false;
     var mySz = getEffectiveCellSize(node);
@@ -3452,7 +3465,9 @@ window.DuneApp = (function() {
         window.removeEventListener("mouseup", onEnd);
       }
       window.removeEventListener('blur',onEnd);
+      window.removeEventListener('archives:cancel-cell-touch',cancelTouchMove);
       clearDropHighlights();
+      if(cancelled){renderAll();finishPlayerInteraction();return;}
 
       if (moved && hoveredTarget) {
         if (canCellContain(hoveredTarget, node)) {
@@ -3472,11 +3487,18 @@ window.DuneApp = (function() {
 
     function mouseMoveHandler(ev) { onMove(ev.clientX, ev.clientY); }
     function touchMoveHandler(ev) { if (ev.touches.length > 0) onMove(ev.touches[0].clientX, ev.touches[0].clientY); }
+    function cancelTouchMove(){
+      cancelled=true;
+      if(state.playerMode||state.strictReadOnly){if(previousPersonal)state.playerLayout[node.id]=previousPersonal;else delete state.playerLayout[node.id];}
+      else{node.x=origX;node.y=origY;}
+      onEnd();
+    }
 
     if (isTouch) {
       window.addEventListener("touchmove", touchMoveHandler, { passive: true });
       window.addEventListener("touchend", onEnd);
       window.addEventListener('touchcancel',onEnd);
+      window.addEventListener('archives:cancel-cell-touch',cancelTouchMove);
     } else {
       window.addEventListener("mousemove", mouseMoveHandler);
       window.addEventListener("mouseup", onEnd);
@@ -3513,10 +3535,11 @@ window.DuneApp = (function() {
     var topHud = el("top-hud");
     var vw = (mainArea && mainArea.clientWidth) ? mainArea.clientWidth : window.innerWidth;
     var vh = (mainArea && mainArea.clientHeight) ? mainArea.clientHeight : window.innerHeight;
-    var hudH = (topHud && topHud.offsetHeight) ? (topHud.offsetHeight + 22) : 78;
+    var personalInsets=(state.playerMode||state.strictReadOnly)&&window.ArchivesPlayerUI?.insets?.();
+    var hudH = personalInsets?personalInsets.top:(topHud && topHud.offsetHeight) ? (topHud.offsetHeight + 22) : 78;
 
-    var availW = Math.max(280, vw - 60);
-    var availH = Math.max(220, vh - hudH - 35);
+    var availW = Math.max(100, vw - (personalInsets?personalInsets.left+personalInsets.right:60));
+    var availH = Math.max(120, vh - hudH - (personalInsets?personalInsets.bottom:35));
 
     var boxW = Math.max(200, maxX - minX);
     var boxH = Math.max(150, maxY - minY);
@@ -3527,7 +3550,7 @@ window.DuneApp = (function() {
     var centerBoxX = (minX + maxX) / 2;
     var centerBoxY = (minY + maxY) / 2;
 
-    var targetScreenCenterX = vw / 2;
+    var targetScreenCenterX = personalInsets?personalInsets.left+availW/2:vw/2;
     var targetScreenCenterY = hudH + (availH / 2);
 
     state.panX = Math.round(targetScreenCenterX - centerBoxX * state.zoom);
@@ -4013,6 +4036,7 @@ window.DuneApp = (function() {
     });
 
     vp.addEventListener("touchstart", function(e) {
+      if(window.ArchivesTouchCanvas?.handles)return;
       if (e.target.closest && (e.target.closest(".node-cell") || e.target.closest(".link-badge") || e.target.closest(".context-menu"))) return;
       if (e.touches.length === 1) {
         isPanning = true; startX = e.touches[0].clientX; startY = e.touches[0].clientY;
@@ -4027,6 +4051,7 @@ window.DuneApp = (function() {
     }, { passive: false });
 
     vp.addEventListener("touchmove", function(e) {
+      if(window.ArchivesTouchCanvas?.handles)return;
       if (e.touches.length === 1 && isPanning) {
         e.preventDefault();
         state.panX = Math.round(origPanX + (e.touches[0].clientX - startX));
@@ -4043,6 +4068,7 @@ window.DuneApp = (function() {
     }, { passive: false });
 
     vp.addEventListener("touchend", function(e) {
+      if(window.ArchivesTouchCanvas?.handles)return;
       if (e.touches.length === 0) { isPanning = false; initialPinchDist = null; }
     });
 
@@ -4065,6 +4091,7 @@ window.DuneApp = (function() {
     }
     if (el("zoom-badge")) el("zoom-badge").textContent = Math.round(state.zoom * 100) + "%";
     if (el("quick-zoom-badge")) el("quick-zoom-badge").textContent = Math.round(state.zoom * 100) + "%";
+    window.dispatchEvent(new Event('archives:camera'));
   }
 
   function applyCanvasBg() {
@@ -6101,6 +6128,19 @@ window.DuneApp = (function() {
       var factor = delta > 0 ? 1.22 : 0.82;
       zoomCanvasAt(state.zoom * factor, lastCanvasPointer ? lastCanvasPointer.x : undefined, lastCanvasPointer ? lastCanvasPointer.y : undefined);
     },
+    setCanvasCamera: function(camera,redraw) {
+      if(!camera||!['panX','panY','zoom'].every(function(key){return Number.isFinite(camera[key]);}))return false;
+      state.panX=camera.panX;state.panY=camera.panY;state.zoom=Math.max(.05,Math.min(5,camera.zoom));applyTransform();
+      if(redraw){renderAll();persistPlayerView();}return true;
+    },
+    setCanvasInteraction: function(active) {
+      state.isNavigatingCanvas=active===true;if(!active)finishPlayerInteraction();
+    },
+    openPlayerCell: function(id) {
+      if(!state.playerMode&&!state.strictReadOnly)return false;
+      var node=getNode(id);if(!node||!node.revealed)return false;
+      state.selectedId=node.id;state.selectedLinkId=null;openPlayerCellDetail(node);return true;
+    },
     resetView: function() {
       centerViewOnCells();
     },
@@ -7128,15 +7168,15 @@ window.ArchivesRevealJournal={start,stop,refresh:()=>monitor?monitor.refresh():P
 
 })();
 </script>
-<link rel="stylesheet" href="./src/v56/bridge.css?v=4540">
-<script type="module" src="./src/v56/relay.mjs?v=4540"></script>
-<script type="module" src="./src/v56/navigation.mjs?v=4540"></script>
-<script type="module" src="./src/v58/main-relay.mjs?v=4540"></script>
-<script type="module" src="./src/v58/transfer-ui.mjs?v=4540"></script>
-<script type="module" src="./src/v60/library.mjs?v=4540"></script>
+<link rel="stylesheet" href="./src/v56/bridge.css?v=4550">
+<script type="module" src="./src/v56/relay.mjs?v=4550"></script>
+<script type="module" src="./src/v56/navigation.mjs?v=4550"></script>
+<script type="module" src="./src/v58/main-relay.mjs?v=4550"></script>
+<script type="module" src="./src/v58/transfer-ui.mjs?v=4550"></script>
+<script type="module" src="./src/v60/library.mjs?v=4550"></script>
 <script defer src="./src/v54/polish.js"></script>
 <script type="module" src="./src/v62/motion.mjs?v=4210"></script>
-<script type="module" src="./src/v63/workbench.mjs?v=4540"></script>
+<script type="module" src="./src/v63/workbench.mjs?v=4550"></script>
 </body>
 </html>
 <style id="v19-player-reveal-transitions">
@@ -7392,19 +7432,21 @@ body.player-mode .player-cell-resize:hover{opacity:1}
   #soundshow-sounds-dock > button {box-shadow:none!important}
 }
 </style>
-<script type="module" src="./src/v65/cell-picture.mjs?v=4540"></script>
-<script type="module" src="./src/v70/player-image.mjs?v=4540"></script>
-<script type="module" src="./src/v65/storage.mjs?v=4540"></script>
-<script type="module" src="./src/soundshow/archives.mjs?v=4540"></script>
-<script type="module" src="./src/v66/workspace.mjs?v=4540"></script>
-<script type="module" src="./src/v68/cell-brief.mjs?v=4540"></script>
+<script type="module" src="./src/v65/cell-picture.mjs?v=4550"></script>
+<script type="module" src="./src/v70/player-image.mjs?v=4550"></script>
+<script type="module" src="./src/v65/storage.mjs?v=4550"></script>
+<script type="module" src="./src/soundshow/archives.mjs?v=4550"></script>
+<script type="module" src="./src/v66/workspace.mjs?v=4550"></script>
+<script type="module" src="./src/v68/cell-brief.mjs?v=4550"></script>
 
 
-<script type="module" src="./src/v72/gm-details.mjs?v=4540"></script>
-<script type="module" src="./src/v72/selection.mjs?v=4540"></script>
-<script type="module" src="./src/v72/presentation.mjs?v=4540"></script>
-<script type="module" src="./src/v72/google-search.mjs?v=4540"></script>
+<script type="module" src="./src/v72/gm-details.mjs?v=4550"></script>
+<script type="module" src="./src/v72/selection.mjs?v=4550"></script>
+<script type="module" src="./src/v72/presentation.mjs?v=4550"></script>
+<script type="module" src="./src/v72/google-search.mjs?v=4550"></script>
 
-<script type="module" src="./src/v74/reserve-ui.mjs?v=4540"></script>
+<script type="module" src="./src/v74/reserve-ui.mjs?v=4550"></script>
 
-<script type="module" src="./src/v75/gm-description.mjs?v=4540"></script>
+<script type="module" src="./src/v75/gm-description.mjs?v=4550"></script>
+<script type="module" src="./src/v77/touch-canvas.mjs?v=4550"></script>
+<script type="module" src="./src/v77/player-ui.mjs?v=4550"></script>
