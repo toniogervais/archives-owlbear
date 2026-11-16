@@ -35,9 +35,9 @@ const until=async(fn,message)=>{for(let i=0;i<100;i++){if(await fn())return;awai
   assert.equal(await editor(player).locator('#nodes-layer .clues-render-list').count(),0,'player cells contain no secret summaries');
   await player.bringToFront();await cell(player,'mixed').dblclick();
   await editor(player).locator('#player-cell-detail.open').waitFor();assert.equal(await editor(player).locator('#pcd-revelations .pcd-item').count(),4);await app(player).evaluate(()=>DuneApp.closePlayerCellDetail());
-  await cell(player,'mixed').tap();await cell(player,'mixed').tap();await editor(player).locator('#player-cell-detail.open').waitFor({timeout:4000});assert.equal(await editor(player).locator('#pcd-revelations .pcd-item').count(),4);
+  await cell(player,'mixed').tap();await editor(player).locator('#player-cell-detail.open').waitFor({timeout:4000});assert.equal(await editor(player).locator('#pcd-revelations .pcd-item').count(),4);
   await until(()=>app(player).evaluate(()=>DuneApp.getState().nodes.find(n=>n.id==='mixed').clues.length===4),'all revealed clues remain available');
   const wire=JSON.stringify(await player.evaluate(()=>window.fixture.wire()));for(const secret of ['SECRET_PRIVE_445_1','SECRET_PRIVE_445_3'])assert.ok(!wire.includes(secret));
-  assert.deepEqual(errors,[]);console.log('V4.45: latest two GM revelations or first two secrets, bounded excerpts, full MJ/player details and double-tap retained; player canvas has no clue text.');
+  assert.deepEqual(errors,[]);console.log('V4.45: latest two GM revelations or first two secrets, bounded excerpts, full MJ/player details, desktop double-click and mobile single-tap; player canvas has no clue text.');
  }finally{await browser.close()}
 })().catch(error=>{console.error(error);process.exitCode=1});

@@ -23,6 +23,8 @@ jobs:
         if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
       - run: node tests/browser-v65.cjs
         if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
+      - run: node tests/browser-v445.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
