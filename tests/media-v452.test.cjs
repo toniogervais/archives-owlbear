@@ -1,10 +1,10 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),{webcrypto}=require('node:crypto');
 const until=async(fn,label)=>{for(let i=0;i<100;i++){if(fn())return;await new Promise(r=>setTimeout(r,20))}throw Error(label)};
 async function host(options={}){
- const files=await import('../src/v60/files.mjs'),listeners=new Map(),posted=[],sent=[],channel=new EventTarget();let held,release,paused=false;
+ const files=await import('../src/v60/files.mjs'),{createDirectFiles}=await import('../src/v76/direct-files.mjs'),listeners=new Map(),posted=[],sent=[],channel=new EventTarget();let held,release,paused=false;
  channel.postMessage=data=>posted.push(data);channel.close=()=>{};
  const window=new EventTarget(),member=async()=>true;member.dispose=()=>{};
- const context={...files,validPublication:files.validSharedFile,localRoom:async()=>({channel,connectionId:'gm'}),roomMembers:()=>member,installDossierFiles:()=>({dispose(){}}),dossierEntry:()=>null,
+ const context={...files,createDirectFiles,validPublication:files.validSharedFile,localRoom:async()=>({channel,connectionId:'gm'}),roomMembers:()=>member,installDossierFiles:()=>({dispose(){}}),dossierEntry:()=>null,
   openFileLibrary:async()=>({close(){}}),roomChannel:'room-channel',release:'4520',Blob,File,crypto:webcrypto,window,console:options.stallTimeout?{...console,warn(){}}:console,setTimeout:(fn,delay,...args)=>setTimeout(fn,options.stallTimeout&&delay===10000?80:delay,...args),clearTimeout,Map,Set,Promise};
  const OBR={room:{id:'room'},player:{id:'owner',getRole:async()=> 'GM',onChange:()=>()=>{}},party:{onChange:()=>()=>{}},modal:{close:async()=>{}},broadcast:{onMessage:(name,fn)=>{listeners.set(name,fn);return()=>{}},sendMessage:async(name,data)=>{sent.push(data);if(data.type==='data'&&!paused){paused=true;held=data.id;await new Promise(r=>release=r)}}}};
  const source=fs.readFileSync('src/v60/background.mjs','utf8').replace(/^import .*;\n/gm,'').replace('export async function ','async function ').replaceAll('import.meta.url',JSON.stringify('https://archives.test/src/v60/background.mjs'));

@@ -1,4 +1,4 @@
-import {isGM,element} from '../v63/ui.mjs?v=4530';
+import {isGM,element} from '../v63/ui.mjs?v=4540';
 function install(){
  const panel=document.getElementById('active-editor-description-panel'),modal=document.getElementById('active-editor-modal');if(!panel||!modal)return;
  const section=element('section'),label=element('label','Description MJ — privée'),text=element('textarea'),hint=element('p','Visible dans la fiche MJ uniquement. La description générale reste indépendante.');

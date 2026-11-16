@@ -14,7 +14,7 @@ async function originalImages(browser){
   return base(args,op,value);
  };
  const contexts=await Promise.all([browser.newContext({viewport:{width:1440,height:1000}}),browser.newContext({viewport:{width:820,height:1180}}),browser.newContext({viewport:{width:820,height:1180}})]);
- for(const c of contexts)await configure(c,fixture,{sceneReady:true});const [g,p,q]=await Promise.all(contexts.map(c=>c.newPage())),errors=[];for(const page of [g,p,q]){page.setDefaultTimeout(180000);page.on('pageerror',e=>errors.push(e.message))}
+ for(const c of contexts)await configure(c,fixture,{sceneReady:true,directFiles:false});const [g,p,q]=await Promise.all(contexts.map(c=>c.newPage())),errors=[];for(const page of [g,p,q]){page.setDefaultTimeout(180000);page.on('pageerror',e=>errors.push(e.message))}
  try{
   await openGM(g,{activeBoardId:'a',boards:[{id:'a',nodes:[],links:[]}]});await p.goto(owl+'/room/one?joueur=Alix');await q.goto(owl+'/room/one?joueur=Noa');
   const data=await g.evaluate(()=>{const c=document.createElement('canvas');c.width=4096;c.height=2048;const x=c.getContext('2d'),image=x.createImageData(c.width,c.height);let seed=753;for(let i=0;i<image.data.length;i+=4){seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;image.data[i]=seed&255;image.data[i+1]=(seed>>>8)&255;image.data[i+2]=(seed>>>16)&255;image.data[i+3]=255}x.putImageData(image,0,0);x.fillStyle='#31a165';x.fillRect(1900,900,300,300);return c.toDataURL('image/jpeg',.98)});

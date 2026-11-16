@@ -1,5 +1,5 @@
-import {button,element,isGM,nativeEditor,requireGM,request,sheet} from '../v63/ui.mjs?v=4530';
-import {libraryRequest} from '../v60/request.mjs?v=4530';
+import {button,element,isGM,nativeEditor,requireGM,request,sheet} from '../v63/ui.mjs?v=4540';
+import {libraryRequest} from '../v60/request.mjs?v=4540';
 const extensions={'application/pdf':'pdf','text/plain':'txt','image/png':'png','image/jpeg':'jpg','image/webp':'webp','audio/mpeg':'mp3','audio/wav':'wav','audio/x-wav':'wav','audio/ogg':'ogg','audio/mp4':'m4a','audio/webm':'webm','video/mp4':'mp4','video/webm':'webm','video/ogg':'ogv'};
 export function openAddFile(onShared){
   requireGM();if(!nativeEditor())return;

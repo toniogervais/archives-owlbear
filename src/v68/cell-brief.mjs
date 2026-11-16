@@ -2,6 +2,7 @@
 const DIALOG_ID='archives-cell-brief';
 const BUTTON_CLASS='archives-cell-brief-trigger';
 let activeNodeIds=[];
+let fitFrame=0;
 const el=(tag,cls,textValue)=>{
   const element=document.createElement(tag);
   if(cls)element.className=cls;
@@ -190,6 +191,42 @@ function css(){
   #archives-cell-brief[data-count]:not([data-count="1"]) .brief-portrait{flex:0 1 40%;min-height:180px;overflow:auto}
   #archives-cell-brief[data-count]:not([data-count="1"]) .brief-figure{height:150px;min-height:120px}
   @media(max-width:690px){#archives-cell-brief .brief-portrait{max-height:none;min-height:180px}}
+  /* One compact, content-driven layout. Empty clues no longer reserve space. */
+  #archives-cell-brief {min-width:min(380px,96vw);min-height:min(340px,94dvh);font-size:var(--brief-font,14px);line-height:1.4}
+  #archives-cell-brief .brief-header {padding:9px 14px}
+  #archives-cell-brief .brief-footer {padding:7px 22px 7px 14px}
+  #archives-cell-brief .brief-right {display:grid;grid-template-rows:minmax(0,var(--desc-share,1fr)) minmax(0,var(--clue-share,1fr));overflow:hidden}
+  #archives-cell-brief .brief-card[data-clues="0"] .brief-right {grid-template-rows:minmax(0,1fr)}
+  #archives-cell-brief .brief-clues[hidden] {display:none!important}
+  #archives-cell-brief .brief-desc {min-height:0;padding:12px 15px;gap:0}
+  #archives-cell-brief .brief-description,#archives-cell-brief .brief-gm-description,#archives-cell-brief .brief-gm-text,#archives-cell-brief .brief-clue-text {font-size:inherit;line-height:1.4}
+  #archives-cell-brief h3 {font-size:1em;line-height:1.3;margin:0 0 6px}
+  #archives-cell-brief .brief-gm-description+h3,#archives-cell-brief .brief-description+h3 {margin-top:12px}
+  #archives-cell-brief .brief-clues {min-height:0}
+  #archives-cell-brief .brief-clues-header {padding:9px 12px 6px;flex:none}
+  #archives-cell-brief .brief-clue-list {flex:1;gap:5px;padding:2px 10px 10px}
+  #archives-cell-brief .brief-clue-row {padding:7px 9px;gap:8px;flex:none}
+  #archives-cell-brief .brief-figure {height:190px;min-height:110px}
+  #archives-cell-brief .brief-card[data-gm-fields="true"] .brief-figure {height:130px;min-height:90px}
+  #archives-cell-brief .brief-card[data-picture="false"] .brief-figure {height:auto;min-height:0}
+  #archives-cell-brief .brief-card[data-picture="false"] .brief-photo {min-height:0}
+  #archives-cell-brief .brief-card[data-picture="false"] .brief-no-picture {padding:10px;font-size:11px}
+  #archives-cell-brief .brief-portrait {padding:10px}
+  #archives-cell-brief .brief-gm-field {margin-top:10px;padding-top:8px}
+  #archives-cell-brief[data-count]:not([data-count="1"]) .brief-desc {min-height:0;padding:10px}
+  #archives-cell-brief[data-count]:not([data-count="1"]) .brief-description,#archives-cell-brief[data-count]:not([data-count="1"]) .brief-clue-text {font-size:inherit;line-height:1.4}
+  #archives-cell-brief[data-count]:not([data-count="1"]) .brief-portrait {flex:0 1 auto;min-height:0;max-height:37%}
+  #archives-cell-brief[data-count]:not([data-count="1"]) .brief-figure {height:115px;min-height:90px}
+  #archives-cell-brief[data-count]:not([data-count="1"]) .brief-clues {min-height:0}
+  #archives-cell-brief .brief-resize-handle {position:absolute;right:0;bottom:0;width:24px;height:24px;padding:0;border:0;border-radius:0 0 12px 0;background:#35273f;color:#ebd19c;cursor:nwse-resize;touch-action:none;font-size:20px;line-height:1;z-index:2}
+  @media(max-width:690px){
+    #archives-cell-brief {resize:both}
+    #archives-cell-brief .brief-body {overflow:hidden}
+    #archives-cell-brief .brief-portrait {flex:0 1 auto;min-height:0;max-height:32%}
+    #archives-cell-brief .brief-figure {height:110px;min-height:90px}
+    #archives-cell-brief .brief-right {flex:1;min-height:0}
+    #archives-cell-brief .brief-desc,#archives-cell-brief .brief-clues {min-height:0}
+  }
   @media(prefers-reduced-motion:reduce) {
     #archives-cell-brief::backdrop {backdrop-filter:none}
   }`;
@@ -208,7 +245,8 @@ function ensureDialog(){
   const add=el('button','brief-add','＋ Ajouter une fiche');add.type='button';add.id='archives-brief-add';
   add.onclick=()=>{if(select.value)open(select.value)};
   const count=el('span','brief-hint');count.id='archives-brief-deck-count';count.setAttribute('role','status');
-  toolbar.append(select,add,count);
+  const fit=el('button','brief-add','⤢');fit.type='button';fit.title='Ajuster au contenu';fit.setAttribute('aria-label','Ajuster les fiches au contenu');fit.onclick=()=>queueFit(true);
+  toolbar.append(select,add,count,fit);
   const close=el('button','brief-close','×');close.type='button';close.title='Fermer les fiches (Échap)';close.setAttribute('aria-label','Fermer les fiches MJ');close.onclick=()=>dialog.close();
   header.append(titles,toolbar,close);
   const deck=el('div','brief-deck');deck.id='archives-brief-deck';
@@ -216,6 +254,15 @@ function ensureDialog(){
   footer.append(el('span',null,'Cocher révèle un indice aux joueurs si la cellule leur est visible. Décocher le masque.'));
   const back=el('button',null,'Fermer');back.type='button';back.onclick=()=>dialog.close();footer.append(back);
   shell.append(header,deck,footer);dialog.append(shell);document.body.append(dialog);
+  const grip=el('button','brief-resize-handle','◢');grip.type='button';grip.title='Glisser pour redimensionner';grip.setAttribute('aria-label','Redimensionner les fiches MJ');dialog.append(grip);
+  let drag;
+  const size=(width,height)=>{dialog.style.width=Math.max(Math.min(380,innerWidth*.96),Math.min(width,innerWidth*.96))+'px';dialog.style.height=Math.max(Math.min(340,innerHeight*.94),Math.min(height,innerHeight*.94))+'px';queueFit(false)};
+  grip.onpointerdown=event=>{if(event.button!==0)return;event.preventDefault();const box=dialog.getBoundingClientRect();drag={x:event.clientX,y:event.clientY,width:box.width,height:box.height};grip.setPointerCapture(event.pointerId)};
+  grip.onpointermove=event=>{if(drag)size(drag.width+2*(event.clientX-drag.x),drag.height+2*(event.clientY-drag.y))};
+  grip.onpointerup=grip.onpointercancel=()=>{drag=null};
+  grip.onkeydown=event=>{const directions={ArrowRight:[20,0],ArrowLeft:[-20,0],ArrowDown:[0,20],ArrowUp:[0,-20]},step=directions[event.key];if(step){event.preventDefault();size(dialog.offsetWidth+step[0],dialog.offsetHeight+step[1])}};
+  if(typeof ResizeObserver==='function')new ResizeObserver(()=>queueFit(false)).observe(dialog);
+  window.addEventListener('resize',()=>{if(dialog.open){size(dialog.offsetWidth,dialog.offsetHeight);queueFit(false)}});
   dialog.addEventListener('close',()=>{if(dialog.open)return;activeNodeIds=[];deck.replaceChildren()});
   return dialog;
 }
@@ -231,6 +278,7 @@ function renderCard(node,index){
   picture.append(title,remove);
   const photo=el('div','brief-photo');picture.append(photo);
   const url=node.bgImg||node.image||node.imageData;
+  card.dataset.picture=String(!!url);card.dataset.gmFields=String(!!node.gmDetails?.length);
   if(typeof url==='string'&&url){
     const img=el('img','brief-picture');img.src=url;img.alt='Portrait ou illustration : '+(node.title||'cellule');
     img.onerror=()=>photo.replaceChildren(el('span','brief-no-picture','Image indisponible'));photo.append(img);
@@ -252,6 +300,7 @@ function renderCard(node,index){
     section.append(el('h3',null,'Description MJ'),privateDescription);
   }
   const clues=Array.isArray(node.clues)?node.clues:[],clueArea=el('section','brief-clues'),clueHeader=el('div','brief-clues-header');
+  card.dataset.clues=String(clues.length);clueArea.hidden=!clues.length;
   const counter=el('span','brief-count',clues.filter(c=>c.revealed).length+' / '+clues.length+' révélés');counter.id=id('count');
   clueHeader.append(el('h3',null,'Indices et révélations'),counter);
   const list=el('div','brief-clue-list');list.id=id('list');
@@ -285,6 +334,34 @@ function renderDeck(){
   select.disabled=activeNodeIds.length>=4||select.options.length===1;
   document.getElementById('archives-brief-add').disabled=select.disabled;
   document.getElementById('archives-brief-deck-count').textContent=activeNodeIds.length+' / 4 fiches';
+  queueFit(false);
+}
+function contentHeight(element){
+  const style=getComputedStyle(element),children=Array.from(element.children);
+  return (parseFloat(style.paddingTop)||0)+(parseFloat(style.paddingBottom)||0)+children.reduce((height,child)=>{const css=getComputedStyle(child);return height+child.getBoundingClientRect().height+(parseFloat(css.marginTop)||0)+(parseFloat(css.marginBottom)||0)},0)+Math.max(0,children.length-1)*(parseFloat(style.rowGap)||0);
+}
+function fitContent(resize){
+  const dialog=document.getElementById(DIALOG_ID);if(!dialog?.open||!dialog.offsetHeight)return;
+  if(resize){dialog.style.width=Math.min(innerWidth*.96,activeNodeIds.length===1?1240:activeNodeIds.length*460)+'px';dialog.style.height=Math.min(innerHeight*.94,900)+'px'}
+  const cards=Array.from(dialog.querySelectorAll('.brief-card'));let measurements=[];
+  for(const font of [14,13,12]){
+    dialog.style.setProperty('--brief-font',font+'px');
+    measurements=cards.map(card=>{
+      const desc=contentHeight(card.querySelector('.brief-desc')),clueArea=card.querySelector('.brief-clues'),clues=clueArea.hidden?0:contentHeight(card.querySelector('.brief-clue-list'))+card.querySelector('.brief-clues-header').offsetHeight+2;
+      const portrait=contentHeight(card.querySelector('.brief-portrait')),stacked=getComputedStyle(card.querySelector('.brief-body')).display==='flex';
+      return {card,desc,clues,natural:stacked?desc+clues+Math.min(portrait,card.querySelector('.brief-portrait').offsetHeight):Math.max(portrait,desc+clues)};
+    });
+    const chrome=dialog.offsetHeight-dialog.querySelector('.brief-body').offsetHeight;
+    if(measurements.every(item=>item.natural<=dialog.offsetHeight-chrome+2)||font===12){
+      if(resize)dialog.style.height=Math.min(innerHeight*.94,Math.max(360,Math.max(...measurements.map(item=>item.natural))+chrome+6))+'px';break;
+    }
+  }
+  for(const {card,desc,clues} of measurements){card.style.setProperty('--desc-share',Math.max(60,desc)+'fr');card.style.setProperty('--clue-share',Math.max(50,clues)+'fr')}
+}
+function queueFit(resize){
+  if(resize)queueFit.resize=true;
+  if(fitFrame)return;
+  fitFrame=requestAnimationFrame(()=>{fitFrame=0;const resize=!!queueFit.resize;queueFit.resize=false;fitContent(resize)});
 }
 function open(nodeId,event){
   event?.stopPropagation?.();event?.preventDefault?.();
@@ -296,7 +373,7 @@ function open(nodeId,event){
     if(activeNodeIds.length>=4)return;
     activeNodeIds.push(id);
   }
-  renderDeck();if(!dialog.open)dialog.showModal();
+  renderDeck();if(!dialog.open)dialog.showModal();queueFit(true);
 }
 function addButtons(){
   const state=gmState();

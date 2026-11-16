@@ -20,7 +20,7 @@ let disposed=false;
 let lastError="";
 let authUser=null;
 let lastAuthAt=0;
-const delay=4530;
+const delay=4540;
 const same=(a,b)=>a.campaignId===b.campaignId && a.boardId===b.boardId && a.nodeId===b.nodeId;
 const message=async(text)=>{try{await OBR.notification.show(String(text).slice(0,180),"INFO")}catch{}};
 

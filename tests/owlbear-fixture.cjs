@@ -128,6 +128,7 @@ function hub(){
  };
 }
 async function configure(context,fixtureHub,options={}){
+ if(options.directFiles===false)await context.addInitScript(()=>{window.RTCPeerConnection=undefined});
  if(options.autoScreenChoice!==false)await autoScreenChoice(context);
  await context.exposeBinding("fixtureHub",fixtureHub);
  context.on('page',page=>page.on('close',()=>{void fixtureHub({page},'leave')}));
