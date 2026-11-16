@@ -16,7 +16,7 @@ function dismissChoice(){document.getElementById('archives-autosave-choice')?.re
 const date = value => value ? new Date(value).toLocaleString('fr-FR') : '';
 const bytes = value => (value/1024/1024).toLocaleString('fr-FR',{maximumFractionDigits:1})+' Mo';
 function stateText(state) {
-  return (labels[state?.state] || labels.off)+(state?.binding?.savedAt ? ' · Dernière copie : '+date(state.binding.savedAt) : '')+(state?.message ? '\n'+state.message : '');
+  return (state?.state==='pending'&&!state?.binding?.enabled?'Modifications à enregistrer':labels[state?.state] || labels.off)+(state?.binding?.savedAt ? ' · Dernière copie : '+date(state.binding.savedAt) : '')+(state?.message ? '\n'+state.message : '');
 }
 function start(value) {
   if (!isGM() || !value || scope === value) return;
@@ -29,7 +29,7 @@ function start(value) {
     capture:() => campaignRequest({action:'export',snapshot:window.ArchivesRelay.snapshot()}),
     changed:state => {
       const save = document.getElementById('canvas-save-icon');
-      if (save) { save.title='Sauvegardes · '+(labels[state.state] || labels.off);save.setAttribute('aria-label',save.title);save.dataset.cloudState=state.state; }
+      if (save) { save.title='Sauvegardes · '+(state.state==='pending'&&!state.binding?.enabled?'Modifications à enregistrer':labels[state.state] || labels.off);save.setAttribute('aria-label',save.title);save.dataset.cloudState=state.state; }
       window.dispatchEvent(new CustomEvent('archives:cloud-backup-status',{detail:state}));
       if (state.state==='conflict') notice(state.message);
     }
@@ -180,10 +180,10 @@ export function mountCloudBackups(view,inspect,{localDownload}={}) {
   async function saveNow() {
     if(working)return;busy(true);status.dataset.result='';status.textContent='Préparation de la session complète et de ses fichiers…';
     try {
-      await cloud.context();let result;
+      let result;
       if(matches())result=await engine.manualSave();
       else {
-        let campaign=campaigns.find(c=>c.id===select.value);
+        await cloud.context();let campaign=campaigns.find(c=>c.id===select.value);
         if(campaign&&rows.length)throw Error('Reprends d’abord la dernière sauvegarde de cette session, ou enregistre ton canevas comme nouvelle campagne dans les autres options.');
         if(!campaign){campaign=await cloud.create(name.value.trim()||window.DuneApp?.getState?.().boards?.[0]?.name||'Ma session Archives');}
         result=await bind(campaign,catalog.revision||0);

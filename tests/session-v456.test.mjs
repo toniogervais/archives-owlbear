@@ -19,5 +19,5 @@ test('A failed manual upload has no successful timestamp and a retry saves the c
  let result=await engine.bind({campaignId:'campaign',owner:'owner',project:'https://archives.supabase.co',revision:0},{automatic:false});
  assert.equal(result.state,'error');assert.equal(binding.savedAt,undefined);assert.equal(binding.enabled,false);assert.equal(writes,1);
  fail=false;result=await engine.manualSave();assert.equal(result.state,'saved');assert.equal(binding.revision,1);assert.ok(binding.savedAt);assert.equal(binding.enabled,false);assert.equal(writes,2);
- await engine.save();assert.equal(writes,2,'focus and reconnect cannot silently save a manual session');engine.dispose();
+ engine.change();assert.equal(engine.status().state,'pending','manual edits remain visibly unsaved without scheduling an upload');await engine.save();assert.equal(writes,2,'focus and reconnect cannot silently save a manual session');engine.dispose();
 });
