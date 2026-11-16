@@ -1,7 +1,7 @@
-import {isGM,nativeEditor,notice} from '../v63/ui.mjs?v=4530';
-import {libraryRequest} from '../v60/request.mjs?v=4530';
-import {maxDocumentBytes} from '../v60/files.mjs?v=4530';
-import {fade,fadeDuration} from '../v73/fade.mjs?v=4530';
+import {isGM,nativeEditor,notice} from '../v63/ui.mjs?v=4540';
+import {libraryRequest} from '../v60/request.mjs?v=4540';
+import {maxDocumentBytes} from '../v60/files.mjs?v=4540';
+import {fade,fadeDuration} from '../v73/fade.mjs?v=4540';
 let operation=0,shown='',requested='',dialog,epoch=0,animation,nativePresentation=false,nativePublishedId='';
 const dismissed=new Set(),state=()=>window.DuneApp?.getState?.();
 function remember(id){if(!id)return;dismissed.add(id);if(dismissed.size>128)dismissed.delete(dismissed.values().next().value)}
@@ -76,8 +76,9 @@ async function show(item){
   const request=nativeEditor()?libraryRequest:window.ArchivesPresentationBridge?.connected?command=>window.ArchivesPresentationBridge.request(command):null;
   if(request){
    nativePresentation=true;
-   const mime=image.slice(5,image.indexOf(';')),bytes=Uint8Array.from(atob(image.split(',')[1]),c=>c.charCodeAt(0));
-   await request({action:'present-image',file:new Blob([bytes],{type:mime})});
+   const file=await fetch(image).then(response=>response.blob());
+   if(operation!==current||!isGM())return;
+   await request({action:'present-image',file});
    if(operation!==current||!isGM())return;
   }
   // Salon Live clients retain their own image viewer. Native Owlbear clients

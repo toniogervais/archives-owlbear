@@ -1,6 +1,7 @@
-import { localRoom,roomMembers,roomChannel,release } from "../v57/room.mjs?v=4530";
-import { openFileLibrary,validateFile,validId,validSharedFile as validPublication,publicFile,digest,fileChunks,fileReceiver,mediaChannel,mediaModal } from "./files.mjs?v=4530";
-import {installDossierFiles,dossierEntry} from '../v69/dossier-files.mjs?v=4530';
+import { localRoom,roomMembers,roomChannel,release } from "../v57/room.mjs?v=4540";
+import { openFileLibrary,validateFile,validId,validSharedFile as validPublication,publicFile,digest,fileChunks,fileReceiver,mediaChannel,mediaModal } from "./files.mjs?v=4540";
+import {installDossierFiles,dossierEntry} from '../v69/dossier-files.mjs?v=4540';
+import {createDirectFiles} from '../v76/direct-files.mjs?v=4540';
 
 export async function installFileLibrary(OBR) {
   const {channel,connectionId:initialConnection} = await localRoom(OBR);
@@ -14,6 +15,8 @@ export async function installFileLibrary(OBR) {
   const send = data => {
     let timer;return Promise.race([OBR.broadcast.sendMessage(mediaChannel,data),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('La salle ne confirme plus les envois.')),10000)})]).finally(()=>clearTimeout(timer));
   };
+  const direct=createDirectFiles({self:()=>connectionId,role:()=>role,authorize:isMember,signal:send,onData:event=>onMedia(event)});
+  const sendFile=async(remote,data)=>{if(await direct.send(remote,data))return true;await send(data);return false};
   async function requireGM() {
     if (closed || role !== "GM" || await OBR.player.getRole() !== "GM") throw Error("Bibliothèque réservée au maître de jeu de cette salle.");
     store ||= await openFileLibrary(OBR.room.id,OBR.player.id);
@@ -53,7 +56,7 @@ export async function installFileLibrary(OBR) {
       if (!/^image\/(png|jpeg|webp|gif)$/.test(mime)) throw Error('Choisis une image PNG, JPEG, WebP ou GIF.');
       const hash = await digest(file);
       await stop();await requireGM();
-      const next = {id:crypto.randomUUID(),version:crypto.randomUUID(),fileId:crypto.randomUUID(),title:'Image partagée par le MJ',mime,size:file.size,hash,transferMode:'window-v1'};
+      const next = {id:crypto.randomUUID(),version:crypto.randomUUID(),fileId:crypto.randomUUID(),title:'Image partagée par le MJ',mime,size:file.size,hash,transferMode:'window-v1',direct:true};
       if (!validPublication(next)) throw Error('Cette image ne peut pas être présentée.');
       publicationBlob = file;publication = {...next,transient:true};
       try { await send({type:'show',...publicFile(next)}); }
@@ -115,7 +118,7 @@ export async function installFileLibrary(OBR) {
       if (!title || title.length > 120) throw Error("Donne un nom de 1 à 120 caractères.");
       // No announcement, filename, bytes or link leaves the GM before this explicit action.
       await stop();await requireGM();
-      const next = {id:crypto.randomUUID(),version:crypto.randomUUID(),fileId:entry.id,title,mime:entry.mime,size:entry.size,hash:entry.hash,transferMode:'window-v1'};
+      const next = {id:crypto.randomUUID(),version:crypto.randomUUID(),fileId:entry.id,title,mime:entry.mime,size:entry.size,hash:entry.hash,transferMode:'window-v1',direct:true};
       if (!validPublication(next)) throw Error("Ce média ne peut pas être présenté.");
       await requireGM();await store.put({...entry,released:true});
       publication = next;
@@ -159,7 +162,12 @@ export async function installFileLibrary(OBR) {
       if(state.attempts>8){state.requested=false;state.error='Le transfert attend la reconnexion du MJ. Réessaie pour reprendre les morceaux manquants.';viewState();return Promise.resolve()}
       state.resetTimer=()=>{};state.retry=()=>{if(receive===state&&!state.blob){state.requested=false;void requestFile(true,true)}};
       state.round=(state.round||0)+1;state.timer=setTimeout(state.retry,8000);viewState();
-      return send({type:'request',id:state.publication.id,version:state.publication.version,to:state.sender,transfer:state.transfer,round:state.round,missing})
+      const round=state.round;
+      return (async()=>{
+        if(state.publication.direct)await direct.wait(state.sender);
+        if(receive!==state||state.blob||state.round!==round||closed)return;
+        await sendFile(state.sender,{type:'request',id:state.publication.id,version:state.publication.version,to:state.sender,transfer:state.transfer,round,missing});
+      })()
         .catch(()=>{if(receive===state){clearTimeout(state.timer);state.timer=setTimeout(state.retry,1500)}});
     }
     if(!automatic)state.attempts=0;state.attempts=(state.attempts||0)+1;
@@ -192,10 +200,10 @@ export async function installFileLibrary(OBR) {
         for await (const part of fileChunks(blob,request?.missing)) {
             if (closed || role !== "GM" || publication !== active || start !== epoch) break;
             if (part.index % 32 === 0) await requireGM();
-            await send({type:"data",id:active.id,version:active.version,transfer,to:allowed,...part});
-            if (part.index % 4 === 3) await new Promise(resolve => setTimeout(resolve,25));
+            const fast=await sendFile(allowed[0],{type:"data",id:active.id,version:active.version,transfer,to:allowed,...part});
+            if (!fast&&part.index % 4 === 3) await new Promise(resolve => setTimeout(resolve,25));
         }
-        if(request&&publication===active&&start===epoch&&!closed)await send({type:'batch-end',id:active.id,version:active.version,transfer,round:request.round,to:allowed});
+        if(request&&publication===active&&start===epoch&&!closed)await sendFile(allowed[0],{type:'batch-end',id:active.id,version:active.version,transfer,round:request.round,to:allowed});
       }
     } catch (error) { console.warn("Présentation du média",error); }
     finally { sending = false;if(targets.size&&publication&&role==='GM'&&!closed){clearTimeout(sendTimer);sendTimer=setTimeout(()=>void sendPending(),40)} }
@@ -206,9 +214,10 @@ export async function installFileLibrary(OBR) {
     // The single sender drains this queue after the in-flight chunk completes.
     targets.set(id,request||null);clearTimeout(sendTimer);sendTimer = setTimeout(() => { void sendPending(); },40);
   }
-  const offMedia = OBR.broadcast.onMessage(mediaChannel,event => {
+  function onMedia(event) {
     const data = event.data;
     if (closed || !data || !validId(data.id)) return;
+    if(data.type==='direct-offer'||data.type==='direct-answer'){void direct.handle(event).catch(console.warn);return}
     void (async () => {
       if (role === "GM") {
         if (!await isMember(event.connectionId,"PLAYER") || closed || role !== "GM" || !publication) return;
@@ -232,6 +241,7 @@ export async function installFileLibrary(OBR) {
         if (declined.size > 100) declined.clear();
         const reuse=viewerOpen&&!!viewerSession;
         clearReception(reuse);receive = {publication:publicFile(data),sender:event.connectionId,progress:0};
+        if(data.direct===true)void direct.connect(event.connectionId);
         channel.postMessage({type:'media-active',id:data.id});
         if(reuse){viewState();void requestFile();return}
         viewerOpen=true;
@@ -265,9 +275,11 @@ export async function installFileLibrary(OBR) {
         }).catch(console.warn);
       }
     })().catch(console.warn);
-  });
+  }
+  const offMedia = OBR.broadcast.onMessage(mediaChannel,onMedia);
   offs.push(offMedia);
   offs.push(OBR.party.onChange(players => {
+    for(const id of targets.keys())if(!players.some(player=>player.connectionId===id&&player.role==='PLAYER')){targets.delete(id);direct.disconnect(id)}
     if (receive && !players.some(player => player.connectionId === receive.sender && player.role === "GM")) void closeViewer();
   }));
   offs.push(OBR.broadcast.onMessage(roomChannel,event => {
@@ -279,11 +291,11 @@ export async function installFileLibrary(OBR) {
   offs.push(OBR.player.onChange(player => {
     if (player.connectionId) connectionId = player.connectionId;
     if (role === player.role) return;
-    role = player.role;epoch++;publication = publicationBlob = null;targets.clear();void closeViewer();
+    role = player.role;direct.dispose();epoch++;publication = publicationBlob = null;targets.clear();void closeViewer();
   }));
   window.addEventListener("pagehide",() => {
     closed = true;epoch++;publication = publicationBlob = null;clearTimeout(sendTimer);clearReception();
-    dossier.dispose();offs.forEach(off => off?.());isMember.dispose();channel.close();void commands.finally(() => store?.close());
+    direct.dispose();dossier.dispose();offs.forEach(off => off?.());isMember.dispose();channel.close();void commands.finally(() => store?.close());
   },{once:true});
   if (role === "PLAYER") await send({type:"active",id:crypto.randomUUID()});
 }

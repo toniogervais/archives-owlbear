@@ -56,7 +56,7 @@ export function validSharedFile(value) {
     typeof value.hash === "string" && /^[a-f0-9]{64}$/.test(value.hash);
 }
 // Explicit allowlist: never publish a library record, filename, linked cell or campaign.
-export const publicFile = ({id,version,title,mime,size,hash,transferMode}) => ({id,version,title,mime,size,hash,...(transferMode==='window-v1'?{transferMode}: {})});
+export const publicFile = ({id,version,title,mime,size,hash,transferMode,direct}) => ({id,version,title,mime,size,hash,...(transferMode==='window-v1'?{transferMode}: {}),...(direct===true?{direct:true}: {})});
 export async function* fileChunks(blob,indices) {
   const count=Math.ceil(blob.size/chunkBytes);
   for (const index of indices||Array.from({length:count},(_,i)=>i)) {

@@ -1,4 +1,4 @@
-import {validSession} from '../v56/link.mjs?v=4530';
+import {validSession} from '../v56/link.mjs?v=4540';
 // Only the public list and on-demand read operations cross a player's host.
 export function dossierHost(channel,post,canRead){
   const pending=new Map();let closed=false;

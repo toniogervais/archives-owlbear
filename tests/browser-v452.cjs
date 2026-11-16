@@ -15,7 +15,7 @@ async function transfer(browser){
   return base(args,op,value);
  };
  const contexts=await Promise.all([browser.newContext({viewport:{width:1440,height:1000}}),browser.newContext({viewport:{width:820,height:1180}}),browser.newContext({viewport:{width:820,height:1180}})]);
- for(const c of contexts){await configure(c,fixture,{sceneReady:true});await c.addInitScript(()=>{const original=window.setTimeout;window.setTimeout=(fn,delay,...args)=>original(fn,delay===20000?2500:delay,...args)})}
+ for(const c of contexts){await configure(c,fixture,{sceneReady:true,directFiles:false});await c.addInitScript(()=>{const original=window.setTimeout;window.setTimeout=(fn,delay,...args)=>original(fn,delay===20000?2500:delay,...args)})}
  const [gc,pc,qc]=contexts,gm=await gc.newPage(),p=await pc.newPage(),q=await qc.newPage(),errors=[];for(const page of [gm,p,q]){page.setDefaultTimeout(60000);page.on('pageerror',e=>errors.push(e.message))}
  try{
   await openGM(gm);await p.goto(owl+'/room/one?joueur=Alix');await q.goto(owl+'/room/one?joueur=Noa');

@@ -1,4 +1,4 @@
-import {localRoom} from '../v57/room.mjs?v=4530';
+import {localRoom} from '../v57/room.mjs?v=4540';
 import {validSession} from './protocol.mjs';
 const hosts=new WeakMap();
 export async function forwardSoundShow(OBR,data,post) {

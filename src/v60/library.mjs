@@ -1,5 +1,5 @@
-import { requireEditor,libraryRequest } from "./request.mjs?v=4530";
-import { maxMediaBytes } from "./files.mjs?v=4530";
+import { requireEditor,libraryRequest } from "./request.mjs?v=4540";
+import { maxMediaBytes } from "./files.mjs?v=4540";
 const $ = id => document.getElementById(id);
 const labels = {DOCUMENT:"Document",AUDIO:"Audio",VIDEO:"Vidéo"};
 let active;
