@@ -1,4 +1,4 @@
-import {isGM,notice} from '../v63/ui.mjs?v=4550';
+import {isGM,notice} from '../v63/ui.mjs?v=4560';
 const key='ArchivesGoogleEngineCx';let session='',loaded='',target='',query='',operation=0;
 const $=id=>document.getElementById(id);
 function setup(){const config=$('archives-google-config');if(config)config.open=true;$('archives-google-cx')?.focus()}
@@ -7,7 +7,7 @@ function search(text,id) {
   const frame=$('image-search-frame'),cx=$('archives-google-cx')?.value.trim()||localStorage.getItem(key)||'';
   if(!/^[A-Za-z0-9:_-]{5,150}$/.test(cx)){setup();notice('La recherche Google intégrée demande l’identifiant d’un moteur Google. Renseigne-le une seule fois dans cette fenêtre.');return}
   localStorage.setItem(key,cx);$('archives-google-config').open=false;
-  if(loaded!==cx){loaded=cx;session=crypto.randomUUID();frame.src='./google-search-v449.html?v=4550#'+new URLSearchParams({cx,session});}
+  if(loaded!==cx){loaded=cx;session=crypto.randomUUID();frame.src='./google-search-v449.html?v=4560#'+new URLSearchParams({cx,session});}
   else frame.contentWindow.postMessage({type:'archives-google-query',session,query},'*');
 }
 function install(){

@@ -70,3 +70,5 @@ body.archives-player-ui #viewport{cursor:grab}
 @media(max-width:359px){#archives-player-reading-bar:not(.player-bar-vertical) .player-bar-actions{flex-wrap:wrap;max-width:152px}#archives-player-reading-bar:not(.player-bar-vertical) .player-bar-actions>.player-command{flex:0 0 44px}}
 @media(prefers-reduced-motion:reduce){#archives-player-tools *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 @media print{#archives-player-tools{display:none!important}}
+
+#archives-player-layout-bar .player-action-caption{font-size:10px}

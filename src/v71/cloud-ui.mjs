@@ -1,28 +1,18 @@
-import {button,element,isGM,nativeEditor,notice,sheet} from '../v63/ui.mjs?v=4550';
-import {editEvent} from '../v56/link.mjs?v=4550';
-import {createCloud,cloudError} from './cloud.mjs?v=4550';
-import {autoBackup} from './autosave.mjs?v=4550';
-import {campaignRequest} from './campaign-io.mjs?v=4550';
+import {button,element,isGM,nativeEditor,notice,sheet} from '../v63/ui.mjs?v=4560';
+import {editEvent} from '../v56/link.mjs?v=4560';
+import {createCloud,cloudError} from './cloud.mjs?v=4560';
+import {autoBackup} from './autosave.mjs?v=4560';
+import {campaignRequest} from './campaign-io.mjs?v=4560';
 import {downloadArchive} from './download.mjs';
+import {mountAccount} from '../v78/cloud-account.mjs?v=4560';
 const cloud = createCloud(() => {
   if (!isGM()) throw Error('Commande réservée au maître de jeu.');
   if (!window.ArchivesCloudBridge) throw Error('Ouvre « Comptes & campagnes » pour connecter ton compte MJ.');
   return window.ArchivesCloudBridge.getClient();
-});
-const labels = {off:'Sauvegarde en ligne désactivée',pending:'Modifications en attente d’envoi',saving:'Enregistrement en ligne…',saved:'Enregistré en ligne',error:'Envoi en attente — copie conservée sur cet appareil',conflict:'Une version plus récente existe en ligne'};
+},{onProgress:detail=>window.dispatchEvent(new CustomEvent('archives:backup-progress',{detail}))});
+const labels = {off:'Enregistrement manuel',pending:'Modifications en attente d’envoi',saving:'Enregistrement en ligne…',saved:'Enregistré en ligne',error:'Envoi en attente — copie conservée sur cet appareil',conflict:'Une version plus récente existe en ligne'};
 let engine,scope,interval,releaseRestore;
 function dismissChoice(){document.getElementById('archives-autosave-choice')?.remove()}
-function chooseAutosave(binding,currentEngine){
- if(!binding?.campaignId)return;
- dismissChoice();const panel=element('section'),status=element('p'),actions=element('div',null,'studio-actions');panel.id='archives-autosave-choice';panel.setAttribute('aria-label','Choix de la sauvegarde automatique');panel.setAttribute('role','region');
- panel.style.cssText='position:fixed;left:18px;bottom:18px;z-index:55000;max-width:min(480px,90vw);padding:18px;border:1px solid #c5a366;border-radius:12px;background:#211827;color:#f6e2bd;box-shadow:0 14px 50px #0009;font:14px/1.5 system-ui';
- panel.append(element('strong','Sauvegarde automatique pour cette ouverture ?'),element('p','Choisis la sauvegarde automatique ou les enregistrements manuels. Ce choix sera redemandé à la prochaine ouverture.'),actions,status);
- actions.append(button('Rester en sauvegarde manuelle',()=>{currentEngine.pause();dismissChoice()}),button('Activer pour cette ouverture',async()=>{
-  try{if(engine!==currentEngine||!isGM()||currentEngine.binding()?.campaignId!==binding.campaignId)throw Error('La campagne a changé. Choisis sa sauvegarde dans les réglages.');await currentEngine.bind(binding);dismissChoice()}catch(e){status.textContent=e.message}
- },'primary'));document.body.append(panel);
- const title=document.getElementById('archives-title-screen');const draw=()=>{if(!panel.isConnected){observer.disconnect();return}if(!isGM()){panel.remove();observer.disconnect();return}panel.hidden=!!title&&!title.hidden};
- const observer=new MutationObserver(draw);if(title)observer.observe(title,{attributes:true,attributeFilter:['hidden','style','class']});observer.observe(document.body,{attributes:true,attributeFilter:['class']});draw();
-}
 const date = value => value ? new Date(value).toLocaleString('fr-FR') : '';
 const bytes = value => (value/1024/1024).toLocaleString('fr-FR',{maximumFractionDigits:1})+' Mo';
 function stateText(state) {
@@ -47,7 +37,7 @@ function start(value) {
   // A browser may keep its preferences after its campaign database was cleared.
   // Never send a newly generated blank canvas over a previous online campaign.
   engine.pause();
-  if(!(nativeEditor()&&window.ArchivesCampaignHasLocal===false))chooseAutosave(previousBinding,engine);
+  // Every opening starts in manual mode. Automatic saving is an explicit option inside Sauvegardes.
   // The regular check also catches changes to IndexedDB libraries and framing
   // which do not emit the canvas edit event. Identical exports never re-upload.
   interval = setInterval(() => { if (isGM() && !document.hidden) void engine.save(); },60000);
@@ -71,20 +61,22 @@ export function installCloudBackup() {
   window.addEventListener('archives:restore-end',() => { releaseRestore?.();releaseRestore=null; });
   const title = document.querySelector('#archives-cloud-launch-title');
   if (title && window.parent===window) {
-    const open=button('☁ Sauvegardes',() => window.ArchivesWorkbench?.openBackup(),title.className);open.id='archives-cloud-backups-title';title.insertAdjacentElement('afterend',open);
+    const open=button('☁ Retrouver ma session',() => window.ArchivesWorkbench?.openBackup(),title.className);open.id='archives-cloud-backups-title';title.insertAdjacentElement('afterend',open);
   }
 }
 export function mountCloudBackups(view,inspect,{localDownload}={}) {
   const {content,status} = view,section=element('section',null,'cloud-backup-section');section.id='archives-online-backups';
-  const heading=element('h3','Sauvegardes en ligne'),state=element('p',stateText(engine?.status()),'studio-status');state.style.whiteSpace='pre-line';
-  section.append(heading,element('p','Retrouve la campagne complète sur un autre appareil avec ton compte MJ. Les dix dernières versions sont conservées, avec les secrets et les fichiers privés.','studio-hint'),state);
-  const actions=element('div',null,'studio-actions'),accounts=button('Comptes & campagnes',() => {
-    view.dialog.close();document.getElementById('archives-cloud-panel')?.classList.add('open');
-  }),refresh=button('Actualiser',() => { void load(); });actions.append(accounts,refresh);if(localDownload)actions.append(localDownload);section.append(actions);
-  const label=element('label','Campagne en ligne'),select=element('select');select.id='archives-online-campaign';label.htmlFor=select.id;section.append(label,select);
-  const controls=element('div',null,'studio-actions'),enable=button('Activer la sauvegarde automatique',() => { void enableSelected(); },'primary'),save=button('Enregistrer maintenant',() => { void saveNow(); }),pause=button('Suspendre sur cet appareil',() => { engine?.pause();renderControls(); });
-  controls.append(enable,save,pause);section.append(controls);
-  const hint=element('p','','studio-hint'),versions=element('div',null,'cloud-backup-versions');section.append(hint,versions);
+  const heading=element('h3','Enregistrer ma session complète'),state=element('p',stateText(engine?.status()),'studio-status');state.style.whiteSpace='pre-line';
+  section.append(heading,element('p','Retrouve la campagne complète sur un autre appareil avec ton compte MJ. Cellules, actes, images originales, bibliothèques, réserve, secrets et journal sont inclus. L’enregistrement se fait quand tu le décides.','studio-hint'),state);
+  const account=mountAccount(view,()=>load(select.value)),actions=element('div',null,'studio-actions backup-primary-actions'),refresh=button('Actualiser',() => { void load(); });
+  section.append(actions);
+  const label=element('label','Session à retrouver'),select=element('select');select.id='archives-online-campaign';label.htmlFor=select.id;section.append(label,select);
+  const controls=element('div',null,'studio-actions'),enable=button('Activer la sauvegarde automatique',() => { void enableSelected(); }),save=button('Enregistrer en ligne',() => { void saveNow(); },'primary'),pause=button('Suspendre sur cet appareil',() => { engine?.pause();renderControls(); });
+  save.id='archives-save-online';actions.append(save);if(localDownload)actions.append(localDownload);
+  const resume=button('Reprendre la dernière sauvegarde',()=>{if(rows[0])void openVersion(rows[0])},'primary');resume.id='archives-resume-online';section.append(resume);
+  controls.append(enable,pause);
+  const more=element('details',null,'backup-more');more.id='archives-backup-more';more.append(element('summary','Versions précédentes et autres options'),controls);section.append(more);
+  const hint=element('p','','studio-hint'),versions=element('div',null,'cloud-backup-versions');section.append(hint);more.append(versions);
   const selection=element('div',null,'studio-actions'),selectedCount=element('span'),selectAll=button('Tout sélectionner',()=>{
     const all=rows.length>0&&rows.every(row=>selected.has(row.id));selected.clear();if(!all)rows.forEach(row=>selected.add(row.id));syncSelection();
   }),remove=button('Supprimer la sélection',()=>{void removeSelected()});
@@ -92,7 +84,8 @@ export function mountCloudBackups(view,inspect,{localDownload}={}) {
   const space=element('p','','studio-hint'),clean=button('Libérer l’espace restant',()=>{void cleanPending()});selection.before(space);selection.after(clean);
   clean.hidden=true;
   const createRow=element('div',null,'studio-actions'),name=element('input');name.placeholder='Nom de la nouvelle campagne';name.setAttribute('aria-label','Nom de la nouvelle campagne en ligne');
-  createRow.append(name,button('Sauvegarder dans une nouvelle campagne',() => { void create(); }));section.append(createRow);
+  name.id='archives-backup-name';name.placeholder='Nom de ma session';const nameLabel=element('label','Nom de ma session');nameLabel.htmlFor=name.id;heading.after(nameLabel,name);
+  createRow.append(button('Sauvegarder dans une nouvelle campagne',() => { void create(); }));more.firstElementChild.after(createRow);
   const setup=element('details'),summary=element('summary','Activer ou mettre à jour le stockage');
   const link=element('a','Ouvrir le script SQL');link.href=new URL('../../sql/archives-cloud-backups-v449.sql',import.meta.url).href;link.target='_blank';link.rel='noopener';
   const script=element('textarea');script.readOnly=true;script.hidden=true;script.setAttribute('aria-label','Script SQL des sauvegardes');script.style.cssText='display:block;width:100%;min-height:220px;margin-top:10px;font:12px/1.5 monospace';script.style.display='none';
@@ -105,19 +98,24 @@ export function mountCloudBackups(view,inspect,{localDownload}={}) {
     }catch(error){status.textContent=error.message+' Utilise le lien « Ouvrir le script SQL ».'}
   }
   setup.append(summary,element('p','Exécute ce script une fois dans SQL Editor de ton projet Supabase pour activer les sauvegardes et leur suppression. Les campagnes et sauvegardes existantes sont conservées.','studio-hint'),link,
-    button('Afficher le script',()=>{void showScript()}),button('Copier le script',()=>{void showScript(true)}),script);section.append(setup);content.prepend(section);
-  let rows=[],campaigns=[],ctx,closed=false,sequence=0,releasePreview,catalog={revision:0,canDelete:false,cleanupPending:0,cleanupBytes:0};
+    button('Afficher le script',()=>{void showScript()}),button('Copier le script',()=>{void showScript(true)}),script);more.append(setup);section.append(account.node,refresh);content.prepend(section);
+  let rows=[],campaigns=[],ctx,closed=false,working=false,loading=true,sequence=0,releasePreview,catalog={revision:0,canDelete:false,cleanupPending:0,cleanupBytes:0};
   const selected=new Set();
-  const update=event => { if(!closed){state.textContent=stateText(event.detail);renderControls();} };
+  const update=event => { if(!closed){state.textContent=stateText(event.detail);state.dataset.state=event.detail.state;renderControls();} };
+  state.setAttribute('role','status');state.dataset.state=engine?.status().state||'off';
+  const progress=event=>{if(!closed&&working){const p=event.detail;status.textContent=(p.operation==='download'?'Récupération':'Enregistrement')+' : '+bytes(p.loaded)+' / '+bytes(p.total)+' · '+Math.round(p.loaded/p.total*100)+' %';}};
+  window.addEventListener('archives:backup-progress',progress);
   window.addEventListener('archives:cloud-backup-status',update);
-  view.cleanup(() => { closed=true;sequence++;releasePreview?.();window.removeEventListener('archives:cloud-backup-status',update); });
-  function fail(error) { const value=cloudError(error);status.textContent=value.message;if(value.code==='SETUP')setup.open=true; }
+  view.cleanup(() => { closed=true;sequence++;releasePreview?.();window.removeEventListener('archives:cloud-backup-status',update);window.removeEventListener('archives:backup-progress',progress);account.dispose(); });
+  function fail(error) { const value=cloudError(error);status.textContent=value.message;status.dataset.result='error';if(value.code==='SETUP'){more.open=true;setup.open=true;}else if(!ctx||/connect|compte|clé|projet|session/i.test(value.message))account.open(); }
+  function busy(value){working=value;view.busy(value);}
+  function confirmed(result){const value=result||engine?.status();if(!['saved','pending'].includes(value?.state)||!value.binding?.savedAt){const error=Error(value?.message||'L’enregistrement en ligne n’a pas été confirmé. Ta session reste sur cet appareil.');error.code=value?.state==='conflict'?'CONFLICT':undefined;throw error;}return value;}
   function syncSelection() {
     for(const input of versions.querySelectorAll('input[data-select-backup]'))input.checked=selected.has(input.dataset.selectBackup);
     const picked=rows.filter(row=>selected.has(row.id));
-    remove.disabled=!picked.length;remove.textContent='Supprimer la sélection'+(picked.length?' ('+picked.length+')':'');
+    remove.disabled=working||!picked.length;remove.textContent='Supprimer la sélection'+(picked.length?' ('+picked.length+')':'');
     selectedCount.textContent=picked.length+' sélectionnée(s) · '+bytes(picked.reduce((total,row)=>total+row.byte_size,0));
-    selectAll.disabled=!rows.length;selectAll.textContent=rows.length&&picked.length===rows.length?'Tout désélectionner':'Tout sélectionner';
+    selectAll.disabled=working||!rows.length;selectAll.textContent=rows.length&&picked.length===rows.length?'Tout désélectionner':'Tout sélectionner';
     space.textContent=rows.length+' sauvegarde(s) · '+bytes(rows.reduce((total,row)=>total+row.byte_size,0))+' pour cette campagne'+
       (catalog.cleanupPending?' · '+bytes(catalog.cleanupBytes)+' restant à libérer':'');
     clean.hidden=!catalog.cleanupPending;
@@ -125,18 +123,19 @@ export function mountCloudBackups(view,inspect,{localDownload}={}) {
   function matches() { const bound=engine?.binding();return bound && bound.project===ctx?.project && bound.owner===ctx?.user.id && bound.campaignId===select.value; }
   function renderControls() {
     const bound=engine?.binding(),active=matches() && bound.enabled;
-    enable.hidden=!!active;enable.disabled=!ctx || !select.value || (!!rows.length && !matches());
-    save.hidden=!matches();pause.hidden=!active;
-    hint.textContent=rows.length&&!matches() ? 'Ouvre une version ci-dessous pour reprendre cette campagne sur cet appareil. Pour garder le scénario actuellement ouvert, sauvegarde-le dans une nouvelle campagne.' : matches()&&!active?'Sauvegarde automatique désactivée pour cette ouverture. Tu peux enregistrer manuellement.':'';
+    enable.hidden=!!active;enable.disabled=working||!ctx || !select.value || (!!rows.length && !matches());
+    save.hidden=false;save.disabled=working||loading;pause.hidden=!active;resume.disabled=working||!rows.length;
+    resume.hidden=!rows.length;label.hidden=!campaigns.length;select.hidden=!campaigns.length;
+    hint.textContent=rows.length&&!matches() ? 'Choisis « Reprendre la dernière sauvegarde » pour continuer cette session. Pour conserver ton canevas actuel séparément, utilise « Sauvegarder dans une nouvelle campagne » dans les autres options.' : matches()&&!active?'Sauvegarde automatique désactivée pour cette ouverture. Tu peux enregistrer manuellement.':'';
   }
   async function load(preferred) {
-    const generation=++sequence;versions.replaceChildren();rows=[];select.replaceChildren(new Option('Choisir une campagne…',''));
+    const generation=++sequence;loading=true;renderControls();versions.replaceChildren();rows=[];select.replaceChildren(new Option('Choisir une campagne…',''));
     try {
       const result=await cloud.campaigns();if(closed||generation!==sequence)return;
       ctx=result.ctx;campaigns=result.rows;
       for(const item of campaigns)select.append(new Option(item.name || 'Campagne sans nom',item.id));
       const bound=engine?.binding();select.value=preferred || (bound?.project===ctx.project && bound?.owner===ctx.user.id ? bound.campaignId : campaigns.length===1 ? campaigns[0].id : '');
-      const loaded=await list(generation);if(loaded!==false)status.textContent='Connecté avec '+ctx.user.email+'. Choisis une version à ouvrir ou active la sauvegarde de la campagne actuelle.';
+      const loaded=await list(generation);if(loaded!==false){status.textContent='Connecté avec '+ctx.user.email+'. Enregistre ta session ou reprends sa dernière sauvegarde.';account.close();if(!name.value)name.value=bound?.name||campaigns.find(c=>c.id===select.value)?.name||window.DuneApp?.getState?.().boards?.[0]?.name||'Ma session Archives';}
     } catch(error){
       ctx=null;fail(error);
       // Keep the current campaign and its retry/pause actions accessible offline.
@@ -144,7 +143,7 @@ export function mountCloudBackups(view,inspect,{localDownload}={}) {
       const bound=engine?.binding();
       if(bound){ctx={project:bound.project,user:{id:bound.owner}};select.append(new Option(bound.name || 'Campagne de cet appareil',bound.campaignId));select.value=bound.campaignId;}
     }
-    renderControls();syncSelection();
+    loading=false;renderControls();syncSelection();
   }
   async function list(generation=++sequence) {
     rows=[];catalog={revision:0,canDelete:false,cleanupPending:0,cleanupBytes:0};versions.replaceChildren();renderControls();syncSelection();if(!select.value)return;
@@ -159,7 +158,7 @@ export function mountCloudBackups(view,inspect,{localDownload}={}) {
         card.append(title,element('p',(row.summary?.cells || 0)+' cellule(s) · '+(row.summary?.images || 0)+' image(s) · '+bytes(row.byte_size),'studio-hint'),
           button('Ouvrir cette version…',() => { void openVersion(row); }),button('Télécharger sur cet appareil',()=>{void downloadVersion(row)}));versions.append(card);
       }
-      if(!rows.length)versions.append(element('p','Aucune version en ligne pour cette campagne.','studio-hint'));
+      if(!rows.length)versions.append(element('p','Aucune version en ligne pour cette session. Clique sur « Enregistrer en ligne » pour créer la première.','studio-hint'));
     } catch(error){fail(error);renderControls();syncSelection();return false}
     renderControls();syncSelection();return true;
   }
@@ -169,24 +168,39 @@ export function mountCloudBackups(view,inspect,{localDownload}={}) {
     dismissChoice();return engine.bind({campaignId:campaign.id,name:campaign.name,owner:current.user.id,project:current.project,revision,fingerprint,savedAt},options);
   }
   async function enableSelected() {
-    view.busy(true);
+    busy(true);
     try {
       const campaign=campaigns.find(item=>item.id===select.value);if(!campaign)throw Error('Choisis une campagne.');
       const latest=await cloud.versions(campaign.id),bound=engine?.binding();
       if(latest.rows.length&&(!matches()||bound.revision!==latest.revision))throw Error('Ouvre d’abord une version en ligne de cette campagne.');
       const resume=matches()&&latest.rows.length>0;
-      await bind(campaign,latest.revision,resume?bound.fingerprint:null,resume?bound.savedAt:null,{automatic:true});await list();
-    } catch(error){fail(error)}finally{view.busy(false);renderControls();syncSelection()}
+      confirmed(await bind(campaign,latest.revision,resume?bound.fingerprint:null,resume?bound.savedAt:null,{automatic:true}));await list();status.textContent='Sauvegarde automatique activée pour cette ouverture.';
+    } catch(error){fail(error)}finally{busy(false);renderControls();syncSelection()}
   }
-  async function saveNow() { view.busy(true);try{await engine.manualSave();await list()}catch(error){fail(error)}finally{view.busy(false);renderControls();syncSelection()} }
+  async function saveNow() {
+    if(working)return;busy(true);status.dataset.result='';status.textContent='Préparation de la session complète et de ses fichiers…';
+    try {
+      await cloud.context();let result;
+      if(matches())result=await engine.manualSave();
+      else {
+        let campaign=campaigns.find(c=>c.id===select.value);
+        if(campaign&&rows.length)throw Error('Reprends d’abord la dernière sauvegarde de cette session, ou enregistre ton canevas comme nouvelle campagne dans les autres options.');
+        if(!campaign){campaign=await cloud.create(name.value.trim()||window.DuneApp?.getState?.().boards?.[0]?.name||'Ma session Archives');}
+        result=await bind(campaign,catalog.revision||0);
+        await load(campaign.id);
+      }
+      const saved=confirmed(result);await list();
+      status.dataset.result='saved';status.textContent='Session complète enregistrée en ligne le '+date(saved.binding.savedAt)+'. Tu peux la reprendre sur un autre appareil avec le même compte MJ.';
+    }catch(error){fail(error)}finally{busy(false);renderControls();syncSelection()}
+  }
   async function create() {
-    view.busy(true);status.textContent='Création de la campagne et de sa première sauvegarde…';
-    try { const campaign=await cloud.create(name.value);await bind(campaign);name.value='';await load(campaign.id); }
-    catch(error){fail(error)}finally{view.busy(false);renderControls();syncSelection()}
+    busy(true);status.textContent='Création de la campagne et de sa première sauvegarde…';
+    try { const campaign=await cloud.create(name.value.trim()||'Ma session Archives');const result=await bind(campaign);await load(campaign.id);const saved=confirmed(result);status.dataset.result='saved';status.textContent='Session complète enregistrée en ligne le '+date(saved.binding.savedAt)+'.'; }
+    catch(error){fail(error)}finally{busy(false);renderControls();syncSelection()}
   }
   async function openVersion(row) {
     if(engine?.status().state==='saving'){status.textContent='Attends la fin de l’enregistrement avant d’ouvrir une version.';return}
-    releasePreview?.();releasePreview=engine?.hold();view.busy(true);status.textContent='Téléchargement et vérification de la version privée…';
+    releasePreview?.();releasePreview=engine?.hold();busy(true);status.textContent='Téléchargement et vérification de la version privée…';
     const campaign=campaigns.find(item=>item.id===row.campaign_id);
     try {
       const result=await cloud.download(row.campaign_id,row.id,async()=>{if(closed||!isGM())throw Error('Ouverture interrompue.');});
@@ -196,22 +210,23 @@ export function mountCloudBackups(view,inspect,{localDownload}={}) {
           if(latest.ctx.user.id!==result.ctx.user.id||latest.ctx.project!==result.ctx.project||latest.revision!==result.revision)
             throw Error('La version en ligne ou le compte a changé. Actualise la liste avant de restaurer.');
         },
+        cancelled:()=>{releasePreview?.();releasePreview=null;},
         after:async()=>{releasePreview?.();releasePreview=null;await bind(campaign,result.revision,result.head.fingerprint,result.head.created_at,{automatic:false,save:false});}
       });
-    }catch(error){releasePreview?.();releasePreview=null;fail(error)}finally{view.busy(false);renderControls();syncSelection()}
+    }catch(error){releasePreview?.();releasePreview=null;fail(error)}finally{busy(false);renderControls();syncSelection()}
   }
   async function downloadVersion(row) {
-    view.busy(true);status.textContent='Téléchargement de la sauvegarde vérifiée…';
+    busy(true);status.textContent='Téléchargement de la sauvegarde vérifiée…';
     try{const result=await cloud.download(row.campaign_id,row.id);if(closed)return;
       const campaign=campaigns.find(item=>item.id===row.campaign_id);
       downloadArchive(result.blob,(campaign?.name || 'Campagne_Archives')+'_version_'+row.revision+'_'+row.created_at);
       status.textContent='Fichier .archives téléchargé : '+bytes(result.blob.size)+'.';
-    }catch(error){fail(error)}finally{view.busy(false);renderControls();syncSelection()}
+    }catch(error){fail(error)}finally{busy(false);renderControls();syncSelection()}
   }
   async function cleanPending() {
-    view.busy(true);status.textContent='Suppression des fichiers en attente…';
+    busy(true);status.textContent='Suppression des fichiers en attente…';
     try{const result=await cloud.cleanup(select.value);await list();status.textContent=bytes(result.freedBytes)+' libérés.'}
-    catch(error){fail(error)}finally{view.busy(false);renderControls();syncSelection()}
+    catch(error){fail(error)}finally{busy(false);renderControls();syncSelection()}
   }
   async function removeSelected() {
     const picked=rows.filter(row=>selected.has(row.id));if(!picked.length)return;
@@ -219,7 +234,7 @@ export function mountCloudBackups(view,inspect,{localDownload}={}) {
     if(engine?.status().state==='saving'){status.textContent='Attends la fin de l’enregistrement avant de supprimer une sauvegarde.';return}
     const before=catalog,campaignId=select.value,account={owner:ctx.user.id,project:ctx.project};
     const release=engine?.hold(),confirm=sheet('archives-delete-backup-confirm','Supprimer les sauvegardes','Confirmation');
-    view.busy(true);
+    busy(true);
     confirm.content.append(element('p','Supprimer définitivement '+picked.length+' sauvegarde(s), soit '+bytes(picked.reduce((total,row)=>total+row.byte_size,0))+' ?'));
     const names=element('ul');for(const row of picked)names.append(element('li',date(row.created_at)+' · '+bytes(row.byte_size)));confirm.content.append(names);
     confirm.content.append(element('p','La campagne ouverte sur cet appareil est conservée. Les versions choisies et leurs fichiers seront effacés en ligne. Si tu supprimes la dernière version, la sauvegarde automatique sera suspendue sur cet appareil.','studio-hint'));
@@ -237,7 +252,7 @@ export function mountCloudBackups(view,inspect,{localDownload}={}) {
       }catch(error){confirm.status.textContent=cloudError(error).message}
       finally{confirm.busy(false)}
     },'primary'));confirm.content.append(actions);
-    confirm.cleanup(()=>{release?.();view.busy(false);renderControls();syncSelection()});
+    confirm.cleanup(()=>{release?.();busy(false);renderControls();syncSelection()});
   }
-  select.onchange=()=>{releasePreview?.();releasePreview=null;selected.clear();void list()};void load();
+  select.onchange=()=>{releasePreview?.();releasePreview=null;selected.clear();const campaign=campaigns.find(c=>c.id===select.value);if(campaign)name.value=campaign.name;void list()};void load();
 }
