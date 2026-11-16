@@ -196,7 +196,7 @@ export function mountCloudBackups(view,inspect,{localDownload}={}) {
           if(latest.ctx.user.id!==result.ctx.user.id||latest.ctx.project!==result.ctx.project||latest.revision!==result.revision)
             throw Error('La version en ligne ou le compte a changé. Actualise la liste avant de restaurer.');
         },
-        after:async()=>{releasePreview?.();releasePreview=null;await bind(campaign,result.revision,row.fingerprint,result.head.created_at,{automatic:false,save:false});}
+        after:async()=>{releasePreview?.();releasePreview=null;await bind(campaign,result.revision,result.head.fingerprint,result.head.created_at,{automatic:false,save:false});}
       });
     }catch(error){releasePreview?.();releasePreview=null;fail(error)}finally{view.busy(false);renderControls();syncSelection()}
   }
