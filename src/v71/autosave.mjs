@@ -12,22 +12,37 @@ export function autoBackup({cloud,capture,read,write,changed = () => {},timers =
     manual=manual===true;
     timers.clearTimeout(timer);timer = null;
     if (running) return running;
-    if (closed || held || !binding || (!binding.enabled&&!manual) || blocked) return;
+    if (closed || held || !binding || (!binding.enabled&&!manual) || (blocked&&!manual)) return;
     const current = {...binding},started = version;
     running = (async () => {
       try {
         report('saving');const ctx = await cloud.context();check(current,manual);
         if (ctx.user.id !== current.owner || ctx.project !== current.project) throw Error('Reconnecte le compte MJ associé à cette sauvegarde.');
-        const data = await capture();check(current,manual);
-        if (data.fingerprint === binding.fingerprint) {
+        const data = await capture();check(current,manual);let known,missingHead=false;
+        if(manual&&typeof cloud.versions==='function'){
+          known=await cloud.versions(current.campaignId);check(current,manual);
+          const head=known.rows?.[0],revision=known.revision??head?.revision??0;missingHead=!head;
+          if(head?.fingerprint===data.fingerprint){
+            binding={...binding,revision,fingerprint:data.fingerprint,savedAt:head.created_at};blocked=false;persist();report(started===version?'saved':'pending');return status;
+          }
+          if(revision!==current.revision){
+            if(head&&(!current.fingerprint||head.fingerprint!==current.fingerprint)){
+              const error=Error('Une version plus récente existe en ligne. Ton travail reste sur cet appareil. Choisis « Enregistrer mon travail dans une copie » dans Sauvegardes pour conserver les deux versions.');error.code='CONFLICT';throw error;
+            }
+            // A deletion or an identical remote base can advance the catalogue
+            // without introducing different campaign contents. CAS still guards the write.
+            binding={...binding,revision};current.revision=revision;persist();
+          }
+        }
+        if (data.fingerprint === binding.fingerprint&&!missingHead) {
           // Still check the head: this device must learn about another writer.
-          const {rows,revision} = await cloud.versions(current.campaignId);check(current,manual);
-          if ((revision ?? rows[0]?.revision ?? 0) !== current.revision) { const error = Error('Une version plus récente existe en ligne ou les sauvegardes ont changé. Ouvre Sauvegardes pour les consulter ou conserve ton travail dans une nouvelle campagne.');error.code='CONFLICT';throw error; }
+          const {rows,revision} = known||await cloud.versions(current.campaignId);check(current,manual);
+          if ((revision ?? rows[0]?.revision ?? 0) !== current.revision) { const error = Error('Une version plus récente existe en ligne. Ton travail reste sur cet appareil. Choisis « Enregistrer mon travail dans une copie » dans Sauvegardes pour conserver les deux versions.');error.code='CONFLICT';throw error; }
         } else {
           const saved = await cloud.save({...data,campaignId:current.campaignId,expectedRevision:current.revision,check:async () => check(current,manual)});
           check(current,manual);binding = {...binding,revision:saved.revision,fingerprint:data.fingerprint,savedAt:saved.created_at};persist();
         }
-        report(started === version ? 'saved' : 'pending');
+        blocked=false;report(started === version ? 'saved' : 'pending');
       } catch (error) {
         if (closed) return;
         if (error.code === 'CONFLICT') blocked = true;

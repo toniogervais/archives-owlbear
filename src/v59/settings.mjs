@@ -22,7 +22,7 @@ export function installOwlPlayerInterface() {
     const group = document.querySelector('#top-hud .hud-row>.top-group:first-child');
     const tabs = $('tabs-bar'),journal = $('quick-player-journal');
     if (group && journal) {
-      const notes = journal.cloneNode(true);notes.id = 'quick-player-notes';notes.removeAttribute('onclick');
+      const notes = $('quick-player-notes') || journal.cloneNode(true);notes.id = 'quick-player-notes';notes.removeAttribute('onclick');
       notes.innerHTML='<svg class="quick-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5 5 5M4 20l4-1 12-12a2 2 0 0 0-5-5L3 14zM3 21h18"/></svg>';
       notes.classList.add('studio-command');notes.title = 'Mes notes';notes.setAttribute('aria-label',notes.title);
       journal.classList.add('studio-command');journal.title = 'Journal des révélations';

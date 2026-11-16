@@ -1,6 +1,6 @@
 // Complete campaigns stay in a private, owner-only bucket. No signed/public links
 // and no campaign bytes pass through Owlbear's shared metadata or player channels.
-import {digest} from '../v72/integrity.mjs?v=4560';
+import {digest} from '../v72/integrity.mjs?v=4570';
 export const BACKUP_BUCKET = 'archives-campaign-backups';
 export const PART_BYTES = 4 * 1024 * 1024;
 const maxBytes = 2 * 1024 * 1024 * 1024;
@@ -9,7 +9,7 @@ const hash = value => /^[a-f0-9]{64}$/.test(value || '');
 const unwrap = result => { if (result.error) throw result.error;return result.data; };
 export function cloudError(error) {
   if (/ARCHIVES_BACKUP_CONFLICT/.test(error.message || '')) {
-    const conflict = Error('Une version plus récente existe en ligne ou les sauvegardes ont changé. Ouvre Sauvegardes pour les consulter ou conserve ton travail dans une nouvelle campagne.');
+    const conflict = Error('Une version plus récente existe en ligne. Ton travail reste sur cet appareil. Choisis « Enregistrer mon travail dans une copie » dans Sauvegardes pour conserver les deux versions.');
     conflict.code = 'CONFLICT';return conflict;
   }
   if (/PGRST20[25]|42P01|42883/.test(error.code || '') || /bucket.*not found|archives_campaign_backups.*does not exist/i.test(error.message || '')) {

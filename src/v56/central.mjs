@@ -1,10 +1,10 @@
 import {
   createNotice, editEvent, isPacket, localWire, packet, pairingKey, randomHex, readLocal,
   roomUrlKey, validPairing, validRoomId, validSession, writeLocal
-} from "./link.mjs?v=4560";
-import { listenForFallback } from "./peer.mjs?v=4560";
+} from "./link.mjs?v=4570";
+import { listenForFallback } from "./peer.mjs?v=4570";
 
-import {installMainPublic} from '../v73/main-public.mjs?v=4560';
+import {installMainPublic} from '../v73/main-public.mjs?v=4570';
 
 const centralTabKey = pairingKey + ":central";
 const saveKey = "jdr_architect_save_v12";

@@ -1,16 +1,16 @@
-import {button,element,isGM,nativeEditor,notice,sheet} from '../v63/ui.mjs?v=4560';
-import {editEvent} from '../v56/link.mjs?v=4560';
-import {createCloud,cloudError} from './cloud.mjs?v=4560';
-import {autoBackup} from './autosave.mjs?v=4560';
-import {campaignRequest} from './campaign-io.mjs?v=4560';
+import {button,element,isGM,nativeEditor,notice,sheet} from '../v63/ui.mjs?v=4570';
+import {editEvent} from '../v56/link.mjs?v=4570';
+import {createCloud,cloudError} from './cloud.mjs?v=4570';
+import {autoBackup} from './autosave.mjs?v=4570';
+import {campaignRequest} from './campaign-io.mjs?v=4570';
 import {downloadArchive} from './download.mjs';
-import {mountAccount} from '../v78/cloud-account.mjs?v=4560';
+import {mountAccount} from '../v78/cloud-account.mjs?v=4570';
 const cloud = createCloud(() => {
   if (!isGM()) throw Error('Commande réservée au maître de jeu.');
   if (!window.ArchivesCloudBridge) throw Error('Ouvre « Comptes & campagnes » pour connecter ton compte MJ.');
   return window.ArchivesCloudBridge.getClient();
 },{onProgress:detail=>window.dispatchEvent(new CustomEvent('archives:backup-progress',{detail}))});
-const labels = {off:'Enregistrement manuel',pending:'Modifications en attente d’envoi',saving:'Enregistrement en ligne…',saved:'Enregistré en ligne',error:'Envoi en attente — copie conservée sur cet appareil',conflict:'Une version plus récente existe en ligne'};
+const labels = {off:'Enregistrement manuel',pending:'Modifications en attente d’envoi',saving:'Enregistrement en ligne…',saved:'Enregistré en ligne',error:'Envoi en attente — copie conservée sur cet appareil',conflict:'Deux versions à conserver'};
 let engine,scope,interval,releaseRestore;
 function dismissChoice(){document.getElementById('archives-autosave-choice')?.remove()}
 const date = value => value ? new Date(value).toLocaleString('fr-FR') : '';
@@ -75,6 +75,11 @@ export function mountCloudBackups(view,inspect,{localDownload}={}) {
   save.id='archives-save-online';actions.append(save);if(localDownload)actions.append(localDownload);
   const resume=button('Reprendre la dernière sauvegarde',()=>{if(rows[0])void openVersion(rows[0])},'primary');resume.id='archives-resume-online';section.append(resume);
   controls.append(enable,pause);
+  const conflict=element('section',null,'backup-conflict');conflict.id='archives-backup-conflict';conflict.hidden=true;conflict.setAttribute('role','region');conflict.setAttribute('aria-label','Conserver les deux versions');
+  conflict.append(element('h4','Sauvegarder ton travail actuel'),element('p','Une autre version est en ligne. Enregistre ton travail dans une copie distincte pour conserver les deux sessions complètes.','studio-hint'),
+    button('Enregistrer mon travail dans une copie',()=>{void create(true)},'primary'),
+    button('Consulter la version en ligne',()=>{if(rows[0])void openVersion(rows[0])}));
+  section.append(conflict);
   const more=element('details',null,'backup-more');more.id='archives-backup-more';more.append(element('summary','Versions précédentes et autres options'),controls);section.append(more);
   const hint=element('p','','studio-hint'),versions=element('div',null,'cloud-backup-versions');section.append(hint);more.append(versions);
   const selection=element('div',null,'studio-actions'),selectedCount=element('span'),selectAll=button('Tout sélectionner',()=>{
@@ -107,7 +112,7 @@ export function mountCloudBackups(view,inspect,{localDownload}={}) {
   window.addEventListener('archives:backup-progress',progress);
   window.addEventListener('archives:cloud-backup-status',update);
   view.cleanup(() => { closed=true;sequence++;releasePreview?.();window.removeEventListener('archives:cloud-backup-status',update);window.removeEventListener('archives:backup-progress',progress);account.dispose(); });
-  function fail(error) { const value=cloudError(error);status.textContent=value.message;status.dataset.result='error';if(value.code==='SETUP'){more.open=true;setup.open=true;}else if(!ctx||/connect|compte|clé|projet|session/i.test(value.message))account.open(); }
+  function fail(error) { const value=cloudError(error);status.textContent=value.message;status.dataset.result='error';if(value.code==='CONFLICT'){conflict.hidden=false;void list();}else if(value.code==='SETUP'){more.open=true;setup.open=true;}else if(!ctx||/connect|compte|clé|projet|session/i.test(value.message))account.open(); }
   function busy(value){working=value;view.busy(value);}
   function confirmed(result){const value=result||engine?.status();if(!['saved','pending'].includes(value?.state)||!value.binding?.savedAt){const error=Error(value?.message||'L’enregistrement en ligne n’a pas été confirmé. Ta session reste sur cet appareil.');error.code=value?.state==='conflict'?'CONFLICT':undefined;throw error;}return value;}
   function syncSelection() {
@@ -124,6 +129,7 @@ export function mountCloudBackups(view,inspect,{localDownload}={}) {
   function renderControls() {
     const bound=engine?.binding(),active=matches() && bound.enabled;
     enable.hidden=!!active;enable.disabled=working||!ctx || !select.value || (!!rows.length && !matches());
+    conflict.hidden=engine?.status().state!=='conflict'||!matches();
     save.hidden=false;save.disabled=working||loading;pause.hidden=!active;resume.disabled=working||!rows.length;
     resume.hidden=!rows.length;label.hidden=!campaigns.length;select.hidden=!campaigns.length;
     hint.textContent=rows.length&&!matches() ? 'Choisis « Reprendre la dernière sauvegarde » pour continuer cette session. Pour conserver ton canevas actuel séparément, utilise « Sauvegarder dans une nouvelle campagne » dans les autres options.' : matches()&&!active?'Sauvegarde automatique désactivée pour cette ouverture. Tu peux enregistrer manuellement.':'';
@@ -193,9 +199,9 @@ export function mountCloudBackups(view,inspect,{localDownload}={}) {
       status.dataset.result='saved';status.textContent='Session complète enregistrée en ligne le '+date(saved.binding.savedAt)+'. Tu peux la reprendre sur un autre appareil avec le même compte MJ.';
     }catch(error){fail(error)}finally{busy(false);renderControls();syncSelection()}
   }
-  async function create() {
-    busy(true);status.textContent='Création de la campagne et de sa première sauvegarde…';
-    try { const campaign=await cloud.create(name.value.trim()||'Ma session Archives');const result=await bind(campaign);await load(campaign.id);const saved=confirmed(result);status.dataset.result='saved';status.textContent='Session complète enregistrée en ligne le '+date(saved.binding.savedAt)+'.'; }
+  async function create(copy=false) {
+    if(working)return;busy(true);status.textContent='Création de la campagne et de sa première sauvegarde…';
+    try { const title=name.value.trim()||engine?.binding()?.name||'Ma session Archives';const campaign=await cloud.create(copy?title.slice(0,85)+' — copie '+new Date().toLocaleString('fr-FR'):title);name.value=campaign.name;const result=await bind(campaign);await load(campaign.id);const saved=confirmed(result);status.dataset.result='saved';status.textContent=(copy?'Ton travail a été enregistré dans « '+campaign.name+' ». L’autre version en ligne est conservée.':'Session complète enregistrée en ligne le '+date(saved.binding.savedAt)+'.'); }
     catch(error){fail(error)}finally{busy(false);renderControls();syncSelection()}
   }
   async function openVersion(row) {

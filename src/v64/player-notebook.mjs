@@ -1,13 +1,14 @@
-import {isPacket} from '../v56/link.mjs?v=4560';
-import {button,element,sheet} from '../v63/ui.mjs?v=4560';
+import {isPacket} from '../v56/link.mjs?v=4570';
+import {button,element,sheet} from '../v63/ui.mjs?v=4570';
 
 // Personal notes are browser-local, scoped by the identity supplied by the
 // trusted room host. They never enter a scenario, public snapshot or RPC.
 export function installPlayerNotebook() {
+  if(window.ArchivesPlayerNotebook)return window.ArchivesPlayerNotebook;
   let scope = '',view;
   const key = () => 'archives:player-notebook:v1:'+scope;
   function open() {
-    if (!scope) return;
+    bind();if (!scope) return;
     view = sheet('archives-player-notebook','Mes notes','Carnet personnel');
     const textarea = element('textarea');textarea.setAttribute('aria-label','Mes notes personnelles');
     textarea.maxLength = 100000;textarea.rows = 16;textarea.style.cssText = 'width:100%;min-height:38dvh;resize:vertical;box-sizing:border-box;line-height:1.65';
@@ -27,7 +28,12 @@ export function installPlayerNotebook() {
     textarea.focus();
   }
   function bind() {
-    const control = document.getElementById('quick-player-notes');if (!control) return;
+    const state=window.DuneApp?.getState?.();if(!state||!state.playerMode&&!state.strictReadOnly){view?.dialog.close();return;}
+    if(window.ArchivesPlayerScope)scope=window.ArchivesPlayerScope;
+    else if(new URLSearchParams(location.search).get('owl-view')==='1')scope='';
+    else scope=(state.strictReadOnly?'live:':'preview:')+(state.liveRoomId||new URLSearchParams(location.search).get('room')||location.pathname)+':'+(window.__archivesLivePlayerName||'Joueur');
+    let control = document.getElementById('quick-player-notes');
+    if(!control){const journal=document.getElementById('quick-player-journal');if(!journal)return;control=journal.cloneNode(true);control.id='quick-player-notes';control.removeAttribute('onclick');control.innerHTML='<svg class="quick-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5 5 5M4 20l4-1 12-12a2 2 0 0 0-5-5L3 14zM3 21h18"/></svg>';journal.after(control);}
     control.title = 'Mes notes';control.setAttribute('aria-label','Mes notes');control.disabled = !scope;
     control.onclick = open;
   }
@@ -38,5 +44,9 @@ export function installPlayerNotebook() {
     if (scope && scope !== event.data.scope) view?.dialog.close();
     scope = event.data.scope;bind();
   });
+  window.ArchivesPlayerNotebook={open,refresh:bind};
+  window.addEventListener('archives:public-view',bind);window.addEventListener('archives:player-scope',bind);
+  new MutationObserver(bind).observe(document.body,{attributes:true,attributeFilter:['class']});
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded',bind,{once:true});else bind();
+  return window.ArchivesPlayerNotebook;
 }

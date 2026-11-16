@@ -1,5 +1,6 @@
-import {isPacket} from '../v56/link.mjs?v=4560';
-import {dockPosition,zoomCamera} from './geometry.mjs?v=4560';
+import {installPlayerNotebook} from '../v64/player-notebook.mjs?v=4570';
+import {isPacket} from '../v56/link.mjs?v=4570';
+import {dockPosition,zoomCamera} from './geometry.mjs?v=4570';
 const el=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node};
 const player=()=>{const s=window.DuneApp?.getState?.();return !!s&&(s.playerMode||s.strictReadOnly)};
 const icons={minus:'M5 12h14',plus:'M5 12h14M12 5v14',fit:'M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5M8 8h8v8H8z',more:'M4 12h.01M12 12h.01M20 12h.01',eye:'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z M15 12a3 3 0 1 0-6 0 3 3 0 0 0 6 0'};
@@ -9,7 +10,7 @@ function viewport(){const v=window.visualViewport,css=getComputedStyle(document.
 const orientation=()=>innerWidth>innerHeight?'landscape':'portrait';
 const defaults=()=>({hidden:false,reading:{x:.5,y:0,vertical:false,collapsed:false},zoom:{x:.5,y:1,vertical:false,collapsed:false},layout:{x:.5,y:0,vertical:false,collapsed:false,automatic:true},toggle:{x:1,y:.72}});
 function install(){
- if(!window.DuneApp)return;const api=window.DuneApp,originals=new Map();let active=false,storageKey='',visibilityKey='',prefs=defaults(),arranging=false,queued=false,layoutFrame=0,owlControl,fittedCamera=null,lastViewport=viewport(),lastOrientation=orientation();
+ if(!window.DuneApp)return;const api=window.DuneApp,originals=new Map();installPlayerNotebook();let active=false,storageKey='',visibilityKey='',prefs=defaults(),arranging=false,queued=false,layoutFrame=0,owlControl,fittedCamera=null,lastViewport=viewport(),lastOrientation=orientation();
  const root=el('div');root.id='archives-player-tools';root.hidden=true;
  const toggle=button('Masquer les icônes','',()=>{const refit=isFitted();prefs.hidden=!prefs.hidden;if(prefs.hidden)setArrange(false);else for(const bar of [prefs.reading,prefs.zoom,prefs.layout])bar.collapsed=false;paint();save();if(refit)fitView()});toggle.id='archives-player-icons-toggle';toggle.append(icon('eye'));
  const toggleCaption=el('span',null,'Icônes');toggle.append(toggleCaption);
@@ -29,6 +30,23 @@ function install(){
  minus.id='archives-player-zoom-out';plus.id='archives-player-zoom-in';minus.append(icon('minus'));plus.append(icon('plus'));
  const percent=button('Régler précisément le zoom','100 %',()=>openMenu(true));percent.id='archives-player-zoom-value';zoom.actions.append(minus,percent,plus);
  root.append(reading.node,layout.node,zoom.node,toggle,menu);document.body.append(root);
+ // These buttons may move between the original dock and the personal bars.
+ // Resolve the current API at activation instead of depending on inline handlers.
+ root.addEventListener('click',event=>{
+  if(!active||!player())return;const control=event.target.closest?.('button');if(!control||control.disabled)return;
+  const live=window.DuneApp,handlers={
+   'quick-player-center-cell':()=>{live.centerOnSelectedCell();live.setCanvasCamera(camera(),true)},
+   'quick-player-layout':()=>{live.autoLayout();live.setCanvasCamera(camera(),true);fittedCamera=camera();save()},
+   'quick-player-center-all':fitView,
+   'quick-player-journal':()=>live.openJournal(),
+   'quick-player-notes':()=>window.ArchivesPlayerNotebook?.open(),
+   'archives-dossier-open':()=>window.ArchivesWorkbench?.openDossier(),
+   'quick-grid-toggle':()=>window.ArchivesCanvasGrid?.toggle(),
+   'quick-player-undo':()=>live.undo()
+  };
+  const handler=handlers[control.id];if(!handler)return;event.preventDefault();event.stopImmediatePropagation();live.closeContextMenus();handler();updateZoom();
+ },true);
+
  function makeBar(id,caption){
   const node=el('nav','archives-player-dock');node.id='archives-player-'+id+'-bar';node.setAttribute('aria-label','Barre '+caption);
   const grip=button('Déplacer la barre '+caption,'⠿',()=>{});grip.className='player-bar-grip';
@@ -69,7 +87,7 @@ function install(){
    bar.actions.hidden=p.collapsed;bar.collapse.textContent=p.collapsed?'＋':'−';bar.collapse.setAttribute('aria-label',(p.collapsed?'Déployer':'Réduire')+' la barre '+bar.caption);bar.collapse.title=bar.collapse.getAttribute('aria-label');bar.collapse.setAttribute('aria-expanded',String(!p.collapsed));
   }
   toggle.setAttribute('aria-label',prefs.hidden?'Afficher les icônes':'Masquer les icônes');toggle.title=toggle.getAttribute('aria-label');toggle.setAttribute('aria-pressed',String(!prefs.hidden));toggleCaption.textContent=prefs.hidden?'Afficher':'Masquer';
-  const position=()=>{place(reading.node,prefs.reading);place(zoom.node,prefs.zoom);if(prefs.layout.automatic){const box=viewport(),top=box.top+16+reading.node.offsetHeight;place(layout.node,{x:.5,y:(top-box.top-8)/Math.max(1,box.height-layout.node.offsetHeight-16)})}else place(layout.node,prefs.layout);place(toggle,prefs.toggle)};
+  const position=()=>{place(reading.node,prefs.reading);place(zoom.node,prefs.zoom);if(prefs.layout.automatic){const box=viewport(),r=reading.node.getBoundingClientRect(),top=r.top<box.top+24&&!prefs.reading.vertical?r.bottom+8:box.top+8;place(layout.node,{x:.5,y:(top-box.top-8)/Math.max(1,box.height-layout.node.offsetHeight-16)})}else place(layout.node,prefs.layout);place(toggle,prefs.toggle)};
   position();if(layoutFrame)cancelAnimationFrame(layoutFrame);layoutFrame=requestAnimationFrame(()=>{layoutFrame=0;position()});
  }
  function normalized(node,x,y){const v=viewport();return {x:Math.max(0,Math.min(1,(x-v.left-8)/Math.max(1,v.width-node.offsetWidth-16))),y:Math.max(0,Math.min(1,(y-v.top-8)/Math.max(1,v.height-node.offsetHeight-16)))}}
@@ -90,19 +108,19 @@ function install(){
  movable(toggle,toggle,'toggle');
  function decorate(control,caption,menuItem=false){
   if(!originals.has(control)){const marker=document.createComment('player-toolbar-position');control.before(marker);originals.set(control,{marker,label:null})}
-  const record=originals.get(control);if(!record.label){record.label=el('span',menuItem?'player-menu-caption':'player-action-caption',caption);control.append(record.label)}
+  const record=originals.get(control);if(!record.label||record.label.parentNode!==control){record.label=el('span',menuItem?'player-menu-caption':'player-action-caption',caption);control.append(record.label)}
   control.classList.add(menuItem?'player-menu-command':'player-command');
  }
  function move(id,destination,caption,menuItem=false){const control=document.getElementById(id);if(!control)return;decorate(control,caption,menuItem);destination.append(control)}
  function reconcile(){
   queued=false;const next=player();
   if(!next){if(active){active=false;setArrange(false);root.hidden=true;menu.close();document.body.classList.remove('archives-player-ui','player-arrange-cells','player-icons-hidden');for(const [control,record]of originals){record.label?.remove();control.classList.remove('player-command','player-menu-command');if(record.marker.isConnected)record.marker.replaceWith(control)}originals.clear()}return}
-  active=true;root.hidden=false;document.body.classList.add('archives-player-ui');load();
+  active=true;root.hidden=false;document.body.classList.add('archives-player-ui');window.ArchivesPlayerNotebook?.refresh();load();
   move('archives-dossier-open',reading.actions,'Dossier');move('quick-player-journal',reading.actions,'Journal');move('quick-player-notes',reading.actions,'Notes');
   owlControl=document.querySelector('#canvas-integrations-dock .canvas-integration-item:first-child button')||owlControl;if(owlControl?.isConnected&&!owlControl.disabled){decorate(owlControl,'Carte');reading.actions.append(owlControl)}
   if(!api.getState().strictReadOnly)move('quick-mode-switch',reading.actions,'Mode MJ');
   reading.actions.append(more);
-  move('quick-player-center-cell',layout.actions,'Centrer');move('quick-player-layout',layout.actions,'Organiser');move('quick-player-center-all',layout.actions,'Vue globale');const globalView=document.getElementById('quick-player-center-all');if(globalView&&!globalView.dataset.playerFit){globalView.dataset.playerFit='true';globalView.addEventListener('click',event=>{if(active){event.preventDefault();event.stopImmediatePropagation();fitView()}},true)}move('quick-grid-toggle',menuActions,'Afficher ou masquer la grille',true);move('quick-player-undo',menuActions,'Annuler mon déplacement',true);
+  move('quick-player-center-cell',layout.actions,'Centrer');move('quick-player-layout',layout.actions,'Organiser');move('quick-player-center-all',layout.actions,'Vue globale');move('quick-grid-toggle',menuActions,'Afficher ou masquer la grille',true);move('quick-player-undo',menuActions,'Annuler mon déplacement',true);
   refreshScenes();paint();updateZoom();
  }
  function schedule(){if(!queued){queued=true;requestAnimationFrame(reconcile)}}

@@ -1,9 +1,9 @@
 import OBR, { buildImage, buildImageUpload } from "../../assets/owlbear-transfer-sdk-v55.mjs";
-import { localRoom } from "../v57/room.mjs?v=4560";
-import {isPacket,packet,validRoomId,validSession} from "../v56/link.mjs?v=4560";
-import { artworkBlob,assetKey,blobDigest,privateArtworkStore,sceneKey,validArtwork } from "./model.mjs?v=4560";
+import { localRoom } from "../v57/room.mjs?v=4570";
+import {isPacket,packet,validRoomId,validSession} from "../v56/link.mjs?v=4570";
+import { artworkBlob,assetKey,blobDigest,privateArtworkStore,sceneKey,validArtwork } from "./model.mjs?v=4570";
 import { normalizeCrop } from "../v61/token-crop.mjs";
-import {safeHostedImage} from "./hosted-assets.mjs?v=4560";
+import {safeHostedImage} from "./hosted-assets.mjs?v=4570";
 
 // Only the GM talks to this local channel. Unrevealed artwork never enters a
 // shared item, broadcast, room metadata, public bucket, or player snapshot.
