@@ -43,6 +43,7 @@ function install(){
   const stop=()=>{clearTimeout(timer);timer=null};
   control.addEventListener('pointerdown',e=>{if(e.button!==0)return;stop();repeated=false;control.setPointerCapture(e.pointerId);timer=setTimeout(function tick(){if(!active||prefs.hidden)return;repeated=true;step(direction);timer=setTimeout(tick,130)},380)});
   control.addEventListener('click',e=>{if(repeated){e.preventDefault();e.stopImmediatePropagation();repeated=false}},true);
+  control.addEventListener('contextmenu',e=>e.preventDefault());
   for(const name of ['pointerup','pointercancel','lostpointercapture','blur'])control.addEventListener(name,stop);
  }
  repeat(minus,-1);repeat(plus,1);
@@ -72,7 +73,7 @@ function install(){
  function normalized(node,x,y){const v=viewport();return {x:Math.max(0,Math.min(1,(x-v.left-8)/Math.max(1,v.width-node.offsetWidth-16))),y:Math.max(0,Math.min(1,(y-v.top-8)/Math.max(1,v.height-node.offsetHeight-16)))}}
  function movable(grip,node,name){
   let drag,suppress=false;
-  grip.addEventListener('pointerdown',e=>{if(!active||e.button!==0)return;e.preventDefault();const r=node.getBoundingClientRect();drag={id:e.pointerId,x:e.clientX,y:e.clientY,left:r.left,top:r.top,moved:false};node.dataset.dragging='true';grip.setPointerCapture(e.pointerId)});
+  grip.addEventListener('pointerdown',e=>{if(!active||e.button!==0)return;e.preventDefault();suppress=false;const r=node.getBoundingClientRect();drag={id:e.pointerId,x:e.clientX,y:e.clientY,left:r.left,top:r.top,moved:false};node.dataset.dragging='true';grip.setPointerCapture(e.pointerId)});
   grip.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;e.preventDefault();const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.hypot(dx,dy)>5)drag.moved=true;if(!drag.moved)return;const p=dockPosition({x:drag.left+dx,y:drag.top+dy},node.offsetWidth,node.offsetHeight,viewport());node.style.left=p.x+'px';node.style.top=p.y+'px'});
   function end(e){
    if(!drag||e.pointerId!==drag.id)return;const moved=drag.moved;drag=null;delete node.dataset.dragging;if(!moved)return;suppress=e.type==='pointerup';
@@ -81,7 +82,7 @@ function install(){
    const p=dockPosition({x:cx-node.offsetWidth/2,y:cy-node.offsetHeight/2},node.offsetWidth,node.offsetHeight,v);Object.assign(prefs[name],normalized(node,p.x,p.y));paint();save();
   }
   grip.addEventListener('pointerup',end);grip.addEventListener('pointercancel',end);grip.addEventListener('lostpointercapture',end);
-  grip.addEventListener('click',e=>{if(suppress){e.preventDefault();e.stopImmediatePropagation();suppress=false}},true);
+  grip.addEventListener('click',e=>{if(suppress&&e.detail!==0){e.preventDefault();e.stopImmediatePropagation()}suppress=false},true);
   grip.addEventListener('keydown',e=>{const shifts={ArrowLeft:[-12,0],ArrowRight:[12,0],ArrowUp:[0,-12],ArrowDown:[0,12]},shift=shifts[e.key];if(!shift)return;e.preventDefault();const r=node.getBoundingClientRect(),p=dockPosition({x:r.x+shift[0],y:r.y+shift[1]},r.width,r.height,viewport());Object.assign(prefs[name],normalized(node,p.x,p.y));paint();save()});
  }
  movable(toggle,toggle,'toggle');
@@ -93,7 +94,7 @@ function install(){
  function move(id,destination,caption,menuItem=false){const control=document.getElementById(id);if(!control)return;decorate(control,caption,menuItem);destination.append(control)}
  function reconcile(){
   queued=false;const next=player();
-  if(!next){if(active){active=false;arranging=false;root.hidden=true;menu.close();document.body.classList.remove('archives-player-ui','player-arrange-cells','player-icons-hidden');for(const [control,record]of originals){record.label?.remove();control.classList.remove('player-command','player-menu-command');if(record.marker.isConnected)record.marker.replaceWith(control)}originals.clear()}return}
+  if(!next){if(active){active=false;setArrange(false);root.hidden=true;menu.close();document.body.classList.remove('archives-player-ui','player-arrange-cells','player-icons-hidden');for(const [control,record]of originals){record.label?.remove();control.classList.remove('player-command','player-menu-command');if(record.marker.isConnected)record.marker.replaceWith(control)}originals.clear()}return}
   active=true;root.hidden=false;document.body.classList.add('archives-player-ui');load();
   move('archives-dossier-open',reading.actions,'Dossier');move('quick-player-journal',reading.actions,'Journal');move('quick-player-notes',reading.actions,'Notes');
   owlControl=document.querySelector('#canvas-integrations-dock .canvas-integration-item:first-child button')||owlControl;if(owlControl?.isConnected&&!owlControl.disabled){decorate(owlControl,'Carte');reading.actions.append(owlControl)}
