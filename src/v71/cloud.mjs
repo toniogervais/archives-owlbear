@@ -1,6 +1,6 @@
 // Complete campaigns stay in a private, owner-only bucket. No signed/public links
 // and no campaign bytes pass through Owlbear's shared metadata or player channels.
-import {digest} from '../v72/integrity.mjs?v=4550';
+import {digest} from '../v72/integrity.mjs?v=4560';
 export const BACKUP_BUCKET = 'archives-campaign-backups';
 export const PART_BYTES = 4 * 1024 * 1024;
 const maxBytes = 2 * 1024 * 1024 * 1024;
@@ -27,7 +27,8 @@ export function validCloudRecord(row,owner,campaign) {
     row.parts.every(part => Number.isInteger(part.bytes) && part.bytes > 0 && part.bytes <= PART_BYTES && hash(part.hash)) &&
     row.parts.reduce((total,part) => total + part.bytes,0) === row.byte_size;
 }
-export function createCloud(getClient) {
+export function createCloud(getClient,{onProgress=()=>{}}={}) {
+  const progress=value=>{try{onProgress(value)}catch{}};
   async function context() {
     const client = getClient(),user = unwrap(await client.auth.getUser())?.user;
     if (!uuid(user?.id)) throw Error('Connecte-toi avec ton compte MJ dans « Comptes & campagnes ».');
@@ -119,12 +120,12 @@ export function createCloud(getClient) {
       const id = crypto.randomUUID(),prefix = ctx.user.id+'/'+campaignId+'/'+id+'/',bucket = ctx.client.storage.from(BACKUP_BUCKET),parts = [],uploaded = [];
       let publishing = false;
       try {
-        const sha256 = await digest(blob);
+        progress({operation:'upload',loaded:0,total:blob.size});const sha256 = await digest(blob);
         for (let offset = 0;offset < blob.size;offset += PART_BYTES) {
           await same(ctx,check);const part = blob.slice(offset,offset+PART_BYTES),path = prefix+parts.length;
           const partHash = await digest(part);
           unwrap(await bucket.upload(path,part,{contentType:'application/octet-stream',upsert:false,cacheControl:'0'}));
-          uploaded.push(path);parts.push({bytes:part.size,hash:partHash});
+          uploaded.push(path);parts.push({bytes:part.size,hash:partHash});progress({operation:'upload',loaded:Math.min(offset+part.size,blob.size),total:blob.size});
         }
         await same(ctx,check);publishing = true;
         const args = {p_campaign_id:campaignId,p_id:id,p_expected_revision:expectedRevision,p_parts:parts,p_sha256:sha256,p_fingerprint:fingerprint,p_summary:summary};
@@ -148,13 +149,13 @@ export function createCloud(getClient) {
     async download(campaignId,id,check = async () => {}) {
       const {ctx,rows,revision} = await versions(campaignId),row = rows.find(row => row.id === id);
       if (!row) throw Error('Cette version n’est plus disponible. Actualise la liste des sauvegardes.');
-      const parts = [],bucket = ctx.client.storage.from(BACKUP_BUCKET);
+      const parts = [],bucket = ctx.client.storage.from(BACKUP_BUCKET);let received=0;progress({operation:'download',loaded:0,total:row.byte_size});
       for (let index = 0;index < row.parts.length;index++) {
         await same(ctx,check);
         const part = unwrap(await bucket.download(ctx.user.id+'/'+campaignId+'/'+row.id+'/'+index));
         if (!(part instanceof Blob) || part.size !== row.parts[index].bytes || await digest(part) !== row.parts[index].hash)
           throw Error('La sauvegarde reçue est incomplète ou endommagée. Aucune restauration n’a été faite.');
-        parts.push(part);
+        parts.push(part);received+=part.size;progress({operation:'download',loaded:received,total:row.byte_size});
       }
       const blob = new Blob(parts,{type:'application/octet-stream'});
       if (blob.size !== row.byte_size || await digest(blob) !== row.sha256) throw Error('La sauvegarde est endommagée. Aucune restauration n’a été faite.');

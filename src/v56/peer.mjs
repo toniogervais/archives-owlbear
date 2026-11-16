@@ -1,4 +1,4 @@
-import { randomHex } from "./link.mjs?v=4550";
+import { randomHex } from "./link.mjs?v=4560";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();

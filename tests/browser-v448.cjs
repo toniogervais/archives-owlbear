@@ -23,14 +23,14 @@ async function downloadBytes(download){const stream=await download.createReadStr
   await chooser.setFiles({name:'scenario.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(scenario))});
   await editor(gm).locator('.node-cell[data-id="secret"]').waitFor();
   await app(gm).evaluate(async()=>{const {libraryRequest}=await import('./src/v60/request.mjs');await libraryRequest({action:'import',file:new File(['ORIGINAL_PRIVE_448'],'original.txt',{type:'text/plain'}),name:'Document privé',cellKey:'cell:act:secret'})});
-  await editor(gm).locator('#canvas-save-icon').click();
+  await editor(gm).locator('#canvas-save-icon').click();await editor(gm).locator('#archives-backup-more').evaluate(e=>e.open=true);
   await online(gm).getByLabel('Nom de la nouvelle campagne en ligne').fill('Mes sauvegardes');
   await online(gm).getByRole('button',{name:'Sauvegarder dans une nouvelle campagne',exact:true}).click();
   await until(()=>cloud.versions.length===1,'first cloud copy');await online(gm).getByRole('button',{name:'Activer la sauvegarde automatique',exact:true}).click();
   for(let n=2;n<=3;n++){
    await backup(gm).locator('header button').click();
    await app(gm).evaluate(n=>DuneApp.importCatalogCell({title:'Ajout '+n,category:'objet',clues:[],desc:'',w:250,h:160}),n);
-   await editor(gm).locator('#canvas-save-icon').click();await online(gm).getByRole('button',{name:'Enregistrer maintenant',exact:true}).click();
+   await editor(gm).locator('#canvas-save-icon').click();await editor(gm).locator('#archives-backup-more').evaluate(e=>e.open=true);await online(gm).getByRole('button',{name:'Enregistrer en ligne',exact:true}).click();
    await until(()=>cloud.versions.length===n,'checkpoint '+n);
   }
   await online(gm).getByRole('button',{name:'Actualiser',exact:true}).click();await online(gm).locator('[data-backup-id]').last().waitFor();

@@ -1,6 +1,6 @@
 // A GM keeping the main Archives open must publish without opening a second
 // editor inside Owlbear. Only the sender's explicit public projection is used.
-import {editEvent,isPacket,packet,validRoomId,validSession} from '../v56/link.mjs?v=4550';
+import {editEvent,isPacket,packet,validRoomId,validSession} from '../v56/link.mjs?v=4560';
 export function installMainPublic(api) {
   let background,room='',session='',timer,closed=false,mediaPublished=false;
   const requests=new Map();

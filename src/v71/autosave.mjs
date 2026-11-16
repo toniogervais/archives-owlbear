@@ -47,7 +47,7 @@ export function autoBackup({cloud,capture,read,write,changed = () => {},timers =
   return {
     status:() => status,
     binding:() => binding && {...binding},
-    change() { version++;schedule(); },
+    change() { version++;if(binding&&!binding.enabled&&!running&&!closed&&!held&&!blocked)report('pending');schedule(); },
     save,
     manualSave:()=>save(true),
     async bind(value,options={}) {

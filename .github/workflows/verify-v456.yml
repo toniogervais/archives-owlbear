@@ -1,0 +1,48 @@
+name: Vérification V4.56 — sessions complètes et lecture mobile
+on:
+  push:
+    branches: ['codex/v456-*', 'main']
+  workflow_dispatch:
+jobs:
+  verify:
+    if: github.ref != 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: node tests/syntax.cjs
+      - run: node --check src/v78/responsive.mjs && node --check src/v78/cloud-account.mjs && node --check src/v77/player-ui.mjs && node --check src/v71/cloud-ui.mjs
+      - run: node --test tests/session-v456.test.mjs tests/cloud-v446.test.mjs tests/large-backup-v449.test.mjs tests/large-backup-sql-v449.test.mjs tests/backup-management-v448.test.mjs tests/mobile-v455.test.mjs
+      - id: browser
+        run: npx playwright install chromium
+      - run: node tests/browser-v456.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
+      - run: node tests/browser-v455.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
+      - run: node tests/browser-v446.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
+      - run: node tests/browser-v448.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
+      - run: node tests/browser-v453.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: archives-v456-checks
+          path: |
+            /tmp/archives-v456-*.png
+            /tmp/archives-v455-*.png
+          if-no-files-found: ignore
+  published:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - run: python3 tests/verify-published.py

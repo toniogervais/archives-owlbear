@@ -1,12 +1,12 @@
-import {sheet,button,element,requireGM,notice} from './ui.mjs?v=4550';
-import {campaignRequest} from '../v71/campaign-io.mjs?v=4550';
-import {mountCloudBackups,pauseCloudBackup} from '../v71/cloud-ui.mjs?v=4550';
+import {sheet,button,element,requireGM,notice} from './ui.mjs?v=4560';
+import {campaignRequest} from '../v71/campaign-io.mjs?v=4560';
+import {mountCloudBackups,pauseCloudBackup} from '../v71/cloud-ui.mjs?v=4560';
 import {downloadArchive} from '../v71/download.mjs';
 const size = bytes => (bytes / 1024 / 1024).toLocaleString('fr',{maximumFractionDigits:1}) + ' Mo';
 export function openBackup() {
   requireGM();const view = sheet('archives-campaign-backup','Sauvegardes','Campagne privée');
   const {content,dialog,status} = view;
-  content.append(element('h3','Sauvegarde sur l’appareil'),element('p','Télécharge un fichier complet .archives à conserver sur ce PC, cette tablette ou ce téléphone. Il comprend le scénario, le journal MJ, les bibliothèques et les cadrages des tokens.','studio-hint'));
+  content.append(element('h3','Ouvrir une copie de cet appareil'),element('p','Choisis un fichier .archives pour retrouver ta session complète, même sans connexion Internet.','studio-hint'));
   const tools = element('div',null,'studio-actions'),preview = element('section');preview.hidden = true;
   const input = element('input');input.type = 'file';input.accept = '.archives';input.hidden = true;
   const download = button('Sauvegarder sur cet appareil',async () => {
@@ -15,11 +15,11 @@ export function openBackup() {
       const result = await campaignRequest({action:'export',snapshot:window.ArchivesRelay.snapshot()});
       if (!dialog.open) return;
       downloadArchive(result.blob,'Campagne_Archives_'+new Date().toISOString().replace(/[:.]/g,'-'));
-      status.textContent = 'Sauvegarde prête : '+result.summary.files+' fichier(s), '+result.summary.images+' image(s), '+size(result.blob.size)+'.';
+      status.textContent = 'Copie complète téléchargée : '+result.summary.cells+' cellule(s), '+result.summary.files+' document(s), '+result.summary.images+' image(s), '+size(result.blob.size)+'. Conserve ce fichier .archives pour reprendre ta session.';status.dataset.result='saved';
     } catch (error) { status.textContent = error.message; }
     finally { view.busy(false); }
   },'primary');
-  const choose = button('Restaurer une campagne…',() => input.click());
+  const choose = button('Ouvrir un fichier .archives…',() => input.click());
   const recover = button('Copie précédant la dernière restauration',() => { void inspect({action:'inspect-recovery'}); });
   tools.append(download,choose);content.append(tools,input,preview);
   content.append(element('p','Les scènes et cartes natives d’Owlbear se conservent dans Owlbear. La sauvegarde inclut la bibliothèque d’images de cet appareil. Le fichier .archives est privé : il contient aussi les secrets du MJ.','studio-hint'));
@@ -34,6 +34,7 @@ export function openBackup() {
       for (const [label,value] of [['Actes',result.summary.boards],['Cellules',result.summary.cells],['Documents',result.summary.files],['Images',result.summary.images]]) {
         const box = element('span');box.append(element('strong',String(value)),document.createTextNode(label));counts.append(box);
       }
+      content.prepend(preview);
       preview.append(counts,element('p','Le scénario ouvert sera remplacé avec son état de révélation. Les bibliothèques et cadrages seront fusionnés. Les présentations de médias seront arrêtées. Une copie de la campagne actuelle sera conservée sur cet appareil avant la restauration.','studio-hint'));
       const confirm = button('Restaurer cette campagne',async () => {
         view.busy(true);status.textContent = 'Copie de sécurité puis restauration…';
@@ -46,7 +47,7 @@ export function openBackup() {
           if (dialog.open) dialog.close();notice('Campagne restaurée. Les secrets et les fichiers restent côté MJ.');
         } catch (error) { status.textContent = error.message; }
         finally { window.dispatchEvent(new CustomEvent('archives:restore-end',{detail:{safe:restored}}));view.busy(false); }
-      },'primary');preview.append(confirm);preview.hidden = false;
+      },'primary');preview.append(confirm,button('Annuler l’ouverture',()=>{hooks.cancelled?.();preview.hidden=true;status.textContent='Ouverture annulée. La session actuelle est conservée.';}));preview.hidden = false;preview.scrollIntoView({block:'start'});
       status.textContent = 'Sauvegarde vérifiée : '+size(result.summary.bytes)+'. Aucun changement n’a encore été fait.';
     } catch (error) { status.textContent = error.message; }
     finally { view.busy(false); }

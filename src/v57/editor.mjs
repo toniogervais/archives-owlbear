@@ -1,7 +1,7 @@
-import { createNotice, editEvent, isPacket, packet } from "../v56/link.mjs?v=4550";
+import { createNotice, editEvent, isPacket, packet } from "../v56/link.mjs?v=4560";
 import { installOwlPlayerInterface, installOwlSettings } from "../v59/settings.mjs?v=4210";
-import { installPlayerNotebook } from '../v64/player-notebook.mjs?v=4550';
-import {installScreenControls} from '../v65/screens.mjs?v=4550';
+import { installPlayerNotebook } from '../v64/player-notebook.mjs?v=4560';
+import {installScreenControls} from '../v65/screens.mjs?v=4560';
 
 export function installOwlEditor(api) {
   installScreenControls();
@@ -27,7 +27,7 @@ export function installOwlEditor(api) {
       "Importer un scénario", () => { notice.hide(); document.getElementById("up-json").click(); },
       "Nouveau scénario", () => { notice.hide(); window.DuneApp.startNewScenario(false); },
       "Sauvegardes en ligne", () => {
-        void import('../v63/backup-ui.mjs?v=4550').then(module => { notice.hide();module.openBackup(); })
+        void import('../v63/backup-ui.mjs?v=4560').then(module => { notice.hide();module.openBackup(); })
           .catch(error => notice.show(error.message));
       });
   }

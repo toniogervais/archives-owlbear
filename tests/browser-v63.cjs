@@ -85,7 +85,7 @@ async function closePane(page,id){await pane(page,id).locator('header button').c
   assert.ok(!bytes.toString().includes('AUTRE_COMPTE_285'));
   debug('reject corrupt backup');
   const corrupted=Buffer.from(bytes);corrupted[corrupted.length-1]^=1;
-  let [restoreChooser]=await Promise.all([gm.waitForEvent('filechooser'),backup().getByRole('button',{name:'Restaurer une campagne…',exact:true}).click()]);
+  let [restoreChooser]=await Promise.all([gm.waitForEvent('filechooser'),backup().getByRole('button',{name:'Ouvrir un fichier .archives…',exact:true}).click()]);
   await restoreChooser.setFiles({name:'corrompue.archives',mimeType:'application/octet-stream',buffer:corrupted});
   await backup().locator('.studio-status').filter({hasText:'endommagé'}).waitFor();
   assert.equal(await app(gm).evaluate(()=>window.DuneApp.getState().nodes.length),3);
@@ -93,7 +93,7 @@ async function closePane(page,id){await pane(page,id).locator('header button').c
   await app(gm).evaluate(()=>window.DuneApp.importCatalogCell({title:'APRES_SAUVEGARDE_847',category:'objet',clues:[],desc:'Ajout plus récent',w:250,h:160}));
   await addPrivateFile(gm,'AJOUT_RECENT_393.txt','Fichier ajouté après la copie.');
   await editor(gm).locator('#canvas-save-icon').click();
-  [restoreChooser]=await Promise.all([gm.waitForEvent('filechooser'),backup().getByRole('button',{name:'Restaurer une campagne…',exact:true}).click()]);
+  [restoreChooser]=await Promise.all([gm.waitForEvent('filechooser'),backup().getByRole('button',{name:'Ouvrir un fichier .archives…',exact:true}).click()]);
   await restoreChooser.setFiles({name:'campagne.archives',mimeType:'application/octet-stream',buffer:bytes});
   await backup().getByRole('button',{name:'Restaurer cette campagne',exact:true}).waitFor();
   assert.equal(await app(gm).evaluate(()=>window.DuneApp.getState().nodes.length),4,'inspection changes nothing');
