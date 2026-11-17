@@ -20,9 +20,11 @@ async function zoomAndPhone(browser){
   await g.waitForFunction(()=>window.ArchivesTouchCanvas?.handles);
   const geometry=()=>g.evaluate(()=>DuneApp.getState().nodes.map(({id,x,y,w,h})=>({id,x,y,w,h}))),before=await geometry(),cdp=await c.newCDPSession(g);
   const mid={x:Math.round(vp.x+220),y:Math.round(vp.y+230)},a={id:1,x:mid.x-30,y:mid.y},b={id:2,x:mid.x+30,y:mid.y};
+  console.log('MJ touch targets',await g.evaluate(({a,b})=>[a,b].map(p=>{const e=document.elementFromPoint(p.x,p.y);return {x:p.x,y:p.y,tag:e?.tagName,id:e?.id,cell:e?.closest('.node-cell')?.dataset.id};}),{a,b}));
   const touch=async(type,points)=>{await cdp.send('Input.dispatchTouchEvent',{type,touchPoints:points.map(t=>({...t,radiusX:4,radiusY:4,force:1}))});await g.waitForTimeout(35);};
   await touch('touchStart',[a]);await touch('touchStart',[a,b]);
-  const shifted={x:mid.x+21,y:mid.y+29};await touch('touchMove',[{...a,x:shifted.x-45,y:shifted.y},{...b,x:shifted.x+45,y:shifted.y}]);const pinched=await camera(g);
+  const shifted={x:mid.x+21,y:mid.y+29};for(let i=1;i<=6;i++)await touch('touchMove',[{...a,x:a.x+6*i/6,y:a.y+29*i/6},{...b,x:b.x+36*i/6,y:b.y+29*i/6}]);const pinched=await camera(g);
+  console.log('MJ pinch',pinched,await g.evaluate(()=>({active:DuneApp.getState().isNavigatingCanvas,touch:!!window.ArchivesTouchCanvas?.handles,body:document.body.className,dialogs:[...document.querySelectorAll('dialog[open],.modal-overlay.open')].map(e=>e.id)})));
   near(pinched.zoom,initial.zoom*1.5);near((mid.x-vp.x-initial.panX)/initial.zoom,(shifted.x-vp.x-pinched.panX)/pinched.zoom);near((mid.y-vp.y-initial.panY)/initial.zoom,(shifted.y-vp.y-pinched.panY)/pinched.zoom);
   await touch('touchEnd',[]);assert.deepEqual(await geometry(),before,'MJ pinch leaves cell positions and sizes intact');
   await p.goto(archives+'/archives-app-v64-v55.html?ro=1');await p.evaluate(s=>ArchivesRelay.apply(s),scenario);await p.locator('#archives-player-toolbar-bar').waitFor();
