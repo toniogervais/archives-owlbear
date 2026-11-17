@@ -1,7 +1,7 @@
 import {pinchCamera} from './geometry.mjs?v=4590';
 function install(){
  const viewport=document.getElementById('viewport'),api=window.DuneApp;if(!viewport||!api?.setCanvasCamera)return;
- let gesture=null,pending=null,frame=0;const canvasTouches=new Set();
+ let gesture=null,pending=null,frame=0,directTap=null;const canvasTouches=new Set();
  const camera=()=>{const s=api.getState();return {panX:s.panX,panY:s.panY,zoom:s.zoom}};
  const isPlayer=()=>{const s=api.getState();return s.playerMode||s.strictReadOnly};
  const touches=event=>Array.from(event.touches).filter(t=>canvasTouches.has(t.identifier));
@@ -11,7 +11,7 @@ function install(){
  function draw(value){pending=value;if(!frame)frame=requestAnimationFrame(()=>{frame=0;if(pending){api.setCanvasCamera(pending);pending=null}})}
  function claim(event){event.preventDefault();event.stopImmediatePropagation()}
  function startPinch(event,list){
-  claim(event);flush();api.setCanvasInteraction(true);window.dispatchEvent(new Event('archives:cancel-cell-touch'));
+  directTap=null;claim(event);flush();api.setCanvasInteraction(true);window.dispatchEvent(new Event('archives:cancel-cell-touch'));
   viewport.querySelectorAll('.peek-bg-only').forEach(cell=>cell.classList.remove('peek-bg-only'));
   const p=pair(list);gesture={kind:'pinch',camera:camera(),...p};
  }
@@ -29,10 +29,12 @@ function install(){
   const target=list[0].target,cell=target.closest('.node-cell'),interactive=target.closest('button,a,input,textarea,select,[contenteditable="true"],.resize-handle,.sub-cell-card,.child-chip,.context-menu');
   // Player cells move immediately when touched; background touches pan instead.
   // Adding a second finger cancels the cell drag and starts a canvas pinch.
-  if(interactive||cell)return;
-  claim(event);api.closeContextMenus();startPan(list[0],cell?.dataset.id||null);
+  if(interactive)return;
+  if(cell){if(isPlayer())directTap={id:cell.dataset.id,touch:list[0].identifier,x:list[0].clientX,y:list[0].clientY,time:performance.now()};return;}
+  directTap=null;claim(event);api.closeContextMenus();startPan(list[0],null);
  },{capture:true,passive:false});
  window.addEventListener('touchmove',event=>{
+  if(directTap&&Array.from(event.changedTouches).some(t=>t.identifier===directTap.touch&&Math.hypot(t.clientX-directTap.x,t.clientY-directTap.y)>6))directTap=null;
   if(!gesture)return;const list=touches(event);if(!list.length)return;claim(event);
   if(list.length>=2){
    const p=pair(list);if(gesture.kind!=='pinch'||gesture.ids!==p.ids){startPinch(event,list);return}
@@ -46,14 +48,15 @@ function install(){
  },{capture:true,passive:false});
  window.addEventListener('touchend',event=>{
   for(const touch of event.changedTouches)canvasTouches.delete(touch.identifier);
-  if(!gesture)return;claim(event);flush();const list=touches(event);
+  if(!gesture){const tap=directTap;directTap=null;if(tap&&event.touches.length===0&&event.changedTouches.some(t=>t.identifier===tap.touch)&&performance.now()-tap.time<450&&isPlayer())api.openPlayerCell(tap.id);return;}
+  directTap=null;claim(event);flush();const list=touches(event);
   if(list.length>=2){if(gesture.kind!=='pinch'||gesture.ids!==pair(list).ids)startPinch(event,list)}
   else if(list.length===1)startPan(list[0],null);else finish(false);
  },{capture:true,passive:false});
- window.addEventListener('touchcancel',event=>{for(const touch of event.changedTouches)canvasTouches.delete(touch.identifier);if(gesture){claim(event);finish(true)}},{capture:true,passive:false});
- window.addEventListener('blur',()=>{canvasTouches.clear();finish(true)});window.addEventListener('pagehide',()=>{canvasTouches.clear();finish(true)},{once:true});
- document.addEventListener('visibilitychange',()=>{if(document.hidden){canvasTouches.clear();finish(true)}});
- window.addEventListener('resize',()=>{canvasTouches.clear();finish(true)});
+ window.addEventListener('touchcancel',event=>{directTap=null;for(const touch of event.changedTouches)canvasTouches.delete(touch.identifier);if(gesture){claim(event);finish(true)}},{capture:true,passive:false});
+ window.addEventListener('blur',()=>{directTap=null;canvasTouches.clear();finish(true)});window.addEventListener('pagehide',()=>{directTap=null;canvasTouches.clear();finish(true)},{once:true});
+ document.addEventListener('visibilitychange',()=>{if(document.hidden){directTap=null;canvasTouches.clear();finish(true)}});
+ window.addEventListener('resize',()=>{directTap=null;canvasTouches.clear();finish(true)});
  window.ArchivesTouchCanvas={handles:true};
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();

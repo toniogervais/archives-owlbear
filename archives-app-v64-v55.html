@@ -3504,9 +3504,6 @@ window.DuneApp = (function() {
       }
       if (moved) saveState();
       finishPlayerInteraction();
-      // A light tap still opens the player's cell details. A drag never does,
-      // and a cancelled pinch or interrupted gesture must not open a dialog.
-      if (isTouch && !moved && !cancelled && ev && ev.type === 'touchend' && (state.playerMode || state.strictReadOnly)) DuneApp.openPlayerCell(node.id);
     }
 
     function mouseMoveHandler(ev) { onMove(ev.clientX, ev.clientY); }
@@ -6029,7 +6026,7 @@ window.DuneApp = (function() {
 
     openPlayerTab: function() {
       var baseUrl = window.location.href.split("?")[0].split("#")[0];
-      window.open(baseUrl + "?ro=1&v=4610" + (state.liveRoomId ? ("&room=" + encodeURIComponent(state.liveRoomId)) : ""), "_blank");
+      window.open(baseUrl + "?ro=1&v=4620" + (state.liveRoomId ? ("&room=" + encodeURIComponent(state.liveRoomId)) : ""), "_blank");
     },
 
     exportPlayerProgression: function() {

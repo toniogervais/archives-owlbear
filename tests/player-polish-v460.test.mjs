@@ -42,8 +42,11 @@ test('Player cells drag without any toolbar mode or duplicated settings',()=>{
  const touch=fs.readFileSync('src/v77/touch-canvas.mjs','utf8');
  assert.ok(touch.includes('if(interactive||cell)return;'));
  assert.ok(!touch.includes('ArchivesPlayerUI?.arranging'));
- assert.ok(html.includes("if (isTouch && !moved && !cancelled && ev && ev.type === 'touchend'"));
- assert.ok(html.includes('DuneApp.openPlayerCell(node.id)'));
+ assert.ok(touch.includes('directTap={id:cell.dataset.id'));
+ assert.ok(touch.includes('api.openPlayerCell(tap.id)'));
+ assert.ok(touch.includes('directTap=null;claim(event)'));
+ assert.ok(html.includes('function onCellPressed(node, elCell, startX, startY, isTouch)'));
+
 });
 test('Redundant player instructions are absent from viewers',()=>{
  assert.doesNotMatch(fs.readFileSync('media-view-v60.html','utf8'),/Lecture sur ton appareil/);
