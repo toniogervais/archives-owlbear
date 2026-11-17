@@ -40,7 +40,8 @@ test('Player cells drag without any toolbar mode or duplicated settings',()=>{
  assert.ok(css.includes('body.archives-player-ui .node-cell{cursor:move}'));
  assert.ok(css.includes('overflow-x:auto'));
  const touch=fs.readFileSync('src/v77/touch-canvas.mjs','utf8');
- assert.ok(touch.includes('if(interactive||cell)return;'));
+ assert.ok(touch.includes('if(interactive)return;'));
+ assert.ok(touch.includes('if(cell){if(isPlayer())directTap='));
  assert.ok(!touch.includes('ArchivesPlayerUI?.arranging'));
  assert.ok(touch.includes('directTap={id:cell.dataset.id'));
  assert.ok(touch.includes('api.openPlayerCell(tap.id)'));

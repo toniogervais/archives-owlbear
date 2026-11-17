@@ -46,7 +46,14 @@ async function inBounds(p){return editor(p).locator('#archives-player-tools').ev
   await app(p).waitForFunction(()=>!DuneApp.getState().isNavigatingCanvas&&!DuneApp.getState().pendingPlayerView&&DuneApp.getState().nodes.find(n=>n.id==='n').desc.includes('Mise à jour pendant le zoom.'));
   assert.deepEqual(await layout(p),before);assert.equal(await app(p).evaluate(()=>visualViewport.scale),1,'the gesture zooms the canvas, not the browser page');
   await app(p).evaluate(c=>DuneApp.setCanvasCamera(c,true),initial);const tapCell=await editor(p).locator('.node-cell[data-id="n"]').boundingBox();
-  await touch(cdp,'touchStart',[{id:1,x:tapCell.x+110,y:tapCell.y+100}]);await touch(cdp,'touchEnd',[]);await editor(p).locator('#player-cell-detail.open').waitFor();
+  await app(p).evaluate(()=>{
+   window.__archivesTapLog=[];const events=['touchstart','touchmove','touchend','mousedown','mouseup','click'];
+   for(const phase of [true,false])for(const name of events)window.addEventListener(name,e=>{if(window.__archivesTapLog.length>=40)return;window.__archivesTapLog.push({name,phase,target:e.target?.className?.baseVal||e.target?.className||e.target?.tagName,cell:e.target?.closest?.('.node-cell')?.dataset.id||null,touches:e.touches?.length,drag:DuneApp.getState().isDraggingNode?.id||null});},phase);
+   const original=DuneApp.openPlayerCell;DuneApp.openPlayerCell=function(id){window.__archivesTapLog.push({name:'OPEN',id});return original.call(this,id)};
+  });
+  await touch(cdp,'touchStart',[{id:1,x:tapCell.x+110,y:tapCell.y+100}]);await touch(cdp,'touchEnd',[]);
+  console.log('TAP_TRACE',JSON.stringify(await app(p).evaluate(()=>({log:window.__archivesTapLog,opened:document.querySelector('#player-cell-detail')?.className,target:document.elementFromPoint(170,220)?.className}))));
+  await editor(p).locator('#player-cell-detail.open').waitFor();
   assert.ok(await editor(p).locator('#player-cell-detail .pcd-description').evaluate(e=>parseFloat(getComputedStyle(e).fontSize)>=16));assert.ok(!(await editor(p).locator('#player-cell-detail').innerText()).includes('DESCRIPTION_MJ_PRIVEE_455'));await editor(p).locator('#player-cell-detail .pcd-close').tap();
   assert.equal(await editor(p).locator('#archives-player-zoom-in,#archives-player-zoom-out,#archives-player-zoom-value').count(),0,'the toolbar has no zoom buttons or percentage');
   assert.equal(await editor(p).locator('#archives-player-display-open').count(),0,'the unnecessary three-dot menu is removed');
