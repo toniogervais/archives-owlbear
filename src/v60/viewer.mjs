@@ -67,7 +67,7 @@ async function start() {
       if(mime==='text/plain'){content=document.createElement('pre');content.textContent=await data.blob.text();content.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;user-select:text';}
       else if(mime==='application/pdf'){content=document.createElement('object');content.type=mime;content.data=url;content.style.cssText='width:100%;height:70dvh;background:white';const link=document.createElement('a');link.href=url;link.download='document.pdf';link.textContent='Enregistrer le PDF pour le lire';content.append(link);}
       else {content=document.createElement('img');content.src=url;content.alt=data.publication.title;content.style.cssText='width:100%;height:70dvh;object-fit:contain';}
-      if(closed||version!==epoch||closing)return;$('media').replaceChildren(content);fade($('media'),0,1);$('play').hidden=true;$('status').textContent='Document présenté par le MJ. Ferme-le avec la croix en haut à droite.';return;
+      if(closed||version!==epoch||closing)return;$('media').replaceChildren(content);fade($('media'),0,1);$('play').hidden=true;$('status').textContent='';return;
     }
     media = document.createElement(data.publication.mime.startsWith("audio/") ? "audio" : "video");
     media.controls = true;media.preload = "auto";media.volume = 0.65;media.playsInline = true;

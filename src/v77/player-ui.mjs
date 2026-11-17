@@ -3,7 +3,7 @@ import {isPacket} from '../v56/link.mjs?v=4590';
 import {dockPosition,zoomCamera} from './geometry.mjs?v=4590';
 const el=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node};
 const player=()=>{const s=window.DuneApp?.getState?.();return !!s&&(s.playerMode||s.strictReadOnly)};
-const icons={minus:'M5 12h14',plus:'M5 12h14M12 5v14',fit:'M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5M8 8h8v8H8z',more:'M4 12h.01M12 12h.01M20 12h.01',eye:'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z M15 12a3 3 0 1 0-6 0 3 3 0 0 0 6 0'};
+const icons={fit:'M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5M8 8h8v8H8z',more:'M4 12h.01M12 12h.01M20 12h.01',eye:'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z M15 12a3 3 0 1 0-6 0 3 3 0 0 0 6 0'};
 function icon(name){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',icons[name]);svg.append(path);return svg}
 function button(label,text,handler){const b=el('button',null,text);b.type='button';b.setAttribute('aria-label',label);b.title=label;b.onclick=handler;return b}
 function viewport(){const v=window.visualViewport,css=getComputedStyle(document.documentElement),safe=edge=>parseFloat(css.getPropertyValue('--player-safe-'+edge))||0;return {left:(v?.offsetLeft||0)+safe('left'),top:(v?.offsetTop||0)+safe('top'),width:(v?.width||innerWidth)-safe('left')-safe('right'),height:(v?.height||innerHeight)-safe('top')-safe('bottom')}}
@@ -16,20 +16,16 @@ function install(){
  const toggleCaption=el('span',null,'Icônes');toggle.append(toggleCaption);
  const menu=el('dialog');menu.id='archives-player-display';menu.setAttribute('aria-label','Mon affichage');
  const header=el('header'),title=el('h2',null,'Mon affichage'),close=button('Fermer mon affichage','×',()=>menu.close());header.append(title,close);
- const note=el('p','player-display-hint','Déplace la vue avec la souris ou un doigt. Zoome avec la molette ou deux doigts. Clique sur une cellule pour la lire.');
  const zoomLabel=el('label',null,'Zoom précis'),slider=el('input');slider.type='range';slider.min=5;slider.max=500;slider.step=1;slider.id='archives-player-zoom-range';zoomLabel.htmlFor=slider.id;
  const zoomValue=el('output');zoomValue.htmlFor=slider.id;
  slider.oninput=()=>zoomTo(Number(slider.value)/100);const zoomSection=el('section','player-display-zoom');zoomSection.append(zoomLabel,zoomValue,slider);
  const menuActions=el('div','player-display-actions'),sceneSection=el('section'),sceneTitle=el('h3',null,'Scènes disponibles'),scenes=el('div','player-scenes');sceneSection.append(sceneTitle,scenes);
  const arrange=button('Déplacer mes cellules','Déplacer mes cellules',()=>setArrange(!arranging));arrange.id='archives-player-arrange';arrange.setAttribute('aria-pressed','false');
  const reset=button('Remettre la barre en place','Remettre la barre en place',()=>{prefs=defaults();paint();save();menu.close()});
- menu.append(header,note,zoomSection,menuActions,arrange,sceneSection,reset);
+ menu.append(header,zoomSection,menuActions,arrange,sceneSection,reset);
  const toolbar=makeBar('toolbar','des joueurs');
  toolbar.node.setAttribute('aria-label','Barre d’icônes des joueurs');
  const more=button('Options de mon affichage','',()=>openMenu());more.id='archives-player-display-open';more.className='player-command';more.append(icon('more'),el('span','player-action-caption','Plus'));
- const minus=button('Dézoomer la vue','',()=>step(-1)),plus=button('Zoomer la vue','',()=>step(1));
- minus.id='archives-player-zoom-out';plus.id='archives-player-zoom-in';minus.className=plus.className='player-command';minus.append(icon('minus'));plus.append(icon('plus'));
- const percent=button('Régler précisément le zoom','100 %',()=>openMenu(true));percent.id='archives-player-zoom-value';percent.className='player-command';
  root.append(toolbar.node,toggle,menu);document.body.append(root);
  // These buttons move between the original GM dock and the single player bar.
  // Resolve the current API at activation instead of depending on inline handlers.
@@ -58,16 +54,6 @@ function install(){
  function isFitted(){const c=camera();return fittedCamera&&['panX','panY','zoom'].every(key=>Math.abs(c[key]-fittedCamera[key])<1e-9)}
  function fitView(){api.resetView();api.setCanvasCamera(camera(),true);fittedCamera=camera();save()}
  function zoomTo(value){const box=document.getElementById('viewport').getBoundingClientRect();api.setCanvasCamera(zoomCamera(camera(),value,{x:box.width/2,y:box.height/2}),true)}
- function step(direction){zoomTo(camera().zoom*(direction>0?1.1:1/1.1))}
- function repeat(control,direction){
-  let timer,repeated=false;
-  const stop=()=>{clearTimeout(timer);timer=null};
-  control.addEventListener('pointerdown',e=>{if(e.button!==0)return;stop();repeated=false;control.setPointerCapture(e.pointerId);timer=setTimeout(function tick(){if(!active||prefs.hidden)return;repeated=true;step(direction);timer=setTimeout(tick,130)},380)});
-  control.addEventListener('click',e=>{if(repeated){e.preventDefault();e.stopImmediatePropagation();repeated=false}},true);
-  control.addEventListener('contextmenu',e=>e.preventDefault());
-  for(const name of ['pointerup','pointercancel','lostpointercapture','blur'])control.addEventListener(name,stop);
- }
- repeat(minus,-1);repeat(plus,1);
  function sourceScope(){const params=new URLSearchParams(location.search);return window.ArchivesPlayerScope||((api.getState().strictReadOnly?'player:':'preview:')+(api.getState().liveRoomId||params.get('room')||'local'))}
  function load(){
   const scope=sourceScope(),base='archives:player-tools:v458:'+scope,next=base+':'+orientation();if(next===storageKey)return;const scopeChanged=visibilityKey!==base+':visibility';storageKey=next;visibilityKey=base+':visibility';prefs=defaults();if(scopeChanged)fittedCamera=null;
@@ -134,7 +120,7 @@ function install(){
   owlControl=document.querySelector('#canvas-integrations-dock .canvas-integration-item:first-child button')||owlControl;if(owlControl?.isConnected&&!owlControl.disabled)decorate(owlControl,'Carte');
   placeCommands(toolbar.actions,[
    command('quick-player-center-cell','Centrer'),command('quick-player-layout','Organiser'),command('quick-player-center-all','Vue globale'),
-   minus,percent,plus,command('archives-dossier-open','Dossier'),command('quick-player-journal','Journal'),command('quick-player-notes','Notes'),
+   command('archives-dossier-open','Dossier'),command('quick-player-journal','Journal'),command('quick-player-notes','Notes'),
    owlControl?.isConnected&&!owlControl.disabled?owlControl:null,more,command('archives-home-fab','Accueil'),
    !api.getState().strictReadOnly?command('quick-mode-switch','Mode MJ'):null
   ]);
@@ -142,7 +128,7 @@ function install(){
   refreshScenes();paint();updateZoom();
  }
  function schedule(){if(!queued){queued=true;requestAnimationFrame(reconcile)}}
- function updateZoom(){if(!active)return;const value=Math.round(camera().zoom*100);if(percent.textContent!==value+' %')percent.textContent=value+' %';slider.value=String(value);zoomValue.value=value+' %';}
+ function updateZoom(){if(!active)return;const value=Math.round(camera().zoom*100);slider.value=String(value);zoomValue.value=value+' %';}
  function refreshScenes(){
   const tabs=Array.from(document.querySelectorAll('#tabs-bar .tab-btn'));sceneSection.hidden=tabs.length<2;scenes.replaceChildren(...tabs.map((tab,i)=>{const b=button('Afficher la scène '+(i+1),'Scène '+(i+1),()=>{tab.click();menu.close();api.resetView()});b.setAttribute('aria-pressed',String(tab.classList.contains('active')));return b}));
  }

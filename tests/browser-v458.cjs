@@ -40,7 +40,7 @@ async function run(browser,mode){
   await page.locator('#quick-player-layout').click();
   assert.deepEqual(await page.evaluate(()=>DuneApp.getState().nodes.map(({id,x,y})=>({id,x,y}))),original,'organizing a player view preserves GM positions');
   const layout=await page.evaluate(()=>JSON.stringify(DuneApp.getState().playerLayout));assert.notEqual(layout,'{}','player organization is applied');
-  const z=await page.evaluate(()=>DuneApp.getState().zoom);await page.locator('#archives-player-zoom-in').click();assert.ok(await page.evaluate(z=>DuneApp.getState().zoom>z,z));
+  await page.locator('#archives-player-display-open').click();await page.locator('#archives-player-zoom-range').evaluate(e=>{e.value='118';e.dispatchEvent(new Event('input',{bubbles:true}))});assert.ok(await page.evaluate(()=>Math.abs(DuneApp.getState().zoom-1.18)<.001));await page.getByRole('button',{name:'Fermer mon affichage',exact:true}).click();
   await page.locator('#quick-player-center-cell').click();await page.locator('#quick-player-center-all').click();
   await page.getByRole('button',{name:'Réduire la barre des joueurs',exact:true}).click();assert.equal(await page.locator('.player-bar-actions').isVisible(),false);
   await page.getByRole('button',{name:'Déployer la barre des joueurs',exact:true}).click();
@@ -52,7 +52,7 @@ async function run(browser,mode){
   if(mode==='preview'){
    await page.locator('#quick-mode-switch').click();await page.locator('#archives-player-tools').waitFor({state:'hidden'});assert.equal(await page.locator('#quick-icon-dock').isVisible(),true);
    const popup=page.waitForEvent('popup');await page.evaluate(()=>DuneApp.openPlayerTab());const player=await popup;
-   await player.waitForURL(/\bv=4590\b/);assert.equal(new URL(player.url()).searchParams.get('v'),'4590','the second screen loads the current application version');await player.close();
+   await player.waitForURL(/\bv=4600\b/);assert.equal(new URL(player.url()).searchParams.get('v'),'4600','the second screen loads the current application version');await player.close();
   }
   assert.deepEqual(errors,[]);console.log('V4.58 desktop '+mode+': one toolbar, click across synchronization, organization, zoom, grip, collapse and hide/restore passed.');
  }finally{await context.close()}

@@ -14,6 +14,20 @@ export async function connectedPlayers(){
  const result=await request({action:'recipients'});
  return [...live,...(result.players||[]).map(p=>({id:p.id,name:p.name,transport:'owl'}))];
 }
+// Show a name once if it occurs once on each transport, while keeping both IDs.
+// Names that are ambiguous on one transport must remain distinct.
+export function groupRecipients(rows){
+ const entries=(Array.isArray(rows)?rows:[]).filter(p=>p&&typeof p.id==='string'&&p.id&&(p.transport==='live'||p.transport==='owl'));
+ const counts=new Map();
+ for(const p of entries){const name=String(p.name||'Joueur').trim()||'Joueur',key=name.toLocaleLowerCase('fr');let count=counts.get(key);if(!count){count={live:new Set(),owl:new Set()};counts.set(key,count);}count[p.transport].add(p.id);}
+ const groups=[],pairs=new Map();
+ for(const p of entries){const name=String(p.name||'Joueur').trim()||'Joueur',key=name.toLocaleLowerCase('fr'),count=counts.get(key),unique=count.live.size===1&&count.owl.size===1;
+  let group=unique?pairs.get(key):null;
+  if(!group){group={name,channels:[]};groups.push(group);if(unique)pairs.set(key,group);}
+  if(!group.channels.some(ch=>ch.transport===p.transport&&ch.id===p.id))group.channels.push({id:p.id,transport:p.transport});
+ }
+ return groups;
+}
 export function chooseAudience(){
  if(!isGM())return Promise.resolve(null);
  return new Promise(resolve=>{
@@ -29,13 +43,13 @@ export function chooseAudience(){
    if(all.checked){finish({all:true});return;}
    const chosen=players.filter(p=>p.input.checked);
    if(!chosen.length){view.status.textContent='Coche le joueur qui doit recevoir la présentation.';return;}
-   finish({all:false,live:chosen.filter(p=>p.transport==='live').map(p=>p.id),owl:chosen.filter(p=>p.transport==='owl').map(p=>p.id)});
+   finish({all:false,live:[...new Set(chosen.flatMap(p=>p.channels.filter(ch=>ch.transport==='live').map(ch=>ch.id)))],owl:[...new Set(chosen.flatMap(p=>p.channels.filter(ch=>ch.transport==='owl').map(ch=>ch.id)))]});
   },'presentation-send');send.dataset.presentAudience='';view.content.append(send);
   function finish(value){if(finished)return;finished=true;view.dialog.close();resolve(value);}
   view.cleanup(()=>finish(null));
   void connectedPlayers().then(rows=>{
-   if(finished)return;players=rows.map(p=>({...p,input:element('input')}));
-   for(const p of players){p.input.type='checkbox';p.input.setAttribute('aria-label',p.name+' · '+(p.transport==='live'?'Archives':'Owlbear'));p.input.onchange=()=>{selected.checked=true;};const row=label(p.input,p.name+' · '+(p.transport==='live'?'Archives':'Owlbear'));row.className='presentation-recipient';list.append(row);}
+   if(finished)return;players=groupRecipients(rows).map(p=>({...p,input:element('input')}));
+   for(const p of players){p.input.type='checkbox';const transports=new Set(p.channels.map(ch=>ch.transport)),caption=p.name+' · '+(transports.size===2?'Archives + Owlbear':transports.has('live')?'Archives':'Owlbear');p.input.setAttribute('aria-label',caption);p.input.onchange=()=>{selected.checked=true;};const row=label(p.input,caption);row.className='presentation-recipient';list.append(row);}
    view.status.textContent=players.length?'Choisis tout le monde ou un ou plusieurs joueurs.':'Aucun joueur connecté pour le moment. « Tout le monde » inclut les joueurs qui rejoindront la session.';
   }).catch(error=>{if(!finished)view.status.textContent=error.message;});
  });

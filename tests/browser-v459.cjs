@@ -34,8 +34,8 @@ async function zoomAndPhone(browser){
   near((await camera(g)).zoom,initial.zoom*1.5);await touch('touchEnd',[]);assert.deepEqual(await geometry(),before,'starting a pinch on a resize handle restores the cell dimensions');
   await p.goto(archives+'/archives-app-v64-v55.html?ro=1');await p.evaluate(s=>ArchivesRelay.apply(s),scenario);await p.locator('#archives-player-toolbar-bar').waitFor();
   const rows=await p.locator('#archives-player-toolbar-bar').evaluate(bar=>{const r=bar.getBoundingClientRect(),rows=new Map();for(const b of bar.querySelectorAll('button')){if(!b.getClientRects().length)continue;const box=b.getBoundingClientRect(),y=Math.round(box.y);rows.set(y,(rows.get(y)||0)+1);}return {height:r.height,width:r.width,rows:[...rows.values()]};});
-  assert.ok(rows.height<=104,'the 390px phone toolbar uses two compact rows');assert.deepEqual(rows.rows,[7,7],'grip, commands and collapse fill both rows');
-  await p.screenshot({path:'/tmp/archives-v459-phone.png'});console.log('V4.59 MJ precise reversible wheel and anchored moving pinch; 390px player toolbar fills two rows.');
+  assert.ok(rows.height<=68,'the 390px phone toolbar fits on one line');assert.equal(rows.rows.length,1,'the commands scroll horizontally instead of occupying two lines');
+  await p.screenshot({path:'/tmp/archives-v459-phone.png'});console.log('V4.59 MJ precise reversible wheel and anchored moving pinch; 390px player toolbar fits on one line with horizontal scrolling.');
  }finally{await c.close();await mobile.close();}
 }
 

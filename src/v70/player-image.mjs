@@ -1,7 +1,7 @@
 import {isGM,nativeEditor,notice} from '../v63/ui.mjs?v=4590';
 import {libraryRequest} from '../v60/request.mjs?v=4590';
 import {maxDocumentBytes,validateFile} from '../v60/files.mjs?v=4590';
-import {audience as normalizeAudience} from '../v79/audience.mjs?v=4590';
+import {audience as normalizeAudience} from '../v79/audience.mjs?v=4600';
 import {fade,fadeDuration} from '../v73/fade.mjs?v=4590';
 let operation=0,shown='',requested='',dialog,epoch=0,animation,nativePresentation=false,nativePublishedId='';
 const dismissed=new Set(),state=()=>window.DuneApp?.getState?.();
@@ -27,7 +27,7 @@ function ensureDialog(){
  #archives-player-image pre{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;font:16px/1.65 system-ui;width:100%;margin:0;user-select:text}
  `;document.head.append(style);
  dialog=document.createElement('dialog');dialog.id='archives-player-image';dialog.setAttribute('aria-label','Image présentée par le MJ');
- const shell=document.createElement('div');shell.className='player-image-shell';const header=document.createElement('header'),title=document.createElement('h2'),close=document.createElement('button');title.textContent='Image partagée par le MJ';close.type='button';close.textContent='×';close.setAttribute('aria-label','Fermer l’image');close.onclick=()=>void dismiss();header.append(title,close);
+ const shell=document.createElement('div');shell.className='player-image-shell';const header=document.createElement('header'),title=document.createElement('h2'),close=document.createElement('button');title.textContent='Image';close.type='button';close.textContent='×';close.setAttribute('aria-label','Fermer l’image');close.onclick=()=>void dismiss();header.append(title,close);
  const content=document.createElement('div');content.className='player-image-content';shell.append(header,content);dialog.append(shell);document.body.append(dialog);
  dialog.addEventListener('cancel',event=>{event.preventDefault();void dismiss()});
  const owner=dialog;dialog.addEventListener('close',()=>{if(owner!==dialog||owner.open||!shown)return;remember(shown);shown=requested='';epoch++;cancelFade();clearContent()});return dialog;
@@ -60,7 +60,7 @@ async function render(){
  if(epoch!==version||dismissed.has(presentation.id))return;
  const view=ensureDialog(),image=view.querySelector('.player-image-content'),replacing=view.open&&!!shown&&view.dataset.phase!=='closing';
  if(replacing){animation=fade(image,1,0,140);await animation.finished;if(epoch!==version)return;cancelFade()}
- clearContent();image.append(picture);view.querySelector('h2').textContent=mime.startsWith('image/')?'Image partagée par le MJ':'Document partagé par le MJ';shown=presentation.id;view.dataset.phase=replacing?'switching':'opening';if(!view.open)view.showModal();
+ clearContent();image.append(picture);view.querySelector('h2').textContent=mime.startsWith('image/')?'Image':'Document';shown=presentation.id;view.dataset.phase=replacing?'switching':'opening';if(!view.open)view.showModal();
  animation=fade(replacing?image:view,0,1,fadeDuration);await animation.finished;if(epoch!==version)return;
  cancelFade();view.dataset.phase='open';
 }
