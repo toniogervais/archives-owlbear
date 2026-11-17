@@ -17,9 +17,10 @@ async function zoomAndPhone(browser){
   await g.mouse.move(anchor.x,anchor.y);await g.mouse.wheel(0,1.75);await g.waitForFunction(z=>DuneApp.getState().zoom!==z,initial.zoom);const next=await camera(g);
   near(next.zoom,initial.zoom*Math.exp(-1.75*.0015));near((anchor.x-vp.x-initial.panX)/initial.zoom,(anchor.x-vp.x-next.panX)/next.zoom);near((anchor.y-vp.y-initial.panY)/initial.zoom,(anchor.y-vp.y-next.panY)/next.zoom);
   await g.mouse.wheel(0,-1.75);await g.waitForFunction(z=>Math.abs(DuneApp.getState().zoom-z)<1e-7,initial.zoom);
+  await g.waitForFunction(()=>window.ArchivesTouchCanvas?.handles);
   const geometry=()=>g.evaluate(()=>DuneApp.getState().nodes.map(({id,x,y,w,h})=>({id,x,y,w,h}))),before=await geometry(),cdp=await c.newCDPSession(g);
   const mid={x:Math.round(vp.x+220),y:Math.round(vp.y+230)},a={id:1,x:mid.x-30,y:mid.y},b={id:2,x:mid.x+30,y:mid.y};
-  const touch=async(type,points)=>{await cdp.send('Input.dispatchTouchEvent',{type,touchPoints:points.map(t=>({...t,radiusX:4,radiusY:4,force:1}))});await g.evaluate(()=>new Promise(r=>requestAnimationFrame(r)));};
+  const touch=async(type,points)=>{await cdp.send('Input.dispatchTouchEvent',{type,touchPoints:points.map(t=>({...t,radiusX:4,radiusY:4,force:1}))});await g.waitForTimeout(35);};
   await touch('touchStart',[a]);await touch('touchStart',[a,b]);
   const shifted={x:mid.x+21,y:mid.y+29};await touch('touchMove',[{...a,x:shifted.x-45,y:shifted.y},{...b,x:shifted.x+45,y:shifted.y}]);const pinched=await camera(g);
   near(pinched.zoom,initial.zoom*1.5);near((mid.x-vp.x-initial.panX)/initial.zoom,(shifted.x-vp.x-pinched.panX)/pinched.zoom);near((mid.y-vp.y-initial.panY)/initial.zoom,(shifted.y-vp.y-pinched.panY)/pinched.zoom);
