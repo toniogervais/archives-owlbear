@@ -133,7 +133,7 @@ function install(){
   placeCommands(toolbar.actions,[
    command('quick-player-center-cell','Centrer'),command('quick-player-layout','Organiser'),command('quick-player-center-all','Vue globale'),
    minus,percent,plus,command('archives-dossier-open','Dossier'),command('quick-player-journal','Journal'),command('quick-player-notes','Notes'),
-   owlControl?.isConnected&&!owlControl.disabled?owlControl:null,more,
+   owlControl?.isConnected&&!owlControl.disabled?owlControl:null,more,command('archives-home-fab','Accueil'),
    !api.getState().strictReadOnly?command('quick-mode-switch','Mode MJ'):null
   ]);
   placeCommands(menuActions,[command('quick-grid-toggle','Afficher ou masquer la grille',true),command('quick-player-undo','Annuler mon déplacement',true)]);
