@@ -16,6 +16,10 @@ async function run(browser,mode){
   }else await page.evaluate(data=>ArchivesRelay.apply(data),packet);
   await page.locator('#archives-player-toolbar-bar').waitFor();
   assert.equal(await page.locator('.archives-player-dock').count(),1,'one player toolbar');
+  assert.deepEqual(await page.locator('#archives-player-toolbar-bar .player-command').evaluateAll(controls=>controls.filter(control=>{
+   const r=control.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2;
+   return document.elementFromPoint(x,y)?.closest('button')!==control;
+  }).map(control=>control.id)),[],'every command receives the mouse, including the relocated home button');
   const original=await page.evaluate(()=>DuneApp.getState().nodes.map(({id,x,y})=>({id,x,y})));
 
   // A normal desktop click can span a live snapshot. The original bars used to
