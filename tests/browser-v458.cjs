@@ -47,7 +47,7 @@ async function run(browser,mode){
   await page.mouse.move(moveCell.x+90,moveCell.y+75);await page.mouse.down();await page.mouse.move(moveCell.x+152,moveCell.y+109,{steps:6});await page.mouse.up();
   const playerAfter=await page.evaluate(()=>({...DuneApp.getState().playerLayout.a}));
   assert.ok(playerAfter.x>playerBefore.x+20,'dragging with the mouse moves the personal cell');
-  assert.deepEqual(await page.evaluate(()=>DuneApp.getState().nodes.map(({id,x,y})=>({id,x,y}))),original,'the GM's layout data is untouched');
+  assert.deepEqual(await page.evaluate(()=>DuneApp.getState().nodes.map(({id,x,y})=>({id,x,y}))),original,'the GM layout data is untouched');
   await move.click();assert.equal(await move.getAttribute('aria-pressed'),'false','the same control turns drag mode off');
   await page.locator('#quick-player-center-cell').click();await page.locator('#quick-player-center-all').click();
   await page.getByRole('button',{name:'Réduire la barre des joueurs',exact:true}).click();assert.equal(await page.locator('.player-bar-actions').isVisible(),false);

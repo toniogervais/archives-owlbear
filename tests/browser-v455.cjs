@@ -60,7 +60,7 @@ async function inBounds(p){return editor(p).locator('#archives-player-tools').ev
   await touch(cdp,'touchMove',[{...finger,x:finger.x+65,y:finger.y+38}]);
   await touch(cdp,'touchEnd',[]);
   const personalAfter=await layout(p);
-  assert.ok(personalAfter.n.x>personalBefore.n.x+25,'touch dragging changes the player's own cell position');
+  assert.ok(personalAfter.n.x>personalBefore.n.x+25,'touch dragging changes the personal cell position');
   assert.ok(personalAfter.n.y>personalBefore.n.y+15,'touch dragging updates both coordinates');
   assert.deepEqual(await layout(q),otherPlayerLayout,'the other player has an independent canvas');
   assert.equal(await app(gm).evaluate(()=>DuneApp.getState().nodes.find(n=>n.id==='n').x),gmPositionBefore,'the GM canvas stays unchanged');
