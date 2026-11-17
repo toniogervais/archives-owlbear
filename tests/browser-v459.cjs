@@ -5,7 +5,7 @@ const editor=p=>p.frameLocator('#viewer').frameLocator('#app'),app=p=>p.frames()
 const camera=p=>p.evaluate(()=>{const s=DuneApp.getState();return {panX:s.panX,panY:s.panY,zoom:s.zoom};});
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-7,`${a} / ${b}`);
 const scenario={activeBoardId:'a',boards:[{id:'a',name:'ACTE_SECRET_459',nodes:[{id:'n',title:'SECRET_CELLULE_459',category:'personnage',revealed:true,desc:'Description publique',x:100,y:150,w:250,h:170,clues:[]}],links:[]}]};
-async function choose(view,name){const dialog=view.locator('#archives-presentation-audience[open]');await dialog.waitFor();if(name)await dialog.getByLabel(name,{exact:true}).check();await dialog.getByRole('button',{name:'Montrer',exact:true}).click();await dialog.waitFor({state:'hidden'});}
+async function choose(view,name){const dialog=view.locator('#archives-presentation-audience[open]');await dialog.waitFor();if(name)await dialog.getByLabel(new RegExp('^'+name.split(' · ')[0]+' · ')).check();await dialog.getByRole('button',{name:'Montrer',exact:true}).click();await dialog.waitFor({state:'hidden'});}
 
 async function zoomAndPhone(browser){
  const c=await browser.newContext({viewport:{width:1440,height:1000},hasTouch:true});await configure(c,hub());const g=await c.newPage();
