@@ -13,12 +13,12 @@ async function zoomAndPhone(browser){
  try{
   await g.goto(archives+'/archives.html?resume=1');await g.evaluate(s=>ArchivesRelay.apply(s),scenario);
   const initial={panX:20,panY:30,zoom:.87123};await g.evaluate(c=>DuneApp.setCanvasCamera(c,true),initial);
-  const vp=await g.locator('#viewport').boundingBox(),anchor={x:vp.x+277.45,y:vp.y+304.8};
+  const vp=await g.locator('#viewport').boundingBox(),anchor={x:Math.round(vp.x+277),y:Math.round(vp.y+305)};
   await g.mouse.move(anchor.x,anchor.y);await g.mouse.wheel(0,1.75);await g.waitForFunction(z=>DuneApp.getState().zoom!==z,initial.zoom);const next=await camera(g);
   near(next.zoom,initial.zoom*Math.exp(-1.75*.0015));near((anchor.x-vp.x-initial.panX)/initial.zoom,(anchor.x-vp.x-next.panX)/next.zoom);near((anchor.y-vp.y-initial.panY)/initial.zoom,(anchor.y-vp.y-next.panY)/next.zoom);
   await g.mouse.wheel(0,-1.75);await g.waitForFunction(z=>Math.abs(DuneApp.getState().zoom-z)<1e-7,initial.zoom);
   const geometry=()=>g.evaluate(()=>DuneApp.getState().nodes.map(({id,x,y,w,h})=>({id,x,y,w,h}))),before=await geometry(),cdp=await c.newCDPSession(g);
-  const mid={x:vp.x+220,y:vp.y+230},a={id:1,x:mid.x-30,y:mid.y},b={id:2,x:mid.x+30,y:mid.y};
+  const mid={x:Math.round(vp.x+220),y:Math.round(vp.y+230)},a={id:1,x:mid.x-30,y:mid.y},b={id:2,x:mid.x+30,y:mid.y};
   const touch=async(type,points)=>{await cdp.send('Input.dispatchTouchEvent',{type,touchPoints:points.map(t=>({...t,radiusX:4,radiusY:4,force:1}))});await g.evaluate(()=>new Promise(r=>requestAnimationFrame(r)));};
   await touch('touchStart',[a]);await touch('touchStart',[a,b]);
   const shifted={x:mid.x+21,y:mid.y+29};await touch('touchMove',[{...a,x:shifted.x-45,y:shifted.y},{...b,x:shifted.x+45,y:shifted.y}]);const pinched=await camera(g);
@@ -66,7 +66,7 @@ async function live(browser){
   window.Peer=class{constructor(id){this.id=id;this.events={};window.fixturePeer=this;setTimeout(()=>this.events.open?.(id),20);}on(name,callback){this.events[name]=callback;return this;}destroy(){this.destroyed=true;}};
  });const g=await c.newPage(),p=await c.newPage();
  try{
-  await g.goto(archives+'/archives.html?resume=1');await g.evaluate(s=>ArchivesRelay.apply(s),scenario);await g.evaluate(()=>DuneApp.startLiveRoom());await g.waitForFunction(()=>window.fixturePeer?.events.connection);
+  await g.goto(archives+'/archives.html?resume=1');await g.evaluate(s=>ArchivesRelay.apply(s),scenario);await g.evaluate(()=>DuneApp.startLiveHost());await g.waitForFunction(()=>window.fixturePeer?.events.connection);
   await g.evaluate(()=>{DuneApp.closeLivePanel();window.sent={alix:[],noa:[]};for(const [id,name]of [['alix','Alix'],['noa','Noa']]){const events={},conn={peer:id,metadata:{playerName:name},open:true,on:(n,fn)=>{events[n]=fn;return conn;},send:data=>sent[id].push(structuredClone(data))};fixturePeer.events.connection(conn);events.open();}});
   await p.goto(archives+'/archives-app-v64-v55.html?ro=1');await g.evaluate(()=>{window.result=ArchivesPresentation.present({text:'INDICE_PRIVE_LIVE_459'});});await choose(g,'Alix · Archives');await g.waitForFunction(()=>sent.alix.some(m=>m.playerPresentation?.image?.startsWith('data:text/plain;')));
   assert.ok(!(await g.evaluate(()=>JSON.stringify(sent.noa))).includes(Buffer.from('INDICE_PRIVE_LIVE_459').toString('base64')),'unselected live connection has no private file');assert.equal(await p.locator('#archives-player-image[open]').count(),0,'the local second screen is not a selected live recipient');
