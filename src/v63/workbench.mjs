@@ -1,8 +1,8 @@
-import {button,element,isGM,nativeEditor,notice,request,requireGM,sheet} from './ui.mjs?v=4570';
-import {packet,editEvent} from '../v56/link.mjs?v=4570';
-import {installCloudBackup} from '../v71/cloud-ui.mjs?v=4570';
-import {sendScreenCommand,leaveToMap} from '../v65/screens.mjs?v=4570';
-import {dossierFilters,openAddFile,openSharedFile,removeSharedFile} from '../v69/dossier-ui.mjs?v=4570';
+import {button,element,isGM,nativeEditor,notice,request,requireGM,sheet} from './ui.mjs?v=4580';
+import {packet,editEvent} from '../v56/link.mjs?v=4580';
+import {installCloudBackup} from '../v71/cloud-ui.mjs?v=4580';
+import {sendScreenCommand,leaveToMap} from '../v65/screens.mjs?v=4580';
+import {dossierFilters,openAddFile,openSharedFile,removeSharedFile} from '../v69/dossier-ui.mjs?v=4580';
 let players = [];
 const paths = {
   batch:'<rect x="3" y="4" width="13" height="13" rx="2"/><path d="M8 20h11a2 2 0 0 0 2-2V9M7 13l3-3 3 3M7 8h.01"/>',
@@ -14,11 +14,11 @@ function command(id,label,path,handler) {
   control.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">'+path+'</svg>';return control;
 }
 async function openBackup() {
-  try { requireGM();const module = await import('./backup-ui.mjs?v=4570');module.openBackup(); }
+  try { requireGM();const module = await import('./backup-ui.mjs?v=4580');module.openBackup(); }
   catch (error) { notice(error.message); }
 }
 async function openBatch() {
-  try { requireGM();const module = await import('./batch.mjs?v=4570');await module.openBatch(); }
+  try { requireGM();const module = await import('./batch.mjs?v=4580');await module.openBatch(); }
   catch (error) { notice(error.message); }
 }
 function stateLabel(player) {

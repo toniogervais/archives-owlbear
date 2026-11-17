@@ -26,6 +26,7 @@ on:
       - 'src/v76/**'
       - 'src/v77/**'
       - 'src/v78/**'
+      - 'tests/*v458*'
       - 'tests/*v457*'
       - 'tests/*v456*'
       - 'tests/*v455*'
@@ -201,4 +202,7 @@ jobs:
       - run: node tests/browser-v457.cjs
         if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
       - run: node tests/browser-conflicts-v457.cjs
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
+
+      - run: node tests/browser-v458.cjs
         if: ${{ !cancelled() && steps.browser.outcome == 'success' }}

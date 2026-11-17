@@ -1,5 +1,5 @@
-import {element,button,isGM,nativeEditor,notice} from '../v63/ui.mjs?v=4570';
-import {libraryRequest} from '../v60/request.mjs?v=4570';
+import {element,button,isGM,nativeEditor,notice} from '../v63/ui.mjs?v=4580';
+import {libraryRequest} from '../v60/request.mjs?v=4580';
 let menu;
 const imageOf=node=>node?.bgImg||node?.image||node?.imageData;
 function presentCell(id){

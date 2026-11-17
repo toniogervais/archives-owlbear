@@ -1,6 +1,6 @@
 import OBR from '../../assets/owlbear-transfer-sdk-v55.mjs';
-import {trustedOwlbearSdk} from '../v56/link.mjs?v=4570';
-import {localRoom} from '../v57/room.mjs?v=4570';
+import {trustedOwlbearSdk} from '../v56/link.mjs?v=4580';
+import {localRoom} from '../v57/room.mjs?v=4580';
 import {soundShowModal,validSession} from './protocol.mjs';
 import {mountPlayer} from './player.mjs?v=4410';
 if(trustedOwlbearSdk()){

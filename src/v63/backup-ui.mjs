@@ -1,6 +1,6 @@
-import {sheet,button,element,requireGM,notice} from './ui.mjs?v=4570';
-import {campaignRequest} from '../v71/campaign-io.mjs?v=4570';
-import {mountCloudBackups,pauseCloudBackup} from '../v71/cloud-ui.mjs?v=4570';
+import {sheet,button,element,requireGM,notice} from './ui.mjs?v=4580';
+import {campaignRequest} from '../v71/campaign-io.mjs?v=4580';
+import {mountCloudBackups,pauseCloudBackup} from '../v71/cloud-ui.mjs?v=4580';
 import {downloadArchive} from '../v71/download.mjs';
 const size = bytes => (bytes / 1024 / 1024).toLocaleString('fr',{maximumFractionDigits:1}) + ' Mo';
 export function openBackup() {

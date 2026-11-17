@@ -1,4 +1,4 @@
-import {button,element,isGM,sheet} from '../v63/ui.mjs?v=4570';
+import {button,element,isGM,sheet} from '../v63/ui.mjs?v=4580';
 import {pictureFrame,frameFields,frameTransform} from './picture-model.mjs';
 
 const pointers=new Map();let active=false,gesture,node,frame,flushTimer;

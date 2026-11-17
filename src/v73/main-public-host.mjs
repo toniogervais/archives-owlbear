@@ -1,5 +1,5 @@
-import {isPacket,packet} from '../v56/link.mjs?v=4570';
-import {localRoom,validSnapshot} from '../v57/room.mjs?v=4570';
+import {isPacket,packet} from '../v56/link.mjs?v=4580';
+import {localRoom,validSnapshot} from '../v57/room.mjs?v=4580';
 export async function installMainPublicHost(OBR) {
   if(await OBR.player.getRole()!=='GM')return;
   const {channel}=await localRoom(OBR);let primary,closed=false,connected=false,session=crypto.randomUUID(),lastAnnounce=0,latest;

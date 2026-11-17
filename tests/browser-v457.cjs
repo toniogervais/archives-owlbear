@@ -11,12 +11,12 @@ async function run(browser,mode,mobile=true){
   await p.goto(archives+'/archives-app-v64-v55.html'+(mode==='direct'?'?ro=1':''));
   if(mode==='live'){await use(p.locator('#archives-role-player'));await p.locator('#archives-player-code').fill('JDR-ABCDEFGHJKLM');await use(p.locator('#archives-player-connect'));await p.locator('#archives-title-screen').waitFor({state:'hidden'})}
   else await p.evaluate(data=>ArchivesRelay.apply(data),packet);
-  await p.locator('.node-cell[data-id=a]').waitFor();await p.locator('#archives-player-reading-bar').waitFor();
+  await p.locator('.node-cell[data-id=a]').waitFor();await p.locator('#archives-player-toolbar-bar').waitFor();
   await use(p.locator('#archives-dossier-open'));await p.locator('#archives-player-dossier[open]').waitFor();assert.ok((await p.locator('#archives-player-dossier').innerText()).includes('Le témoin'),mode+' dossier works on the first received live snapshot, before any canvas action');await use(p.locator('#archives-player-dossier header button'));
   const diagnostics=async()=>p.locator('#archives-player-tools button').evaluateAll(nodes=>nodes.filter(n=>n.getClientRects().length).map(n=>{const r=n.getBoundingClientRect(),at=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return {id:n.id||n.getAttribute('aria-label'),disabled:n.disabled,handler:typeof n.onclick,hit:at?.closest('button')?.id,top:at?.id||at?.className}}));
   assert.ok((await diagnostics()).every(c=>!c.disabled),mode+' visible player commands are enabled');
   await use(p.locator('#archives-player-icons-toggle'));assert.ok(await p.locator('body').evaluate(e=>e.classList.contains('player-icons-hidden')),mode+' eye hides all');
-  await use(p.locator('#archives-player-icons-toggle'));assert.equal(await p.locator('#archives-player-layout-bar').isVisible(),true);
+  await use(p.locator('#archives-player-icons-toggle'));assert.equal(await p.locator('#archives-player-toolbar-bar').isVisible(),true);
   const z=await p.evaluate(()=>DuneApp.getState().zoom);await use(p.locator('#archives-player-zoom-in'));assert.ok(await p.evaluate(z=>DuneApp.getState().zoom>z,z),mode+' zoom in');
   await use(p.locator('#archives-player-zoom-out'));await use(p.locator('#archives-player-display-open'));await p.locator('#archives-player-display[open]').waitFor();await use(p.getByRole('button',{name:'Fermer mon affichage',exact:true}));
   const before=await p.evaluate(()=>JSON.stringify(DuneApp.getState().playerLayout));await use(p.locator('#quick-player-layout'));assert.notEqual(await p.evaluate(()=>JSON.stringify(DuneApp.getState().playerLayout)),before,mode+' organize');
