@@ -1,9 +1,9 @@
 import {installPlayerNotebook} from '../v64/player-notebook.mjs?v=4590';
 import {isPacket} from '../v56/link.mjs?v=4590';
-import {dockPosition,zoomCamera} from './geometry.mjs?v=4590';
+import {dockPosition} from './geometry.mjs?v=4590';
 const el=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node};
 const player=()=>{const s=window.DuneApp?.getState?.();return !!s&&(s.playerMode||s.strictReadOnly)};
-const icons={fit:'M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5M8 8h8v8H8z',more:'M4 12h.01M12 12h.01M20 12h.01',eye:'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z M15 12a3 3 0 1 0-6 0 3 3 0 0 0 6 0'};
+const icons={eye:'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z M15 12a3 3 0 1 0-6 0 3 3 0 0 0 6 0'};
 function icon(name){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',icons[name]);svg.append(path);return svg}
 function button(label,text,handler){const b=el('button',null,text);b.type='button';b.setAttribute('aria-label',label);b.title=label;b.onclick=handler;return b}
 function viewport(){const v=window.visualViewport,css=getComputedStyle(document.documentElement),safe=edge=>parseFloat(css.getPropertyValue('--player-safe-'+edge))||0;return {left:(v?.offsetLeft||0)+safe('left'),top:(v?.offsetTop||0)+safe('top'),width:(v?.width||innerWidth)-safe('left')-safe('right'),height:(v?.height||innerHeight)-safe('top')-safe('bottom')}}
@@ -14,19 +14,11 @@ function install(){
  const root=el('div');root.id='archives-player-tools';root.hidden=true;
  const toggle=button('Masquer les icônes','',()=>{const refit=isFitted();prefs.hidden=!prefs.hidden;if(prefs.hidden)setArrange(false);else prefs.toolbar.collapsed=false;paint();save();if(refit)fitView()});toggle.id='archives-player-icons-toggle';toggle.append(icon('eye'));
  const toggleCaption=el('span',null,'Icônes');toggle.append(toggleCaption);
- const menu=el('dialog');menu.id='archives-player-display';menu.setAttribute('aria-label','Mon affichage');
- const header=el('header'),title=el('h2',null,'Mon affichage'),close=button('Fermer mon affichage','×',()=>menu.close());header.append(title,close);
- const zoomLabel=el('label',null,'Zoom précis'),slider=el('input');slider.type='range';slider.min=5;slider.max=500;slider.step=1;slider.id='archives-player-zoom-range';zoomLabel.htmlFor=slider.id;
- const zoomValue=el('output');zoomValue.htmlFor=slider.id;
- slider.oninput=()=>zoomTo(Number(slider.value)/100);const zoomSection=el('section','player-display-zoom');zoomSection.append(zoomLabel,zoomValue,slider);
- const menuActions=el('div','player-display-actions'),sceneSection=el('section'),sceneTitle=el('h3',null,'Scènes disponibles'),scenes=el('div','player-scenes');sceneSection.append(sceneTitle,scenes);
- const arrange=button('Déplacer mes cellules','Déplacer mes cellules',()=>setArrange(!arranging));arrange.id='archives-player-arrange';arrange.setAttribute('aria-pressed','false');
- const reset=button('Remettre la barre en place','Remettre la barre en place',()=>{prefs=defaults();paint();save();menu.close()});
- menu.append(header,zoomSection,menuActions,arrange,sceneSection,reset);
+ const arrange=button('Déplacer mes cellules','✥',()=>setArrange(!arranging));
+ arrange.id='archives-player-arrange';arrange.className='player-command player-arrange-toggle';arrange.setAttribute('aria-pressed','false');
  const toolbar=makeBar('toolbar','des joueurs');
  toolbar.node.setAttribute('aria-label','Barre d’icônes des joueurs');
- const more=button('Options de mon affichage','',()=>openMenu());more.id='archives-player-display-open';more.className='player-command';more.append(icon('more'),el('span','player-action-caption','Plus'));
- root.append(toolbar.node,toggle,menu);document.body.append(root);
+ root.append(toolbar.node,toggle);document.body.append(root);
  // These buttons move between the original GM dock and the single player bar.
  // Resolve the current API at activation instead of depending on inline handlers.
  root.addEventListener('click',event=>{
@@ -41,7 +33,7 @@ function install(){
    'quick-grid-toggle':()=>window.ArchivesCanvasGrid?.toggle(),
    'quick-player-undo':()=>live.undo()
   };
-  const handler=handlers[control.id];if(!handler)return;event.preventDefault();event.stopImmediatePropagation();live.closeContextMenus();handler();updateZoom();
+  const handler=handlers[control.id];if(!handler)return;event.preventDefault();event.stopImmediatePropagation();live.closeContextMenus();handler();
  },true);
 
  function makeBar(id,caption){
@@ -53,7 +45,6 @@ function install(){
  function camera(){const s=api.getState();return {panX:s.panX,panY:s.panY,zoom:s.zoom}}
  function isFitted(){const c=camera();return fittedCamera&&['panX','panY','zoom'].every(key=>Math.abs(c[key]-fittedCamera[key])<1e-9)}
  function fitView(){api.resetView();api.setCanvasCamera(camera(),true);fittedCamera=camera();save()}
- function zoomTo(value){const box=document.getElementById('viewport').getBoundingClientRect();api.setCanvasCamera(zoomCamera(camera(),value,{x:box.width/2,y:box.height/2}),true)}
  function sourceScope(){const params=new URLSearchParams(location.search);return window.ArchivesPlayerScope||((api.getState().strictReadOnly?'player:':'preview:')+(api.getState().liveRoomId||params.get('room')||'local'))}
  function load(){
   const scope=sourceScope(),base='archives:player-tools:v458:'+scope,next=base+':'+orientation();if(next===storageKey)return;const scopeChanged=visibilityKey!==base+':visibility';storageKey=next;visibilityKey=base+':visibility';prefs=defaults();if(scopeChanged)fittedCamera=null;
@@ -73,8 +64,6 @@ function install(){
  function paint(){
   document.body.classList.toggle('player-icons-hidden',prefs.hidden);
   const v=viewport();root.style.setProperty('--player-vw',v.width+'px');root.style.setProperty('--player-vh',v.height+'px');
-  const count=toolbar.actions.children.length+2,maxColumns=Math.max(1,Math.floor((v.width-26)/46));
-  toolbar.node.style.setProperty('--player-tool-columns',String(Math.ceil(count/Math.ceil(count/maxColumns))));
   for(const [name,bar]of [['toolbar',toolbar]]){
    const p=prefs[name];bar.node.hidden=prefs.hidden;bar.node.classList.toggle('player-bar-vertical',!!p.vertical);bar.node.classList.toggle('player-bar-collapsed',p.collapsed);
    bar.actions.hidden=p.collapsed;bar.collapse.textContent=p.collapsed?'＋':'−';bar.collapse.setAttribute('aria-label',(p.collapsed?'Déployer':'Réduire')+' la barre '+bar.caption);bar.collapse.title=bar.collapse.getAttribute('aria-label');bar.collapse.setAttribute('aria-expanded',String(!p.collapsed));
@@ -99,12 +88,12 @@ function install(){
   grip.addEventListener('keydown',e=>{const shifts={ArrowLeft:[-12,0],ArrowRight:[12,0],ArrowUp:[0,-12],ArrowDown:[0,12]},shift=shifts[e.key];if(!shift)return;e.preventDefault();const r=node.getBoundingClientRect(),p=dockPosition({x:r.x+shift[0],y:r.y+shift[1]},r.width,r.height,viewport());Object.assign(prefs[name],normalized(node,p.x,p.y));paint();save()});
  }
  movable(toggle,toggle,'toggle');
- function decorate(control,caption,menuItem=false){
+ function decorate(control,caption){
   if(!originals.has(control)){const marker=document.createComment('player-toolbar-position');control.before(marker);originals.set(control,{marker,label:null})}
-  const record=originals.get(control);if(!record.label||record.label.parentNode!==control){record.label=el('span',menuItem?'player-menu-caption':'player-action-caption',caption);control.append(record.label)}
-  control.classList.add(menuItem?'player-menu-command':'player-command');
+  const record=originals.get(control);if(!record.label||record.label.parentNode!==control){record.label=el('span','player-action-caption',caption);control.append(record.label)}
+  control.classList.add('player-command');
  }
- function command(id,caption,menuItem=false){const control=document.getElementById(id);if(control)decorate(control,caption,menuItem);return control}
+ function command(id,caption){const control=document.getElementById(id);if(control)decorate(control,caption);return control}
  // A public snapshot can arrive between mousedown and mouseup. Re-appending a
  // button, even to its current parent, cancels that native click in Chromium.
  // Keep the toolbar DOM stable unless its actual contents or order changed.
@@ -114,27 +103,28 @@ function install(){
  }
  function reconcile(){
   queued=false;const next=player();
-  if(!next){if(active){active=false;setArrange(false);root.hidden=true;menu.close();document.body.classList.remove('archives-player-ui','player-arrange-cells','player-icons-hidden');for(const [control,record]of originals){record.label?.remove();control.classList.remove('player-command','player-menu-command');if(record.marker.isConnected)record.marker.replaceWith(control)}originals.clear()}return}
+  if(!next){if(active){active=false;setArrange(false);root.hidden=true;document.body.classList.remove('archives-player-ui','player-arrange-cells','player-icons-hidden');for(const [control,record]of originals){record.label?.remove();control.classList.remove('player-command','player-menu-command');if(record.marker.isConnected)record.marker.replaceWith(control)}originals.clear()}return}
   const route=new URLSearchParams(location.search);if(window.parent===window&&(route.get('ro')==='1'||route.get('player')==='1')&&!window.ArchivesPlayerScope)window.ArchivesRelay?.setPlayerScope('live:'+(api.getState().liveRoomId||route.get('room')||'second-ecran')+':'+(window.__archivesLivePlayerName||'Joueur'));
   active=true;root.hidden=false;document.body.classList.add('archives-player-ui');window.ArchivesPlayerNotebook?.refresh();load();
   owlControl=document.querySelector('#canvas-integrations-dock .canvas-integration-item:first-child button')||owlControl;if(owlControl?.isConnected&&!owlControl.disabled)decorate(owlControl,'Carte');
   placeCommands(toolbar.actions,[
-   command('quick-player-center-cell','Centrer'),command('quick-player-layout','Organiser'),command('quick-player-center-all','Vue globale'),
+   command('quick-player-center-cell','Centrer'),command('quick-player-layout','Organiser'),arrange,command('quick-player-center-all','Vue globale'),
    command('archives-dossier-open','Dossier'),command('quick-player-journal','Journal'),command('quick-player-notes','Notes'),
-   owlControl?.isConnected&&!owlControl.disabled?owlControl:null,more,command('archives-home-fab','Accueil'),
+   command('quick-grid-toggle','Grille'),command('quick-player-undo','Annuler'),
+   owlControl?.isConnected&&!owlControl.disabled?owlControl:null,command('archives-home-fab','Accueil'),
    !api.getState().strictReadOnly?command('quick-mode-switch','Mode MJ'):null
   ]);
-  placeCommands(menuActions,[command('quick-grid-toggle','Afficher ou masquer la grille',true),command('quick-player-undo','Annuler mon déplacement',true)]);
-  refreshScenes();paint();updateZoom();
+  paint();
  }
  function schedule(){if(!queued){queued=true;requestAnimationFrame(reconcile)}}
- function updateZoom(){if(!active)return;const value=Math.round(camera().zoom*100);slider.value=String(value);zoomValue.value=value+' %';}
- function refreshScenes(){
-  const tabs=Array.from(document.querySelectorAll('#tabs-bar .tab-btn'));sceneSection.hidden=tabs.length<2;scenes.replaceChildren(...tabs.map((tab,i)=>{const b=button('Afficher la scène '+(i+1),'Scène '+(i+1),()=>{tab.click();menu.close();api.resetView()});b.setAttribute('aria-pressed',String(tab.classList.contains('active')));return b}));
+ function setArrange(value){
+  arranging=value===true&&active&&player();
+  document.body.classList.toggle('player-arrange-cells',arranging);
+  arrange.setAttribute('aria-pressed',String(arranging));
+  arrange.textContent=arranging?'✓':'✥';
+  const label=arranging?'Terminer le déplacement des cellules':'Déplacer mes cellules';
+  arrange.setAttribute('aria-label',label);arrange.title=label;
  }
- function setArrange(value){arranging=value===true;document.body.classList.toggle('player-arrange-cells',arranging);arrange.setAttribute('aria-pressed',String(arranging));arrange.textContent=arranging?'Déplacement des cellules activé':'Déplacer mes cellules';menu.close()}
- function openMenu(focusZoom=false){if(!active)return;updateZoom();refreshScenes();if(!menu.open)menu.showModal();if(focusZoom)slider.focus()}
- menuActions.addEventListener('click',()=>menu.close());
  window.ArchivesPlayerUI={get arranging(){return arranging},setArrange,
   insets(){
    const v=viewport(),result={left:18,right:18,top:18,bottom:18};if(!active||prefs.hidden)return result;
@@ -153,12 +143,12 @@ function install(){
  };
  for(const id of ['top-hud','quick-icon-dock','canvas-integrations-dock']){const target=document.getElementById(id);if(target)new MutationObserver(schedule).observe(target,{childList:true,subtree:true,attributes:true,attributeFilter:['disabled']})}
  new MutationObserver(()=>{if(player()!==active)schedule()}).observe(document.body,{attributes:true,attributeFilter:['class']});
- window.addEventListener('archives:camera',updateZoom);window.addEventListener('archives:player-scope',schedule);window.addEventListener('archives:public-view',schedule);
+ window.addEventListener('archives:player-scope',schedule);window.addEventListener('archives:public-view',schedule);
  window.addEventListener('message',event=>{if(event.source===window.parent&&event.origin===location.origin&&isPacket(event.data)&&event.data.type==='owl-player-identity')schedule()});
  const resized=()=>{
   const before=lastViewport,after=viewport(),rotated=Math.abs(after.width-before.width)>40&&lastOrientation!==orientation();lastViewport=after;lastOrientation=orientation();
   if(!active)return;load();paint();
-  if(rotated&&!menu.open&&!document.querySelector('dialog[open],.modal-overlay.open,#player-cell-detail.open')){
+  if(rotated&&!document.querySelector('dialog[open],.modal-overlay.open,#player-cell-detail.open')){
    if(isFitted())fitView();else {const c=camera();api.setCanvasCamera({...c,panX:c.panX+(after.width-before.width)/2,panY:c.panY+(after.height-before.height)/2},true)}
   }
  };window.addEventListener('resize',resized);window.visualViewport?.addEventListener('resize',resized);window.visualViewport?.addEventListener('scroll',resized);

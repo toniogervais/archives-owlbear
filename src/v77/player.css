@@ -20,8 +20,10 @@ body.player-icons-hidden .cell-actions,body.player-icons-hidden .player-cell-res
 #archives-player-tools .player-command[data-tone="amber"]{color:#f6c18b}
 #archives-player-tools svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .player-action-caption{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-#archives-player-display-open{font-size:24px!important;line-height:1}
-#archives-player-display-open svg{stroke-width:3}
+#archives-player-tools .player-arrange-toggle{font-size:25px!important;color:#aee3d6;line-height:1}
+#archives-player-tools .player-arrange-toggle[aria-pressed="true"]{color:#fff0b7!important;background:#415447!important;border-color:#b6efc5!important;box-shadow:inset 0 0 0 1px #b9edc37a,0 0 12px #6bdab54a}
+body.archives-player-ui.player-arrange-cells #viewport{cursor:move}
+body.archives-player-ui.player-arrange-cells .node-cell{cursor:move}
 #archives-player-tools #archives-home-fab{font-size:24px;position:relative!important;inset:auto!important}
 html body.strict-readonly #archives-player-tools #quick-mode-switch{display:none!important}
 .player-bar-vertical{flex-direction:column}
@@ -29,24 +31,6 @@ html body.strict-readonly #archives-player-tools #quick-mode-switch{display:none
 .player-bar-collapsed{border-radius:13px}
 #archives-player-icons-toggle{position:fixed;z-index:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:52px;min-height:52px;padding:6px 2px;touch-action:none!important;border:1px solid #d9c59a;border-radius:15px;background:#252035f7;color:#f5deb5;box-shadow:0 5px 20px #0009;font-size:10px!important;line-height:1.1;user-select:none}
 #archives-player-icons-toggle[aria-pressed="false"]{background:#34483d;color:#d3ffe4;border-color:#97d4b0}
-#archives-player-display{box-sizing:border-box;width:min(410px,calc(100vw - 20px));max-width:calc(100vw - 20px);max-height:calc(100dvh - 24px);padding:18px;border:1px solid #c8a97788;border-radius:18px;background:#191422;color:#f8ead5;box-shadow:0 15px 70px #000b;overflow:auto;font:15px/1.5 'Segoe UI',system-ui,sans-serif;overscroll-behavior:contain}
-#archives-player-display::backdrop{background:#07050dc4}
-#archives-player-display header{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px}
-#archives-player-display h2{font-size:20px;margin:0;color:#f9e5ba}
-#archives-player-display header button{width:44px;height:44px;border:1px solid #a78d6566;border-radius:10px;background:#302538;font-size:25px}
-#archives-player-display button{min-height:44px}
-.player-display-zoom{display:grid;grid-template-columns:1fr auto;gap:6px;padding:13px;border-radius:12px;background:#ffffff06;border:1px solid #c8b0e32e}
-.player-display-zoom input{grid-column:1/-1;width:100%;min-height:44px;accent-color:#9fd8c0;touch-action:pan-y}
-.player-display-zoom output{font-variant-numeric:tabular-nums;color:#bde7d2}
-.player-display-actions{display:grid;grid-template-columns:1fr;gap:8px;margin:14px 0}
-#archives-player-tools .player-menu-command{display:flex!important;align-items:center;gap:12px;visibility:visible!important;opacity:1!important;width:100%;height:auto;min-height:48px;padding:10px 12px;border:1px solid #b8a0d139;border-radius:10px;background:#33283d;color:#f4e9dc;text-align:left;font-size:14px;box-shadow:none}
-.player-menu-caption{white-space:normal}
-#archives-player-arrange,#archives-player-display>button{display:block;width:100%;min-height:48px;padding:10px 12px;margin:10px 0;border:1px solid #bba07055;border-radius:10px;background:#342b27;color:#f9e1b2;text-align:left}
-#archives-player-arrange[aria-pressed="true"]{border-color:#9bd7b0;background:#203e32;color:#c6f3d6}
-.player-scenes{display:flex;flex-wrap:wrap;gap:8px}
-.player-scenes button{min-height:44px;padding:8px 12px;background:#31273d;border:1px solid #a58bba55;border-radius:9px}
-.player-scenes button[aria-pressed="true"]{border-color:#f2d29a;background:#584129}
-#archives-player-display h3{font-size:15px;margin:15px 0 8px}
 body.archives-player-ui #viewport{cursor:grab}
 @media(pointer:coarse){
  body.archives-player-ui:not(.player-arrange-cells) .player-cell-resize{display:none!important}

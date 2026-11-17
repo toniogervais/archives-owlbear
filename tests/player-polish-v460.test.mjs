@@ -30,10 +30,18 @@ test('The same named player is offered once but keeps both delivery routes',()=>
  const ambiguous=group([{id:'live1',name:'Aline',transport:'live'},{id:'live2',name:'Aline',transport:'live'},{id:'owl1',name:'Aline',transport:'owl'}]);
  assert.equal(ambiguous.length,3,'names stay separate if same-channel identities conflict');
 });
-test('Player toolbar removes zoom trio but retains precise slider',()=>{
+test('Player toolbar keeps direct arranging and discards the three-dot panel',()=>{
  assert.doesNotMatch(playerUi,/archives-player-zoom-(?:in|out|value)/);
- assert.match(playerUi,/archives-player-zoom-range/);
- const css=fs.readFileSync('src/v77/player.css','utf8');assert.match(css,/overflow-x:auto/);
+ assert.doesNotMatch(playerUi,/archives-player-display-open|icon\('more'\)|menuActions/);
+ assert.match(playerUi,/id='archives-player-arrange'/);
+ assert.match(playerUi,/arrange,command\('quick-player-center-all'/);
+ assert.match(playerUi,/classList\.toggle\('player-arrange-cells',arranging\)/);
+ assert.match(playerUi,/aria-pressed/);
+ assert.match(playerUi,/command\('quick-grid-toggle','Grille'\)/);
+ assert.match(playerUi,/command\('quick-player-undo','Annuler'\)/);
+ const css=fs.readFileSync('src/v77/player.css','utf8');assert.match(css,/\.player-arrange-toggle\[aria-pressed="true"\]/);
+ assert.match(css,/overflow-x:auto/);
+ const touch=fs.readFileSync('src/v77/touch-canvas.mjs','utf8');assert.match(touch,/window\.ArchivesPlayerUI\?\.arranging/);
 });
 test('Redundant player instructions are absent from viewers',()=>{
  assert.doesNotMatch(fs.readFileSync('media-view-v60.html','utf8'),/Lecture sur ton appareil/);

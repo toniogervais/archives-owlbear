@@ -40,7 +40,15 @@ async function run(browser,mode){
   await page.locator('#quick-player-layout').click();
   assert.deepEqual(await page.evaluate(()=>DuneApp.getState().nodes.map(({id,x,y})=>({id,x,y}))),original,'organizing a player view preserves GM positions');
   const layout=await page.evaluate(()=>JSON.stringify(DuneApp.getState().playerLayout));assert.notEqual(layout,'{}','player organization is applied');
-  await page.locator('#archives-player-display-open').click();await page.locator('#archives-player-zoom-range').evaluate(e=>{e.value='118';e.dispatchEvent(new Event('input',{bubbles:true}))});assert.ok(await page.evaluate(()=>Math.abs(DuneApp.getState().zoom-1.18)<.001));await page.getByRole('button',{name:'Fermer mon affichage',exact:true}).click();
+  assert.equal(await page.locator('#archives-player-display-open').count(),0,'three-dot options icon is gone');
+  const move=page.locator('#archives-player-arrange');await move.click();assert.equal(await move.getAttribute('aria-pressed'),'true','drag mode is one click away');
+  const moveCell=await page.locator('.node-cell[data-id="a"]').boundingBox();
+  const playerBefore=await page.evaluate(()=>({...DuneApp.getState().playerLayout.a}));
+  await page.mouse.move(moveCell.x+90,moveCell.y+75);await page.mouse.down();await page.mouse.move(moveCell.x+152,moveCell.y+109,{steps:6});await page.mouse.up();
+  const playerAfter=await page.evaluate(()=>({...DuneApp.getState().playerLayout.a}));
+  assert.ok(playerAfter.x>playerBefore.x+20,'dragging with the mouse moves the personal cell');
+  assert.deepEqual(await page.evaluate(()=>DuneApp.getState().nodes.map(({id,x,y})=>({id,x,y}))),original,'the GM's layout data is untouched');
+  await move.click();assert.equal(await move.getAttribute('aria-pressed'),'false','the same control turns drag mode off');
   await page.locator('#quick-player-center-cell').click();await page.locator('#quick-player-center-all').click();
   await page.getByRole('button',{name:'Réduire la barre des joueurs',exact:true}).click();assert.equal(await page.locator('.player-bar-actions').isVisible(),false);
   await page.getByRole('button',{name:'Déployer la barre des joueurs',exact:true}).click();
@@ -52,7 +60,7 @@ async function run(browser,mode){
   if(mode==='preview'){
    await page.locator('#quick-mode-switch').click();await page.locator('#archives-player-tools').waitFor({state:'hidden'});assert.equal(await page.locator('#quick-icon-dock').isVisible(),true);
    const popup=page.waitForEvent('popup');await page.evaluate(()=>DuneApp.openPlayerTab());const player=await popup;
-   await player.waitForURL(/\bv=4600\b/);assert.equal(new URL(player.url()).searchParams.get('v'),'4600','the second screen loads the current application version');await player.close();
+   await player.waitForURL(/\bv=4610\b/);assert.equal(new URL(player.url()).searchParams.get('v'),'4610','the second screen loads the current application version');await player.close();
   }
   assert.deepEqual(errors,[]);console.log('V4.58 desktop '+mode+': one toolbar, click across synchronization, organization, zoom, grip, collapse and hide/restore passed.');
  }finally{await context.close()}
