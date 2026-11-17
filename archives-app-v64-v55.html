@@ -3290,7 +3290,15 @@ window.DuneApp = (function() {
     function cancelTouchResize(){
       if(playerResize){if(previousLayout)state.playerLayout[node.id]=previousLayout;else delete state.playerLayout[node.id];}
       else{node.w=origW;node.h=origH;}
-      end(null,true);renderAll();
+      // A Touch keeps its original target. Rebuilding this cell here detaches
+      // that target and prevents the remaining pinch events reaching window.
+      var restored=getEffectiveCellSize(node);
+      elCell.style.width=restored.w+'px';elCell.style.height=restored.h+'px';
+      if(!playerResize){
+        if(el('inp-width'))el('inp-width').value=restored.w;if(el('inp-height'))el('inp-height').value=restored.h;
+        if(el('lbl-w'))el('lbl-w').textContent=restored.w+' px';if(el('lbl-h'))el('lbl-h').textContent=restored.h+' px';
+      }
+      end(null,true);renderLinks();
     }
     function end(ev,cancelled) {
       if (finished || (ev && ev.pointerId!==undefined && ev.pointerId!==pointerId)) return;
@@ -3477,7 +3485,10 @@ window.DuneApp = (function() {
       window.removeEventListener('blur',onEnd);
       window.removeEventListener('archives:cancel-cell-touch',cancelTouchMove);
       clearDropHighlights();
-      if(cancelled){renderAll();finishPlayerInteraction();return;}
+      if(cancelled){
+        var restored=getEffPos(node);elCell.style.left=restored.x+'px';elCell.style.top=restored.y+'px';
+        renderLinks();finishPlayerInteraction();return;
+      }
 
       if (moved && hoveredTarget) {
         if (canCellContain(hoveredTarget, node)) {
