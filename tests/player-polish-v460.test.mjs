@@ -45,6 +45,7 @@ test('Player cells drag without any toolbar mode or duplicated settings',()=>{
  assert.ok(!touch.includes('ArchivesPlayerUI?.arranging'));
  assert.ok(touch.includes('directTap={id:cell.dataset.id'));
  assert.ok(touch.includes('api.openPlayerCell(tap.id)'));
+ assert.ok(touch.includes('Array.from(event.changedTouches).some('),'TouchList is array-like, not an Array');
  assert.ok(touch.includes('directTap=null;claim(event)'));
  assert.ok(html.includes('function onCellPressed(node, elCell, startX, startY, isTouch)'));
 

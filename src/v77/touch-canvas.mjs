@@ -48,7 +48,7 @@ function install(){
  },{capture:true,passive:false});
  window.addEventListener('touchend',event=>{
   for(const touch of event.changedTouches)canvasTouches.delete(touch.identifier);
-  if(!gesture){const tap=directTap;directTap=null;if(tap&&event.touches.length===0&&event.changedTouches.some(t=>t.identifier===tap.touch)&&performance.now()-tap.time<450&&isPlayer())api.openPlayerCell(tap.id);return;}
+  if(!gesture){const tap=directTap;directTap=null;if(tap&&event.touches.length===0&&Array.from(event.changedTouches).some(t=>t.identifier===tap.touch)&&performance.now()-tap.time<450&&isPlayer())api.openPlayerCell(tap.id);return;}
   directTap=null;claim(event);flush();const list=touches(event);
   if(list.length>=2){if(gesture.kind!=='pinch'||gesture.ids!==pair(list).ids)startPinch(event,list)}
   else if(list.length===1)startPan(list[0],null);else finish(false);
