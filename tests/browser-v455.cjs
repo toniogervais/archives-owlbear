@@ -52,8 +52,7 @@ async function inBounds(p){return editor(p).locator('#archives-player-tools').ev
   assert.equal(await editor(p).locator('#archives-player-display-open').count(),0,'the unnecessary three-dot menu is removed');
   const gmPositionBefore=await app(gm).evaluate(()=>DuneApp.getState().nodes.find(n=>n.id==='n').x);
   const otherPlayerLayout=await layout(q),personalBefore=await layout(p);
-  await editor(p).getByRole('button',{name:'Déplacer mes cellules',exact:true}).tap();
-  assert.equal(await editor(p).locator('#archives-player-arrange').getAttribute('aria-pressed'),'true','player drag mode is directly accessible');
+  assert.equal(await editor(p).locator('#archives-player-arrange').count(),0,'players drag cells without a mode button');
   const moveCell=await editor(p).locator('.node-cell[data-id="n"]').boundingBox();
   const finger={id:7,x:Math.round(moveCell.x+85),y:Math.round(moveCell.y+95)};
   await touch(cdp,'touchStart',[finger]);
@@ -64,8 +63,13 @@ async function inBounds(p){return editor(p).locator('#archives-player-tools').ev
   assert.ok(personalAfter.n.y>personalBefore.n.y+15,'touch dragging updates both coordinates');
   assert.deepEqual(await layout(q),otherPlayerLayout,'the other player has an independent canvas');
   assert.equal(await app(gm).evaluate(()=>DuneApp.getState().nodes.find(n=>n.id==='n').x),gmPositionBefore,'the GM canvas stays unchanged');
-  await editor(p).getByRole('button',{name:'Terminer le déplacement des cellules',exact:true}).tap();
-  assert.equal(await editor(p).locator('#archives-player-arrange').getAttribute('aria-pressed'),'false','the same button exits move mode');
+  // Hide the toolbar: direct finger dragging must still work.
+  await editor(p).getByRole('button',{name:'Masquer les icônes',exact:true}).tap();
+  const hiddenBefore=await layout(p),hiddenCell=await editor(p).locator('.node-cell[data-id="n"]').boundingBox();
+  const hiddenFinger={id:8,x:Math.round(hiddenCell.x+80),y:Math.round(hiddenCell.y+80)};
+  await touch(cdp,'touchStart',[hiddenFinger]);await touch(cdp,'touchMove',[{...hiddenFinger,x:hiddenFinger.x+41,y:hiddenFinger.y+23}]);await touch(cdp,'touchEnd',[]);
+  assert.ok((await layout(p)).n.x>hiddenBefore.n.x+15,'cells remain movable when the icon bar is hidden');
+  await editor(p).getByRole('button',{name:'Afficher les icônes',exact:true}).tap();
   await app(p).evaluate(c=>DuneApp.setCanvasCamera(c,true),initial);
   await editor(p).locator('#quick-player-center-all').tap();await p.screenshot({path:'/tmp/archives-v455-smartphone.png'});await q.screenshot({path:'/tmp/archives-v455-tablette.png'});
   // The single player toolbar has its own compact state and a real touch-operated grip.

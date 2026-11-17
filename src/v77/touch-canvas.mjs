@@ -27,7 +27,9 @@ function install(){
   const list=touches(event);if(!list.length)return;
   if(list.length>=2){const p=pair(list);if(gesture?.kind!=='pinch'||gesture.ids!==p.ids)startPinch(event,list);else claim(event);return}
   const target=list[0].target,cell=target.closest('.node-cell'),interactive=target.closest('button,a,input,textarea,select,[contenteditable="true"],.resize-handle,.sub-cell-card,.child-chip,.context-menu');
-  if(interactive||cell&&(!isPlayer()||window.ArchivesPlayerUI?.arranging))return;
+  // Player cells move immediately when touched; background touches pan instead.
+  // Adding a second finger cancels the cell drag and starts a canvas pinch.
+  if(interactive||cell)return;
   claim(event);api.closeContextMenus();startPan(list[0],cell?.dataset.id||null);
  },{capture:true,passive:false});
  window.addEventListener('touchmove',event=>{

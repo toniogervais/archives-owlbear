@@ -10,12 +10,10 @@ function viewport(){const v=window.visualViewport,css=getComputedStyle(document.
 const orientation=()=>innerWidth>innerHeight?'landscape':'portrait';
 const defaults=()=>({hidden:false,toolbar:{x:innerWidth>700?1:.5,y:innerWidth>700?.5:1,vertical:innerWidth>700,collapsed:false},toggle:{x:1,y:0}});
 function install(){
- if(!window.DuneApp)return;const api=window.DuneApp,originals=new Map();installPlayerNotebook();let active=false,storageKey='',visibilityKey='',prefs=defaults(),arranging=false,queued=false,layoutFrame=0,owlControl,fittedCamera=null,lastViewport=viewport(),lastOrientation=orientation();
+ if(!window.DuneApp)return;const api=window.DuneApp,originals=new Map();installPlayerNotebook();let active=false,storageKey='',visibilityKey='',prefs=defaults(),queued=false,layoutFrame=0,owlControl,fittedCamera=null,lastViewport=viewport(),lastOrientation=orientation();
  const root=el('div');root.id='archives-player-tools';root.hidden=true;
- const toggle=button('Masquer les icônes','',()=>{const refit=isFitted();prefs.hidden=!prefs.hidden;if(prefs.hidden)setArrange(false);else prefs.toolbar.collapsed=false;paint();save();if(refit)fitView()});toggle.id='archives-player-icons-toggle';toggle.append(icon('eye'));
+ const toggle=button('Masquer les icônes','',()=>{const refit=isFitted();prefs.hidden=!prefs.hidden;if(!prefs.hidden)prefs.toolbar.collapsed=false;paint();save();if(refit)fitView()});toggle.id='archives-player-icons-toggle';toggle.append(icon('eye'));
  const toggleCaption=el('span',null,'Icônes');toggle.append(toggleCaption);
- const arrange=button('Déplacer mes cellules','✥',()=>setArrange(!arranging));
- arrange.id='archives-player-arrange';arrange.className='player-command player-arrange-toggle';arrange.setAttribute('aria-pressed','false');
  const toolbar=makeBar('toolbar','des joueurs');
  toolbar.node.setAttribute('aria-label','Barre d’icônes des joueurs');
  root.append(toolbar.node,toggle);document.body.append(root);
@@ -103,12 +101,12 @@ function install(){
  }
  function reconcile(){
   queued=false;const next=player();
-  if(!next){if(active){active=false;setArrange(false);root.hidden=true;document.body.classList.remove('archives-player-ui','player-arrange-cells','player-icons-hidden');for(const [control,record]of originals){record.label?.remove();control.classList.remove('player-command','player-menu-command');if(record.marker.isConnected)record.marker.replaceWith(control)}originals.clear()}return}
+  if(!next){if(active){active=false;root.hidden=true;document.body.classList.remove('archives-player-ui','player-icons-hidden');for(const [control,record]of originals){record.label?.remove();control.classList.remove('player-command','player-menu-command');if(record.marker.isConnected)record.marker.replaceWith(control)}originals.clear()}return}
   const route=new URLSearchParams(location.search);if(window.parent===window&&(route.get('ro')==='1'||route.get('player')==='1')&&!window.ArchivesPlayerScope)window.ArchivesRelay?.setPlayerScope('live:'+(api.getState().liveRoomId||route.get('room')||'second-ecran')+':'+(window.__archivesLivePlayerName||'Joueur'));
   active=true;root.hidden=false;document.body.classList.add('archives-player-ui');window.ArchivesPlayerNotebook?.refresh();load();
   owlControl=document.querySelector('#canvas-integrations-dock .canvas-integration-item:first-child button')||owlControl;if(owlControl?.isConnected&&!owlControl.disabled)decorate(owlControl,'Carte');
   placeCommands(toolbar.actions,[
-   command('quick-player-center-cell','Centrer'),command('quick-player-layout','Organiser'),arrange,command('quick-player-center-all','Vue globale'),
+   command('quick-player-center-cell','Centrer'),command('quick-player-layout','Organiser'),command('quick-player-center-all','Vue globale'),
    command('archives-dossier-open','Dossier'),command('quick-player-journal','Journal'),command('quick-player-notes','Notes'),
    command('quick-grid-toggle','Grille'),command('quick-player-undo','Annuler'),
    owlControl?.isConnected&&!owlControl.disabled?owlControl:null,command('archives-home-fab','Accueil'),
@@ -117,15 +115,7 @@ function install(){
   paint();
  }
  function schedule(){if(!queued){queued=true;requestAnimationFrame(reconcile)}}
- function setArrange(value){
-  arranging=value===true&&active&&player();
-  document.body.classList.toggle('player-arrange-cells',arranging);
-  arrange.setAttribute('aria-pressed',String(arranging));
-  arrange.textContent=arranging?'✓':'✥';
-  const label=arranging?'Terminer le déplacement des cellules':'Déplacer mes cellules';
-  arrange.setAttribute('aria-label',label);arrange.title=label;
- }
- window.ArchivesPlayerUI={get arranging(){return arranging},setArrange,
+ window.ArchivesPlayerUI={
   insets(){
    const v=viewport(),result={left:18,right:18,top:18,bottom:18};if(!active||prefs.hidden)return result;
    const r=toolbar.node.getBoundingClientRect();
