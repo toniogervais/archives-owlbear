@@ -1,0 +1,43 @@
+name: Validation V4.60 — interface joueurs et partage du canevas
+on:
+  push:
+    branches: [main]
+    paths:
+      - "archives-app-v64-v55.html"
+      - "src/v77/**"
+      - "src/v79/**"
+      - "src/v70/**"
+      - "src/v60/**"
+      - "media-view-v60.html"
+      - "tests/player-polish-v460.test.mjs"
+      - "tests/browser-v455.cjs"
+      - "tests/browser-v458.cjs"
+      - "tests/browser-v459.cjs"
+      - ".github/workflows/verify-v460.yml"
+  workflow_dispatch:
+jobs:
+  tests-unitaires:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npm test
+  navigateurs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        test: [browser-v455, browser-v458, browser-v459]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: node tests/${{ matrix.test }}.cjs
