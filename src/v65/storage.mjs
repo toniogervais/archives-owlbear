@@ -1,4 +1,4 @@
-import {button,element,isGM} from '../v63/ui.mjs?v=4570';
+import {button,element,isGM} from '../v63/ui.mjs?v=4580';
 import {storageAmounts,storageText} from './storage-model.mjs';
 function install(){
   if(!isGM())return;

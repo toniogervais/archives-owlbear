@@ -1,5 +1,5 @@
-import {element,button,isGM} from '../v63/ui.mjs?v=4570';
-import {publicConnection} from './connection.mjs?v=4570';
+import {element,button,isGM} from '../v63/ui.mjs?v=4580';
+import {publicConnection} from './connection.mjs?v=4580';
 export function restoreConnectionLink(){
  if(!isGM()||!location.hash.startsWith('#archives-cloud='))return false;
  try{
@@ -24,7 +24,7 @@ export function mountAccount(view,onChange){
  }
  const share=button('Lien pour un autre appareil',async()=>{
   try{
-   const connection=publicConnection({url:document.getElementById('ac-url')?.value,key:document.getElementById('ac-key')?.value}),url=new URL('../../archives.html',import.meta.url);url.search='?resume=1&v=4570';url.hash='archives-cloud='+encodeURIComponent(JSON.stringify(connection));
+   const connection=publicConnection({url:document.getElementById('ac-url')?.value,key:document.getElementById('ac-key')?.value}),url=new URL('../../archives.html',import.meta.url);url.search='?resume=1&v=4580';url.hash='archives-cloud='+encodeURIComponent(JSON.stringify(connection));
    link.value=url.href;link.hidden=false;link.focus();link.select();
    try{await navigator.clipboard.writeText(url.href);message.textContent='Lien copié. Ouvre-le sur l’autre appareil, connecte-toi avec le même compte MJ et choisis « Reprendre la dernière sauvegarde ».'}
    catch{message.textContent='Copie ce lien et ouvre-le sur l’autre appareil. Connecte-toi avec le même compte MJ pour retrouver tes sessions.'}

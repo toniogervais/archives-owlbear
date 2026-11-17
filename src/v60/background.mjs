@@ -1,7 +1,7 @@
-import { localRoom,roomMembers,roomChannel,release } from "../v57/room.mjs?v=4570";
-import { openFileLibrary,validateFile,validId,validSharedFile as validPublication,publicFile,digest,fileChunks,fileReceiver,mediaChannel,mediaModal } from "./files.mjs?v=4570";
-import {installDossierFiles,dossierEntry} from '../v69/dossier-files.mjs?v=4570';
-import {createDirectFiles} from '../v76/direct-files.mjs?v=4570';
+import { localRoom,roomMembers,roomChannel,release } from "../v57/room.mjs?v=4580";
+import { openFileLibrary,validateFile,validId,validSharedFile as validPublication,publicFile,digest,fileChunks,fileReceiver,mediaChannel,mediaModal } from "./files.mjs?v=4580";
+import {installDossierFiles,dossierEntry} from '../v69/dossier-files.mjs?v=4580';
+import {createDirectFiles} from '../v76/direct-files.mjs?v=4580';
 
 export async function installFileLibrary(OBR) {
   const {channel,connectionId:initialConnection} = await localRoom(OBR);

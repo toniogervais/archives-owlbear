@@ -87,8 +87,9 @@ async function contextAction(page,id){
   assert.equal(await app(gm).evaluate(()=>window.fixtureCloudUploads.length),2,'only the original and changed crop require distinct stored images');
   await player.frameLocator('#invite').getByRole('button',{name:'Afficher les Archives',exact:true}).click();
   await editor(player).locator('.cell-title-txt').filter({hasText:'Document connu'}).waitFor();
+  await editor(player).locator('#archives-player-toolbar-bar').waitFor();
   const top=editor(player).locator('#top-hud .hud-row>.top-group:first-child');
-  assert.deepEqual(await editor(player).locator('#archives-player-reading-bar #archives-dossier-open,#archives-player-reading-bar #quick-player-journal,#archives-player-reading-bar #quick-player-notes').evaluateAll(items=>items.map(x=>x.id).sort()),['archives-dossier-open','quick-player-journal','quick-player-notes']);
+  assert.deepEqual(await editor(player).locator('#archives-player-toolbar-bar #archives-dossier-open,#archives-player-toolbar-bar #quick-player-journal,#archives-player-toolbar-bar #quick-player-notes').evaluateAll(items=>items.map(x=>x.id).sort()),['archives-dossier-open','quick-player-journal','quick-player-notes']);
   assert.equal(await top.locator('#tabs-bar button:not(.tab-btn)').count(),0);
   for(const id of ['canvas-save-icon','cell-catalog-icon','clear-act-button','archives-batch-open','archives-roster-open'])assert.equal(await editor(player).locator('#'+id).count(),0);
   await app(player).evaluate(()=>{const button=document.createElement('button');button.id='late-gm-button';document.querySelector('#top-hud .top-group').append(button)});

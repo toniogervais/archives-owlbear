@@ -1,7 +1,7 @@
-name: Vérification V4.57 — commandes Archives et conflits de sauvegarde
+name: Vérification — commandes des joueurs et conflits de sauvegarde
 on:
   push:
-    branches: ['codex/v457-*']
+    branches: ['codex/v457-*', 'codex/v458-*']
   workflow_dispatch:
 jobs:
   unit:
@@ -25,6 +25,7 @@ jobs:
           node-version: '22'
       - run: npm ci
       - run: npx playwright install chromium
+      - run: node tests/browser-v458.cjs
       - run: node tests/browser-v457.cjs
       - run: node tests/browser-v455.cjs
       - run: node tests/browser-v64.cjs
