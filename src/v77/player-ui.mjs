@@ -148,7 +148,20 @@ function install(){
  function openMenu(focusZoom=false){if(!active)return;updateZoom();refreshScenes();if(!menu.open)menu.showModal();if(focusZoom)slider.focus()}
  menuActions.addEventListener('click',()=>menu.close());
  window.ArchivesPlayerUI={get arranging(){return arranging},setArrange,
-  insets(){const v=viewport(),result={left:18,right:18,top:18,bottom:18};if(!active||prefs.hidden)return result;const r=toolbar.node.getBoundingClientRect();if(r.top<v.top+24)result.top=Math.max(result.top,r.bottom-v.top+16);if(r.bottom>v.top+v.height-24)result.bottom=Math.max(result.bottom,v.top+v.height-r.top+16);if(r.left<v.left+24&&r.height>r.width)result.left=Math.max(result.left,r.right-v.left+16);if(r.right>v.left+v.width-24&&r.height>r.width)result.right=Math.max(result.right,v.left+v.width-r.left+16);return result}
+  insets(){
+   const v=viewport(),result={left:18,right:18,top:18,bottom:18};if(!active||prefs.hidden)return result;
+   const r=toolbar.node.getBoundingClientRect();
+   // A vertical bar can reach both the top and bottom on a short screen. Only
+   // reserve its horizontal edge; otherwise fitting would use a negative height.
+   if(prefs.toolbar.vertical){
+    if(r.left<v.left+24)result.left=Math.max(result.left,r.right-v.left+16);
+    if(r.right>v.left+v.width-24)result.right=Math.max(result.right,v.left+v.width-r.left+16);
+   }else{
+    if(r.top<v.top+24)result.top=Math.max(result.top,r.bottom-v.top+16);
+    if(r.bottom>v.top+v.height-24)result.bottom=Math.max(result.bottom,v.top+v.height-r.top+16);
+   }
+   return result;
+  }
  };
  for(const id of ['top-hud','quick-icon-dock','canvas-integrations-dock']){const target=document.getElementById(id);if(target)new MutationObserver(schedule).observe(target,{childList:true,subtree:true,attributes:true,attributeFilter:['disabled']})}
  new MutationObserver(()=>{if(player()!==active)schedule()}).observe(document.body,{attributes:true,attributeFilter:['class']});

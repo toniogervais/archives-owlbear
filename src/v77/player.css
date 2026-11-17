@@ -24,6 +24,8 @@ body.player-icons-hidden .cell-actions,body.player-icons-hidden .player-cell-res
 #archives-player-display-open{font-size:24px!important;line-height:1}
 #archives-player-display-open svg{stroke-width:3}
 #archives-player-tools #archives-player-zoom-value{padding:2px;font-size:11px;font-weight:750;color:#bde3d4;font-variant-numeric:tabular-nums}
+#archives-player-tools #archives-home-fab{font-size:24px}
+html body.strict-readonly #archives-player-tools #quick-mode-switch{display:none!important}
 .player-bar-vertical{flex-direction:column}
 .player-bar-vertical .player-bar-actions{flex-direction:column;flex-wrap:nowrap;justify-content:flex-start;max-height:calc(var(--player-vh,100dvh) - 130px)}
 .player-bar-collapsed{border-radius:13px}
