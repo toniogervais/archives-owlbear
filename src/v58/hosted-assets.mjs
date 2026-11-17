@@ -2,7 +2,7 @@
    Seul le MJ authentifié peut écrire dans son dossier Supabase Storage.
    Les URL signées sont des capacités d'accès temporaires : ne jamais les
    publier dans la scène ni le canal joueur avant une révélation volontaire. */
-import {artworkBlob,blobDigest,maxImageBytes} from './model.mjs?v=4580';
+import {artworkBlob,blobDigest,maxImageBytes} from './model.mjs?v=4590';
 
 export const TOKEN_BUCKET='archives-owlbear-assets';
 // 90 days avoids imminent broken assets while limiting URL exposure.

@@ -6,8 +6,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="./src/v77/player.css?v=4580">
-<link rel="stylesheet" href="./src/v78/responsive.css?v=4580">
+<link rel="stylesheet" href="./src/v77/player.css?v=4590">
+<link rel="stylesheet" href="./src/v78/responsive.css?v=4590">
 <title>Les Archives de l’Imaginaire — Jeu de rôle</title>
 <style id="core-styles">
 :root {
@@ -2001,6 +2001,7 @@ window.DuneApp = (function() {
   var peerInstance = null;
   var peerConns = [];
   window.ArchivesLiveInvitations = {
+    players: function(){return state.playerMode||state.strictReadOnly?[]:livePlayers.map(function(p){return {id:p.id,name:p.name,connected:p.connected===true};});},
     publishSoundShow: function(session) {
       if (state.playerMode || state.strictReadOnly) throw new Error('Commande réservée au meneur.');
       peerConns.filter(function(conn){return conn && conn.open;}).forEach(function(conn){
@@ -2048,7 +2049,7 @@ window.DuneApp = (function() {
         // editing MJ tab, which must retain its complete private campaign.
         if ((state.playerMode || state.strictReadOnly) && e.data && (e.data.boards || e.data.type==='archives:player-image:v1'))
           applyIncomingSync(e.data);
-        else if(!state.playerMode&&!state.strictReadOnly&&e.data?.type==='archives:player-image-request:v1')syncChannel.postMessage({type:'archives:player-image:v1',playerPresentation:playerImageProjection(state.playerPresentation)});
+        else if(!state.playerMode&&!state.strictReadOnly&&e.data?.type==='archives:player-image-request:v1')syncChannel.postMessage({type:'archives:player-image:v1',playerPresentation:Array.isArray(state.playerPresentationRecipients)?null:playerImageProjection(state.playerPresentation)});
       };
     }
   } catch (err) {}
@@ -2094,9 +2095,11 @@ window.DuneApp = (function() {
 
   // BEGIN SECURITY: player projection V4.7
   function playerImageProjection(value){
-    if(!value||value.published!==true||typeof value.id!=='string'||!/^[0-9a-f-]{36}$/.test(value.id)||
-       typeof value.image!=='string'||value.image.length>Math.ceil(25*1024*1024*4/3)+1024||!/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+=*$/.test(value.image))return null;
-    return {id:value.id,image:value.image,published:true,title:'Image partagée',delivery:value.delivery==='media'?'media':'inline'};
+    if(!value||value.published!==true||typeof value.id!=='string'||!/^[0-9a-f-]{36}$/.test(value.id)||typeof value.image!=='string')return null;
+    var match=/^data:(image\/(?:png|jpeg|webp|gif)|application\/pdf|text\/plain|audio\/(?:mpeg|wav|x-wav|ogg|mp4|webm)|video\/(?:mp4|webm|ogg));base64,([A-Za-z0-9+/]+=*)$/.exec(value.image);
+    if(!match)return null;var limit=/^(audio|video)\//.test(match[1])?8:25;
+    if(value.image.length>Math.ceil(limit*1024*1024*4/3)+1024)return null;
+    return {id:value.id,image:value.image,published:true,title:match[1].startsWith('image/')?'Image partagée':'Document partagé',delivery:value.delivery==='media'?'media':'inline'};
   }
   // Projection on the SENDER's side, before broadcasting over WebRTC or BroadcastChannel.
   // The MJ's local save remains complete. Never send unpublished or unknown fields.
@@ -2180,7 +2183,7 @@ window.DuneApp = (function() {
       fxEnabled:source.fxEnabled!==false,
       // Global MJ journal, unpublished media and custom sounds are NEVER transmitted.
       journalPages:[],
-      playerPresentation:playerImageProjection(source.playerPresentation),
+      playerPresentation:Array.isArray(source.playerPresentationRecipients)?null:playerImageProjection(source.playerPresentation),
       bgImage:"",
       canvasBgOp:75,
       skinName:String(source.skinName||"imperial"),
@@ -2268,6 +2271,10 @@ window.DuneApp = (function() {
       } finally {relayApplying=false;}
     }
   };
+  function playerViewForPeer(payload,conn){
+    if(!Array.isArray(state.playerPresentationRecipients))return payload;
+    return Object.assign({},payload,{playerPresentation:state.playerPresentationRecipients.includes(conn.peer)?playerImageProjection(state.playerPresentation):null});
+  }
   function saveState(revealedNodeId, revealedLinkId) {
     persistPlayerView();
     var payload = {
@@ -2278,6 +2285,7 @@ window.DuneApp = (function() {
       fxEnabled: state.fxEnabled,
       journalPages: state.journalPages,
       playerPresentation:playerImageProjection(state.playerPresentation),
+      playerPresentationRecipients:state.playerPresentationRecipients,
       bgImage: state.bgImage,
       canvasBgOp: state.canvasBgOp,
       skinName: state.skinName,
@@ -2301,7 +2309,7 @@ window.DuneApp = (function() {
       var publicPayload=projectPlayerPayload(payload);
       try { if (syncChannel) syncChannel.postMessage(publicPayload); } catch (err) {}
       for (var i = 0; i < peerConns.length; i++) {
-        try { if (peerConns[i] && peerConns[i].open) peerConns[i].send(publicPayload); } catch (err) {}
+        try { if (peerConns[i] && peerConns[i].open) peerConns[i].send(playerViewForPeer(publicPayload,peerConns[i])); } catch (err) {}
       }
     }
   }
@@ -3985,13 +3993,13 @@ window.DuneApp = (function() {
     var rect = vp.getBoundingClientRect();
     var x = Number.isFinite(clientX) ? clientX - rect.left : rect.width / 2;
     var y = Number.isFinite(clientY) ? clientY - rect.top : rect.height / 2;
-    var zoom = Math.min(5.0, Math.max(0.05, Math.round(nextZoom * 100) / 100));
+    var zoom = Math.min(5.0, Math.max(0.05, nextZoom));
     // Conserver le point du monde sous la souris, même avec la barre latérale ouverte.
     var ratio = zoom / state.zoom;
     state.panX = x - (x - state.panX) * ratio;
     state.panY = y - (y - state.panY) * ratio;
     state.zoom = zoom;
-    applyTransform(); renderAll();
+    applyTransform(); persistPlayerView();
   }
 
   function positionContextMenu(menu, x, y) {
@@ -4079,7 +4087,8 @@ window.DuneApp = (function() {
     vp.addEventListener("wheel", function(e) {
       e.preventDefault();
       if (!e.deltaY) return;
-      var factor = e.deltaY < 0 ? 1.12 : 0.89;
+      var delta = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? vp.clientHeight : 1);
+      var factor = Math.exp(-Math.max(-400, Math.min(400, delta)) * 0.0015);
       lastCanvasPointer = {x:e.clientX, y:e.clientY};
       zoomCanvasAt(state.zoom * factor, e.clientX, e.clientY);
     }, { passive: false });
@@ -5796,17 +5805,18 @@ window.DuneApp = (function() {
       else setStatus('Le lecteur d’images est en cours de chargement. Réessaie dans un instant.');
     },
     hidePlayerImage: function() { if(!state.playerMode&&!state.strictReadOnly)return window.ArchivesPlayerImage?.hide(); },
-    commitPlayerPresentation: function(value) {
+    commitPlayerPresentation: function(value,recipients) {
       if(state.playerMode||state.strictReadOnly)return false;
       var presentation=playerImageProjection(value);if(value&&!presentation)return false;
-      state.playerPresentation=presentation;
+      if(recipients!==undefined&&(!Array.isArray(recipients)||recipients.length>50||recipients.some(function(id){return typeof id!=='string'||!id||id.length>240;})))return false;
+      state.playerPresentation=presentation;state.playerPresentationRecipients=presentation&&Array.isArray(recipients)?Array.from(new Set(recipients)):undefined;
       if(remoteEditor&&!owlEditor)saveState();
       else {
-        if(relayPayload)relayPayload.playerPresentation=presentation;
+        if(relayPayload){relayPayload.playerPresentation=presentation;relayPayload.playerPresentationRecipients=state.playerPresentationRecipients;}
         var message={type:'archives:player-image:v1',playerPresentation:presentation};
         if(!remoteEditor){
-          try{syncChannel?.postMessage(message);}catch(error){}
-          peerConns.filter(function(conn){return conn&&conn.open;}).forEach(function(conn){try{conn.send(message);}catch(error){}});
+          try{syncChannel?.postMessage(Array.isArray(state.playerPresentationRecipients)?{type:'archives:player-image:v1',playerPresentation:null}:message);}catch(error){}
+          peerConns.filter(function(conn){return conn&&conn.open;}).forEach(function(conn){try{conn.send(playerViewForPeer(message,conn));}catch(error){}});
         }
         window.dispatchEvent(new CustomEvent('archives:presentation'));
       }
@@ -6005,7 +6015,7 @@ window.DuneApp = (function() {
 
     openPlayerTab: function() {
       var baseUrl = window.location.href.split("?")[0].split("#")[0];
-      window.open(baseUrl + "?ro=1&v=4580" + (state.liveRoomId ? ("&room=" + encodeURIComponent(state.liveRoomId)) : ""), "_blank");
+      window.open(baseUrl + "?ro=1&v=4590" + (state.liveRoomId ? ("&room=" + encodeURIComponent(state.liveRoomId)) : ""), "_blank");
     },
 
     exportPlayerProgression: function() {
@@ -6131,7 +6141,7 @@ window.DuneApp = (function() {
       setStatus(state.playerMode ? "👁 Mode Joueurs actif. Cliquez sur l’icône couronne pour revenir au mode MJ." : "🟢 Mode MJ actif.");
     },
     changeZoom: function(delta) {
-      var factor = delta > 0 ? 1.22 : 0.82;
+      var factor = delta > 0 ? 1.1 : 1 / 1.1;
       zoomCanvasAt(state.zoom * factor, lastCanvasPointer ? lastCanvasPointer.x : undefined, lastCanvasPointer ? lastCanvasPointer.y : undefined);
     },
     setCanvasCamera: function(camera,redraw) {
@@ -7175,15 +7185,15 @@ window.ArchivesRevealJournal={start,stop,refresh:()=>monitor?monitor.refresh():P
 
 })();
 </script>
-<link rel="stylesheet" href="./src/v56/bridge.css?v=4580">
-<script type="module" src="./src/v56/relay.mjs?v=4580"></script>
-<script type="module" src="./src/v56/navigation.mjs?v=4580"></script>
-<script type="module" src="./src/v58/main-relay.mjs?v=4580"></script>
-<script type="module" src="./src/v58/transfer-ui.mjs?v=4580"></script>
-<script type="module" src="./src/v60/library.mjs?v=4580"></script>
+<link rel="stylesheet" href="./src/v56/bridge.css?v=4590">
+<script type="module" src="./src/v56/relay.mjs?v=4590"></script>
+<script type="module" src="./src/v56/navigation.mjs?v=4590"></script>
+<script type="module" src="./src/v58/main-relay.mjs?v=4590"></script>
+<script type="module" src="./src/v58/transfer-ui.mjs?v=4590"></script>
+<script type="module" src="./src/v60/library.mjs?v=4590"></script>
 <script defer src="./src/v54/polish.js"></script>
 <script type="module" src="./src/v62/motion.mjs?v=4210"></script>
-<script type="module" src="./src/v63/workbench.mjs?v=4580"></script>
+<script type="module" src="./src/v63/workbench.mjs?v=4590"></script>
 </body>
 </html>
 <style id="v19-player-reveal-transitions">
@@ -7374,7 +7384,7 @@ body.player-mode .player-cell-resize:hover{opacity:1}
  if(!x){status('Image introuvable.');return}
  if(!window.ArchivesCellTransfer){status('La passerelle Owlbear est indisponible.');return}
  return (x.category||'personnage')==='personnage'&&!prepare ? window.ArchivesCellTransfer.placeImage(x,reveal===true) : window.ArchivesCellTransfer.sendImage(x);
-},setType:function(type){selectedImageIds.clear();if(TYPES.some(function(t){return t[0]===type})){activeType=type;activeSubcategory='';}document.querySelectorAll('.archives-image-type-tab').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-type')===activeType)});var label=el('archives-image-library-files');if(label){var l=document.querySelector('label[for=\"archives-image-library-files\"]');if(l)l.textContent='📂 Ajouter des images — '+(TYPES.find(function(t){return t[0]===activeType})||TYPES[0])[1]}render()},rename:function(id){var x=items.find(function(i){return i.id===id});if(!x)return;var name=window.prompt('Nom de cette image :',x.name);if(name===null)return;x.name=name.trim()||x.name;var r=tx('readwrite').put(x);r.onsuccess=function(){all().then(function(){status('Image renommée.')})}},remove:function(id){var x=items.find(function(i){return i.id===id});if(!x||!window.confirm('Supprimer « '+x.name+' » de la bibliothèque ?'))return;var r=tx('readwrite').delete(id);r.onsuccess=function(){all().then(function(){status('Image supprimée de la bibliothèque.')})}},transfer:function(id){transferImages([id])},transferSelected:function(){transferImages(Array.from(selectedImageIds))},clearSelection:function(){selectedImageIds.clear();updateImageSelection()},createSubcategory:function(){var name=window.prompt('Nom de la sous-catégorie pour « '+(TYPES.find(function(t){return t[0]===activeType})||TYPES[0])[1]+' » :');if(name===null)return;name=name.trim();if(!name){status('Le nom de la sous-catégorie ne peut pas être vide.');return}var exists=savedSubcategories().some(function(n){return n.toLocaleLowerCase('fr')===name.toLocaleLowerCase('fr')})||categoryItems().some(function(x){return (x.subcategory||'').toLocaleLowerCase('fr')===name.toLocaleLowerCase('fr')});if(exists){status('Cette sous-catégorie existe déjà pour ce type de cellule.');return}var saved=savedSubcategories();saved.push(name);saveSubcategories(saved);activeSubcategory=name;refreshSubcategories();render();status('Sous-catégorie « '+name+' » créée. Ajoute maintenant des images ou sélectionne-la avant un import.')},renameSubcategory:function(){if(!activeSubcategory)return;var old=activeSubcategory,name=window.prompt('Nouveau nom de la sous-catégorie :',old);if(name===null)return;name=name.trim();if(!name){status('Le nom ne peut pas être vide.');return}var conflict=savedSubcategories().some(function(n){return n.toLocaleLowerCase('fr')===name.toLocaleLowerCase('fr')&&n.toLocaleLowerCase('fr')!==old.toLocaleLowerCase('fr')})||categoryItems().some(function(x){return (x.subcategory||'').toLocaleLowerCase('fr')===name.toLocaleLowerCase('fr')&&name.toLocaleLowerCase('fr')!==old.toLocaleLowerCase('fr')});if(conflict){status('Une sous-catégorie porte déjà ce nom.');return}var saved=savedSubcategories().map(function(n){return n===old?name:n});saveSubcategories(saved);var list=categoryItems().filter(function(x){return (x.subcategory||'')===old});if(!list.length){activeSubcategory=name;refreshSubcategories();render();status('Nom modifié pour la sélection.');return}var store=tx('readwrite'),left=list.length;list.forEach(function(x){x.subcategory=name;var r=store.put(x);r.onsuccess=function(){left--;if(!left){activeSubcategory=name;all().then(function(){status('Sous-catégorie renommée.')})}};r.onerror=function(){status('Erreur pendant le renommage de la sous-catégorie.')}})},deleteSubcategory:function(){if(!activeSubcategory)return;var name=activeSubcategory;if(!window.confirm('Supprimer la sous-catégorie « '+name+' » ? Les images seront conservées et replacées dans « Toutes les images ».'))return;var list=categoryItems().filter(function(x){return (x.subcategory||'')===name}),store=tx('readwrite'),left=list.length,failed=false;list.forEach(function(x){x.subcategory='';var r=store.put(x);r.onerror=function(){failed=true;status('Erreur pendant le retrait des images de la sous-catégorie.')}});var saved=savedSubcategories().filter(function(n){return n!==name});saveSubcategories(saved);if(!left){activeSubcategory='';refreshSubcategories();render();status('Sous-catégorie supprimée. Les images sont conservées.');return}store.transaction.oncomplete=function(){activeSubcategory='';all().then(function(){status(failed?'La sous-catégorie a été retirée, mais certaines images doivent être vérifiées.':'Sous-catégorie supprimée. Les images sont conservées.')})}},clearSubcategory:function(){if(!activeSubcategory)return;var name=activeSubcategory,list=categoryItems().filter(function(x){return (x.subcategory||'')===name});deleteImages(list,'Supprimer toutes les images de la sous-catégorie « '+name+' » ?', 'Sous-catégorie vidée : {n} image(s) supprimée(s).')},showToPlayers:function(id){var x=items.find(function(i){return i.id===id});if(!x)return;if(window.DuneApp&&typeof window.DuneApp.showPlayerImage==='function')Promise.resolve(window.DuneApp.showPlayerImage(x)).then(function(sent){status(sent?'Image présentée dans les Archives des joueurs.':'La présentation n’a pas été envoyée.')});else status('La présentation aux joueurs n’est pas disponible.')},hideFromPlayers:function(){if(window.DuneApp&&typeof window.DuneApp.hidePlayerImage==='function'){window.DuneApp.hidePlayerImage();status('Image retirée de l’écran des joueurs.')}},clearCategory:function(){var label=(TYPES.find(function(t){return t[0]===activeType})||TYPES[0])[1],list=categoryItems();deleteImages(list,'Supprimer toutes les images de la catégorie « '+label+' » ?', 'Catégorie vidée : {n} image(s) supprimée(s).')},refresh:all};
+},setType:function(type){selectedImageIds.clear();if(TYPES.some(function(t){return t[0]===type})){activeType=type;activeSubcategory='';}document.querySelectorAll('.archives-image-type-tab').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-type')===activeType)});var label=el('archives-image-library-files');if(label){var l=document.querySelector('label[for=\"archives-image-library-files\"]');if(l)l.textContent='📂 Ajouter des images — '+(TYPES.find(function(t){return t[0]===activeType})||TYPES[0])[1]}render()},rename:function(id){var x=items.find(function(i){return i.id===id});if(!x)return;var name=window.prompt('Nom de cette image :',x.name);if(name===null)return;x.name=name.trim()||x.name;var r=tx('readwrite').put(x);r.onsuccess=function(){all().then(function(){status('Image renommée.')})}},remove:function(id){var x=items.find(function(i){return i.id===id});if(!x||!window.confirm('Supprimer « '+x.name+' » de la bibliothèque ?'))return;var r=tx('readwrite').delete(id);r.onsuccess=function(){all().then(function(){status('Image supprimée de la bibliothèque.')})}},transfer:function(id){transferImages([id])},transferSelected:function(){transferImages(Array.from(selectedImageIds))},clearSelection:function(){selectedImageIds.clear();updateImageSelection()},createSubcategory:function(){var name=window.prompt('Nom de la sous-catégorie pour « '+(TYPES.find(function(t){return t[0]===activeType})||TYPES[0])[1]+' » :');if(name===null)return;name=name.trim();if(!name){status('Le nom de la sous-catégorie ne peut pas être vide.');return}var exists=savedSubcategories().some(function(n){return n.toLocaleLowerCase('fr')===name.toLocaleLowerCase('fr')})||categoryItems().some(function(x){return (x.subcategory||'').toLocaleLowerCase('fr')===name.toLocaleLowerCase('fr')});if(exists){status('Cette sous-catégorie existe déjà pour ce type de cellule.');return}var saved=savedSubcategories();saved.push(name);saveSubcategories(saved);activeSubcategory=name;refreshSubcategories();render();status('Sous-catégorie « '+name+' » créée. Ajoute maintenant des images ou sélectionne-la avant un import.')},renameSubcategory:function(){if(!activeSubcategory)return;var old=activeSubcategory,name=window.prompt('Nouveau nom de la sous-catégorie :',old);if(name===null)return;name=name.trim();if(!name){status('Le nom ne peut pas être vide.');return}var conflict=savedSubcategories().some(function(n){return n.toLocaleLowerCase('fr')===name.toLocaleLowerCase('fr')&&n.toLocaleLowerCase('fr')!==old.toLocaleLowerCase('fr')})||categoryItems().some(function(x){return (x.subcategory||'').toLocaleLowerCase('fr')===name.toLocaleLowerCase('fr')&&name.toLocaleLowerCase('fr')!==old.toLocaleLowerCase('fr')});if(conflict){status('Une sous-catégorie porte déjà ce nom.');return}var saved=savedSubcategories().map(function(n){return n===old?name:n});saveSubcategories(saved);var list=categoryItems().filter(function(x){return (x.subcategory||'')===old});if(!list.length){activeSubcategory=name;refreshSubcategories();render();status('Nom modifié pour la sélection.');return}var store=tx('readwrite'),left=list.length;list.forEach(function(x){x.subcategory=name;var r=store.put(x);r.onsuccess=function(){left--;if(!left){activeSubcategory=name;all().then(function(){status('Sous-catégorie renommée.')})}};r.onerror=function(){status('Erreur pendant le renommage de la sous-catégorie.')}})},deleteSubcategory:function(){if(!activeSubcategory)return;var name=activeSubcategory;if(!window.confirm('Supprimer la sous-catégorie « '+name+' » ? Les images seront conservées et replacées dans « Toutes les images ».'))return;var list=categoryItems().filter(function(x){return (x.subcategory||'')===name}),store=tx('readwrite'),left=list.length,failed=false;list.forEach(function(x){x.subcategory='';var r=store.put(x);r.onerror=function(){failed=true;status('Erreur pendant le retrait des images de la sous-catégorie.')}});var saved=savedSubcategories().filter(function(n){return n!==name});saveSubcategories(saved);if(!left){activeSubcategory='';refreshSubcategories();render();status('Sous-catégorie supprimée. Les images sont conservées.');return}store.transaction.oncomplete=function(){activeSubcategory='';all().then(function(){status(failed?'La sous-catégorie a été retirée, mais certaines images doivent être vérifiées.':'Sous-catégorie supprimée. Les images sont conservées.')})}},clearSubcategory:function(){if(!activeSubcategory)return;var name=activeSubcategory,list=categoryItems().filter(function(x){return (x.subcategory||'')===name});deleteImages(list,'Supprimer toutes les images de la sous-catégorie « '+name+' » ?', 'Sous-catégorie vidée : {n} image(s) supprimée(s).')},showToPlayers:function(id){var x=items.find(function(i){return i.id===id});if(!x)return;if(window.DuneApp&&typeof window.DuneApp.showPlayerImage==='function')Promise.resolve(window.ArchivesPresentation?window.ArchivesPresentation.present({data:x.data}):window.DuneApp.showPlayerImage(x)).then(function(sent){status(sent?'Image présentée dans les Archives des joueurs.':'La présentation n’a pas été envoyée.')});else status('La présentation aux joueurs n’est pas disponible.')},hideFromPlayers:function(){if(window.DuneApp&&typeof window.DuneApp.hidePlayerImage==='function'){window.DuneApp.hidePlayerImage();status('Image retirée de l’écran des joueurs.')}},clearCategory:function(){var label=(TYPES.find(function(t){return t[0]===activeType})||TYPES[0])[1],list=categoryItems();deleteImages(list,'Supprimer toutes les images de la catégorie « '+label+' » ?', 'Catégorie vidée : {n} image(s) supprimée(s).')},refresh:all};
  function init(){var input=el('archives-image-library-files');if(!input)return;window.addEventListener('resize',function(){var menu=el('archives-image-library-actions-menu');if(menu&&!menu.hidden)positionLibraryMenu(menu)});document.addEventListener('click',function(e){var m=el('archives-image-library-actions-menu');if(m&&!m.contains(e.target))closeActionsMenu()});document.addEventListener('keydown',function(e){if(e.key==='Escape')closeActionsMenu()});var typeTabs=el('archives-image-type-tabs');if(typeTabs)typeTabs.querySelectorAll('button[data-type]').forEach(function(b){b.addEventListener('contextmenu',function(e){e.preventDefault();activeType=b.getAttribute('data-type')||activeType;activeSubcategory='';document.querySelectorAll('.archives-image-type-tab').forEach(function(t){t.classList.toggle('active',t.getAttribute('data-type')===activeType)});render();showActionsMenu('category',e)})});var move=el('archives-image-selection-transfer'),clear=el('archives-image-selection-clear');if(move)move.onclick=function(){window.ArchivesImageLibrary.transferSelected()};if(clear)clear.onclick=function(){window.ArchivesImageLibrary.clearSelection()};var grid=el('archives-image-library-grid');if(grid){grid.addEventListener('dragover',function(e){if(e.dataTransfer&&Array.prototype.some.call(e.dataTransfer.types||[],function(t){return t==='Files'})){e.preventDefault();e.dataTransfer.dropEffect='copy';grid.style.outline='2px dashed #d4af37';grid.style.outlineOffset='-4px'}});grid.addEventListener('dragleave',function(e){if(!grid.contains(e.relatedTarget)){grid.style.outline='';grid.style.outlineOffset=''}});grid.addEventListener('drop',function(e){e.preventDefault();grid.style.outline='';grid.style.outlineOffset='';var files=Array.prototype.slice.call(e.dataTransfer&&e.dataTransfer.files||[]).filter(function(f){return /^image\//i.test(f.type)});if(!files.length){status('Dépose ici un ou plusieurs fichiers image.');return}status('Ajout par glisser-déposer de '+files.length+' image(s)…');openDB().then(function(){var chain=Promise.resolve(),count=0;files.forEach(function(f){chain=chain.then(function(){return saveFile(f).then(function(){count++})})});return chain.then(function(){return all()}).then(function(){status(count+' image(s) ajoutée(s) à la bibliothèque.')})}).catch(function(err){status('Erreur : '+(err.message||'ajout impossible.'))})})}input.addEventListener('change',function(){var files=Array.prototype.slice.call(input.files||[]).filter(function(f){return /^image\//i.test(f.type)});if(!files.length){input.value='';return}status('Ajout de '+files.length+' image(s)…');openDB().then(function(){var chain=Promise.resolve(),count=0;files.forEach(function(f){chain=chain.then(function(){return saveFile(f).then(function(){count++})})});return chain.then(function(){return all()}).then(function(){status(count+' image(s) ajoutée(s) à la bibliothèque.')})}).catch(function(e){status('Erreur : '+(e.message||'impossible d’enregistrer les images.'))}).finally(function(){input.value=''})});var search=el('archives-image-library-search');if(search)search.addEventListener('input',render);var sub=el('archives-image-library-subcategory');if(sub)sub.addEventListener('change',function(){activeSubcategory=sub.value||'';render()});var addSub=el('archives-image-library-subcategory-add');if(addSub)addSub.addEventListener('click',function(){window.ArchivesImageLibrary.createSubcategory()});var renameSub=el('archives-image-library-subcategory-rename');if(renameSub)renameSub.addEventListener('click',function(){window.ArchivesImageLibrary.renameSubcategory()});var clearSub=el('archives-image-library-subcategory-clear');if(clearSub)clearSub.addEventListener('click',function(){window.ArchivesImageLibrary.clearSubcategory()});var clearCat=el('archives-image-library-category-clear');if(clearCat)clearCat.addEventListener('click',function(){window.ArchivesImageLibrary.clearCategory()});var size=el('archives-image-library-preview-size'),sizeLabel=el('archives-image-library-preview-size-value');if(size){if(!size.dataset.compactDefault){size.value='100';size.dataset.compactDefault='1';if(sizeLabel)sizeLabel.textContent='100 px'}previewHeight=Number(size.value)||100;size.addEventListener('input',function(){previewHeight=Number(size.value)||150;if(sizeLabel)sizeLabel.textContent=previewHeight+' px';render()})}openDB().then(all).catch(function(e){status(e.message||'Bibliothèque indisponible.')})}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
@@ -7439,22 +7449,22 @@ body.player-mode .player-cell-resize:hover{opacity:1}
   #soundshow-sounds-dock > button {box-shadow:none!important}
 }
 </style>
-<script type="module" src="./src/v65/cell-picture.mjs?v=4580"></script>
-<script type="module" src="./src/v70/player-image.mjs?v=4580"></script>
-<script type="module" src="./src/v65/storage.mjs?v=4580"></script>
-<script type="module" src="./src/soundshow/archives.mjs?v=4580"></script>
-<script type="module" src="./src/v66/workspace.mjs?v=4580"></script>
-<script type="module" src="./src/v68/cell-brief.mjs?v=4580"></script>
+<script type="module" src="./src/v65/cell-picture.mjs?v=4590"></script>
+<script type="module" src="./src/v70/player-image.mjs?v=4590"></script>
+<script type="module" src="./src/v65/storage.mjs?v=4590"></script>
+<script type="module" src="./src/soundshow/archives.mjs?v=4590"></script>
+<script type="module" src="./src/v66/workspace.mjs?v=4590"></script>
+<script type="module" src="./src/v68/cell-brief.mjs?v=4590"></script>
 
 
-<script type="module" src="./src/v72/gm-details.mjs?v=4580"></script>
-<script type="module" src="./src/v72/selection.mjs?v=4580"></script>
-<script type="module" src="./src/v72/presentation.mjs?v=4580"></script>
-<script type="module" src="./src/v72/google-search.mjs?v=4580"></script>
+<script type="module" src="./src/v72/gm-details.mjs?v=4590"></script>
+<script type="module" src="./src/v72/selection.mjs?v=4590"></script>
+<script type="module" src="./src/v72/presentation.mjs?v=4590"></script>
+<script type="module" src="./src/v72/google-search.mjs?v=4590"></script>
 
-<script type="module" src="./src/v74/reserve-ui.mjs?v=4580"></script>
+<script type="module" src="./src/v74/reserve-ui.mjs?v=4590"></script>
 
-<script type="module" src="./src/v75/gm-description.mjs?v=4580"></script>
-<script type="module" src="./src/v77/touch-canvas.mjs?v=4580"></script>
-<script type="module" src="./src/v77/player-ui.mjs?v=4580"></script>
-<script type="module" src="./src/v78/responsive.mjs?v=4580"></script>
+<script type="module" src="./src/v75/gm-description.mjs?v=4590"></script>
+<script type="module" src="./src/v77/touch-canvas.mjs?v=4590"></script>
+<script type="module" src="./src/v77/player-ui.mjs?v=4590"></script>
+<script type="module" src="./src/v78/responsive.mjs?v=4590"></script>

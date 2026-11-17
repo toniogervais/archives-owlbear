@@ -1,4 +1,4 @@
-import {sheet,element,button,isGM} from '../v63/ui.mjs?v=4580';
+import {sheet,element,button,isGM} from '../v63/ui.mjs?v=4590';
 const compact=matchMedia('(max-width:1100px), (pointer:coarse)'),groups=new Set();
 function tools(id,label,nodes,parent,before){
  let detail=document.getElementById(id);if(detail)return detail;

@@ -1,7 +1,8 @@
-import {isGM,nativeEditor,notice} from '../v63/ui.mjs?v=4580';
-import {libraryRequest} from '../v60/request.mjs?v=4580';
-import {maxDocumentBytes} from '../v60/files.mjs?v=4580';
-import {fade,fadeDuration} from '../v73/fade.mjs?v=4580';
+import {isGM,nativeEditor,notice} from '../v63/ui.mjs?v=4590';
+import {libraryRequest} from '../v60/request.mjs?v=4590';
+import {maxDocumentBytes,validateFile} from '../v60/files.mjs?v=4590';
+import {audience as normalizeAudience} from '../v79/audience.mjs?v=4590';
+import {fade,fadeDuration} from '../v73/fade.mjs?v=4590';
 let operation=0,shown='',requested='',dialog,epoch=0,animation,nativePresentation=false,nativePublishedId='';
 const dismissed=new Set(),state=()=>window.DuneApp?.getState?.();
 function remember(id){if(!id)return;dismissed.add(id);if(dismissed.size>128)dismissed.delete(dismissed.values().next().value)}
@@ -20,14 +21,18 @@ function ensureDialog(){
  #archives-player-image header{display:flex;align-items:center;justify-content:space-between;gap:10px}
  #archives-player-image h2{margin:0;font-size:17px}
  #archives-player-image button{padding:10px 14px;border:1px solid #c3a570;border-radius:8px;background:#302337;color:inherit;font:inherit;cursor:pointer}
- #archives-player-image img{display:block;width:100%;flex:1;min-height:0;object-fit:contain;background:#07060b}
+ #archives-player-image .player-image-content{display:flex;flex:1;min-height:0;overflow:auto}
+ #archives-player-image img,#archives-player-image object,#archives-player-image video{display:block;width:100%;height:100%;min-height:0;object-fit:contain;background:#07060b;border:0}
+ #archives-player-image audio{width:100%;align-self:center}
+ #archives-player-image pre{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;font:16px/1.65 system-ui;width:100%;margin:0;user-select:text}
  `;document.head.append(style);
  dialog=document.createElement('dialog');dialog.id='archives-player-image';dialog.setAttribute('aria-label','Image présentée par le MJ');
  const shell=document.createElement('div');shell.className='player-image-shell';const header=document.createElement('header'),title=document.createElement('h2'),close=document.createElement('button');title.textContent='Image partagée par le MJ';close.type='button';close.textContent='×';close.setAttribute('aria-label','Fermer l’image');close.onclick=()=>void dismiss();header.append(title,close);
- const image=document.createElement('img');image.alt='Image présentée par le maître de jeu';image.referrerPolicy='no-referrer';shell.append(header,image);dialog.append(shell);document.body.append(dialog);
+ const content=document.createElement('div');content.className='player-image-content';shell.append(header,content);dialog.append(shell);document.body.append(dialog);
  dialog.addEventListener('cancel',event=>{event.preventDefault();void dismiss()});
- const owner=dialog;dialog.addEventListener('close',()=>{if(owner!==dialog||owner.open||!shown)return;remember(shown);shown=requested='';epoch++;cancelFade();image.removeAttribute('src')});return dialog;
+ const owner=dialog;dialog.addEventListener('close',()=>{if(owner!==dialog||owner.open||!shown)return;remember(shown);shown=requested='';epoch++;cancelFade();clearContent()});return dialog;
 }
+function clearContent(){for(const media of dialog?.querySelectorAll('audio,video')||[])media.pause();dialog?.querySelector('.player-image-content')?.replaceChildren();}
 async function dismiss(local=true){
  if(dialog?.dataset.phase==='closing'&&!requested)return;
  if(local){remember(shown);remember(requested)}
@@ -35,7 +40,7 @@ async function dismiss(local=true){
  if(!dialog?.open){shown='';return}
  dialog.dataset.phase='closing';const opacity=Number(getComputedStyle(dialog).opacity);animation=fade(dialog,Number.isFinite(opacity)?opacity:1,0);
  await animation.finished;if(epoch!==version)return;
- cancelFade();shown='';dialog.querySelector('img').removeAttribute('src');dialog.close();dialog.dataset.phase='closed';
+ cancelFade();shown='';clearContent();dialog.close();dialog.dataset.phase='closed';
 }
 async function render(){
  const s=state(),presentation=s?.playerPresentation;
@@ -44,17 +49,27 @@ async function render(){
  if(dismissed.has(presentation.id)||presentation.id===requested||dialog?.open&&shown===presentation.id&&dialog.dataset.phase!=='closing')return;
  requested=presentation.id;const version=++epoch;cancelFade();
  // Preload before replacing the visible image; a later request cancels this one.
- const picture=new Image();
- try{await new Promise((resolve,reject)=>{picture.onload=resolve;picture.onerror=reject;picture.src=presentation.image})}
+ const mime=presentation.image.slice(5,presentation.image.indexOf(';'));let picture;
+ try{
+  if(mime.startsWith('image/')){picture=new Image();picture.alt='Image présentée par le maître de jeu';picture.referrerPolicy='no-referrer';await new Promise((resolve,reject)=>{picture.onload=resolve;picture.onerror=reject;picture.src=presentation.image});}
+  else if(mime==='text/plain'){picture=document.createElement('pre');picture.textContent=await fetch(presentation.image).then(r=>r.text());}
+  else if(mime==='application/pdf'){picture=document.createElement('object');picture.type=mime;picture.data=presentation.image;const download=document.createElement('a');download.href=presentation.image;download.download='document.pdf';download.textContent='Ouvrir le document PDF';picture.append(download);}
+  else {picture=document.createElement(mime.startsWith('audio/')?'audio':'video');picture.controls=true;picture.playsInline=true;picture.preload='metadata';picture.src=presentation.image;}
+ }
  catch{if(epoch===version){requested='';notice('L’image présentée n’a pas pu être chargée.')}return}
  if(epoch!==version||dismissed.has(presentation.id))return;
- const view=ensureDialog(),image=view.querySelector('img'),replacing=view.open&&!!shown&&view.dataset.phase!=='closing';
+ const view=ensureDialog(),image=view.querySelector('.player-image-content'),replacing=view.open&&!!shown&&view.dataset.phase!=='closing';
  if(replacing){animation=fade(image,1,0,140);await animation.finished;if(epoch!==version)return;cancelFade()}
- image.src=presentation.image;shown=presentation.id;view.dataset.phase=replacing?'switching':'opening';if(!view.open)view.showModal();
+ clearContent();image.append(picture);view.querySelector('h2').textContent=mime.startsWith('image/')?'Image partagée par le MJ':'Document partagé par le MJ';shown=presentation.id;view.dataset.phase=replacing?'switching':'opening';if(!view.open)view.showModal();
  animation=fade(replacing?image:view,0,1,fadeDuration);await animation.finished;if(epoch!==version)return;
  cancelFade();view.dataset.phase='open';
 }
 async function prepare(source){
+ if(source instanceof Blob){
+  const file=source instanceof File?source:new File([source],'document',{type:source.type});const {mime}=await validateFile(file);
+  const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(new Blob([file],{type:mime}));});
+  return mime.startsWith('image/')?prepare(data):data;
+ }
  if(typeof source!=='string')throw Error('Choisis une image.');
  if(!source.startsWith('data:image/')) {
   if(!/^(https:\/\/|blob:)/.test(source))throw Error('Cette image ne peut pas être présentée.');
@@ -72,26 +87,29 @@ async function prepare(source){
 async function show(item){
  if(!isGM())return;const current=++operation;
  try{
-  const image=await prepare(item?.data);if(operation!==current||!isGM())return;
+  const audience=normalizeAudience(item?.audience),image=await prepare(item?.data);if(operation!==current||!isGM())return;
   const request=nativeEditor()?libraryRequest:window.ArchivesPresentationBridge?.connected?command=>window.ArchivesPresentationBridge.request(command):null;
-  if(request){
+  const deliverNative=!!request&&(audience.all||audience.owl.length>0),recipients=audience.all?{}:{recipients:audience.owl};
+  if(!deliverNative&&nativePresentation&&request){await request({action:'stop'});nativePresentation=false;}
+  if(deliverNative){
    nativePresentation=true;
    const file=await fetch(image).then(response=>response.blob());
    if(operation!==current||!isGM())return;
-   await request({action:'present-image',file});
+   if(file.type.startsWith('image/')&&!item.fileId)await request({action:'present-image',file,...recipients});
+   else {const id=item.fileId||(await request({action:'import',file,name:'document-partage',title:'Document partagé'})).entry.id;await request({action:'present',fileId:id,title:'Document partagé par le MJ',...recipients});}
    if(operation!==current||!isGM())return;
   }
   // Salon Live clients retain their own image viewer. Native Owlbear clients
   // use the independent media viewer, including while their canvas is closed.
-  const id=crypto.randomUUID();nativePublishedId=request?id:'';
-  if(!window.DuneApp.commitPlayerPresentation({id,image,published:true,delivery:request?'media':'inline'}))throw Error('La présentation de cette image a échoué.');
-  notice('Image envoyée aux joueurs. La cellule et ses indices restent inchangés.');
+  const id=crypto.randomUUID();nativePublishedId=deliverNative?id:'';
+  if(!window.DuneApp.commitPlayerPresentation({id,image,published:true,delivery:deliverNative?'media':'inline'},audience.all?undefined:audience.live))throw Error('La présentation a échoué.');
+  notice(audience.all?'Présentation envoyée à tout le monde.':'Présentation envoyée uniquement aux joueurs choisis.');
   return true;
  }catch(error){if(operation===current)notice(error.message);return false}
 }
 function hide(){
  if(!isGM())return;operation++;nativePublishedId='';
- if(nativePresentation){nativePresentation=false;const request=nativeEditor()?libraryRequest:window.ArchivesPresentationBridge?.connected?command=>window.ArchivesPresentationBridge.request(command):null;void request?.({action:'stop-image'}).catch(error=>notice(error.message))}
+ if(nativePresentation){nativePresentation=false;const request=nativeEditor()?libraryRequest:window.ArchivesPresentationBridge?.connected?command=>window.ArchivesPresentationBridge.request(command):null;void request?.({action:'stop'}).catch(error=>notice(error.message))}
  return window.DuneApp.commitPlayerPresentation(null);
 }
 window.ArchivesPlayerImage={show,hide};window.addEventListener('archives:player-image',render);

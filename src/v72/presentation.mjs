@@ -1,21 +1,22 @@
-import {element,button,isGM,nativeEditor,notice} from '../v63/ui.mjs?v=4580';
-import {libraryRequest} from '../v60/request.mjs?v=4580';
+import {element,button,isGM,nativeEditor,notice} from '../v63/ui.mjs?v=4590';
+import {libraryRequest} from '../v60/request.mjs?v=4590';
+import {audience as normalizeAudience,chooseAudience} from '../v79/audience.mjs?v=4590';
 let menu;
 const imageOf=node=>node?.bgImg||node?.image||node?.imageData;
-function presentCell(id){
+function presentCell(id,audience){
  const state=window.DuneApp?.getState?.(),node=state?.boards?.flatMap(board=>board.nodes).find(node=>node.id===id);
- if(imageOf(node))return present({data:imageOf(node)});
+ if(imageOf(node))return present({data:imageOf(node),audience});
 }
 function close(){menu?.hidePopover?.();menu?.remove();menu=null}
 async function present(source) {
   if(!isGM())return;
   try {
-    if(source.data&&!source.file&&!source.fileId)return await window.ArchivesPlayerImage.show({data:source.data});
-    if(!nativeEditor())throw Error('Ouvre les Archives dans ta salle Owlbear pour présenter ce fichier aux joueurs.');
-    let id=source.fileId;
-    if(!id){const file=source.file||new File([source.text||''],'texte.txt',{type:'text/plain'});const result=await libraryRequest({action:'import',file,name:file.name,title:'Document partagé'});id=result.entry.id}
-    // Use a neutral public caption: private filenames and cell names stay private.
-    await libraryRequest({action:'present',fileId:id,title:'Document partagé par le MJ'});notice('Document présenté aux joueurs. Ils peuvent le fermer avec la croix.');
+    const selected=source.audience===undefined?await chooseAudience():normalizeAudience(source.audience);if(!selected)return false;
+    const request=nativeEditor()?libraryRequest:window.ArchivesPresentationBridge?.connected?command=>window.ArchivesPresentationBridge.request(command):null;
+    let data=source.file||source.data;
+    if(source.fileId){if(!request)throw Error('Relie ta salle Owlbear pour ouvrir ce document.');data=(await request({action:'get',fileId:source.fileId})).blob;}
+    if(!data)data=new File([source.text||''],'texte.txt',{type:'text/plain'});
+    return await window.ArchivesPlayerImage.show({data,fileId:source.fileId,audience:selected});
   }catch(error){notice(error.message)}
 }
 function descriptor(target) {

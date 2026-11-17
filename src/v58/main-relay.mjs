@@ -1,6 +1,6 @@
 /* V4.31 — commandes de transfert depuis l'onglet Archives principal.
    N'accepte que le background Owlbear déjà lié à cet onglet par le MJ. */
-import {isPacket,packet,validRoomId,validSession} from '../v56/link.mjs?v=4580';
+import {isPacket,packet,validRoomId,validSession} from '../v56/link.mjs?v=4590';
 
 const pending=new Map();
 let background=null,roomId='',lastSeen=0;

@@ -6,7 +6,7 @@ function viewer(manual=false){
  const dom=new JSDOM('<html><head></head><body></body></html>',{url:'https://archives.test/',runScripts:'outside-only',pretendToBeVisual:true}),w=dom.window,state={strictReadOnly:true,playerMode:true,playerPresentation:null},fades=[],images=[];
  w.DuneApp={getState:()=>state};w.isGM=()=>false;w.notice=()=>{};w.fadeDuration=300;
  w.fade=(element,from,to,duration=300)=>{let finish;const entry={element,from,to,duration,finished:new Promise(resolve=>{finish=resolve}),cancel(){finish()},finish(){finish()}};fades.push(entry);return entry};
- w.Image=class{set src(value){this.value=value;images.push(this);if(!manual)queueMicrotask(()=>this.onload?.())}};
+ w.Image=function(){const image=w.document.createElement('img');Object.defineProperty(image,'src',{get(){return this.getAttribute('src')},set(value){this.setAttribute('src',value);images.push(this);if(!manual)queueMicrotask(()=>this.onload?.())}});return image;};
  w.HTMLDialogElement.prototype.showModal=function(){this.open=true};w.HTMLDialogElement.prototype.close=function(){this.open=false;queueMicrotask(()=>this.dispatchEvent(new w.Event('close')))};
  w.eval(source);
  const show=id=>{state.playerPresentation={id,image:'data:image/png;base64,'+id,published:true};w.dispatchEvent(new w.Event('archives:player-image'))};

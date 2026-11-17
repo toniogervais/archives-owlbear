@@ -71,7 +71,7 @@ test("Sender sanitizes payload before WebRTC and BroadcastChannel",()=>{
  assert.match(section,/localStorage\.setItem\("jdr_architect_save_v12", JSON\.stringify\(payload\)\)/);
  assert.match(section,/var publicPayload=projectPlayerPayload\(payload\)/);
  assert.match(section,/syncChannel\.postMessage\(publicPayload\)/);
- assert.match(section,/peerConns\[i\]\.send\(publicPayload\)/);
+ assert.match(section,/peerConns\[i\]\.send\(playerViewForPeer\(publicPayload,peerConns\[i\]\)\)/);
  assert.doesNotMatch(section,/peerConns\[i\]\.send\(payload\)/);
 });
 test("A GM tab ignores player-only BroadcastChannel messages",()=>{

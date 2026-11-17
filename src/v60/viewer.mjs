@@ -1,8 +1,8 @@
 import OBR from "../../assets/owlbear-transfer-sdk-v55.mjs";
-import { trustedOwlbearSdk } from "../v56/link.mjs?v=4580";
-import { localRoom } from "../v57/room.mjs?v=4580";
-import { validId,validSharedFile as validPublication,mediaModal } from "./files.mjs?v=4580";
-import {fade} from '../v73/fade.mjs?v=4580';
+import { trustedOwlbearSdk } from "../v56/link.mjs?v=4590";
+import { localRoom } from "../v57/room.mjs?v=4590";
+import { validId,validSharedFile as validPublication,mediaModal } from "./files.mjs?v=4590";
+import {fade} from '../v73/fade.mjs?v=4590';
 const $ = id => document.getElementById(id);
 let channel,media,url,readyTimer,closed = false,received = false;
 const session=crypto.randomUUID();let id=location.hash.slice(1),closing=false,epoch=0,motion;

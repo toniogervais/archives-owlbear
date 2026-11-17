@@ -57,6 +57,9 @@ body.archives-player-ui #viewport{cursor:grab}
  body.archives-player-ui .pcd-close,body.archives-player-ui #journal-modal-header button,body.archives-player-ui .studio-sheet header button{min-width:44px;min-height:44px;font-size:15px}
 }
 @media(max-width:700px){
+ #archives-player-tools .archives-player-dock:not(.player-bar-vertical):not(.player-bar-collapsed){display:grid;width:calc(var(--player-vw,100vw) - 16px);grid-template-columns:repeat(var(--player-tool-columns,6),minmax(44px,1fr));gap:2px;padding:4px;border-radius:13px}
+ #archives-player-tools .archives-player-dock:not(.player-bar-vertical):not(.player-bar-collapsed) .player-bar-actions{display:contents}
+ #archives-player-tools .archives-player-dock:not(.player-bar-vertical):not(.player-bar-collapsed) button{width:100%;border-radius:10px}
  body.archives-player-ui #player-cell-detail{padding:8px}
  body.archives-player-ui #player-cell-detail .pcd-card{grid-template-columns:1fr;grid-template-rows:auto auto;width:100%;height:calc(100dvh - 16px);max-height:calc(100dvh - 16px);resize:none;overflow:auto;overscroll-behavior:contain}
  body.archives-player-ui #player-cell-detail .pcd-left,body.archives-player-ui #player-cell-detail .pcd-right{padding:16px;overflow:visible}

@@ -20,11 +20,11 @@ test('Closing and immediately reopening a GM brief keeps only the new portrait',
  }finally{w.close()}
 });
 test('An explicit image publication does not save or reveal a hidden cell',()=>{
- const start=html.indexOf('commitPlayerPresentation: function(value)'),end=html.indexOf('setGmDetails: function',start);
+ const start=html.indexOf('commitPlayerPresentation: function('),end=html.indexOf('setGmDetails: function',start);
  const method=html.slice(start,end).trim().replace(/,$/,'');
  const node={id:'private',revealed:false,clues:[{revealed:false}],gmDetails:[{text:'SECRET'}]},packets=[],events=[];
  const state={playerMode:false,strictReadOnly:false,nodes:[node]},relayPayload={boards:[{nodes:[node]}]};
- const context={state,relayPayload,remoteEditor:false,owlEditor:false,playerImageProjection:x=>x,saveState:()=>assert.fail('image publication must not save the campaign'),syncChannel:{postMessage:x=>packets.push(x)},peerConns:[{open:true,send:x=>packets.push(x)}],window:{dispatchEvent:x=>events.push(x)},CustomEvent:class{constructor(type){this.type=type}},setStatus(){}};
+ const context={playerViewForPeer:payload=>payload,state,relayPayload,remoteEditor:false,owlEditor:false,playerImageProjection:x=>x,saveState:()=>assert.fail('image publication must not save the campaign'),syncChannel:{postMessage:x=>packets.push(x)},peerConns:[{open:true,send:x=>packets.push(x)}],window:{dispatchEvent:x=>events.push(x)},CustomEvent:class{constructor(type){this.type=type}},setStatus(){}};
  const commit=vm.runInNewContext('({'+method+'}).commitPlayerPresentation',context),value={id:'image',image:'PNG',published:true};
  assert.equal(commit(value),true);assert.equal(state.playerPresentation,value);assert.equal(relayPayload.playerPresentation,value);assert.equal(node.revealed,false);assert.equal(node.clues[0].revealed,false);
  assert.equal(packets.length,2);assert.ok(packets.every(p=>p.type==='archives:player-image:v1'&&!p.boards));assert.equal(events[0].type,'archives:presentation');

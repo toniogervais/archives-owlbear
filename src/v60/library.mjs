@@ -1,5 +1,6 @@
-import { requireEditor,libraryRequest } from "./request.mjs?v=4580";
-import { maxMediaBytes } from "./files.mjs?v=4580";
+import { requireEditor,libraryRequest } from "./request.mjs?v=4590";
+import { maxMediaBytes } from "./files.mjs?v=4590";
+import {chooseAudience} from '../v79/audience.mjs?v=4590';
 const $ = id => document.getElementById(id);
 const labels = {DOCUMENT:"Document",AUDIO:"Audio",VIDEO:"Vidéo"};
 let active;
@@ -109,7 +110,8 @@ export async function openLibrary(context = {}) {
         if (file.size > maxMediaBytes) { status("Prépare un extrait de moins de 8 Mo.");return; }
         setBusy(true);status("Présentation aux joueurs…");
         try {
-          await libraryRequest({action:"present",fileId:entry.id,title:ui("title").value});
+          const audience=await chooseAudience();if(!audience)return;
+          await libraryRequest({action:"present",fileId:entry.id,title:ui("title").value,...(audience.all?{}:{recipients:audience.owl})});
           releaseMedia();ui("preview").hidden = true;ui("library").hidden = false;
           await refresh("Présentation envoyée. Les joueurs disposent d’un lecteur dans Owlbear et cliquent sur Lire.");
         } catch (error) { status(error.message); }
@@ -136,7 +138,7 @@ export async function openLibrary(context = {}) {
       const info = document.createElement("p");info.textContent = labels[entry.kind] + " · " + sizeText(entry.size) + " · " + (entry.presented ? "présenté aux joueurs" : entry.released ? "présentation arrêtée" : entry.kind === "DOCUMENT" ? "original côté MJ" : "privé");
       const action = button(entry.kind === "DOCUMENT" ? "Aperçu et transfert…" : "Aperçu et présentation…",() => { void preview(entry); });action.className = "primary";
       card.append(title,info,action);
-      card.append(button('Montrer aux joueurs',()=>{void perform({action:'present',fileId:entry.id,title:'Document partagé par le MJ'},'Présentation envoyée aux joueurs. Ils peuvent la fermer avec la croix.');}));
+      card.append(button('Montrer aux joueurs',async()=>{const audience=await chooseAudience();if(audience)void perform({action:'present',fileId:entry.id,title:'Document partagé par le MJ',...(audience.all?{}:{recipients:audience.owl})},'Présentation envoyée aux destinataires choisis. Ils peuvent la fermer avec la croix.');}));
       card.append(button(entry.dossierShared ? 'Retirer du dossier des joueurs' : 'Ajouter au dossier des joueurs',() => {
         void perform({action:entry.dossierShared ? 'dossier-unshare' : 'dossier-share',fileId:entry.id},entry.dossierShared ? 'Fichier retiré du dossier.' : 'Fichier partagé dans Autre. Les joueurs peuvent le consulter depuis leur dossier.');
       }));

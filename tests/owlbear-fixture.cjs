@@ -128,6 +128,11 @@ function hub(){
  };
 }
 async function configure(context,fixtureHub,options={}){
+ if(!options.manualAudience)await context.addInitScript(()=>{
+  const handled=new WeakSet();
+  const choose=()=>{for(const dialog of document.querySelectorAll('#archives-presentation-audience[open]')){const control=dialog.querySelector('[data-present-audience]');if(control&&!handled.has(dialog)){handled.add(dialog);control.click();}}};
+  new MutationObserver(choose).observe(document,{childList:true,subtree:true});
+ });
  if(options.directFiles===false)await context.addInitScript(()=>{window.RTCPeerConnection=undefined});
  if(options.autoScreenChoice!==false)await autoScreenChoice(context);
  await context.exposeBinding("fixtureHub",fixtureHub);
