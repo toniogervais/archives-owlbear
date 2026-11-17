@@ -25,8 +25,8 @@ async function zoomAndPhone(browser){
   await touch('touchStart',[a]);await touch('touchStart',[a,b]);
   const shifted={x:mid.x+21,y:mid.y+29};for(let i=1;i<=6;i++)await touch('touchMove',[{...a,x:a.x+6*i/6,y:a.y+29*i/6},{...b,x:b.x+36*i/6,y:b.y+29*i/6}]);const pinched=await camera(g);
   near(pinched.zoom,initial.zoom*1.5);near((mid.x-vp.x-initial.panX)/initial.zoom,(shifted.x-vp.x-pinched.panX)/pinched.zoom);near((mid.y-vp.y-initial.panY)/initial.zoom,(shifted.y-vp.y-pinched.panY)/pinched.zoom);
-  await touch('touchEnd',[]);assert.deepEqual(await geometry(),before,'MJ pinch leaves cell positions and sizes intact');
   assert.equal(await g.evaluate(()=>gestureNode===document.querySelector('.node-cell[data-id="n"]')),true,'the original touch target remains connected throughout the GM pinch');
+  await touch('touchEnd',[]);assert.deepEqual(await geometry(),before,'MJ pinch leaves cell positions and sizes intact');
   await g.evaluate(c=>DuneApp.setCanvasCamera(c,true),initial);
   const handle=await g.locator('.node-cell[data-id="n"] .resize-handle').boundingBox(),finger={id:1,x:Math.round(handle.x+handle.width/2),y:Math.round(handle.y+handle.height/2)},second={id:2,x:finger.x-60,y:finger.y};
   await touch('touchStart',[finger]);await touch('touchStart',[finger,second]);
