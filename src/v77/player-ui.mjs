@@ -1,6 +1,6 @@
-import {installPlayerNotebook} from '../v64/player-notebook.mjs?v=4580';
-import {isPacket} from '../v56/link.mjs?v=4580';
-import {dockPosition,zoomCamera} from './geometry.mjs?v=4580';
+import {installPlayerNotebook} from '../v64/player-notebook.mjs?v=4590';
+import {isPacket} from '../v56/link.mjs?v=4590';
+import {dockPosition,zoomCamera} from './geometry.mjs?v=4590';
 const el=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node};
 const player=()=>{const s=window.DuneApp?.getState?.();return !!s&&(s.playerMode||s.strictReadOnly)};
 const icons={minus:'M5 12h14',plus:'M5 12h14M12 5v14',fit:'M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5M8 8h8v8H8z',more:'M4 12h.01M12 12h.01M20 12h.01',eye:'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z M15 12a3 3 0 1 0-6 0 3 3 0 0 0 6 0'};
@@ -87,6 +87,8 @@ function install(){
  function paint(){
   document.body.classList.toggle('player-icons-hidden',prefs.hidden);
   const v=viewport();root.style.setProperty('--player-vw',v.width+'px');root.style.setProperty('--player-vh',v.height+'px');
+  const count=toolbar.actions.children.length+2,maxColumns=Math.max(1,Math.floor((v.width-26)/46));
+  toolbar.node.style.setProperty('--player-tool-columns',String(Math.ceil(count/Math.ceil(count/maxColumns))));
   for(const [name,bar]of [['toolbar',toolbar]]){
    const p=prefs[name];bar.node.hidden=prefs.hidden;bar.node.classList.toggle('player-bar-vertical',!!p.vertical);bar.node.classList.toggle('player-bar-collapsed',p.collapsed);
    bar.actions.hidden=p.collapsed;bar.collapse.textContent=p.collapsed?'＋':'−';bar.collapse.setAttribute('aria-label',(p.collapsed?'Déployer':'Réduire')+' la barre '+bar.caption);bar.collapse.title=bar.collapse.getAttribute('aria-label');bar.collapse.setAttribute('aria-expanded',String(!p.collapsed));

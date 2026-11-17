@@ -56,17 +56,19 @@ export function validSharedFile(value) {
     typeof value.hash === "string" && /^[a-f0-9]{64}$/.test(value.hash);
 }
 // Explicit allowlist: never publish a library record, filename, linked cell or campaign.
-export const publicFile = ({id,version,title,mime,size,hash,transferMode,direct}) => ({id,version,title,mime,size,hash,...(transferMode==='window-v1'?{transferMode}: {}),...(direct===true?{direct:true}: {})});
-export async function* fileChunks(blob,indices) {
-  const count=Math.ceil(blob.size/chunkBytes);
+export const publicFile = ({id,version,title,mime,size,hash,transferMode,direct,chunkBytes:partSize}) => ({id,version,title,mime,size,hash,...(transferMode==='window-v1'?{transferMode}: {}),...(direct===true?{direct:true}: {}),...(partSize===6000?{chunkBytes:6000}: {})});
+export async function* fileChunks(blob,indices,partSize=chunkBytes) {
+  if(![6000,chunkBytes].includes(partSize))throw Error('Taille de transfert invalide.');
+  const count=Math.ceil(blob.size/partSize);
   for (const index of indices||Array.from({length:count},(_,i)=>i)) {
     if(!Number.isInteger(index)||index<0||index>=count)throw Error('Morceau de fichier invalide.');
-    const bytes=new Uint8Array(await blob.slice(index*chunkBytes,Math.min(blob.size,(index+1)*chunkBytes)).arrayBuffer());
+    const bytes=new Uint8Array(await blob.slice(index*partSize,Math.min(blob.size,(index+1)*partSize)).arrayBuffer());
     yield {index,chunk:btoa(String.fromCharCode(...bytes))};
   }
 }
 export function fileReceiver(publication,validate = validPublication,options={}) {
   if (!validate(publication)) throw Error("Présentation invalide.");
+  const chunkBytes=publication.chunkBytes===6000?6000:9000;
   const bytes = new Uint8Array(publication.size),seen = new Set();
   const count = Math.ceil(publication.size / chunkBytes);
   let transfer=options.transfer,finished = false,cursor=0;

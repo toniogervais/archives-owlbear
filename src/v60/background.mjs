@@ -1,7 +1,8 @@
-import { localRoom,roomMembers,roomChannel,release } from "../v57/room.mjs?v=4580";
-import { openFileLibrary,validateFile,validId,validSharedFile as validPublication,publicFile,digest,fileChunks,fileReceiver,mediaChannel,mediaModal } from "./files.mjs?v=4580";
-import {installDossierFiles,dossierEntry} from '../v69/dossier-files.mjs?v=4580';
-import {createDirectFiles} from '../v76/direct-files.mjs?v=4580';
+import { localRoom,roomMembers,roomChannel,release } from "../v57/room.mjs?v=4590";
+import { openFileLibrary,validateFile,validId,validSharedFile as validPublication,publicFile,digest,fileChunks,fileReceiver,mediaChannel,mediaModal } from "./files.mjs?v=4590";
+import {installDossierFiles,dossierEntry} from '../v69/dossier-files.mjs?v=4590';
+import {createDirectFiles} from '../v76/direct-files.mjs?v=4590';
+import {createSealedMessages} from '../v79/sealed-messages.mjs?v=4590';
 
 export async function installFileLibrary(OBR) {
   const {channel,connectionId:initialConnection} = await localRoom(OBR);
@@ -16,7 +17,21 @@ export async function installFileLibrary(OBR) {
     let timer;return Promise.race([OBR.broadcast.sendMessage(mediaChannel,data),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('La salle ne confirme plus les envois.')),10000)})]).finally(()=>clearTimeout(timer));
   };
   const direct=createDirectFiles({self:()=>connectionId,role:()=>role,authorize:isMember,signal:send,onData:event=>onMedia(event)});
-  const sendFile=async(remote,data)=>{if(await direct.send(remote,data))return true;await send(data);return false};
+  const sealed=createSealedMessages({self:()=>connectionId,role:()=>role,authorize:isMember,send,onData:event=>onMedia(event)});
+  const sendFile=async(remote,data)=>{if(await direct.send(remote,data))return true;if(publication?.recipients&&role==='GM')await sealed.send(remote,data);else await send(data);return false};
+  const allowedRecipient=id=>!publication?.recipients||publication.recipients.includes(id);
+  async function recipientIds(command){
+    if(command.recipients===undefined)return null;
+    if(!Array.isArray(command.recipients)||!command.recipients.length||command.recipients.length>50||command.recipients.some(id=>typeof id!=='string'||!id||id.length>240))throw Error('Choisis un joueur connecté.');
+    const party=await OBR.party.getPlayers(),ids=[...new Set(command.recipients)];
+    if(ids.some(id=>!party.some(p=>p.connectionId===id&&p.role==='PLAYER')))throw Error('Un joueur sélectionné est déconnecté. Choisis à nouveau les destinataires.');
+    return ids;
+  }
+  async function announcePublication(target){
+    if(!publication)return;
+    if(publication.recipients){for(const to of target?[target]:publication.recipients)if(allowedRecipient(to))await sealed.send(to,{type:'show',...publicFile(publication),to});}
+    else await send({type:'show',...publicFile(publication),...(target?{to:target}: {})});
+  }
   async function requireGM() {
     if (closed || role !== "GM" || await OBR.player.getRole() !== "GM") throw Error("Bibliothèque réservée au maître de jeu de cette salle.");
     store ||= await openFileLibrary(OBR.room.id,OBR.player.id);
@@ -47,9 +62,11 @@ export async function installFileLibrary(OBR) {
   }
   async function execute(command) {
     await requireGM();
+    if(command.action==='recipients')return {players:(await OBR.party.getPlayers()).filter(p=>p.role==='PLAYER').map(p=>({id:p.connectionId,name:p.name||'Joueur'}))};
     // A portrait presentation is temporary. It must not depend on saving the
     // scenario, revealing its source cell, or adding another library copy.
     if (command.action === 'present-image') {
+      const recipients=await recipientIds(command);
       if (!(command.file instanceof Blob)) throw Error('Choisis une image.');
       const file = new File([command.file],'image-partagee',{type:command.file.type});
       const {mime} = await validateFile(file);
@@ -58,8 +75,8 @@ export async function installFileLibrary(OBR) {
       await stop();await requireGM();
       const next = {id:crypto.randomUUID(),version:crypto.randomUUID(),fileId:crypto.randomUUID(),title:'Image partagée par le MJ',mime,size:file.size,hash,transferMode:'window-v1',direct:true};
       if (!validPublication(next)) throw Error('Cette image ne peut pas être présentée.');
-      publicationBlob = file;publication = {...next,transient:true};
-      try { await send({type:'show',...publicFile(next)}); }
+      publicationBlob = file;publication = {...next,transient:true,recipients,...(recipients?{chunkBytes:6000}: {})};
+      try { await announcePublication(); }
       catch (error) { publication = publicationBlob = null;throw error; }
       return {publication:publicFile(next)};
     }
@@ -114,15 +131,16 @@ export async function installFileLibrary(OBR) {
       await requireGM();await store.remove(entry.id);return {};
     }
     if (command.action === "present") {
+      const recipients=await recipientIds(command);
       const title = typeof command.title === "string" ? command.title.trim() : entry.title;
       if (!title || title.length > 120) throw Error("Donne un nom de 1 à 120 caractères.");
       // No announcement, filename, bytes or link leaves the GM before this explicit action.
       await stop();await requireGM();
       const next = {id:crypto.randomUUID(),version:crypto.randomUUID(),fileId:entry.id,title,mime:entry.mime,size:entry.size,hash:entry.hash,transferMode:'window-v1',direct:true};
       if (!validPublication(next)) throw Error("Ce média ne peut pas être présenté.");
-      await requireGM();await store.put({...entry,released:true});
-      publication = next;
-      try { await send({type:"show",...publicFile(next)}); }
+      await requireGM();if(!recipients)await store.put({...entry,released:true});
+      publication = {...next,recipients,...(recipients?{chunkBytes:6000}: {})};
+      try { await announcePublication(); }
       catch (error) { publication = null;throw error; }
       return {publication:publicFile(next)};
     }
@@ -191,13 +209,13 @@ export async function installFileLibrary(OBR) {
         const active = publication,start = epoch;
         const selected = Array.from(targets.keys()).slice(0,1),request=targets.get(selected[0]);selected.forEach(id => targets.delete(id));
         const allowed = [];
-        for (const id of selected) if (await isMember(id,"PLAYER")) allowed.push(id);
+        for (const id of selected) if (allowedRecipient(id)&&await isMember(id,"PLAYER")) allowed.push(id);
         if (!allowed.length) continue;
         await requireGM();
         const blob = active.transient ? publicationBlob : await store.blob(active.fileId);
         if (!blob || publication !== active || start !== epoch || closed) continue;
         const transfer = request?.transfer||crypto.randomUUID();
-        for await (const part of fileChunks(blob,request?.missing)) {
+        for await (const part of fileChunks(blob,request?.missing,active.chunkBytes||9000)) {
             if (closed || role !== "GM" || publication !== active || start !== epoch) break;
             if (part.index % 32 === 0) await requireGM();
             const fast=await sendFile(allowed[0],{type:"data",id:active.id,version:active.version,transfer,to:allowed,...part});
@@ -217,16 +235,17 @@ export async function installFileLibrary(OBR) {
   function onMedia(event) {
     const data = event.data;
     if (closed || !data || !validId(data.id)) return;
+    if(['audience-key','audience-key-request','audience-sealed'].includes(data.type)){void sealed.handle(event).catch(console.warn);return;}
     if(data.type==='direct-offer'||data.type==='direct-answer'){void direct.handle(event).catch(console.warn);return}
     void (async () => {
       if (role === "GM") {
-        if (!await isMember(event.connectionId,"PLAYER") || closed || role !== "GM" || !publication) return;
-        if (data.type === "active") await send({type:"show",...publicFile(publication),to:event.connectionId});
+        if (!await isMember(event.connectionId,"PLAYER") || closed || role !== "GM" || !publication || !allowedRecipient(event.connectionId)) return;
+        if (data.type === "active") await announcePublication(event.connectionId);
         else if (data.type === "request" && data.id === publication.id && data.version === publication.version &&
             data.to === connectionId) {
           let request;
           if(data.missing!==undefined){
-            const count=Math.ceil(publication.size/9000);
+            const count=Math.ceil(publication.size/(publication.chunkBytes||9000));
             if(!validId(data.transfer)||!Array.isArray(data.missing)||!data.missing.length||data.missing.length>16||!data.missing.every(i=>Number.isInteger(i)&&i>=0&&i<count)||new Set(data.missing).size!==data.missing.length)return;
             if(!Number.isSafeInteger(data.round)||data.round<1)return;
             request={transfer:data.transfer,round:data.round,missing:data.missing};
@@ -279,6 +298,7 @@ export async function installFileLibrary(OBR) {
   const offMedia = OBR.broadcast.onMessage(mediaChannel,onMedia);
   offs.push(offMedia);
   offs.push(OBR.party.onChange(players => {
+    sealed.retain(players.filter(player=>player.role===(role==='GM'?'PLAYER':'GM')).map(player=>player.connectionId));
     direct.retain(players.filter(player=>player.role===(role==='GM'?'PLAYER':'GM')).map(player=>player.connectionId));
     for(const id of targets.keys())if(!players.some(player=>player.connectionId===id&&player.role==='PLAYER')){targets.delete(id);direct.disconnect(id)}
     if (receive && !players.some(player => player.connectionId === receive.sender && player.role === "GM")) void closeViewer();
@@ -292,11 +312,12 @@ export async function installFileLibrary(OBR) {
   offs.push(OBR.player.onChange(player => {
     if (player.connectionId) connectionId = player.connectionId;
     if (role === player.role) return;
-    role = player.role;direct.dispose();epoch++;publication = publicationBlob = null;targets.clear();void closeViewer();
+    role = player.role;direct.dispose();sealed.dispose();epoch++;publication = publicationBlob = null;targets.clear();void closeViewer();
   }));
   window.addEventListener("pagehide",() => {
     closed = true;epoch++;publication = publicationBlob = null;clearTimeout(sendTimer);clearReception();
-    direct.dispose();dossier.dispose();offs.forEach(off => off?.());isMember.dispose();channel.close();void commands.finally(() => store?.close());
+    direct.dispose();sealed.dispose();dossier.dispose();offs.forEach(off => off?.());isMember.dispose();channel.close();void commands.finally(() => store?.close());
   },{once:true});
+  void sealed.announce().catch(console.warn);
   if (role === "PLAYER") await send({type:"active",id:crypto.randomUUID()});
 }

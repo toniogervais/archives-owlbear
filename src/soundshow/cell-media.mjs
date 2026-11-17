@@ -1,5 +1,5 @@
 /* V4.26 — plusieurs médias SoundShow liés à la révélation d'une cellule, MJ uniquement. */
-import {isGM,requireGM,notice,sheet,element,button} from '../v63/ui.mjs?v=4580';
+import {isGM,requireGM,notice,sheet,element,button} from '../v63/ui.mjs?v=4590';
 import {safeCellAttachments} from './cell-media-core.mjs?v=027';
 export function mountCellMedia({send,getRemote,refreshRemote,embedded}){
   const editorSlot=document.getElementById('cell-media-editor');

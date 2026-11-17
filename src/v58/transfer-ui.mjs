@@ -1,7 +1,7 @@
-import { isPacket, packet } from "../v56/link.mjs?v=4580";
-import { prepareSource,renderSource,sourcePicture } from "./media.mjs?v=4580";
+import { isPacket, packet } from "../v56/link.mjs?v=4590";
+import { prepareSource,renderSource,sourcePicture } from "./media.mjs?v=4590";
 import { installCropEditor } from "../v61/token-crop.mjs";
-import {ensureHostedArtwork} from "./hosted-assets.mjs?v=4580";
+import {ensureHostedArtwork} from "./hosted-assets.mjs?v=4590";
 
 const pending = new Map();
 const $ = id => document.getElementById(id);
@@ -80,6 +80,7 @@ function buildDialog() {
   <p class="hint">Un élément caché reste réservé au MJ. Révéler partage uniquement le rendu choisi et son nom.</p>
   <section data-edit hidden><div class="layout"><div class="fields">
     <label>Nom dans Owlbear<input data-title maxlength="120" required></label>
+    <label data-token-label>Nom affiché au-dessus du token (facultatif)<input data-label maxlength="120" placeholder="Aucun nom affiché"></label>
     <label>Format<select data-kind><option value="TOKEN">Token rond</option><option value="DOCUMENT">Document</option></select></label>
     <label data-page-label hidden>Page du PDF<input data-page type="number" min="1" value="1"></label>
     <div data-text-box hidden><label><input data-include type="checkbox">Ajouter ce texte au document</label><label>Texte à montrer<textarea data-text rows="5" maxlength="12000"></textarea></label></div>
@@ -155,7 +156,9 @@ async function manager(view,context,back) {
       };
       toggle.onclick = () => { void perform("visibility",!record.revealed); };
       remove.onclick = () => { void perform("remove"); };
-      row.append(label,locate,toggle,remove);ui("records").append(row);
+      const naming=document.createElement('input');naming.type='text';naming.maxLength=120;naming.value=record.label||'';naming.placeholder='Aucun nom affiché';naming.setAttribute('aria-label','Nom affiché pour '+record.title);
+      const rename=document.createElement('button');rename.type='button';rename.textContent='Appliquer le nom';rename.onclick=async()=>{setBusy(true);try{await request({action:'label',scene:context.scene,assetId:record.id,label:naming.value});ui('status').textContent='Nom choisi par le MJ appliqué au token.';}catch(error){ui('status').textContent=error.message;}finally{setBusy(false);}};
+      row.append(label,locate,toggle,remove,naming,rename);ui("records").append(row);
     }
     ui("status").textContent = "Les fichiers non révélés restent réservés au MJ. Les révélations et retraits s’appliquent à la scène ouverte.";
   } catch (error) { ui("status").textContent = error.message; }
@@ -206,6 +209,7 @@ async function openSource(input,report = notify) {
           if (!title) throw Error("Donne un nom à cet élément.");
           if (source.pages && (!Number.isInteger(page) || page < 1 || page > source.pages)) throw Error("Choisis une page existante du PDF.");
           ui("heading").textContent = token ? "Préparer le token" : "Transférer un document";
+          ui('token-label').hidden=!token;
           ui("text-box").hidden = !source.text || token;
           if (token) {
             const picture = await sourcePicture(source,page);
@@ -239,7 +243,7 @@ async function openSource(input,report = notify) {
         const art = await renderSource(source,{kind,title,page,text:ui("text").value,includeText:ui("include").checked,crop:framing.crop});
         gmState();
         const hosted = await tryDirectHosting(art,message=>{if(dialog.open)ui("status").textContent=message;},true);
-        const result = await request({action:"transfer",scene:context.scene,sourceKey:source.key,kind,title,reveal,art,hosted,framing},message => {
+        const result = await request({action:"transfer",scene:context.scene,sourceKey:source.key,kind,title,label:ui('label').value,reveal,art,hosted,framing},message => {
           if (dialog.open) ui("status").textContent = message;
         });
         if (!dialog.open) return;

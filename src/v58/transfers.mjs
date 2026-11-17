@@ -1,9 +1,9 @@
 import OBR, { buildImage, buildImageUpload } from "../../assets/owlbear-transfer-sdk-v55.mjs";
-import { localRoom } from "../v57/room.mjs?v=4580";
-import {isPacket,packet,validRoomId,validSession} from "../v56/link.mjs?v=4580";
-import { artworkBlob,assetKey,blobDigest,privateArtworkStore,sceneKey,validArtwork } from "./model.mjs?v=4580";
+import { localRoom } from "../v57/room.mjs?v=4590";
+import {isPacket,packet,validRoomId,validSession} from "../v56/link.mjs?v=4590";
+import { artworkBlob,assetKey,blobDigest,privateArtworkStore,sceneKey,validArtwork } from "./model.mjs?v=4590";
 import { normalizeCrop } from "../v61/token-crop.mjs";
-import {safeHostedImage} from "./hosted-assets.mjs?v=4580";
+import {safeHostedImage} from "./hosted-assets.mjs?v=4590";
 
 // Only the GM talks to this local channel. Unrevealed artwork never enters a
 // shared item, broadcast, room metadata, public bucket, or player snapshot.
@@ -17,6 +17,13 @@ export async function installArtworkTransfers() {
   const expectedLocalRemovals = new Set(),expectedSharedRemovals = new Set();
   const deleted = new Map();
   const offs = [];
+  function captureLabel(item,before){
+    if(role!=='GM'||!before||item.metadata?.[assetKey]?.id!==item.id||item.text?.plainText===before.text?.plainText)return;
+    if(item.lastModifiedUserId&&item.lastModifiedUserId!==OBR.player.id)return;
+    const record=records.find(r=>r.id===item.id),text=item.text?.plainText;
+    if(!record||typeof text!=='string'||text.length>120||record.label===text)return;
+    record.label=text;commands=commands.then(async()=>{await requireGM(record.scene);await store.put(record);}).catch(console.warn);
+  }
   const pose = item => ({position:item.position, scale:item.scale, rotation:item.rotation, locked:item.locked});
   const shared = id => items.find(item => item.id === id && item.metadata?.[assetKey]?.id === id);
   const isDeleted = record => deleted.get(record.id)?.scene === record.scene && deleted.get(record.id)?.version === record.version;
@@ -43,7 +50,8 @@ export async function installArtworkTransfers() {
   function makeItem(record, hidden) {
     const item = buildImage(record.image,record.grid).id(record.id)
       .name(record.title)
-      .plainText(record.title).textItemType("LABEL")
+      .createdUserId(OBR.player.id)
+      .plainText(record.label||'').textItemType("LABEL")
       .layer(hidden ? "POPOVER" : (record.kind === "TOKEN" ? "CHARACTER" : "PROP"))
       .position(record.position).visible(true)
       .metadata({[assetKey]:{id:record.id,version:record.version}}).build();
@@ -119,7 +127,7 @@ export async function installArtworkTransfers() {
            current.image?.width!==desired.image?.width ||
            current.image?.height!==desired.image?.height ||
            current.visible!==true ||
-           current.name!==desired.name || current.layer!==desired.layer){
+           current.name!==desired.name || current.layer!==desired.layer || current.text?.plainText!==desired.text?.plainText){
           const updated={...desired,...pose(current)};
           await OBR.scene.local.updateItems([record.id],draft=>{Object.assign(draft[0],updated);});
           locals.set(record.id,updated);
@@ -156,6 +164,15 @@ export async function installArtworkTransfers() {
     if (!closed && role === "GM" && key) {
       store ||= await privateArtworkStore(OBR.room.id,OBR.player.id);
       currentRecords = await store.list(key);
+      // Upgrade only our own legacy labels. Player account names are not token
+      // names; other existing labels chosen by the GM remain intact.
+      const names=new Set((await OBR.party.getPlayers()).filter(p=>p.role==='PLAYER').map(p=>p.name));
+      for(const record of currentRecords)if(record.label===undefined){
+        const existing=currentItems.find(item=>item.id===record.id&&item.metadata?.[assetKey]?.id===item.id);
+        const label=existing?.text?.plainText??record.title;
+        record.label=names.has(label)?'':label;await store.put(record);
+        if(existing&&existing.text?.plainText!==record.label)await OBR.scene.items.updateItems([record.id],draft=>{draft[0].text={...draft[0].text,type:'PLAIN',plainText:record.label};});
+      }
     }
     if (closed) return;
     if (key !== scene) {
@@ -208,6 +225,7 @@ export async function installArtworkTransfers() {
   const validTransfer = command => command && ['TOKEN','DOCUMENT'].includes(command.kind) &&
     typeof command.sourceKey === 'string' && !!command.sourceKey && command.sourceKey.length <= 300 &&
     typeof command.title === 'string' && !!command.title.trim() && command.title.length <= 120 && validArtwork(command.art) &&
+    (command.label===undefined||typeof command.label==='string'&&command.label.length<=120) &&
     (!command.hosted || (safeHostedImage(command.hosted)&&command.hosted.mime===command.art.mime&&
       command.hosted.width===command.art.width&&command.hosted.height===command.art.height));
   async function nativeImages(batch,progress) {
@@ -257,7 +275,7 @@ export async function installArtworkTransfers() {
     const previous = records.find(entry => entry.sourceKey === command.sourceKey && entry.kind === command.kind);
     const wasRevealed=previous ? Boolean(shared(previous.id)?.visible || previous.revealed) : false;
     const record = {...previous,id:previous?.id || command.art.id,version:command.art.version,scene:currentScene,
-      sourceKey:command.sourceKey,title:command.title.trim(),kind:command.kind,image,grid:grid(command.kind,image),
+      sourceKey:command.sourceKey,title:command.title.trim(),label:command.label===undefined?(previous?.label||''):command.label.trim(),kind:command.kind,image,grid:grid(command.kind,image),
       position:previous?.position || position || await centre(),scale:previous?.scale || {x:1,y:1},rotation:previous?.rotation || 0,locked:previous?.locked || false,revealed:false};
     deleted.delete(record.id);
     await store.put(record);
@@ -307,15 +325,20 @@ export async function installArtworkTransfers() {
       await refresh();await queueRender();
       const actual=await OBR.scene.local.getItems(item=>item.metadata?.[assetKey]?.id===item.id);
       const localIds=new Set(actual.map(item=>item.id));
-      return {scene:currentScene,records:records.map(record => ({id:record.id,title:record.title,
+      return {scene:currentScene,records:records.map(record => ({id:record.id,title:record.title,label:record.label||'',
         kind:record.kind,revealed:Boolean(shared(record.id)?.visible),
         visibleToGM:Boolean(shared(record.id)?.visible||localIds.has(record.id)),
         privateLayer:actual.find(item=>item.id===record.id)?.layer || null}))};
     }
-    if (["visibility","remove"].includes(command.action)) {
+    if (["visibility","remove","label"].includes(command.action)) {
       const record = await store.get(command.assetId);
       if (!record || record.scene !== currentScene) throw Error("Cet élément n’appartient pas à la scène ouverte.");
-      if (command.action === "visibility") await visibility(record,command.reveal === true);
+      if(command.action==='label'){
+        if(typeof command.label!=='string'||command.label.length>120)throw Error('Le nom affiché est limité à 120 caractères.');
+        record.label=command.label.trim();await store.put(record);
+        if(shared(record.id))await OBR.scene.items.updateItems([record.id],draft=>{draft[0].text={...draft[0].text,type:'PLAIN',plainText:record.label};});
+        await refresh();
+      }else if (command.action === "visibility") await visibility(record,command.reveal === true);
       else {
         if (shared(record.id)) await deleteSharedItems([record.id]);
         await removeLocal(record.id);
@@ -344,6 +367,7 @@ export async function installArtworkTransfers() {
     }).catch(console.warn);
   });
   offs.push(OBR.scene.items.onChange(value => {
+    value.forEach(item=>captureLabel(item,items.find(before=>before.id===item.id)));
     const ids=new Set(value.map(item=>item.id));
     for(const before of items)if(!ids.has(before.id)){
       if(expectedSharedRemovals.delete(before.id))continue;
@@ -359,6 +383,7 @@ export async function installArtworkTransfers() {
     for(const [id,before] of locals)if(!ids.has(id)&&!expected.has(id))nativeDeletion(records.find(record=>record.id===id),before.metadata?.[assetKey]?.version);
     for (const item of value) {
       const before = locals.get(item.id), record = records.find(entry => entry.id === item.id);
+      captureLabel(item,before);
       if (!before || !record || isDeleted(record) || JSON.stringify(pose(before)) === JSON.stringify(pose(item))) continue;
       locals.set(item.id,item);
       Object.assign(record,pose(item));

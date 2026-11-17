@@ -1,10 +1,10 @@
-import {button,element,isGM,nativeEditor,notice,sheet} from '../v63/ui.mjs?v=4580';
-import {editEvent} from '../v56/link.mjs?v=4580';
-import {createCloud,cloudError} from './cloud.mjs?v=4580';
-import {autoBackup} from './autosave.mjs?v=4580';
-import {campaignRequest} from './campaign-io.mjs?v=4580';
+import {button,element,isGM,nativeEditor,notice,sheet} from '../v63/ui.mjs?v=4590';
+import {editEvent} from '../v56/link.mjs?v=4590';
+import {createCloud,cloudError} from './cloud.mjs?v=4590';
+import {autoBackup} from './autosave.mjs?v=4590';
+import {campaignRequest} from './campaign-io.mjs?v=4590';
 import {downloadArchive} from './download.mjs';
-import {mountAccount} from '../v78/cloud-account.mjs?v=4580';
+import {mountAccount} from '../v78/cloud-account.mjs?v=4590';
 const cloud = createCloud(() => {
   if (!isGM()) throw Error('Commande réservée au maître de jeu.');
   if (!window.ArchivesCloudBridge) throw Error('Ouvre « Comptes & campagnes » pour connecter ton compte MJ.');

@@ -1,5 +1,5 @@
-import {isPacket,packet} from '../v56/link.mjs?v=4580';
-import {localRoom,validSnapshot} from '../v57/room.mjs?v=4580';
+import {isPacket,packet} from '../v56/link.mjs?v=4590';
+import {localRoom,validSnapshot} from '../v57/room.mjs?v=4590';
 export async function installMainPublicHost(OBR) {
   if(await OBR.player.getRole()!=='GM')return;
   const {channel}=await localRoom(OBR);let primary,closed=false,connected=false,session=crypto.randomUUID(),lastAnnounce=0,latest;
@@ -17,7 +17,7 @@ export async function installMainPublicHost(OBR) {
     if(closed||event.source!==primary||event.origin!==location.origin||!isPacket(data)||!['archives-main-public','archives-main-public-ack','archives-main-image'].includes(data.type)||data.roomId!==OBR.room.id||data.session!==session)return;
     if(await OBR.player.getRole()!=='GM'||closed)return;
     connected=true;if(data.type==='archives-main-public'&&validSnapshot(data.payload)){latest=data.payload;channel.postMessage({type:'published',payload:latest})}
-    if(data.type==='archives-main-image'&&pending.size<8&&['present-image','stop-image'].includes(data.command?.action)){
+    if(data.type==='archives-main-image'&&pending.size<8&&['recipients','get','import','present','present-image','stop','stop-image'].includes(data.command?.action)){
       const id=crypto.randomUUID(),target=primary,nonce=session;
       const reply=(safe,result,message)=>{if(!closed&&nonce===session)target.postMessage(packet('archives-main-image-result',{roomId:OBR.room.id,session:nonce,id:data.id,safe,result,message}),location.origin)};
       const timer=setTimeout(()=>{pending.delete(id);reply(false,null,'Le lecteur de présentation ne répond pas. Réessaie.')},18000);
