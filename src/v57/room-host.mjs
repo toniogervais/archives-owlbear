@@ -55,6 +55,10 @@ export async function makeEditorHost(OBR, post, canEdit) {
     if (!closed && canEdit() && event.data?.type === 'screen-command-result' && screenCommands.delete(event.data.id)) {
       const {id,safe,result,message}=event.data;post('owl-screen-result',{id,safe:safe===true,result,message});
     }
+    if (!closed && canEdit() && event.data?.type === 'artwork-sync' &&
+        typeof event.data.scene==='string' && Array.isArray(event.data.records)) {
+      post('owl-token-sync',{scene:event.data.scene,records:event.data.records});
+    }
     if (!closed && canEdit() && event.data?.type === "artwork-progress" && transfers.has(event.data.id)) {
       post("owl-transfer-progress",{id:event.data.id,message:String(event.data.message || "").slice(0,400)});
     }
