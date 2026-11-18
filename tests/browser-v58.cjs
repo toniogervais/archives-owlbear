@@ -81,7 +81,9 @@ async function openCharacter(page){
   await editor(gm).locator('.cell-title-txt').filter({hasText:'Personnage secret'}).waitFor();
   await frame(gm).evaluate(()=>window.ArchivesCellTransfer.showManager());
   await managerRow(gm,'Personnage secret').getByRole('button',{name:'Show',exact:true}).click();
-  await waitShared(gm,1);await waitLocal(gm,0);
+  await waitShared(gm,1);
+  await gm.waitForFunction(async()=> (await window.fixture.scene()).items[0]?.visible===true);
+  await waitLocal(gm,0);
   let item=(await gm.evaluate(()=>window.fixture.scene())).items[0];
   assert.equal(item.layer,'CHARACTER');assert.equal(item.id,hidden.id);assert.deepEqual(item.position,{x:123,y:456});assert.equal(item.image.url,hidden.image.url);assert.equal(item.visible,true);
   assert.equal((await player.evaluate(()=>window.fixture.scene())).items[0].id,item.id);
@@ -93,7 +95,9 @@ async function openCharacter(page){
   await dialog(gm).waitFor({state:'detached'});
   await frame(gm).evaluate(()=>window.ArchivesCellTransfer.showManager());
   await managerRow(gm,'Nouvelle identité cachée').getByRole('button',{name:'Show',exact:true}).waitFor();
-  await waitShared(gm,1);await waitLocal(gm,0);
+  await waitShared(gm,1);
+  await gm.waitForFunction(async()=> (await window.fixture.scene()).items[0]?.visible===false);
+  await waitLocal(gm,0);
   assert.equal((await gm.evaluate(()=>window.fixture.scene())).items[0].id,item.id);
   assert.equal((await gm.evaluate(()=>window.fixture.scene())).items[0].visible,false);
   assert.deepEqual((await gm.evaluate(()=>window.fixture.scene())).items[0].position,{x:123,y:456});
@@ -101,7 +105,9 @@ async function openCharacter(page){
   assert.ok(!JSON.stringify(wire).includes('528-secret'));
   assert.equal((await player.evaluate(()=>window.fixture.scene())).items.filter(item=>item.visible).length,0);
   await managerRow(gm,'Nouvelle identité cachée').getByRole('button',{name:'Show',exact:true}).click();
-  await waitShared(gm,1);await closeDialog(gm);
+  await waitShared(gm,1);
+  await gm.waitForFunction(async()=> (await window.fixture.scene()).items[0]?.visible===true);
+  await closeDialog(gm);
   // A non-character image from the library can be turned into a token.
   await frame(gm).evaluate(async()=>{const c=document.createElement('canvas');c.width=300;c.height=500;c.getContext('2d').fillRect(0,0,300,500);await window.ArchivesCellTransfer.sendImage({id:'object-library',name:'Document devenu pion',category:'objet',data:c.toDataURL()})});
   await dialog(gm).locator('[data-submit]:not([disabled])').waitFor();assert.equal(await dialog(gm).locator('[data-kind]').inputValue(),'DOCUMENT');
