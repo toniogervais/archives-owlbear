@@ -455,6 +455,28 @@ export async function installArtworkTransfers() {
         await store.put(current);
       }).catch(error=>console.warn('Synchronisation token Owlbear',error));
     }
+    // Native Owlbear Show must reconcile the current private Archive image.
+    // Never refresh unpublished artwork while the shared token is hidden.
+    for(const item of value){
+      if(item.visible!==true||item.metadata?.[assetKey]?.id!==item.id)continue;
+      const record=records.find(entry=>entry.id===item.id&&!isDeleted(entry));
+      if(!record||record.version!==item.metadata[assetKey].version||
+         item.image?.url===record.image?.url)continue;
+      const id=item.id,version=record.version,expectedScene=record.scene;
+      commands=commands.catch(()=>{}).then(async()=>{
+        await requireGM(expectedScene);
+        const [native]=await OBR.scene.items.getItems([id]);
+        const saved=await store.get(id);
+        if(!native||native.visible!==true||!saved||saved.version!==version||
+           native.metadata?.[assetKey]?.id!==id||
+           native.image?.url===saved.image?.url)return;
+        await OBR.scene.items.updateItems([id],draft=>{
+          draft[0].image=saved.image;
+          draft[0].grid=saved.grid;
+          draft[0].name=saved.title;
+        });
+      }).catch(error=>console.warn('Actualisation du token révélé',error));
+    }
     items = value;void queueRender().then(scheduleSync).catch(console.warn);
   }));
   offs.push(OBR.scene.local.onChange(value => {
