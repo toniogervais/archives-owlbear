@@ -18,6 +18,8 @@ jobs:
           node-version: '22'
       - run: npm ci
       - run: npm test
+      - name: Bloquer les vulnérabilités importantes des dépendances
+        run: npm audit --audit-level=high
       - name: Inventaire sécurité des dépendances
         run: npm audit --json > audit-pre-v5.json || true
       - uses: actions/upload-artifact@v4
@@ -33,7 +35,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        groupe: [interface-joueurs, tokens-fiches, medias-son, integrations]
+        groupe: [interface-joueurs, tokens-fiches, medias-son, integrations, parcours-historiques]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -70,5 +72,10 @@ jobs:
               node tests/browser-v63.cjs
               node tests/browser-v64.cjs
               node tests/browser-v452.cjs
+              ;;
+            parcours-historiques)
+              node tests/browser-v444.cjs
+              node tests/browser-v448.cjs
+              node tests/browser-v457.cjs
               ;;
           esac
