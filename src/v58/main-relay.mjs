@@ -29,6 +29,9 @@ window.addEventListener('message',event=>{
     if(data.type==='artwork-main-progress'&&validSession(data.id))
       pending.get(data.id)?.report?.(String(data.message||''));
     else if(data.type==='artwork-main-result'&&validSession(data.id))resolvePending(data.id,data);
+    else if(data.type==='artwork-main-sync'&&typeof data.scene==='string'&&Array.isArray(data.records))
+      window.dispatchEvent(new CustomEvent('archives:owlbear-tokens',
+        {detail:{scene:data.scene,records:data.records}}));
   }
 });
 export function requestDirectOwlbear(command,report) {
