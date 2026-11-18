@@ -42,8 +42,20 @@ async function saveVisibility(record,revealed){
       if(confirmed&&typeof confirmed.revealed==='boolean')
         window.DuneApp?.setTransferredCellReveal?.(confirmed.sourceKey,confirmed.revealed);
     }
-  }).finally(()=>{
-    if(visibilityPending.get(id)===intention)visibilityPending.delete(id);
+  }).finally(async()=>{
+    if(visibilityPending.get(id)===intention){
+      visibilityPending.delete(id);
+      try{
+        // Request the authoritative native Owlbear state, even if its latest
+        // event arrived while the outgoing command was still in flight.
+        const fresh=await request({action:'list',scene:tokenSync.scene});
+        applyTokenSync({scene:fresh.scene,records:fresh.records.map(entry=>({
+          ...entry,private:entry.privateLayer!=='Owlbear · masqué'
+        }))},id);
+      }catch(error){
+        console.warn('Vérification de la visibilité Owlbear',error);
+      }
+    }
     if(visibilityQueues.get(id)===run)visibilityQueues.delete(id);
   });
   visibilityQueues.set(id,run);
@@ -85,7 +97,7 @@ function tokenStatus(record){
       (record.private?'caché · présent côté MJ (CHARACTER/PROP)':'masqué dans Owlbear · présent côté MJ'):
       'caché · ABSENT côté MJ');
 }
-function applyTokenSync(data){
+function applyTokenSync(data,forceId=null){
   try{gmState();}catch{return;}
   if(typeof data?.scene!=='string'||!Array.isArray(data.records)||data.records.length>3000)return;
   if(!data.records.every(r=>r&&typeof r.id==='string'&&typeof r.sourceKey==='string'&&
@@ -98,7 +110,7 @@ function applyTokenSync(data){
   const chosen=new Set();
   const candidates=data.records.filter(item=>item.kind==='TOKEN'&&
     item.sourceKey.startsWith('cell:')&&!visibilityPending.has(item.id)&&
-    previous.get(item.id)?.revealed!==item.revealed);
+    (item.id===forceId||previous.get(item.id)?.revealed!==item.revealed));
   for(const record of candidates){
     const state=window.DuneApp?.getState?.();
     const match=state&&!state.playerMode&&!state.strictReadOnly?matchCell(record.sourceKey,state):null;
