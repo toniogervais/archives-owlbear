@@ -26,7 +26,7 @@ test('V4.65 — aucune caractéristique confidentielle ne passe dans le marqueur
     npcSheet:normalizeTokenNpcSheet({attributes:{CON:'9'},
       sections:{notes:'TRAME_SECRETE_PERSONNAGE',equipement:'CODE_DE_SERRURE_349'}})};
   const shared=publicTokenMarker(record);
-  assert.deepEqual(Object.keys(shared).sort(),['hasSheet','id','version']);
+  assert.deepEqual(Object.keys(shared).sort(),['hasSheet','id','kind','version']);
   assert.equal(shared.hasSheet,true);
   assert.ok(!JSON.stringify(shared).includes('TRAME_SECRETE_PERSONNAGE'));
   assert.ok(!JSON.stringify(shared).includes('CODE_DE_SERRURE_349'));
