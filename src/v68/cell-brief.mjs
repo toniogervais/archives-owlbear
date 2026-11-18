@@ -281,15 +281,12 @@ function renderCard(node,index){
   card.dataset.picture=String(!!url);card.dataset.gmFields=String(!!node.gmDetails?.length);
   if(typeof url==='string'&&url){
     const img=el('img','brief-picture');img.src=url;img.alt='Portrait ou illustration : '+(node.title||'cellule');
-    img.onerror=()=>photo.replaceChildren(el('span','brief-no-picture','Image indisponible'));photo.append(img);
+    img.onerror=()=>photo.replaceChildren(el('span','brief-no-picture','Image indisponible'));
+    img.onload=()=>queueFit(false);
+    photo.append(img);
   }else photo.append(el('span','brief-no-picture','Aucun portrait ou illustration associé à cette cellule'));
   const category=el('div','brief-subtitle',[node.category||'Cellule',node.faction||'',node.revealed?'Cellule révélée':'Cellule cachée'].filter(Boolean).join(' · '));category.id=id('category');portrait.append(picture,category);
   card.dataset.npcSheet=String(node.category==='personnage');
-  if(typeof url==='string'&&url){
-    const show=el('button','brief-share-image','▣ Montrer l’image aux joueurs');show.type='button';
-    show.title='Présenter uniquement l’image, sans révéler la cellule ni ses indices';
-    show.onclick=()=>void window.ArchivesPresentation?.presentCell(node.id);portrait.append(show);
-  }
   if(node.category==='personnage'){
     const npc=window.ArchivesNpcSheet?.renderNpcPanel?.(node);
     if(npc)portrait.append(npc);
@@ -332,6 +329,7 @@ function renderDeck(){
   deck.replaceChildren(...activeNodeIds.map((id,index)=>renderCard(currentNode(id),index)));
   for(const card of deck.children){const saved=scroll.get(card.dataset.nodeId);if(saved){card.querySelector('.brief-desc').scrollTop=saved[0];card.querySelector('.brief-clue-list').scrollTop=saved[1];card.querySelector('.brief-portrait').scrollTop=saved[2]||0}}
   dialog.dataset.count=String(activeNodeIds.length);deck.style.setProperty('--brief-count',activeNodeIds.length);
+  for(const card of deck.children){const pane=card.querySelector('.npc-sheet');if(pane){const data=Array.from(pane.querySelectorAll('.npc-info-line span')).reduce((sum,e)=>sum+(e.textContent?.length||0),0);pane.dataset.density=data>500?'high':data>180?'medium':'normal'}}
   const select=document.getElementById('archives-brief-picker'),previous=select.value;
   select.replaceChildren(el('option',null,'Choisir une cellule…'));select.firstChild.value='';
   for(const node of state.nodes||[])if(!activeNodeIds.includes(String(node.id))){const option=el('option',null,node.title||'Cellule sans titre');option.value=String(node.id);select.append(option)}
@@ -362,6 +360,22 @@ function fitContent(resize){
     }
   }
   for(const {card,desc,clues} of measurements){card.style.setProperty('--desc-share',Math.max(60,desc)+'fr');card.style.setProperty('--clue-share',Math.max(50,clues)+'fr')}
+  fitPortraits(cards);
+}
+function fitPortraits(cards){
+  for(const card of cards){
+    if(card.dataset.picture!=='true')continue;
+    const portrait=card.querySelector('.brief-portrait'),figure=card.querySelector('.brief-figure'),img=figure?.querySelector('img.brief-picture');
+    if(!portrait||!figure||!img)continue;
+    const available=portrait.clientHeight||card.clientHeight,content=portrait.scrollHeight-figure.offsetHeight;
+    const isCompact=card.closest('#archives-cell-brief')?.dataset.count!=='1';
+    const width=portrait.clientWidth-20,ratio=img.naturalWidth>0?img.naturalHeight/img.naturalWidth:1;
+    const cap=isCompact?185:Math.min(300,Math.max(125,Math.round(card.clientHeight*.43)));
+    const naturalHeight=Math.max(82,Math.min(cap,Math.round(width*Math.max(.35,Math.min(2.8,ratio)))+38));
+    const room=Math.max(isCompact?82:100,available-content-10);
+    const desired=Math.round(Math.max(isCompact?82:100,Math.min(naturalHeight,room,cap)));
+    if(Math.abs(figure.offsetHeight-desired)>2)figure.style.setProperty('--brief-portrait-height',desired+'px');
+  }
 }
 function queueFit(resize){
   if(resize)queueFit.resize=true;

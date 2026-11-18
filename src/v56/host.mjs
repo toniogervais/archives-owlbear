@@ -3,7 +3,7 @@ import {
   isPacket, liveRoomKey, packet, pairingKey, readLocal, screenChannel, trustedOwlbearSdk,
   validLiveRoom, validPairing, viewerId, writeLocal
 } from "./link.mjs?v=4590";
-import { localEditor, localViewer, release } from "../v57/room.mjs?v=4630";
+import { localEditor, localViewer, release } from "../v57/room.mjs?v=4640";
 import { makeEditorHost, makePlayerHost } from "../v57/room-host.mjs?v=4590";
 import {makeSoundShowPlayerHost} from '../soundshow/player-host.mjs?v=4590';
 

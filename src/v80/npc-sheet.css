@@ -66,3 +66,79 @@
  #archives-npc-editor .npc-editor-health{grid-template-columns:1fr}
  #archives-npc-editor .npc-editor-head,#archives-npc-editor .npc-editor-foot{padding:12px}
 }
+
+
+/* V4.64 — portraits visibles en entier, format mobile et fiches denses. */
+#archives-cell-brief .brief-card[data-picture="true"] .brief-figure{
+  height:var(--brief-portrait-height,165px)!important;
+  min-height:0!important;max-height:300px!important;flex:none!important
+}
+#archives-cell-brief .brief-card[data-picture="true"] .brief-photo{
+  min-height:0!important;flex:1 1 auto;overflow:hidden;
+  display:flex;align-items:center;justify-content:center
+}
+#archives-cell-brief .brief-card .brief-picture{
+  display:block;width:100%;height:100%;max-width:100%;max-height:100%;
+  object-fit:contain!important;object-position:center center
+}
+#archives-cell-brief .brief-card[data-npc-sheet="true"] .brief-portrait{
+  container-type:inline-size;overflow-y:auto;scrollbar-width:thin
+}
+#archives-cell-brief .brief-card[data-npc-sheet="true"] .npc-sheet{
+  padding:7px 0 3px;margin-top:7px
+}
+#archives-cell-brief .npc-sheet-head{margin-bottom:5px}
+#archives-cell-brief .npc-stats-grid{
+  gap:2px;margin-bottom:5px;padding:5px 2px
+}
+#archives-cell-brief .npc-stat{gap:0}
+#archives-cell-brief .npc-stat-label{
+  font-size:clamp(8px,2.8cqi,10px);letter-spacing:0;line-height:1.1
+}
+#archives-cell-brief .npc-stat-value{
+  font-size:clamp(9px,3.3cqi,12px);line-height:1.2
+}
+#archives-cell-brief .npc-info-line{
+  font-size:clamp(9px,3.15cqi,12px);line-height:1.3;gap:3px
+}
+#archives-cell-brief .npc-sheet-info{gap:3px;padding:3px 1px 6px}
+#archives-cell-brief .npc-professionalism>span{
+  font-size:clamp(9px,2.9cqi,11px);letter-spacing:.3px
+}
+#archives-cell-brief .npc-professionalism>strong{font-size:clamp(13px,4.3cqi,18px)}
+#archives-cell-brief .npc-sheet[data-density="high"] .npc-info-line{font-size:clamp(9px,2.8cqi,11px);line-height:1.2}
+#archives-cell-brief .npc-sheet[data-density="high"] .npc-stats-grid{padding:4px 2px;margin-bottom:3px}
+#archives-cell-brief .npc-monitors{gap:6px;padding:7px 0}
+#archives-cell-brief[data-count]:not([data-count="1"]) .brief-card[data-npc-sheet="true"] .brief-portrait{
+  max-height:70%;flex:0 1 auto;min-height:130px
+}
+@media(max-width:690px){
+  #archives-cell-brief[data-count="1"] .brief-body{
+    display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain
+  }
+  #archives-cell-brief[data-count="1"] .brief-portrait{
+    flex:none;min-height:0;max-height:none!important;overflow:visible
+  }
+  #archives-cell-brief[data-count="1"] .brief-right{
+    flex:none;min-height:250px;overflow:visible
+  }
+  #archives-cell-brief[data-count="1"] .brief-desc{flex:none;min-height:100px;max-height:none}
+  #archives-cell-brief[data-count="1"] .brief-clues{flex:none;min-height:0;max-height:none}
+}
+#archives-npc-editor .npc-import-section{border-bottom:1px solid #946877;padding-top:11px;padding-bottom:11px}
+#archives-npc-editor .npc-import-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#archives-npc-editor .npc-import-button,#archives-npc-editor .npc-import-apply{
+  padding:8px 13px;min-height:38px;border-radius:8px;
+  border:1px solid #e9a0ab;color:#fff1f3;background:#74364d;
+  font-weight:750
+}
+#archives-npc-editor .npc-import-button:disabled,#archives-npc-editor .npc-import-apply:disabled{opacity:.6;cursor:default}
+#archives-npc-editor .npc-import-help{font-size:12px;color:#cdb6c2}
+#archives-npc-editor .npc-import-file[hidden],#archives-npc-editor .npc-import-preview[hidden]{display:none!important}
+#archives-npc-editor .npc-import-preview{margin-top:12px;padding:10px;background:#211923;border:1px solid #805b70;border-radius:8px}
+#archives-npc-editor .npc-import-found{max-height:170px;overflow:auto;list-style:disc;padding-left:22px;margin:7px 0;font-size:12px}
+#archives-npc-editor .npc-import-found li{margin-bottom:3px;overflow-wrap:anywhere}
+#archives-npc-editor .npc-import-option{display:flex;gap:9px;align-items:center;margin:10px 0;font-size:12px;cursor:pointer}
+#archives-npc-editor .npc-import-option input{width:18px;min-width:18px;height:18px;min-height:18px;margin:0;accent-color:#e88b9a}
+#archives-npc-editor .npc-import-error{color:#ffacae;font-size:12px}
+#archives-npc-editor .npc-import-confirm{display:block;color:#a7e1c0;margin-top:8px;font-size:12px}

@@ -1,0 +1,41 @@
+name: Validation V4.64 — fiches MJ compactes et import PNJ
+on:
+  push:
+    branches: [main]
+    paths:
+      - "archives-app-v64-v55.html"
+      - "src/v68/cell-brief.mjs"
+      - "src/v80/**"
+      - "src/v81/**"
+      - "tests/npc-import-v464.test.mjs"
+      - "tests/browser-v451.cjs"
+      - "tests/browser-v463.cjs"
+      - "tests/browser-v464.cjs"
+      - ".github/workflows/verify-v464.yml"
+  workflow_dispatch:
+jobs:
+  unitaires:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npm test
+  navigateurs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    strategy:
+      fail-fast: false
+      matrix:
+        test: [browser-v451, browser-v463, browser-v464]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: node tests/${{ matrix.test }}.cjs

@@ -1,4 +1,4 @@
-/* V4.63 — Fiche Shadowrun 6 des PNJ, réservée au MJ. */
+/* V4.64 — Fiche Shadowrun 6 des PNJ, import non destructif réservé au MJ. */
 export const ATTRIBUTES=['CON','AGI','RÉA','FOR','VOL','LOG','INT','CHA','MAG','ESS'];
 export const COMBAT=['SD','I/DI','PA','ME','DÉPLACEMENT','DRAIN'];
 export const SECTIONS=[
@@ -55,6 +55,50 @@ export function openNpcEditor(id){
  const head=$('header','npc-editor-head');
  head.append($('div',null,''));head.firstChild.append($('span','npc-editor-eyebrow','Fiche MJ · Shadowrun 6'),$('h2',null,node.title||'Personnage'));
  const close=$('button','npc-editor-close','×');close.type='button';close.setAttribute('aria-label','Fermer sans enregistrer');close.onclick=()=>dialog.close();head.append(close);form.append(head);
+ const importSection=$('section','npc-editor-section npc-import-section');
+ const importRow=$('div','npc-import-row');
+ const pick=$('button','npc-import-button','Importer un fichier');pick.type='button';pick.setAttribute('aria-label','Importer une fiche PNJ depuis un fichier');
+ const file=$('input','npc-import-file');file.type='file';file.accept='.json,.txt,.csv,.tsv,.pdf,application/json,text/plain,text/csv,application/pdf';file.hidden=true;file.setAttribute('aria-label','Choisir un fichier de caractéristiques PNJ');
+ const importNote=$('span','npc-import-help','PDF texte, TXT, CSV ou JSON');
+ const importPreview=$('div','npc-import-preview');importPreview.hidden=true;
+ pick.onclick=()=>file.click();
+ file.onchange=async()=>{
+  const selected=file.files?.[0];if(!selected)return;
+  importPreview.hidden=false;importPreview.replaceChildren($('span',null,'Analyse du fichier…'));
+  pick.disabled=true;
+  try{
+   const parser=window.ArchivesNpcImport?.readNpcFile;
+   if(!parser)throw Error('Le module d’import est indisponible.');
+   const result=await parser(selected);
+   if(!form.isConnected||!dialog.open)return;
+   const fields=result.fields,summary=[];
+   if(fields.professionnalisme!==undefined)summary.push('Professionnalisme : '+fields.professionnalisme);
+   for(const [group,entries] of [['attributes',ATTRIBUTES],['combat',COMBAT]]){
+    for(const key of entries)if(fields[group]?.[key])summary.push(key+' : '+fields[group][key]);
+   }
+   for(const [key,label]of SECTIONS)if(fields.sections?.[key])summary.push(label+' : '+fields.sections[key].slice(0,85)+(fields.sections[key].length>85?'…':''));
+   for(const [key,label]of [['physical','Physique'],['stun','Étourdissement']])if(fields.condition?.[key])summary.push(label+' : '+fields.condition[key].damage+'/'+fields.condition[key].total);
+   importPreview.replaceChildren($('strong',null,result.count+' champs reconnus dans « '+selected.name.slice(0,120)+' »'));
+   const list=$('ul','npc-import-found');for(const text of summary.slice(0,35))list.append($('li',null,text));importPreview.append(list);
+   const control=$('label','npc-import-option'),replace=$('input');replace.type='checkbox';replace.setAttribute('aria-label','Remplacer les champs déjà renseignés');control.append(replace,$('span',null,'Remplacer les valeurs déjà renseignées'));importPreview.append(control);
+   const apply=$('button','npc-import-apply','Compléter les champs');apply.type='button';importPreview.append(apply);
+   apply.onclick=()=>{
+    const write=(name,value)=>{const input=form.elements.namedItem(name);if(!input||value==null)return;if(replace.checked||!String(input.value).trim())input.value=String(value)};
+    if(fields.professionnalisme!==undefined)write('npc-professionnalisme',fields.professionnalisme);
+    for(const key of ATTRIBUTES)write('attribute:'+key,fields.attributes?.[key]);
+    for(const key of COMBAT)write('combat:'+key,fields.combat?.[key]);
+    for(const [key]of SECTIONS)write('section:'+key,fields.sections?.[key]);
+    for(const key of ['physical','stun'])if(fields.condition?.[key]){
+     write('track-total:'+key,fields.condition[key].total);
+     if(fields.condition[key].damage)write('track-damage:'+key,fields.condition[key].damage);
+    }
+    apply.textContent='Champs intégrés';apply.disabled=true;
+    const note=$('span','npc-import-confirm','Modifications en attente : clique sur Enregistrer pour les conserver.');importPreview.append(note);
+   };
+  }catch(error){if(form.isConnected&&dialog.open)importPreview.replaceChildren($('span','npc-import-error',error?.message||'Lecture du fichier impossible.'))}
+  finally{pick.disabled=false;file.value=''}
+ };
+ importRow.append(pick,file,importNote);importSection.append(importRow,importPreview);form.append(importSection);
  const prof=$('section','npc-editor-section');prof.append($('h3',null,'Professionnalisme'),field('Professionnalisme',data.professionnalisme,'npc-professionnalisme','number'));form.append(prof);
  const attributes=$('section','npc-editor-section'),ag=$('div','npc-editor-grid npc-editor-attributes');
  attributes.append($('h3',null,'Caractéristiques'));
