@@ -38,6 +38,6 @@ test('V4.69 — sécurité MJ : aucun contenu de fiche dans le marqueur du token
   const transfers=read('src/v58/transfers.mjs');
   const ui=read('src/v58/transfer-ui.mjs');
   assert.match(transfers,/\.metadata\(\{\[assetKey\]:\{\.\.\.publicTokenMarker\(record\),privateForGM:hidden\}\}\)/);
-  assert.match(ui,/if \(!record \|\| record\.kind!=='TOKEN'\)/);
+  assert.match(ui,/if\(!record\s*\|\|\s*record\.kind!=='TOKEN'\)/);
   assert.match(ui,/gmState\(\)/);
 });
