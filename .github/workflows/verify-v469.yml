@@ -12,6 +12,7 @@ on:
       - 'tests/browser-v468.cjs'
       - 'tests/hidden-tokens-v432.test.mjs'
       - 'tests/token-visibility-v467.test.mjs'
+      - 'tests/independent-tokens-v469.test.mjs'
       - '.github/workflows/verify-v469.yml'
   workflow_dispatch:
 jobs:
