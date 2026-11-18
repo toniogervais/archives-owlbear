@@ -10,7 +10,7 @@ async function openToken(page){
  await dialog(page).locator('[data-submit]:not([disabled])').waitFor();
 }
 async function place(page,reveal=false){
- await dialog(page).getByRole('button',{name:reveal?'Placer et révéler':'Placer caché',exact:true}).click();
+ await dialog(page).getByRole('button',{name:reveal?'Placer en Show (joueurs)':'Placer en Hide (joueurs)',exact:true}).click();
  await dialog(page).waitFor({state:'detached'});
 }
 const pixel=page=>crop(page).evaluate(canvas=>[...canvas.getContext('2d').getImageData(256,256,1,1).data]);
