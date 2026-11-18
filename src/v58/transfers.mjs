@@ -198,6 +198,20 @@ export async function installArtworkTransfers() {
       }
     }
     if (closed) return;
+    if(key&&role==='GM'){
+      // Upgrade markers on already-placed tokens without touching their artwork,
+      // visibility or position. This also repairs older V4.66 tokens.
+      for(const record of currentRecords){
+        const item=currentItems.find(entry=>entry.id===record.id&&entry.metadata?.[assetKey]?.id===entry.id);
+        if(!item)continue;
+        const marker={...publicTokenMarker(record),privateForGM:false};
+        if(JSON.stringify(item.metadata[assetKey])===JSON.stringify(marker))continue;
+        await OBR.scene.items.updateItems([record.id],draft=>{
+          draft[0].metadata={...draft[0].metadata,[assetKey]:marker};
+        });
+        item.metadata={...item.metadata,[assetKey]:marker};
+      }
+    }
     if (key !== scene) {
       generation++;
       expectedSharedRemovals.clear();
@@ -233,8 +247,11 @@ export async function installArtworkTransfers() {
       // The image has ALREADY been revealed. Keep its shared item and stable
       // Owlbear ID hidden in-place, so native Show works afterwards.
       // Never publish a newer unpublished image while hiding this item.
-      if(existing.visible!==false)
-        await OBR.scene.items.updateItems([existing.id],draft => {draft[0].visible=false;});
+      await OBR.scene.items.updateItems([existing.id],draft => {
+        draft[0].visible=false;
+        draft[0].metadata={...draft[0].metadata,
+          [assetKey]:{...publicTokenMarker(record),privateForGM:false}};
+      });
     }
     record.revealed = reveal;
     await store.put(record);
@@ -394,6 +411,9 @@ export async function installArtworkTransfers() {
   }
   channel.addEventListener("message",event => {
     const data = event.data;
+    if(data?.type==='artwork-sync-request'&&role==='GM'&&!closed){
+      scheduleSync();return;
+    }
     if (data?.type !== "artwork-command" || role !== "GM" || closed || !validSession(data.id)) return;
     commands = commands.then(async () => {
       try {
