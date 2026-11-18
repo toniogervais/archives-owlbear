@@ -9,6 +9,8 @@ on:
       - 'src/v58/**'
       - 'tests/browser-v58.cjs'
       - 'tests/browser-v467.cjs'
+      - 'tests/browser-v465.cjs'
+      - 'tests/browser-v63.cjs'
       - 'tests/browser-v468.cjs'
       - 'tests/hidden-tokens-v432.test.mjs'
       - 'tests/token-visibility-v467.test.mjs'
