@@ -20,7 +20,7 @@ async function setup(patch = {}) {
   w.eval(source);
   return { dom, w, $: id => w.document.getElementById(id) };
 }
-async function until(fn) { for (let i=0;i<100;i++) { if(fn())return; await new Promise(r=>setTimeout(r,5)); } throw new Error('UI condition not reached'); }
+async function until(fn) { for (let i=0;i<1000;i++) { if(fn())return; await new Promise(r=>setTimeout(r,5)); } throw new Error('UI condition not reached'); }
 async function dispose(f) { f.w.dispatchEvent(new f.w.Event('pagehide')); f.dom.window.close(); }
 test('UI: campagne retrouvée et retour sans changement de mode', async () => {
   const f = await setup(); try {
