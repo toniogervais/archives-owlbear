@@ -29,7 +29,9 @@ const transfer=page=>page.frameLocator('#viewer').frameLocator('#app').locator('
   assert.equal(icon.filter.max,1);
   await gm.locator('#archives-tool').click();
   await gm.frameLocator('#viewer').frameLocator('#app').locator('body').waitFor();
-  const frame=gmEditor(gm);
+  let frame=gmEditor(gm);
+  for(let i=0;!frame&&i<100;i++){await gm.waitForTimeout(100);frame=gmEditor(gm);}
+  if(!frame)throw Error('Éditeur MJ non chargé dans Owlbear.');
   await frame.waitForFunction(()=>window.ArchivesCellTransfer&&window.ArchivesRelay&&window.DuneApp);
   await frame.evaluate(data=>window.ArchivesRelay.apply(data),scenario);
   await frame.evaluate(()=>{
