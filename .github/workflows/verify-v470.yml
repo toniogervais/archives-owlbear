@@ -43,6 +43,30 @@ jobs:
       - run: npx playwright install chromium
       - run: node tests/browser-v458.cjs
       - run: node tests/browser-v459.cjs
+  legacy-tokens-et-fiches:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: node tests/browser-v61.cjs
+      - run: node tests/browser-v64.cjs
+  legacy-menus-et-joueurs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: node tests/browser-v444.cjs
+      - run: node tests/browser-v457.cjs
   validation-soundshow-et-transferts:
     runs-on: ubuntu-24.04
     timeout-minutes: 26
