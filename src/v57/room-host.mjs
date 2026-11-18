@@ -104,6 +104,7 @@ export async function makeEditorHost(OBR, post, canEdit) {
         post("owl-editor-init", {snapshot,scope:JSON.stringify([OBR.room.id,OBR.player.id])});
         void OBR.party.getPlayers().then(roster).catch(console.warn);
         channel.postMessage({type:'roster-request'});
+        channel.postMessage({type:'artwork-sync-request'});
       }
       else if (data.type === "owl-editor-published" && snapshot) publish(data.payload);
       else if (data.type === "owl-editor-save" && validSession(data.id) && validSnapshot(data.snapshot)) {
