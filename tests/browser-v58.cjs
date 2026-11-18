@@ -63,7 +63,7 @@ async function openCharacter(page){
   await managerRow(gm,'Personnage secret').getByRole('button',{name:'Révéler',exact:true}).waitFor();
   await waitLocal(gm,1);await waitShared(gm,0);
   const hidden=await gm.evaluate(()=>window.fixture.local()[0]);
-  assert.equal(hidden.layer,'POPOVER');assert.equal(hidden.grid.dpi,2048);assert.match(hidden.image.url,/^https:\/\/images\.owlbear\.test/);
+  assert.equal(hidden.layer,'CHARACTER');assert.equal(hidden.grid.dpi,2048);assert.match(hidden.image.url,/^https:\/\/images\.owlbear\.test/);
   assert.equal((await player.evaluate(()=>window.fixture.local())).length,0);
   let wire=await player.evaluate(()=>window.fixture.wire());
   assert.ok(!JSON.stringify(wire).includes('Personnage secret'),'hidden title never shared');
@@ -90,9 +90,10 @@ async function openCharacter(page){
   await dialog(gm).waitFor({state:'detached'});
   await frame(gm).evaluate(()=>window.ArchivesCellTransfer.showManager());
   await managerRow(gm,'Nouvelle identité cachée').getByRole('button',{name:'Révéler',exact:true}).waitFor();
-  await waitShared(gm,0);await waitLocal(gm,1);
-  assert.equal((await gm.evaluate(()=>window.fixture.local()[0])).id,item.id);
-  assert.deepEqual((await gm.evaluate(()=>window.fixture.local()[0])).position,{x:123,y:456});
+  await waitShared(gm,1);await waitLocal(gm,0);
+  assert.equal((await gm.evaluate(()=>window.fixture.scene())).items[0].id,item.id);
+  assert.equal((await gm.evaluate(()=>window.fixture.scene())).items[0].visible,false);
+  assert.deepEqual((await gm.evaluate(()=>window.fixture.scene())).items[0].position,{x:123,y:456});
   wire=await player.evaluate(()=>window.fixture.wire());assert.ok(!JSON.stringify(wire).includes('Nouvelle identité cachée'));
   await managerRow(gm,'Nouvelle identité cachée').getByRole('button',{name:'Révéler',exact:true}).click();
   await waitShared(gm,1);await closeDialog(gm);
@@ -128,7 +129,9 @@ async function openCharacter(page){
   await frame(gm).evaluate(()=>window.ArchivesCellTransfer.showManager());
   await managerRow(gm,'Page publique').getByRole('button',{name:'Cacher',exact:true}).waitFor();await waitShared(gm,4);
   wire=await player.evaluate(()=>window.fixture.wire());assert.ok(!JSON.stringify(wire).includes('PAGE ONE PRIVATE'));assert.ok(!JSON.stringify(wire).includes('528-secret'));
-  await managerRow(gm,'Page publique').getByRole('button',{name:'Cacher',exact:true}).click();await waitShared(gm,3);await waitLocal(gm,1);await closeDialog(gm);
+  await managerRow(gm,'Page publique').getByRole('button',{name:'Cacher',exact:true}).click();await waitShared(gm,4);await waitLocal(gm,0);
+  assert.equal((await gm.evaluate(()=>window.fixture.scene())).items.find(item=>item.name==='Page publique').visible,false);
+  await closeDialog(gm);
   // Scene changes invalidate an already-open transfer, before any new upload.
   await openCharacter(gm);const uploadsBefore=(await gm.evaluate(()=>window.fixture.uploads())).length;
   await gm.evaluate(()=>window.fixture.setScene());
