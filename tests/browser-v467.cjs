@@ -26,7 +26,9 @@ const frame=p=>p.frames().find(f=>f.url().includes('owl-editor=1'));
   assert.equal(await player.evaluate(id=>Boolean(window.fixture.contextMenus()[id]),menuId),false);
   await gm.locator('#archives-tool').click();
   await editor(gm).locator('body').waitFor();
-  const e=frame(gm);
+  let e=frame(gm);
+  for(let i=0;!e&&i<100;i++){await gm.waitForTimeout(100);e=frame(gm);}
+  if(!e)throw Error('Archives MJ non chargées dans Owlbear.');
   await e.waitForFunction(()=>!!window.ArchivesCellTransfer&&!!window.ArchivesRelay&&!!window.DuneApp);
   await e.evaluate(value=>window.ArchivesRelay.apply(value),scenario);
   await e.evaluate(()=>{
@@ -117,7 +119,9 @@ const frame=p=>p.frames().find(f=>f.url().includes('owl-editor=1'));
   await gm.reload();await gm.locator('#archives-tool').waitFor();
   await gm.locator('#archives-tool').click();
   await editor(gm).locator('body').waitFor();
-  const again=frame(gm);
+  let again=frame(gm);
+  for(let i=0;!again&&i<100;i++){await gm.waitForTimeout(100);again=frame(gm);}
+  if(!again)throw Error('Archives non rechargées.');
   await again.waitForFunction(()=>window.ArchivesTokenSync?.bySource('cell:test:guard')?.revealed===true);
   assert.deepEqual(await again.evaluate(()=>window.ArchivesTokenSync.bySource('cell:test:guard').position),{x:277,y:344});
   assert.equal((await gm.evaluate(()=>window.fixture.local())).length,0);
