@@ -50,9 +50,9 @@ const tokenSync={scene:'',records:[],byId(id){return this.records.find(r=>r.id==
 window.ArchivesTokenSync=tokenSync;
 function tokenStatus(record){
   return record.title+' · '+(record.kind==='TOKEN'?'token':'document')+' · '+
-    (record.revealed?'révélé':record.visibleToGM?
-      (record.private?'caché · présent côté MJ (CHARACTER/PROP)':'masqué dans Owlbear · présent côté MJ'):
-      'caché · ABSENT côté MJ');
+    (record.revealed?'Show · visible des joueurs':record.visibleToGM?
+      (record.private?'Privé MJ':'Hide · invisible aux joueurs'):
+      'Hide · non affiché');
 }
 function applyTokenSync(data){
   try{gmState();}catch{return;}
@@ -150,7 +150,7 @@ function buildDialog() {
   #archives-owl-transfer .record{border-top:1px solid #59452e;padding:12px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}#archives-owl-transfer .record span{flex:1;min-width:150px}#archives-owl-transfer .status{white-space:pre-wrap}
   @media(max-width:620px){#archives-owl-transfer{padding:13px}.layout{display:block!important}#archives-owl-transfer figure{min-height:150px;max-height:35dvh}#archives-owl-transfer img{max-height:30dvh}#archives-owl-transfer [data-crop-stage]{width:min(280px,100%,27dvh)}}
   </style><header><h2 data-heading>Transfert vers Owlbear</h2><button type="button" data-close aria-label="Fermer le transfert">✕</button></header>
-  <p class="hint">Un élément caché reste réservé au MJ. Révéler partage uniquement le rendu choisi et son nom.</p>
+  <p class="hint">La visibilité Hide/Show du token Owlbear se règle ici, indépendamment de la révélation de sa cellule dans Les Archives.</p>
   <section data-edit hidden><div class="layout"><div class="fields">
     <label>Nom dans Owlbear<input data-title maxlength="120" required></label>
     <label data-token-label>Nom affiché au-dessus du token (facultatif)<input data-label maxlength="120" placeholder="Aucun nom affiché"></label>
@@ -205,7 +205,7 @@ async function manager(view,context,back) {
       const row = document.createElement("div");row.className = "record";
       row.dataset.assetId=record.id;
       const label = document.createElement("span");label.dataset.tokenStatus='1';
-      label.textContent=tokenStatus({...record,private:record.privateLayer!=='Owlbear · masqué'});
+      label.textContent=tokenStatus({...record,private:!record.privateLayer?.startsWith('Owlbear ·')});
       const locate = document.createElement("button");locate.type = "button";
       locate.textContent = record.revealed ? "Localiser" : "Localiser (MJ)";
       locate.dataset.tokenLocate='1';
