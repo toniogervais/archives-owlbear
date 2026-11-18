@@ -17,8 +17,10 @@ async function run(browser,mode,mobile=true){
   assert.ok((await diagnostics()).every(c=>!c.disabled),mode+' visible player commands are enabled');
   await use(p.locator('#archives-player-icons-toggle'));assert.ok(await p.locator('body').evaluate(e=>e.classList.contains('player-icons-hidden')),mode+' eye hides all');
   await use(p.locator('#archives-player-icons-toggle'));assert.equal(await p.locator('#archives-player-toolbar-bar').isVisible(),true);
-  const z=await p.evaluate(()=>DuneApp.getState().zoom);await use(p.locator('#archives-player-zoom-in'));assert.ok(await p.evaluate(z=>DuneApp.getState().zoom>z,z),mode+' zoom in');
-  await use(p.locator('#archives-player-zoom-out'));await use(p.locator('#archives-player-display-open'));await p.locator('#archives-player-display[open]').waitFor();await use(p.getByRole('button',{name:'Fermer mon affichage',exact:true}));
+  // Les icones de zoom et l'ancien menu d'affichage ont ete supprimes pour
+  // liberer une ligne sur tablette. Ne pas les reinstaurer dans la V5.
+  for(const id of ['archives-player-zoom-in','archives-player-zoom-out','archives-player-display-open'])
+    assert.equal(await p.locator('#'+id).count(),0,mode+' no obsolete player control');
   const before=await p.evaluate(()=>JSON.stringify(DuneApp.getState().playerLayout));await use(p.locator('#quick-player-layout'));assert.notEqual(await p.evaluate(()=>JSON.stringify(DuneApp.getState().playerLayout)),before,mode+' organize');
   await use(p.locator('#quick-player-center-all'));
   await use(p.locator('#quick-player-journal'));await p.locator('#journal-modal.open').waitFor();await p.evaluate(()=>DuneApp.closeJournal());
