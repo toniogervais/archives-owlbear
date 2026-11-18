@@ -13,7 +13,7 @@ test('Fiche Shadowrun 6 : caractéristiques et valeurs dérivées du modèle, sa
  const empty=normalize(null);
  assert.deepEqual(Object.keys(empty.attributes),['CON','AGI','RÉA','FOR','VOL','LOG','INT','CHA','MAG','ESS']);
  assert.deepEqual(Object.keys(empty.combat),['SD','I/DI','PA','ME','DÉPLACEMENT','DRAIN']);
- assert.equal(empty.professionalisme,null);
+ assert.equal(empty.professionnalisme,null);
  assert.equal(empty.condition.physical.total,0);
  assert.equal(empty.condition.stun.total,0);
  assert.equal(empty.attributes.CON,'');
@@ -28,7 +28,7 @@ test('Les champs édités et les blessures restent dans le même objet de person
   condition:{physical:{total:11,damage:4},stun:{total:10,damage:2}}
  });
  const saved=normalize(JSON.parse(JSON.stringify(first)));
- assert.equal(saved.professionalisme,3);
+ assert.equal(saved.professionnalisme,3);
  assert.equal(saved.attributes.CON,'5');
  assert.equal(saved.attributes.ESS,'4,7');
  assert.equal(saved.combat['I/DI'],'7/2');
@@ -48,7 +48,7 @@ test('Fiche PNJ : données écrites par la sauvegarde principale et jamais publi
  const start=html.indexOf('// BEGIN SECURITY: player projection V4.7');
  const end=html.indexOf('// END SECURITY: player projection V4.7',start);
  const project=vm.runInNewContext(html.slice(start,end)+'\nprojectPlayerPayload;',{Set,Array,Number,String,Object});
- const privateSheet={professionalisme:5,attributes:{CON:'7'},sections:{armes:'ARME_PRIVEE_NPC_463'},condition:{physical:{total:12,damage:3}}};
+ const privateSheet={professionnalisme:5,attributes:{CON:'7'},sections:{armes:'ARME_PRIVEE_NPC_463'},condition:{physical:{total:12,damage:3}}};
  const packet=project({boards:[{id:'a',name:'MJ',nodes:[
   {id:'p1',title:'Contact',category:'personnage',revealed:true,npcSheet:privateSheet,clues:[]},
   {id:'p2',title:'Autre',category:'personnage',revealed:false,npcSheet:privateSheet,clues:[]}

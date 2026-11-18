@@ -117,7 +117,11 @@ function track(nodeId,kind,label,model){
   const box=$('input','npc-track-box');box.type='checkbox';box.checked=index<model.damage;
   box.setAttribute('aria-label',label+' : case '+(index+1)+' sur '+model.total);
   box.addEventListener('change',()=>{
-   if(!isGM()||!window.DuneApp?.setNpcCondition?.(nodeId,kind,box.checked?index+1:index)){box.checked=!box.checked}
+   const value=box.checked?index+1:index;
+   if(!isGM()||!window.DuneApp?.setNpcCondition?.(nodeId,kind,value)){box.checked=!box.checked;return}
+   // Update the visible track immediately, before the MJ card re-renders.
+   for(const [i,item] of Array.from(boxes.children).entries())item.checked=i<value;
+   row.querySelector('.npc-track-value').textContent=value+' / '+model.total;
   });
   boxes.append(box);
  }
