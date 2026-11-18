@@ -16,7 +16,8 @@ assets = [p for p in paths if Path(p).is_file() and
           ((p.startswith("src/") and Path(p).suffix in {".mjs", ".js", ".css"}) or
            ("/" not in p and Path(p).suffix in {".html", ".json"} and not p.startswith("package")))]
 if not assets:
-    raise SystemExit("No changed static assets found")
+    print("No changed static assets in this commit; published asset verification is not required.")
+    raise SystemExit(0)
 def check(path):
     expected = hashlib.sha256(Path(path).read_bytes()).digest()
     url = BASE + urllib.parse.quote(path) + "?published=" + revision[:16]
