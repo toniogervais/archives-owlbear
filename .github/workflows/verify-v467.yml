@@ -1,0 +1,52 @@
+name: Validation V4.67 — tokens privés et visibilité Owlbear
+on:
+  push:
+    branches:
+      - main
+      - fix/token-visibility-bidirectional-v467
+    paths:
+      - 'src/v58/**'
+      - 'src/v83/**'
+      - 'src/v82/npc-token-model.mjs'
+      - 'src/v57/room-host.mjs'
+      - 'src/v56/host.mjs'
+      - 'tests/browser-v467.cjs'
+      - 'tests/browser-v58.cjs'
+      - 'tests/owlbear-fixture.cjs'
+      - 'tests/token-visibility-v467.test.mjs'
+      - '.github/workflows/verify-v467.yml'
+  workflow_dispatch:
+jobs:
+  tests-unitaires:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm test
+  tests-navigateur:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: node tests/browser-v467.cjs
+  regression-tokens:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: node tests/browser-v58.cjs
+      - run: node tests/browser-v465.cjs

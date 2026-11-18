@@ -64,5 +64,5 @@ test('Import non destructif par validation explicite dans la fenêtre MJ',()=>{
  assert.ok(npc.includes("replace.checked||!String(input.value).trim()"));
  assert.ok(npc.includes("clique sur Enregistrer pour les conserver"));
  const html=fs.readFileSync('archives-app-v64-v55.html','utf8');
- assert.ok(html.includes('src/v81/npc-import.mjs?v=4660'));
+ assert.ok(html.includes('src/v81/npc-import.mjs?v=4670'));
 });

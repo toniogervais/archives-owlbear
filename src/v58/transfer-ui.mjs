@@ -7,6 +7,39 @@ const pending = new Map();
 const $ = id => document.getElementById(id);
 let activeDialog;
 const directTransfers = new Set();
+const tokenSync={scene:'',records:[],byId(id){return this.records.find(r=>r.id===id)||null;},
+  bySource(sourceKey){return this.records.find(r=>r.sourceKey===sourceKey)||null;}};
+window.ArchivesTokenSync=tokenSync;
+function tokenStatus(record){
+  return record.title+' · '+(record.kind==='TOKEN'?'token':'document')+' · '+
+    (record.revealed?'révélé':record.visibleToGM?
+      (record.private?'caché · présent côté MJ (CHARACTER/PROP)':'masqué dans Owlbear · présent côté MJ'):
+      'caché · ABSENT côté MJ');
+}
+function applyTokenSync(data){
+  try{gmState();}catch{return;}
+  if(typeof data?.scene!=='string'||!Array.isArray(data.records)||data.records.length>3000)return;
+  if(!data.records.every(r=>r&&typeof r.id==='string'&&typeof r.sourceKey==='string'&&
+     typeof r.title==='string'&&['TOKEN','DOCUMENT'].includes(r.kind)))return;
+  tokenSync.scene=data.scene;
+  tokenSync.records=data.records;
+  const dialog=activeDialog;
+  if(dialog?.open){
+    for(const row of dialog.querySelectorAll('.record[data-asset-id]')){
+      const now=tokenSync.byId(row.dataset.assetId);
+      if(!now){row.remove();continue;}
+      const text=row.querySelector('[data-token-status]');
+      if(text)text.textContent=tokenStatus(now);
+      const toggle=row.querySelector('[data-token-toggle]');
+      if(toggle)toggle.textContent=now.revealed?'Cacher':'Révéler';
+      const locate=row.querySelector('[data-token-locate]');
+      if(locate)locate.textContent=now.revealed?'Localiser':'Localiser (MJ)';
+    }
+  }
+  window.dispatchEvent(new CustomEvent('archives:owlbear-tokens-synced',
+    {detail:{scene:tokenSync.scene,records:tokenSync.records}}));
+}
+window.addEventListener('archives:owlbear-tokens',event=>applyTokenSync(event.detail));
 function gmState() {
   const state = window.DuneApp?.getState?.();
   if (!state || state.playerMode || state.strictReadOnly) throw Error("Le transfert est réservé au MJ.");
@@ -29,7 +62,8 @@ function request(command,report) {
 }
 window.addEventListener("message",event => {
   if (event.source !== window.parent || event.origin !== location.origin || !isPacket(event.data) ||
-      !["owl-transfer-result","owl-transfer-progress"].includes(event.data.type)) return;
+      !["owl-transfer-result","owl-transfer-progress","owl-token-sync"].includes(event.data.type)) return;
+  if(event.data.type==='owl-token-sync'){applyTokenSync(event.data);return;}
   const entry = pending.get(event.data.id);
   if (!entry) return;
   if (event.data.type === "owl-transfer-progress") { entry.report?.(String(event.data.message || ""));return; }
@@ -130,9 +164,12 @@ async function manager(view,context,back) {
     if (!result.records.length) ui("records").textContent = "Aucun transfert dans cette scène pour le moment.";
     for (const record of result.records) {
       const row = document.createElement("div");row.className = "record";
-      const label = document.createElement("span");label.textContent = record.title + " · " + (record.kind === "TOKEN" ? "token" : "document") + " · " + (record.revealed ? "révélé" : (record.visibleToGM ? "caché · présent côté MJ ("+(record.privateLayer||"local")+")" : "caché · ABSENT côté MJ"));
+      row.dataset.assetId=record.id;
+      const label = document.createElement("span");label.dataset.tokenStatus='1';
+      label.textContent=tokenStatus({...record,private:record.privateLayer!=='Owlbear · masqué'});
       const locate = document.createElement("button");locate.type = "button";
       locate.textContent = record.revealed ? "Localiser" : "Localiser (MJ)";
+      locate.dataset.tokenLocate='1';
       locate.title = "Recentrer la carte Owlbear sur cet élément, même s’il est caché";
       locate.onclick = async () => {
         setBusy(true);ui("status").textContent = "Recherche du token dans la scène Owlbear…";
@@ -142,7 +179,8 @@ async function manager(view,context,back) {
         } catch(error) {if(dialog.open)ui("status").textContent=error.message;}
         finally {setBusy(false);}
       };
-      const toggle = document.createElement("button");toggle.type = "button";toggle.textContent = record.revealed ? "Cacher" : "Révéler";
+      const toggle = document.createElement("button");toggle.type = "button";
+      toggle.dataset.tokenToggle='1';toggle.textContent=record.revealed?"Cacher":"Révéler";
       const remove = document.createElement("button");remove.type = "button";remove.textContent = "Retirer";
       const perform = async (action,reveal) => {
         setBusy(true);ui("status").textContent = "Mise à jour de la scène…";
@@ -154,7 +192,10 @@ async function manager(view,context,back) {
         } catch (error) { ui("status").textContent = error.message; }
         finally { setBusy(false); }
       };
-      toggle.onclick = () => { void perform("visibility",!record.revealed); };
+      toggle.onclick = () => {
+        const current=tokenSync.scene===context.scene?tokenSync.byId(record.id):null;
+        void perform("visibility",!(current?current.revealed:record.revealed));
+      };
       remove.onclick = () => { void perform("remove"); };
       const naming=document.createElement('input');naming.type='text';naming.maxLength=120;naming.value=record.label||'';naming.placeholder='Aucun nom affiché';naming.setAttribute('aria-label','Nom affiché pour '+record.title);
       const rename=document.createElement('button');rename.type='button';rename.textContent='Appliquer le nom';rename.onclick=async()=>{setBusy(true);try{await request({action:'label',scene:context.scene,assetId:record.id,label:naming.value});ui('status').textContent='Nom choisi par le MJ appliqué au token.';}catch(error){ui('status').textContent=error.message;}finally{setBusy(false);}};

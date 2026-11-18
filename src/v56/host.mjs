@@ -3,7 +3,7 @@ import {
   isPacket, liveRoomKey, packet, pairingKey, readLocal, screenChannel, trustedOwlbearSdk,
   validLiveRoom, validPairing, viewerId, writeLocal
 } from "./link.mjs?v=4590";
-import { localEditor, localViewer, release } from "../v57/room.mjs?v=4660";
+import { localEditor, localViewer, release } from "../v57/room.mjs?v=4670";
 import { makeEditorHost, makePlayerHost } from "../v57/room-host.mjs?v=4590";
 import {makeSoundShowPlayerHost} from '../soundshow/player-host.mjs?v=4590';
 
@@ -84,6 +84,9 @@ window.addEventListener("message", event => {
     return;
   }
   if (data.type === "go-map") { button.click(); return; }
+  if (gm && data.type==='owl-token-sync' && typeof data.scene==='string' && Array.isArray(data.records)) {
+    post('owl-token-sync',{scene:data.scene,records:data.records});return;
+  }
   if (nativeHost) {
     if (gm && data.type === "owl-editor-ready") editorStarted = true;
     if (gm && data.type === "return-result" && closing) finishReturn(data.safe === true);

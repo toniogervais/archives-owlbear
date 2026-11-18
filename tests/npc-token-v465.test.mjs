@@ -26,7 +26,7 @@ test('V4.65 — aucune caractéristique confidentielle ne passe dans le marqueur
     npcSheet:normalizeTokenNpcSheet({attributes:{CON:'9'},
       sections:{notes:'TRAME_SECRETE_PERSONNAGE',equipement:'CODE_DE_SERRURE_349'}})};
   const shared=publicTokenMarker(record);
-  assert.deepEqual(Object.keys(shared).sort(),['hasSheet','id','version']);
+  assert.deepEqual(Object.keys(shared).sort(),['hasSheet','id','kind','version']);
   assert.equal(shared.hasSheet,true);
   assert.ok(!JSON.stringify(shared).includes('TRAME_SECRETE_PERSONNAGE'));
   assert.ok(!JSON.stringify(shared).includes('CODE_DE_SERRURE_349'));
@@ -57,7 +57,7 @@ test('V4.65 — le transfert, les lots et la fenêtre utilisent la même fiche p
   const menu=readFileSync('src/v82/npc-token-context.mjs','utf8');
   const background=readFileSync('src/v55/background.mjs','utf8');
   assert.match(transfer,/npcSheet:npc\.sheet,npcConditionOrigin:npc\.origin/);
-  assert.match(transfer,/\.metadata\(\{\[assetKey\]:publicTokenMarker\(record\)\}\)/);
+  assert.ok(transfer.includes('.metadata({[assetKey]:{...publicTokenMarker(record),privateForGM:hidden}})'));
   assert.match(ui,/npcSheet:node\.category==='personnage'/);
   assert.match(batch,/npcSheet:state\.kind\.value==='TOKEN'/);
   assert.match(viewer,/await OBR\.player\.getRole\(\)!=='GM'/);
@@ -112,5 +112,5 @@ test('V4.66 — le menu PJ ne reçoit pas la commande et les fiches Owlbear sont
   assert.match(viewer,/store\.put\(next\)/);
   assert.match(viewer,/updatePrivateTokenCondition/);
   assert.match(html,/save-status/);
-  assert.match(html,/npc-token-view\.mjs\?v=4660/);
+  assert.match(html,/npc-token-view\.mjs\?v=4670/);
 });
