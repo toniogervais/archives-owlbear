@@ -17,8 +17,11 @@ async function run(browser,mode,mobile=true){
   assert.ok((await diagnostics()).every(c=>!c.disabled),mode+' visible player commands are enabled');
   await use(p.locator('#archives-player-icons-toggle'));assert.ok(await p.locator('body').evaluate(e=>e.classList.contains('player-icons-hidden')),mode+' eye hides all');
   await use(p.locator('#archives-player-icons-toggle'));assert.equal(await p.locator('#archives-player-toolbar-bar').isVisible(),true);
-  const z=await p.evaluate(()=>DuneApp.getState().zoom);await use(p.locator('#archives-player-zoom-in'));assert.ok(await p.evaluate(z=>DuneApp.getState().zoom>z,z),mode+' zoom in');
-  await use(p.locator('#archives-player-zoom-out'));await use(p.locator('#archives-player-display-open'));await p.locator('#archives-player-display[open]').waitFor();await use(p.getByRole('button',{name:'Fermer mon affichage',exact:true}));
+  // Les boutons zoom et le menu d’affichage ont été retirés de la vue joueur.
+  const z=await p.evaluate(()=>DuneApp.getState().zoom);
+  await p.evaluate(()=>DuneApp.changeZoom(1));assert.ok(await p.evaluate(z=>DuneApp.getState().zoom>z,z),mode+' zoom works');
+  await p.evaluate(()=>DuneApp.changeZoom(-1));
+  assert.equal(await p.locator('#archives-player-zoom-in,#archives-player-zoom-out,#archives-player-display-open').count(),0,'no obsolete player controls');
   const before=await p.evaluate(()=>JSON.stringify(DuneApp.getState().playerLayout));await use(p.locator('#quick-player-layout'));assert.notEqual(await p.evaluate(()=>JSON.stringify(DuneApp.getState().playerLayout)),before,mode+' organize');
   await use(p.locator('#quick-player-center-all'));
   await use(p.locator('#quick-player-journal'));await p.locator('#journal-modal.open').waitFor();await p.evaluate(()=>DuneApp.closeJournal());
