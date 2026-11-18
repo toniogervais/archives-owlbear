@@ -8,18 +8,18 @@ const ui=readFileSync('src/v58/transfer-ui.mjs','utf8');
 const host=readFileSync('src/v57/room-host.mjs','utf8');
 const relay=readFileSync('src/v58/main-relay.mjs','utf8');
 
-test('V4.67 — tokens invisibles aux joueurs sur la vraie couche privée du MJ',()=>{
+test('V4.69 — token natif Hide dans la scène Owlbear sans doublon local',()=>{
   assert.match(transfer,/\.layer\(record\.kind === "TOKEN" \? "CHARACTER" : "PROP"\)/);
   assert.doesNotMatch(transfer,/\.layer\(hidden\s*\?\s*"POPOVER"/);
-  assert.match(transfer,/record=>!isDeleted\(record\)&&!shared\(record\.id\)/);
+  assert.match(transfer,/record\.kind!=='TOKEN'&&!shared\(record\.id\)/);
   assert.match(transfer,/OBR\.scene\.local\.addItems\(\[desired\]\)/);
   assert.ok(transfer.includes('if (hidden) item.zIndex = 0'));
 });
-test('V4.67 — masquer une image déjà publiée ne la supprime pas et respecte les images privées',()=>{
+test('V4.69 — un token en Hide reste partagé avec visible false sans disparition',()=>{
   const visibility=transfer.slice(transfer.indexOf('async function visibility'),transfer.indexOf('const safeImage'));
   assert.match(visibility,/draft\[0\]\.visible=false/);
   assert.doesNotMatch(visibility,/deleteSharedItems/);
-  assert.match(visibility,/\.local\.getItems\(\[record\.id\]\)/);
+  assert.match(visibility,/item\.visible=reveal/);
   assert.match(transfer,/privateForGM:hidden/);
   assert.match(transfer,/privateForGM:false/);
 });

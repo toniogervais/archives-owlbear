@@ -58,12 +58,16 @@ async function closePane(page,id){await pane(page,id).locator('header button').c
   await gm.screenshot({path:'/tmp/archives-batch-desktop-v63.png'});
   await batch().getByRole('button',{name:'Placer le lot caché',exact:true}).click();
   await batch().waitFor({state:'detached'});
-  await gm.waitForFunction(()=>window.fixture.local().length===2);
+  await gm.waitForFunction(async()=>(await window.fixture.scene()).items.length===2);
   assert.deepEqual(await gm.evaluate(()=>window.fixture.pickers()),{upload:1,download:1},'one pair of native choices for two new renders');
-  assert.equal((await gm.evaluate(()=>window.fixture.scene())).items.length,0);
-  const local=await gm.evaluate(()=>window.fixture.local());assert.notDeepEqual(local[0].position,local[1].position);
+  assert.equal((await gm.evaluate(()=>window.fixture.local())).length,0);
+  const natives=(await gm.evaluate(()=>window.fixture.scene())).items;
+  assert.ok(natives.every(item=>item.visible===false),'the two tokens start in Owlbear Hide');
+  assert.notDeepEqual(natives[0].position,natives[1].position);
+  assert.equal((await player.evaluate(()=>window.fixture.scene())).items.filter(item=>item.visible).length,0);
   let wire=JSON.stringify(await player.evaluate(()=>window.fixture.wire()));
-  for(const secret of ['PERSONNAGE_PRIVE_483','SECOND_PRIVE_697','DESCRIPTION_PRIVEE_781','AUTRE_SECRET_648','INDICE_SECRET_913','JOURNAL_PRIVE_588',images[0],images[1]])assert.ok(!wire.includes(secret),'private batch source: '+secret.slice(0,50));
+  for(const secret of ['DESCRIPTION_PRIVEE_781','AUTRE_SECRET_648','INDICE_SECRET_913','JOURNAL_PRIVE_588',images[0],images[1]])
+    assert.ok(!wire.includes(secret),'private scenario details: '+secret.slice(0,50));
   debug('backup export');
   const original=await addPrivateFile(gm,'DOCUMENT_PRIVE_427.txt','ORIGINAL_PRIVE_945','cell:act:alix-portrait');
   const audio=await app(gm).evaluate(async()=>{
@@ -125,8 +129,12 @@ async function closePane(page,id){await pane(page,id).locator('header button').c
   debug('public dossier and focus');
   await app(gm).evaluate(()=>window.ArchivesCellTransfer.showManager());
   const transfer=()=>pane(gm,'archives-owl-transfer');
-  await transfer().locator('.record').filter({hasText:'Portrait montré'}).getByRole('button',{name:'Révéler',exact:true}).click();
-  await gm.waitForFunction(async()=>(await window.fixture.scene()).items.length===1);
+  await transfer().locator('.record').filter({hasText:'Portrait montré'}).getByRole('button',{name:'Show',exact:true}).click();
+  await gm.waitForFunction(async()=> {
+    const items=(await window.fixture.scene()).items;
+    return items.length===2&&items.filter(item=>item.visible).length===1&&
+      items.some(item=>item.name==='Portrait montré'&&item.visible===true);
+  });
   await closePane(gm,'archives-owl-transfer');
   await editor(player).locator('#archives-dossier-open').click();
   await pane(player,'archives-player-dossier').locator('h3').filter({hasText:'Portrait montré',exact:true}).waitFor();

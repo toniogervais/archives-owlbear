@@ -42,7 +42,7 @@ const transfer=page=>page.frameLocator('#viewer').frameLocator('#app').locator('
     return window.ArchivesCellTransfer.sendSelected();
   });
   await transfer(gm).locator('[data-share]:not([disabled])').waitFor();
-  await transfer(gm).getByRole('button',{name:'Placer et révéler'}).click();
+  await transfer(gm).getByRole('button',{name:'Placer en Show (joueurs)'}).click();
   await transfer(gm).waitFor({state:'detached'});
   await gm.waitForFunction(async()=>(await window.fixture.scene()).items.length===1);
   const [item]= (await gm.evaluate(()=>window.fixture.scene())).items;
@@ -88,7 +88,7 @@ const transfer=page=>page.frameLocator('#viewer').frameLocator('#app').locator('
     return window.ArchivesCellTransfer.sendSelected();
   });
   await transfer(gm).locator('[data-share]:not([disabled])').waitFor();
-  await transfer(gm).getByRole('button',{name:'Placer et révéler'}).click();
+  await transfer(gm).getByRole('button',{name:'Placer en Show (joueurs)'}).click();
   await transfer(gm).waitFor({state:'detached'});
   await gm.waitForFunction(async()=>(await window.fixture.scene()).items.length===1);
   const [updatedItem]= (await gm.evaluate(()=>window.fixture.scene())).items;

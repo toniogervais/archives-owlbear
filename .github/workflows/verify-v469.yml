@@ -1,0 +1,55 @@
+name: Validation V4.69 — Hide Show indépendants des cellules
+on:
+  push:
+    branches:
+      - main
+      - fix/independent-owlbear-token-visibility-v469
+    paths:
+      - 'archives-app-v64-v55.html'
+      - 'src/v58/**'
+      - 'tests/browser-v58.cjs'
+      - 'tests/browser-v467.cjs'
+      - 'tests/browser-v465.cjs'
+      - 'tests/browser-v63.cjs'
+      - 'tests/browser-v468.cjs'
+      - 'tests/hidden-tokens-v432.test.mjs'
+      - 'tests/token-visibility-v467.test.mjs'
+      - 'tests/independent-tokens-v469.test.mjs'
+      - '.github/workflows/verify-v469.yml'
+  workflow_dispatch:
+jobs:
+  tests-unitaires:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm test
+  visibilites-independantes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: node tests/browser-v468.cjs
+  regressions-tokens:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: node tests/browser-v58.cjs
+      - run: node tests/browser-v467.cjs
+      - run: node tests/browser-v465.cjs
+      - run: node tests/browser-v63.cjs

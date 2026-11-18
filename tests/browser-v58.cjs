@@ -54,31 +54,36 @@ async function openCharacter(page){
   });
   await openCharacter(gm);
   assert.equal(await dialog(gm).locator('[data-kind]').inputValue(),'TOKEN');
-  assert.equal(await dialog(gm).getByRole('button',{name:'Placer caché',exact:true}).count(),1);
+  assert.equal(await dialog(gm).getByRole('button',{name:'Placer en Hide (joueurs)',exact:true}).count(),1);
   assert.deepEqual(await dialog(gm).locator('[data-crop]').evaluate(el=>({width:el.width,height:el.height})),{width:512,height:512});
   assert.ok(!(await dialog(gm).textContent()).includes('528-secret'));
-  await dialog(gm).getByRole('button',{name:'Placer caché',exact:true}).click();
+  await dialog(gm).getByRole('button',{name:'Placer en Hide (joueurs)',exact:true}).click();
   await dialog(gm).waitFor({state:'detached'});
   await frame(gm).evaluate(()=>window.ArchivesCellTransfer.showManager());
-  await managerRow(gm,'Personnage secret').getByRole('button',{name:'Révéler',exact:true}).waitFor();
-  await waitLocal(gm,1);await waitShared(gm,0);
-  const hidden=await gm.evaluate(()=>window.fixture.local()[0]);
-  assert.equal(hidden.layer,'CHARACTER');assert.equal(hidden.grid.dpi,2048);assert.match(hidden.image.url,/^https:\/\/images\.owlbear\.test/);
+  await managerRow(gm,'Personnage secret').getByRole('button',{name:'Show',exact:true}).waitFor();
+  await waitLocal(gm,0);await waitShared(gm,1);
+  const hidden=(await gm.evaluate(()=>window.fixture.scene())).items[0];
+  assert.equal(hidden.layer,'CHARACTER');assert.equal(hidden.visible,false);
+  assert.equal(hidden.grid.dpi,2048);assert.match(hidden.image.url,/^https:\/\/images\.owlbear\.test/);
   assert.equal((await player.evaluate(()=>window.fixture.local())).length,0);
   let wire=await player.evaluate(()=>window.fixture.wire());
-  assert.ok(!JSON.stringify(wire).includes('Personnage secret'),'hidden title never shared');
-  assert.ok(!JSON.stringify(wire).includes(hidden.image.url),'hidden artwork URL never shared');
+  assert.ok(!JSON.stringify(wire).includes('528-secret'),'GM secret never shared');
+  assert.ok(!JSON.stringify(wire).includes('Indice privé 963'),'private clue never shared');
+  assert.equal((await player.evaluate(()=>window.fixture.scene())).items.filter(item=>item.visible).length,0);
   assert.equal((await player.evaluate(()=>window.fixture.uploads())).length,0);
-  await gm.evaluate(id=>window.fixture.moveLocal(id,{x:123,y:456}),hidden.id);
+  await gm.evaluate(id=>window.fixture.moveShared(id,{x:123,y:456}),hidden.id);
   await closeDialog(gm);
-  // A real reload exercises IndexedDB restoration of privately prepared items.
-  await gm.reload();await gm.locator('#archives-tool').waitFor();await waitLocal(gm,1);
-  assert.deepEqual((await gm.evaluate(()=>window.fixture.local()[0])).position,{x:123,y:456});
+  // Native hidden item persists across reload without a duplicate.
+  await gm.reload();await gm.locator('#archives-tool').waitFor();await waitLocal(gm,0);await waitShared(gm,1);
+  assert.deepEqual((await gm.evaluate(()=>window.fixture.scene())).items[0].position,{x:123,y:456});
+  assert.equal((await gm.evaluate(()=>window.fixture.scene())).items[0].visible,false);
   await gm.locator('#archives-tool').click();
   await editor(gm).locator('.cell-title-txt').filter({hasText:'Personnage secret'}).waitFor();
   await frame(gm).evaluate(()=>window.ArchivesCellTransfer.showManager());
-  await managerRow(gm,'Personnage secret').getByRole('button',{name:'Révéler',exact:true}).click();
-  await waitShared(gm,1);await waitLocal(gm,0);
+  await managerRow(gm,'Personnage secret').getByRole('button',{name:'Show',exact:true}).click();
+  await waitShared(gm,1);
+  await gm.waitForFunction(async()=> (await window.fixture.scene()).items[0]?.visible===true);
+  await waitLocal(gm,0);
   let item=(await gm.evaluate(()=>window.fixture.scene())).items[0];
   assert.equal(item.layer,'CHARACTER');assert.equal(item.id,hidden.id);assert.deepEqual(item.position,{x:123,y:456});assert.equal(item.image.url,hidden.image.url);assert.equal(item.visible,true);
   assert.equal((await player.evaluate(()=>window.fixture.scene())).items[0].id,item.id);
@@ -86,34 +91,40 @@ async function openCharacter(page){
   // A changed transfer stays private by default, updates the same item, and keeps placement.
   await frame(gm).evaluate(()=>{const node=window.DuneApp.getState().nodes.find(n=>n.id==='hidden-character');node.bgImg='';node.title='Nouvelle identité cachée'});
   await openCharacter(gm);
-  await dialog(gm).getByRole('button',{name:'Placer caché',exact:true}).click();
+  await dialog(gm).getByRole('button',{name:'Placer en Hide (joueurs)',exact:true}).click();
   await dialog(gm).waitFor({state:'detached'});
   await frame(gm).evaluate(()=>window.ArchivesCellTransfer.showManager());
-  await managerRow(gm,'Nouvelle identité cachée').getByRole('button',{name:'Révéler',exact:true}).waitFor();
-  await waitShared(gm,1);await waitLocal(gm,0);
+  await managerRow(gm,'Nouvelle identité cachée').getByRole('button',{name:'Show',exact:true}).waitFor();
+  await waitShared(gm,1);
+  await gm.waitForFunction(async()=> (await window.fixture.scene()).items[0]?.visible===false);
+  await waitLocal(gm,0);
   assert.equal((await gm.evaluate(()=>window.fixture.scene())).items[0].id,item.id);
   assert.equal((await gm.evaluate(()=>window.fixture.scene())).items[0].visible,false);
   assert.deepEqual((await gm.evaluate(()=>window.fixture.scene())).items[0].position,{x:123,y:456});
-  wire=await player.evaluate(()=>window.fixture.wire());assert.ok(!JSON.stringify(wire).includes('Nouvelle identité cachée'));
-  await managerRow(gm,'Nouvelle identité cachée').getByRole('button',{name:'Révéler',exact:true}).click();
-  await waitShared(gm,1);await closeDialog(gm);
+  wire=await player.evaluate(()=>window.fixture.wire());
+  assert.ok(!JSON.stringify(wire).includes('528-secret'));
+  assert.equal((await player.evaluate(()=>window.fixture.scene())).items.filter(item=>item.visible).length,0);
+  await managerRow(gm,'Nouvelle identité cachée').getByRole('button',{name:'Show',exact:true}).click();
+  await waitShared(gm,1);
+  await gm.waitForFunction(async()=> (await window.fixture.scene()).items[0]?.visible===true);
+  await closeDialog(gm);
   // A non-character image from the library can be turned into a token.
   await frame(gm).evaluate(async()=>{const c=document.createElement('canvas');c.width=300;c.height=500;c.getContext('2d').fillRect(0,0,300,500);await window.ArchivesCellTransfer.sendImage({id:'object-library',name:'Document devenu pion',category:'objet',data:c.toDataURL()})});
   await dialog(gm).locator('[data-submit]:not([disabled])').waitFor();assert.equal(await dialog(gm).locator('[data-kind]').inputValue(),'DOCUMENT');
   await dialog(gm).locator('[data-kind]').selectOption('TOKEN');
 
-  await dialog(gm).getByRole('button',{name:'Placer et révéler',exact:true}).click();
+  await dialog(gm).getByRole('button',{name:'Placer en Show (joueurs)',exact:true}).click();
   await dialog(gm).waitFor({state:'detached'});
   await frame(gm).evaluate(()=>window.ArchivesCellTransfer.showManager());
-  await managerRow(gm,'Document devenu pion').getByRole('button',{name:'Cacher',exact:true}).waitFor();await waitShared(gm,2);
+  await managerRow(gm,'Document devenu pion').getByRole('button',{name:'Hide',exact:true}).waitFor();await waitShared(gm,2);
   item=(await gm.evaluate(()=>window.fixture.scene())).items.find(item=>item.name==='Document devenu pion');assert.equal(item.layer,'CHARACTER');assert.equal(item.image.width,2048);await closeDialog(gm);
   // Text document is rasterized; only its chosen representation enters Owlbear.
   await frame(gm).evaluate(()=>window.ArchivesCellTransfer.sendFile(new File(['Rapport destiné aux joueurs.'],'rapport.txt',{type:'text/plain'}),'Rapport publié'));
   await dialog(gm).locator('[data-submit]:not([disabled])').waitFor();assert.equal(await dialog(gm).locator('[data-include]').isChecked(),true);
-  await dialog(gm).getByRole('button',{name:'Placer et révéler',exact:true}).click();
+  await dialog(gm).getByRole('button',{name:'Placer en Show (joueurs)',exact:true}).click();
   await dialog(gm).waitFor({state:'detached'});
   await frame(gm).evaluate(()=>window.ArchivesCellTransfer.showManager());
-  await managerRow(gm,'Rapport publié').getByRole('button',{name:'Cacher',exact:true}).waitFor();await waitShared(gm,3);
+  await managerRow(gm,'Rapport publié').getByRole('button',{name:'Hide',exact:true}).waitFor();await waitShared(gm,3);
   item=(await gm.evaluate(()=>window.fixture.scene())).items.find(item=>item.name==='Rapport publié');assert.equal(item.layer,'PROP');assert.equal(item.image.width,1200);await closeDialog(gm);
   // Actual PDF.js worker, selected second page, no original PDF sharing.
   await frame(gm).evaluate(bytes=>window.ArchivesCellTransfer.sendFile(new File([new Uint8Array(bytes)],'deux-pages.pdf',{type:'application/pdf'}),'Page publique'),Array.from(samplePdf()));
@@ -124,19 +135,19 @@ async function openCharacter(page){
   await dialog(gm).locator('[data-submit]:not([disabled])').waitFor();
   assert.notEqual(await dialog(gm).locator('[data-preview]').getAttribute('src'),firstPage);
   await dialog(gm).screenshot({path:'/tmp/archives-transfer-pdf-v58.png'});
-  await dialog(gm).getByRole('button',{name:'Placer et révéler',exact:true}).click();
+  await dialog(gm).getByRole('button',{name:'Placer en Show (joueurs)',exact:true}).click();
   await dialog(gm).waitFor({state:'detached'});
   await frame(gm).evaluate(()=>window.ArchivesCellTransfer.showManager());
-  await managerRow(gm,'Page publique').getByRole('button',{name:'Cacher',exact:true}).waitFor();await waitShared(gm,4);
+  await managerRow(gm,'Page publique').getByRole('button',{name:'Hide',exact:true}).waitFor();await waitShared(gm,4);
   wire=await player.evaluate(()=>window.fixture.wire());assert.ok(!JSON.stringify(wire).includes('PAGE ONE PRIVATE'));assert.ok(!JSON.stringify(wire).includes('528-secret'));
-  await managerRow(gm,'Page publique').getByRole('button',{name:'Cacher',exact:true}).click();await waitShared(gm,4);await waitLocal(gm,0);
+  await managerRow(gm,'Page publique').getByRole('button',{name:'Hide',exact:true}).click();await waitShared(gm,4);await waitLocal(gm,0);
   await gm.waitForFunction(async()=>(await window.fixture.scene()).items.find(item=>item.name==='Page publique')?.visible===false);
   assert.equal((await gm.evaluate(()=>window.fixture.scene())).items.find(item=>item.name==='Page publique').visible,false);
   await closeDialog(gm);
   // Scene changes invalidate an already-open transfer, before any new upload.
   await openCharacter(gm);const uploadsBefore=(await gm.evaluate(()=>window.fixture.uploads())).length;
   await gm.evaluate(()=>window.fixture.setScene());
-  await dialog(gm).getByRole('button',{name:'Placer caché',exact:true}).click();
+  await dialog(gm).getByRole('button',{name:'Placer en Hide (joueurs)',exact:true}).click();
   await dialog(gm).locator('[data-status]').filter({hasText:'La scène a changé'}).waitFor();
   assert.equal((await gm.evaluate(()=>window.fixture.uploads())).length,uploadsBefore);await closeDialog(gm);
   // Players cannot forge a transfer command to their host, even by bypassing UI.
@@ -157,6 +168,6 @@ async function openCharacter(page){
   assert.equal(await gm.frameLocator('#viewer').locator('#app').getAttribute('src'),null);await waitLocal(gm,0);
   assert.equal(gmContext.pages().length,1);assert.equal(playerContext.pages().length,1);
   assert.deepEqual(errors,[]);
-  console.log('Owlbear simulé : personnages et documents en tokens, PDF page choisie, fichiers cachés strictement locaux, sauvegarde et déplacement, révélation/retrait, scène et rôles contrôlés, aucun code joueur.');
+  console.log('Owlbear simulé : tokens natifs Hide/Show, PDF, stockage, déplacement, révélation/retrait, confidentialité fiches et rôles contrôlés.');
  }finally{await browser.close()}
 })().catch(error=>{console.error(error);process.exitCode=1});

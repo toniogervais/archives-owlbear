@@ -6,8 +6,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="./src/v77/player.css?v=4680">
-<link rel="stylesheet" href="./src/v78/responsive.css?v=4680">
+<link rel="stylesheet" href="./src/v77/player.css?v=4690">
+<link rel="stylesheet" href="./src/v78/responsive.css?v=4690">
 <title>Les Archives de l’Imaginaire — Jeu de rôle</title>
 <style id="core-styles">
 :root {
@@ -4340,38 +4340,6 @@ window.DuneApp = (function() {
     closePlayerCellImage: closePlayerCellImage,
     isPlayerMode: function() { return state.playerMode; },
     getState: function(){ return state; },
-    // V4.68 — La visibilité des tokens transférés suit Hide/Show d'Owlbear.
-    // Reçoit seulement un identifiant de cellule déjà associée à un token.
-    // Aucune commande envoyée à Owlbear ici : évite toute boucle de synchronisation.
-    setTransferredCellReveal: function(sourceKey, revealed) {
-      if(state.playerMode||state.strictReadOnly||typeof sourceKey!=='string'||
-         !sourceKey.startsWith('cell:')||typeof revealed!=='boolean')return false;
-      var target=null;
-      for(var bi=0;bi<state.boards.length&&!target;bi++){
-        var board=state.boards[bi];
-        for(var ni=0;ni<board.nodes.length;ni++){
-          var candidate=board.nodes[ni];
-          if('cell:'+String(board.id)+':'+String(candidate.id)===sourceKey&&candidate.category==='personnage'){
-            target=candidate;break;
-          }
-        }
-      }
-      if(!target)return false;
-      var origin=target.originalId||target.id;
-      var siblings=[];
-      for(var sb=0;sb<state.boards.length;sb++)
-        for(var sn=0;sn<state.boards[sb].nodes.length;sn++){
-          var other=state.boards[sb].nodes[sn];
-          if(other.category==='personnage'&&
-             (other.originalId===origin||other.id===origin||other===target))
-            siblings.push(other);
-        }
-      if(siblings.every(function(item){return item.revealed===revealed;}))return false;
-      var order=revealed?stampNextRevOrder():null;
-      siblings.forEach(function(item){item.revealed=revealed;item.revOrder=order;});
-      renderAll();saveState();
-      return true;
-    },
     // Fiche de jeu MJ : changer l'état d'un indice sans ouvrir les réglages.
     setBriefClueRevealed: function(nodeId, clueId, revealed){
       if(state.playerMode || state.strictReadOnly)return false;
@@ -5288,11 +5256,6 @@ window.DuneApp = (function() {
         renderAll(); saveState();
         setStatus("🔒 « " + n.title + " » masquée.");
       }
-      if(!state.playerMode&&!state.strictReadOnly&&n.category==='personnage')
-        window.dispatchEvent(new CustomEvent('archives:cell-visibility',{detail:{
-          boardId:state.activeBoardId,nodeId:n.id,originalId:n.originalId||n.id,
-          revealed:n.revealed
-        }}));
     },
 
     openJournal: function() { renderJournalModal(); el("journal-modal").classList.add("open"); if(state.playerMode || state.strictReadOnly)this.switchJournalMainTab('revs'); },
@@ -6093,7 +6056,7 @@ window.DuneApp = (function() {
 
     openPlayerTab: function() {
       var baseUrl = window.location.href.split("?")[0].split("#")[0];
-      window.open(baseUrl + "?ro=1&v=4680" + (state.liveRoomId ? ("&room=" + encodeURIComponent(state.liveRoomId)) : ""), "_blank");
+      window.open(baseUrl + "?ro=1&v=4690" + (state.liveRoomId ? ("&room=" + encodeURIComponent(state.liveRoomId)) : ""), "_blank");
     },
 
     exportPlayerProgression: function() {
@@ -7263,15 +7226,15 @@ window.ArchivesRevealJournal={start,stop,refresh:()=>monitor?monitor.refresh():P
 
 })();
 </script>
-<link rel="stylesheet" href="./src/v56/bridge.css?v=4680">
-<script type="module" src="./src/v56/relay.mjs?v=4680"></script>
-<script type="module" src="./src/v56/navigation.mjs?v=4680"></script>
-<script type="module" src="./src/v58/main-relay.mjs?v=4680"></script>
-<script type="module" src="./src/v58/transfer-ui.mjs?v=4680"></script>
-<script type="module" src="./src/v60/library.mjs?v=4680"></script>
+<link rel="stylesheet" href="./src/v56/bridge.css?v=4690">
+<script type="module" src="./src/v56/relay.mjs?v=4690"></script>
+<script type="module" src="./src/v56/navigation.mjs?v=4690"></script>
+<script type="module" src="./src/v58/main-relay.mjs?v=4690"></script>
+<script type="module" src="./src/v58/transfer-ui.mjs?v=4690"></script>
+<script type="module" src="./src/v60/library.mjs?v=4690"></script>
 <script defer src="./src/v54/polish.js"></script>
 <script type="module" src="./src/v62/motion.mjs?v=4210"></script>
-<script type="module" src="./src/v63/workbench.mjs?v=4680"></script>
+<script type="module" src="./src/v63/workbench.mjs?v=4690"></script>
 </body>
 </html>
 <style id="v19-player-reveal-transitions">
@@ -7527,25 +7490,25 @@ body.player-mode .player-cell-resize:hover{opacity:1}
   #soundshow-sounds-dock > button {box-shadow:none!important}
 }
 </style>
-<script type="module" src="./src/v65/cell-picture.mjs?v=4680"></script>
-<script type="module" src="./src/v70/player-image.mjs?v=4680"></script>
-<script type="module" src="./src/v65/storage.mjs?v=4680"></script>
-<script type="module" src="./src/soundshow/archives.mjs?v=4680"></script>
-<script type="module" src="./src/v66/workspace.mjs?v=4680"></script>
-<link rel="stylesheet" href="./src/v80/npc-sheet.css?v=4680">
-<script type="module" src="./src/v81/npc-import.mjs?v=4680"></script>
-<script type="module" src="./src/v80/npc-sheet.mjs?v=4680"></script>
-<script type="module" src="./src/v68/cell-brief.mjs?v=4680"></script>
+<script type="module" src="./src/v65/cell-picture.mjs?v=4690"></script>
+<script type="module" src="./src/v70/player-image.mjs?v=4690"></script>
+<script type="module" src="./src/v65/storage.mjs?v=4690"></script>
+<script type="module" src="./src/soundshow/archives.mjs?v=4690"></script>
+<script type="module" src="./src/v66/workspace.mjs?v=4690"></script>
+<link rel="stylesheet" href="./src/v80/npc-sheet.css?v=4690">
+<script type="module" src="./src/v81/npc-import.mjs?v=4690"></script>
+<script type="module" src="./src/v80/npc-sheet.mjs?v=4690"></script>
+<script type="module" src="./src/v68/cell-brief.mjs?v=4690"></script>
 
 
-<script type="module" src="./src/v72/gm-details.mjs?v=4680"></script>
-<script type="module" src="./src/v72/selection.mjs?v=4680"></script>
-<script type="module" src="./src/v72/presentation.mjs?v=4680"></script>
-<script type="module" src="./src/v72/google-search.mjs?v=4680"></script>
+<script type="module" src="./src/v72/gm-details.mjs?v=4690"></script>
+<script type="module" src="./src/v72/selection.mjs?v=4690"></script>
+<script type="module" src="./src/v72/presentation.mjs?v=4690"></script>
+<script type="module" src="./src/v72/google-search.mjs?v=4690"></script>
 
-<script type="module" src="./src/v74/reserve-ui.mjs?v=4680"></script>
+<script type="module" src="./src/v74/reserve-ui.mjs?v=4690"></script>
 
-<script type="module" src="./src/v75/gm-description.mjs?v=4680"></script>
-<script type="module" src="./src/v77/touch-canvas.mjs?v=4680"></script>
-<script type="module" src="./src/v77/player-ui.mjs?v=4680"></script>
-<script type="module" src="./src/v78/responsive.mjs?v=4680"></script>
+<script type="module" src="./src/v75/gm-description.mjs?v=4690"></script>
+<script type="module" src="./src/v77/touch-canvas.mjs?v=4690"></script>
+<script type="module" src="./src/v77/player-ui.mjs?v=4690"></script>
+<script type="module" src="./src/v78/responsive.mjs?v=4690"></script>
