@@ -13,7 +13,7 @@ test('V4.67 — tokens invisibles aux joueurs sur la vraie couche privée du MJ'
   assert.doesNotMatch(transfer,/\.layer\(hidden\s*\?\s*"POPOVER"/);
   assert.match(transfer,/record=>!isDeleted\(record\)&&!shared\(record\.id\)/);
   assert.match(transfer,/OBR\.scene\.local\.addItems\(\[desired\]\)/);
-  assert.match(transfer,/if\\s*\\(hidden\\) item\\.zIndex = 0/);
+  assert.ok(transfer.includes('if (hidden) item.zIndex = 0'));
 });
 test('V4.67 — masquer une image déjà publiée ne la supprime pas et respecte les images privées',()=>{
   const visibility=transfer.slice(transfer.indexOf('async function visibility'),transfer.indexOf('const safeImage'));
