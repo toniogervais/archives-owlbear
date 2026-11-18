@@ -32,7 +32,10 @@ async function cellState(frame,id){
   for(let i=0;!e&&i<100;i++){await gm.waitForTimeout(100);e=frame(gm);}
   if(!e)throw Error('Éditeur MJ introuvable.');
   await e.waitForFunction(()=>window.ArchivesRelay&&window.DuneApp&&window.ArchivesCellTransfer);
-  await e.evaluate(value=>window.ArchivesRelay.apply(value),scenario);
+  // Importer comme un vrai MJ : le relais Owlbear peut livrer un snapshot
+  // initial concurrent et remplacer une injection directe de test.
+  const [chooser]=await Promise.all([gm.waitForEvent('filechooser'),editor(gm).getByRole('button',{name:'Importer un scénario'}).click()]);
+  await chooser.setFiles({name:'etats-independants.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(scenario))});
   await e.waitForFunction(()=>['npc1','npc2'].every(id=>window.DuneApp.getState().nodes.some(n=>n.id===id)));
   await e.evaluate(()=>{
     const canvas=document.createElement('canvas');canvas.width=220;canvas.height=270;
