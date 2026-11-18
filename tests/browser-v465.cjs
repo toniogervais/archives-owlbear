@@ -34,6 +34,8 @@ const transfer=page=>page.frameLocator('#viewer').frameLocator('#app').locator('
   if(!frame)throw Error('Éditeur MJ non chargé dans Owlbear.');
   await frame.waitForFunction(()=>window.ArchivesCellTransfer&&window.ArchivesRelay&&window.DuneApp);
   await frame.evaluate(data=>window.ArchivesRelay.apply(data),scenario);
+  // L'initialisation et les synchronisations de l'éditeur peuvent être asynchrones.
+  await frame.waitForFunction(()=>window.DuneApp.getState().nodes.some(n=>n.id==='npc-v465'));
   await frame.evaluate(()=>{
     const canvas=document.createElement('canvas');canvas.width=180;canvas.height=220;
     canvas.getContext('2d').fillRect(0,0,180,220);
