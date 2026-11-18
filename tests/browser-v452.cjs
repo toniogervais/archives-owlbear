@@ -19,9 +19,15 @@ async function transfer(browser){
  const [gc,pc,qc]=contexts,gm=await gc.newPage(),p=await pc.newPage(),q=await qc.newPage(),errors=[];for(const page of [gm,p,q]){page.setDefaultTimeout(60000);page.on('pageerror',e=>errors.push(e.message))}
  try{
   await openGM(gm);await p.goto(owl+'/room/one?joueur=Alix');await q.goto(owl+'/room/one?joueur=Noa');
+  // Les pages ont charge, mais les extensions peuvent encore installer leur
+  // abonnement au canal. Attendre les signaux 'active' des deux joueurs.
+  await until(async()=>{
+    const entries=await gm.evaluate(()=>window.fixture.wire());
+    return entries.filter(e=>e.op==='broadcast'&&e.value.channel==='fr.archives-imaginaire.bridge/media-v60'&&e.value.data?.type==='active').length>=2;
+  },'deux lecteurs Owlbear actifs');
   const data=await gm.evaluate(()=>['#d94331','#335bdb','#39b780'].map((color,i)=>{const c=document.createElement('canvas');c.width=900;c.height=600;const x=c.getContext('2d');if(i){let seed=i+31;const image=x.createImageData(c.width,c.height);for(let k=0;k<image.data.length;k+=4){seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;image.data[k]=seed&255;image.data[k+1]=(seed>>>8)&255;image.data[k+2]=(seed>>>16)&255;image.data[k+3]=255}x.putImageData(image,0,0)}x.fillStyle=color;x.fillRect(i?350:0,i?200:0,i?200:c.width,i?200:c.height);return c.toDataURL()}));
   assert.ok(data[1].length>1000000,'the transfer test uses a detailed photo-sized image');
-  const show=source=>app(gm).evaluate(data=>ArchivesPlayerImage.show({data}),source);
+  const show=async source=>{const result=await app(gm).evaluate(data=>ArchivesPlayerImage.show({data}),source);assert.equal(result,true,'la publication doit etre confirmee par les Archives MJ');};
   await show(data[0]);await waitMedia(p,data[0]);await waitMedia(q,data[0]);
   await show(data[1]);await until(()=>blockedId===shows[1],'second photo is still downloading');
   await show(data[2]);await until(()=>requests.filter(id=>id===shows[2]).length===2,'both players requested the third photo while the second was blocked');
