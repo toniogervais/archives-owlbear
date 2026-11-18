@@ -1,0 +1,71 @@
+name: Pré-V5 — contrôles de non-régression
+on:
+  push:
+    branches:
+      - pre-v5/stabilisation-20261118
+  workflow_dispatch:
+jobs:
+  unitaires:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm test
+      - name: Inventaire sécurité des dépendances
+        run: npm audit --json > audit-pre-v5.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: audit-pre-v5
+          path: audit-pre-v5.json
+          if-no-files-found: ignore
+
+  navigateurs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        groupe: [interface-joueurs, tokens-fiches, medias-son, integrations]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - name: Tests navigateur — ${{ matrix.groupe }}
+        env:
+          TEST_GROUP: ${{ matrix.groupe }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$TEST_GROUP" in
+            interface-joueurs)
+              node tests/browser-v65.cjs
+              node tests/browser-v458.cjs
+              node tests/browser-v459.cjs
+              ;;
+            tokens-fiches)
+              node tests/browser-v465.cjs
+              node tests/browser-npc-click-v470.cjs
+              node tests/browser-v467.cjs
+              node tests/browser-v468.cjs
+              ;;
+            medias-son)
+              node tests/browser-soundshow.cjs
+              node tests/browser-soundshow-archives.cjs
+              node tests/browser-v60.cjs
+              node tests/browser-v61.cjs
+              ;;
+            integrations)
+              node tests/browser-v58.cjs
+              node tests/browser-v63.cjs
+              node tests/browser-v64.cjs
+              node tests/browser-v452.cjs
+              ;;
+          esac
