@@ -27,7 +27,7 @@ const transfer=page=>page.frameLocator('#viewer').frameLocator('#app').locator('
   assert.deepEqual(icon.filter.roles,['GM'],'menu restricted to MJ');
   assert.equal(icon.filter.max,1);
   await gm.locator('#archives-tool').click();
-  await gm.waitForFunction(()=>Array.from(document.querySelectorAll('iframe')).some(x=>x.id==='viewer'));
+  await gm.frameLocator('#viewer').frameLocator('#app').locator('body').waitFor();
   const frame=gmEditor(gm);
   await frame.waitForFunction(()=>window.ArchivesCellTransfer&&window.ArchivesRelay&&window.DuneApp);
   await frame.evaluate(data=>window.ArchivesRelay.apply(data),scenario);
