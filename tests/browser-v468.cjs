@@ -33,6 +33,7 @@ async function cellState(frame,id){
   if(!e)throw Error('Éditeur MJ introuvable.');
   await e.waitForFunction(()=>window.ArchivesRelay&&window.DuneApp&&window.ArchivesCellTransfer);
   await e.evaluate(value=>window.ArchivesRelay.apply(value),scenario);
+  await e.waitForFunction(()=>['npc1','npc2'].every(id=>window.DuneApp.getState().nodes.some(n=>n.id===id)));
   await e.evaluate(()=>{
     const canvas=document.createElement('canvas');canvas.width=220;canvas.height=270;
     canvas.getContext('2d').fillRect(0,0,220,270);
