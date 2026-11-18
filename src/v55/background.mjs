@@ -52,9 +52,11 @@ function unavailable(moduleName,error) {
  if(stopped)return;
  void OBR.notification.show("Archives — module "+moduleName+" : "+details, "WARNING").catch(console.warn);
 }
-void import("../v58/transfers.mjs?v=4590").then(module => module.installArtworkTransfers()).catch(error=>unavailable("Tokens",error));
+void import("../v58/transfers.mjs?v=4650").then(module => module.installArtworkTransfers()).catch(error=>unavailable("Tokens",error));
 void import("../v57/room-background.mjs?v=4590").then(module => module.installRoomPlay(OBR)).catch(error=>unavailable("Synchronisation",error));
 void import("../v60/background.mjs?v=4590").then(module => module.installFileLibrary(OBR)).catch(error=>unavailable("Bibliothèque",error));
 void import("../soundshow/owlbear.mjs?v=4590").then(module => module.installSoundShow(OBR)).catch(error=>unavailable("SoundShow",error));
 
 void import('../v73/main-public-host.mjs?v=4590').then(module=>module.installMainPublicHost(OBR)).catch(error=>unavailable('Archives principales',error));
+
+void import('../v82/npc-token-context.mjs?v=4650').then(module=>module.installNpcTokenContext()).catch(error=>unavailable('Fiches des personnages',error));
