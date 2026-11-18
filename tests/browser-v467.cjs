@@ -104,7 +104,8 @@ const frame=p=>p.frames().find(f=>f.url().includes('owl-editor=1'));
   shared=(await gm.evaluate(()=>window.fixture.scene())).items[0];
   assert.equal(shared.visible,false);
   assert.deepEqual(shared.position,{x:277,y:344});
-  assert.ok(!JSON.stringify(await player.evaluate(()=>window.fixture.wire())).includes('Garde actualisé'));
+  assert.ok(!JSON.stringify(await player.evaluate(()=>window.fixture.wire())).includes('SECRET_FICHE_467'));
+  assert.equal((await player.evaluate(()=>window.fixture.scene())).items.filter(item=>item.visible).length,0);
 
   await gm.evaluate(id=>window.fixture.setSharedVisible(id,true),hidden.id);
   await e.waitForFunction(()=>window.ArchivesTokenSync?.bySource('cell:test:guard')?.revealed===true);
