@@ -461,7 +461,7 @@ export async function installArtworkTransfers() {
       if(item.visible!==true||item.metadata?.[assetKey]?.id!==item.id)continue;
       const record=records.find(entry=>entry.id===item.id&&!isDeleted(entry));
       if(!record||record.version!==item.metadata[assetKey].version||
-         item.image?.url===record.image?.url)continue;
+         (item.image?.url===record.image?.url&&item.name===record.title))continue;
       const id=item.id,version=record.version,expectedScene=record.scene;
       commands=commands.catch(()=>{}).then(async()=>{
         await requireGM(expectedScene);
@@ -469,7 +469,7 @@ export async function installArtworkTransfers() {
         const saved=await store.get(id);
         if(!native||native.visible!==true||!saved||saved.version!==version||
            native.metadata?.[assetKey]?.id!==id||
-           native.image?.url===saved.image?.url)return;
+           (native.image?.url===saved.image?.url&&native.name===saved.title))return;
         await OBR.scene.items.updateItems([id],draft=>{
           draft[0].image=saved.image;
           draft[0].grid=saved.grid;
