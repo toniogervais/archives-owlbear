@@ -59,4 +59,5 @@ void import("../soundshow/owlbear.mjs?v=4590").then(module => module.installSoun
 
 void import('../v73/main-public-host.mjs?v=4590').then(module=>module.installMainPublicHost(OBR)).catch(error=>unavailable('Archives principales',error));
 
-void import('../v82/npc-token-context.mjs?v=4660').then(module=>module.installNpcTokenContext()).catch(error=>unavailable('Fiches des personnages',error));
+void import('../v82/npc-token-context.mjs?v=4670').then(module=>module.installNpcTokenContext()).catch(error=>unavailable('Fiches des personnages',error));
+void import('../v83/token-visibility.mjs?v=4670').then(module=>module.installTokenVisibilityMenu()).catch(error=>unavailable('Visibilité des tokens',error));
