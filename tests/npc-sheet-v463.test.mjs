@@ -67,6 +67,6 @@ test('Fiche NPC sous le portrait, labels rouges, édition réservée au MJ',()=>
  assert.match(moduleSource,/setNpcCondition/);
  assert.match(css,/npc-stat-label/);
  assert.match(css,/#ff6b7f/);
- assert.match(html,/src\/v80\/npc-sheet\.mjs\?v=4650/);
- assert.match(html,/src\/v80\/npc-sheet\.css\?v=4650/);
+ assert.match(html,/src\/v80\/npc-sheet\.mjs\?v=4660/);
+ assert.match(html,/src\/v80\/npc-sheet\.css\?v=4660/);
 });
