@@ -4,7 +4,7 @@ import {isPacket,packet,validRoomId,validSession} from "../v56/link.mjs?v=4590";
 import { artworkBlob,assetKey,blobDigest,privateArtworkStore,sceneKey,validArtwork } from "./model.mjs?v=4590";
 import { normalizeCrop } from "../v61/token-crop.mjs";
 import {safeHostedImage} from "./hosted-assets.mjs?v=4590";
-import {mergeTransferredTokenCondition,publicTokenMarker} from '../v82/npc-token-model.mjs?v=4660';
+import {mergeTransferredTokenCondition,publicTokenMarker} from '../v82/npc-token-model.mjs?v=4670';
 
 // Only the GM talks to this local channel. Unrevealed artwork never enters a
 // shared item, broadcast, room metadata, public bucket, or player snapshot.
