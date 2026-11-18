@@ -33,7 +33,11 @@ async function downloadBytes(download){const stream=await download.createReadStr
    await editor(gm).locator('#canvas-save-icon').click();await editor(gm).locator('#archives-backup-more').evaluate(e=>e.open=true);await online(gm).getByRole('button',{name:'Enregistrer en ligne',exact:true}).click();
    await until(()=>cloud.versions.length===n,'checkpoint '+n);
   }
-  await online(gm).getByRole('button',{name:'Actualiser',exact:true}).click();await online(gm).locator('[data-backup-id]').last().waitFor();
+  await online(gm).getByRole('button',{name:'Actualiser',exact:true}).click();
+  // Les versions precedentes vivent dans les options repliables de sauvegarde.
+  // Reouvrir ce volet apres chaque actualisation avant de tester les cartes.
+  await editor(gm).locator('#archives-backup-more').evaluate(e=>e.open=true);
+  await online(gm).locator('[data-backup-id]').last().waitFor({state:'visible'});
   const originalIds=cloud.versions.map(row=>row.id),before=size(cloud),{inspectBackup}=await import('../src/v63/backup.mjs');
   let [download]=await Promise.all([gm.waitForEvent('download'),backup(gm).getByRole('button',{name:'Sauvegarder sur cet appareil',exact:true}).click()]);
   let restored=await inspectBackup(new Blob([await downloadBytes(download)]));assert.equal(restored.summary.cells,3);assert.equal(await restored.files[0].blob.text(),'ORIGINAL_PRIVE_448');
