@@ -84,6 +84,9 @@ window.addEventListener("message", event => {
     return;
   }
   if (data.type === "go-map") { button.click(); return; }
+  if (gm && data.type==='owl-token-sync' && typeof data.scene==='string' && Array.isArray(data.records)) {
+    post('owl-token-sync',{scene:data.scene,records:data.records});return;
+  }
   if (nativeHost) {
     if (gm && data.type === "owl-editor-ready") editorStarted = true;
     if (gm && data.type === "return-result" && closing) finishReturn(data.safe === true);
