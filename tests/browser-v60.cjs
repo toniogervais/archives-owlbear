@@ -117,7 +117,12 @@ async function present(page,title,publicTitle){
   await library(gm).screenshot({path:'/tmp/archives-library-v60.png'});
   await card(gm,'ENREGISTREMENT_PRIVE_466').getByRole('button',{name:'Aperçu et présentation…',exact:true}).click();
   assert.equal(await library(gm).locator('[data-reveal]').isChecked(),false);
-  await library(gm).getByRole('button',{name:'Arrêter la présentation',exact:true}).click();
+  // Refermer l'aperçu privé puis arrêter depuis la carte de la bibliothèque.
+  // Le rafraîchissement du catalogue peut fermer le panneau d'aperçu entre
+  // l'ouverture et le clic, alors que la commande de la carte reste disponible.
+  if(await library(gm).locator('[data-preview]').isVisible())
+    await library(gm).locator('[data-back]').click();
+  await card(gm,'ENREGISTREMENT_PRIVE_466').getByRole('button',{name:'Arrêter la présentation',exact:true}).click();
   await player.locator('[id="'+mediaId+'"]').waitFor({state:'detached'});await late.locator('[id="'+mediaId+'"]').waitFor({state:'detached'});
   debug('PDF token');
   // Original PDF in the library can become a native round token.
