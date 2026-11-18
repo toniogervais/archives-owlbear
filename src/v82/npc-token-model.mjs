@@ -41,7 +41,7 @@ export function privateTokenSheet(record) {
 
 // Public marker: never include the actual characteristics, notes or wounds.
 export function publicTokenMarker(record){
-  return {id:record.id,version:record.version,
+  return {id:record.id,version:record.version,kind:record.kind,
     hasSheet:record.kind==='TOKEN'&&hasTokenNpcSheet(record.npcSheet)};
 }
 
