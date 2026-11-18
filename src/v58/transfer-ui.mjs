@@ -327,7 +327,7 @@ async function openSource(input,report = notify) {
           if (dialog.open) ui("status").textContent = message;
         });
         if (!dialog.open) return;
-        const message = result.revealed ? "« " + result.title + " » placé et révélé dans Owlbear." : "« " + result.title + " » placé dans ta vue MJ, caché aux joueurs.";
+        const message = result.revealed ? "« " + result.title + " » en Show dans Owlbear (visible des joueurs)." : "« " + result.title + " » en Hide dans Owlbear (invisible aux joueurs).";
         dialog.close();report(message);
       } catch (error) { if (dialog.open) ui("status").textContent = error.message; }
       finally { setBusy(false); }
@@ -373,8 +373,8 @@ async function placeSource(input,reveal = null) {
     const hosted = await tryDirectHosting(art,notify);
     const result = await request({action:'transfer',scene:context.scene,sourceKey:source.key,
       kind:'TOKEN',title:source.title,reveal,art,hosted,framing,npcSheet:input.npcSheet??null},notify);
-    notify(result.revealed ? '« '+result.title+' » placé et révélé dans Owlbear.' :
-      '« '+result.title+' » placé dans ta vue MJ, caché aux joueurs.');
+    notify(result.revealed ? '« '+result.title+' » en Show dans Owlbear (visible des joueurs).' :
+      '« '+result.title+' » en Hide dans Owlbear (invisible aux joueurs).');
   } catch (error) { notify(error.message); }
   finally { source?.release();directTransfers.delete(input.key);controls.forEach(control => { control.disabled = false; }); }
 }
@@ -413,7 +413,7 @@ function install() {
     for (const [id,label,handler] of [
       ['archives-ctx-owl-hide','Owlbear · Hide le token',() => setSelectedTokenVisibility(false)],
       ['archives-ctx-owl-show','Owlbear · Show le token',() => setSelectedTokenVisibility(true)],
-      ['archives-ctx-owl-reveal','Owlbear · Placer et révéler',() => placeSelected(true)],
+      ['archives-ctx-owl-reveal','Owlbear · Placer en Show (joueurs)',() => placeSelected(true)],
       ['archives-ctx-owl-frame','Owlbear · Cadrer / préparer…',sendSelected]
     ]) {
       const control = document.createElement('button');control.id = id;control.type = 'button';control.className = 'ctx-item';
