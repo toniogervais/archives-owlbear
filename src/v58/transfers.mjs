@@ -13,7 +13,7 @@ export async function installArtworkTransfers() {
   let role = await OBR.player.getRole(), scene = "", store, records = [], items = [];
   let closed = false, generation = 0;
   let refreshQueue = Promise.resolve();
-  let commands = Promise.resolve(), renders = Promise.resolve();
+  let commands = Promise.resolve(), renders = Promise.resolve(), syncTimer;
   const locals = new Map();
   const expectedLocalRemovals = new Set(),expectedSharedRemovals = new Set();
   const deleted = new Map();
@@ -53,13 +53,13 @@ export async function installArtworkTransfers() {
       .name(record.title)
       .createdUserId(OBR.player.id)
       .plainText(record.label||'').textItemType("LABEL")
-      .layer(hidden ? "POPOVER" : (record.kind === "TOKEN" ? "CHARACTER" : "PROP"))
+      .layer(record.kind === "TOKEN" ? "CHARACTER" : "PROP")
       .position(record.position).visible(true)
       .metadata({[assetKey]:publicTokenMarker(record)}).build();
     Object.assign(item,pose(record));
-    // Private tokens must be clearly visible to the GM. The local scene keeps
-    // them entirely absent from the shared scene, regardless of opacity.
-    if (hidden) item.zIndex = Date.now();
+    // Local scene: GM only. Keep the same genuine CHARACTER/PROP layer;
+    // POPOVER isn't an editable character layer in the Owlbear scene.
+    if (hidden) item.zIndex = 0;
     return item;
   }
   async function removeLocal(id) {
@@ -100,7 +100,7 @@ export async function installArtworkTransfers() {
   // item without invalidating its saved private record.
   async function render() {
     const active=generation;
-    const wanted=role==="GM"&&!closed?records.filter(record=>!isDeleted(record)&&!shared(record.id)?.visible):[];
+    const wanted=role==="GM"&&!closed?records.filter(record=>!isDeleted(record)&&!shared(record.id)):[];
     const actual=await OBR.scene.local.getItems(item=>item.metadata?.[assetKey]?.id===item.id);
     if(active!==generation||closed||role!=="GM")return;
     const present=new Map(actual.map(item=>[item.id,item]));
@@ -129,7 +129,8 @@ export async function installArtworkTransfers() {
            current.image?.height!==desired.image?.height ||
            current.visible!==true ||
            current.name!==desired.name || current.layer!==desired.layer || current.text?.plainText!==desired.text?.plainText ||
-           current.metadata?.[assetKey]?.hasSheet!==desired.metadata?.[assetKey]?.hasSheet){
+           current.metadata?.[assetKey]?.hasSheet!==desired.metadata?.[assetKey]?.hasSheet ||
+            current.metadata?.[assetKey]?.kind!==desired.metadata?.[assetKey]?.kind){
           const updated={...desired,...pose(current)};
           await OBR.scene.local.updateItems([record.id],draft=>{Object.assign(draft[0],updated);});
           locals.set(record.id,updated);
@@ -197,6 +198,7 @@ export async function installArtworkTransfers() {
     items = currentItems;
     records = role === "GM" ? currentRecords.filter(record=>!isDeleted(record)) : [];
     await queueRender();
+    scheduleSync();
   }
   async function visibility(record,reveal) {
     await requireGM(record.scene);
@@ -208,18 +210,27 @@ export async function installArtworkTransfers() {
       else await OBR.scene.items.addItems([item]);
       await removeLocal(record.id);
     } else if (existing) {
-      // Remove from the shared scene, rather than sharing new hidden data.
-      await deleteSharedItems([existing.id]);
+      // The image has ALREADY been revealed. Keep its shared item and stable
+      // Owlbear ID hidden in-place, so native Show works afterwards.
+      // Never publish a newer unpublished image while hiding this item.
+      if(existing.visible!==false)
+        await OBR.scene.items.updateItems([existing.id],draft => {draft[0].visible=false;});
     }
     record.revealed = reveal;
     await store.put(record);
     await refresh();
     if(!reveal){
-      const check=await OBR.scene.local.getItems([record.id]);
-      if(!check.some(item=>item.id===record.id && item.visible===true)){
-        throw Error('Token conservé dans les Archives, mais non créé dans la couche privée Owlbear. Vérifie que le module de transfert est chargé.');
+      const hiddenShared=shared(record.id);
+      if(hiddenShared){
+        if(hiddenShared.visible!==false)throw Error('Owlbear n’a pas masqué le token partagé.');
+      }else{
+        const check=await OBR.scene.local.getItems([record.id]);
+        if(!check.some(item=>item.id===record.id && item.visible===true &&
+            item.layer===(record.kind==='TOKEN'?'CHARACTER':'PROP')))
+          throw Error('Token conservé dans Les Archives, mais invisible dans la couche privée du MJ. Actualise Owlbear.');
       }
     }
+    scheduleSync();
   }
   const safeImage = (image,art) => image && image.width === art.width && image.height === art.height &&
     ['image/png','image/jpeg','image/webp'].includes(image.mime) && typeof image.url === 'string' && image.url.startsWith('https://') && !image.url.includes('/storage/v1/object/sign/');
@@ -277,11 +288,13 @@ export async function installArtworkTransfers() {
   async function place(command,{image,reused},currentScene,position) {
     await requireGM(currentScene);await refresh();
     const previous = records.find(entry => entry.sourceKey === command.sourceKey && entry.kind === command.kind);
+    const native=previous ? shared(previous.id)||locals.get(previous.id) : null;
+    const placement=native?pose(native):previous;
     const wasRevealed=previous ? Boolean(shared(previous.id)?.visible || previous.revealed) : false;
     const npc=command.kind==='TOKEN'?mergeTransferredTokenCondition(previous,command.npcSheet):{sheet:null,origin:null};
     const record = {...previous,id:previous?.id || command.art.id,version:command.art.version,scene:currentScene,
       sourceKey:command.sourceKey,title:command.title.trim(),label:command.label===undefined?(previous?.label||''):command.label.trim(),kind:command.kind,image,grid:grid(command.kind,image),
-      position:previous?.position || position || await centre(),scale:previous?.scale || {x:1,y:1},rotation:previous?.rotation || 0,locked:previous?.locked || false,
+      position:placement?.position || position || await centre(),scale:placement?.scale || {x:1,y:1},rotation:placement?.rotation || 0,locked:placement?.locked || false,
       npcSheet:npc.sheet,npcConditionOrigin:npc.origin,revealed:false};
     deleted.delete(record.id);
     await store.put(record);
@@ -303,13 +316,14 @@ export async function installArtworkTransfers() {
         entry.sourceKey === command.sourceKey || (typeof command.assetId === 'string' && entry.id === command.assetId));
       if (!record) throw Error('Transfère d’abord cette cellule dans la scène Owlbear ouverte.');
       // Repair missing GM-only items before framing the map.
-      if(!shared(record.id)?.visible)await queueRender();
-      if(!shared(record.id)?.visible) {
+      const native=shared(record.id);
+      if(!native)await queueRender();
+      if(!native) {
         const found=await OBR.scene.local.getItems([record.id]);
         if(!found.some(item=>item.id===record.id && item.visible===true))
           throw Error('Le token privé est enregistré, mais Owlbear ne le dessine pas. Vérifie le chargement de l’extension.');
       }
-      const bounds = await (shared(record.id)?.visible ? OBR.scene.items : OBR.scene.local).getItemBounds([record.id]);
+      const bounds = await (native ? OBR.scene.items : OBR.scene.local).getItemBounds([record.id]);
       await requireGM(currentScene);await OBR.viewport.animateToBounds(bounds);return {focused:true};
     }
     if (command.action === 'batch') {
@@ -332,9 +346,10 @@ export async function installArtworkTransfers() {
       const actual=await OBR.scene.local.getItems(item=>item.metadata?.[assetKey]?.id===item.id);
       const localIds=new Set(actual.map(item=>item.id));
       return {scene:currentScene,records:records.map(record => ({id:record.id,title:record.title,label:record.label||'',
-        kind:record.kind,revealed:Boolean(shared(record.id)?.visible),
-        visibleToGM:Boolean(shared(record.id)?.visible||localIds.has(record.id)),
-        privateLayer:actual.find(item=>item.id===record.id)?.layer || null}))};
+        sourceKey:record.sourceKey,kind:record.kind,revealed:Boolean(shared(record.id)?.visible),
+        visibleToGM:Boolean(shared(record.id)||localIds.has(record.id)),
+        privateLayer:shared(record.id)?'Owlbear · masqué':actual.find(item=>item.id===record.id)?.layer || null,
+        position:shared(record.id)?.position||actual.find(item=>item.id===record.id)?.position||record.position}))};
     }
     if (["visibility","remove","label"].includes(command.action)) {
       const record = await store.get(command.assetId);
