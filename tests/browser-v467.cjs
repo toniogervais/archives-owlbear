@@ -57,6 +57,7 @@ const frame=p=>p.frames().find(f=>f.url().includes('owl-editor=1'));
   // Owlbear native Show/Hide works for the very first hidden token.
   await gm.evaluate(({id,item})=>window.fixture.clickMenu(id,item),{id:menuId,item:hidden});
   await gm.waitForFunction(async id=>(await window.fixture.scene()).items.find(item=>item.id===id)?.visible===true,hidden.id);
+  await e.waitForFunction(()=>window.ArchivesTokenSync?.bySource('cell:test:guard')?.revealed===true);
   let [shared]=(await gm.evaluate(()=>window.fixture.scene())).items;
   assert.equal(shared.id,hidden.id,'same stable ID when revealed');
   assert.equal(shared.layer,'CHARACTER');
