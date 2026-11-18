@@ -73,7 +73,7 @@ export async function installArtworkTransfers() {
       .plainText(record.label||'').textItemType("LABEL")
       .layer(record.kind === "TOKEN" ? "CHARACTER" : "PROP")
       .position(record.position).visible(true)
-      .metadata({[assetKey]:publicTokenMarker(record)}).build();
+      .metadata({[assetKey]:{...publicTokenMarker(record),privateForGM:hidden}}).build();
     Object.assign(item,pose(record));
     // Local scene: GM only. Keep the same genuine CHARACTER/PROP layer;
     // POPOVER isn't an editable character layer in the Owlbear scene.
@@ -149,7 +149,8 @@ export async function installArtworkTransfers() {
            current.visible!==true ||
            current.name!==desired.name || current.layer!==desired.layer || current.text?.plainText!==desired.text?.plainText ||
            current.metadata?.[assetKey]?.hasSheet!==desired.metadata?.[assetKey]?.hasSheet ||
-            current.metadata?.[assetKey]?.kind!==desired.metadata?.[assetKey]?.kind){
+            current.metadata?.[assetKey]?.kind!==desired.metadata?.[assetKey]?.kind ||
+            current.metadata?.[assetKey]?.privateForGM!==true){
           const updated={...desired,...pose(current)};
           await OBR.scene.local.updateItems([record.id],draft=>{Object.assign(draft[0],updated);});
           locals.set(record.id,updated);
