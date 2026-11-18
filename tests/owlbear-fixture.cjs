@@ -11,7 +11,7 @@ function fixture({sceneReady=false,inviteReadyDelay=0,captureRasters=false}={}) 
  const params=new URLSearchParams(location.search);
  let role=params.has("joueur")?"PLAYER":"GM";
  const name=params.get("joueur")||"MJ",connectionId="fixture-"+name;
- const player={role,name,connectionId};
+ const player={role,name,connectionId,selection:[]};
  const ref=btoa(location.origin+" fixture-single-room"),listeners=new Map();
  let localItems=[];const uploads=[],focus=[],modals=[],contextMenus={},pickers={upload:0,download:0};let cancelPick=false,modalLayer=100;
  function post(frame,id,data){frame?.contentWindow?.postMessage({id,data},archives)}
@@ -36,6 +36,7 @@ function fixture({sceneReady=false,inviteReadyDelay=0,captureRasters=false}={}) 
   sceneMetadata:metadata=>allPost("OBR_SCENE_METADATA_EVENT_CHANGE",{metadata}),
   sceneItems:items=>allPost("OBR_SCENE_ITEMS_EVENT_CHANGE",{items}),
   changeRole(value){role=value;player.role=value;allPost("OBR_PLAYER_EVENT_CHANGE",{player});fixtureHub("role",value)},
+  selectToken(id){player.selection=id?[id]:[];allPost("OBR_PLAYER_EVENT_CHANGE",{player})},
   moveLocal(id,position){localItems=localItems.map(item=>item.id===id?{...item,position}:item);allPost("OBR_SCENE_LOCAL_EVENT_CHANGE",{items:localItems})},
   setLocalVisible(id,visible){localItems=localItems.map(item=>item.id===id?{...item,visible}:item);allPost("OBR_SCENE_LOCAL_EVENT_CHANGE",{items:localItems})},
   setSharedVisible:(id,visible)=>fixtureHub("updateItems",{updates:[{id,visible}]}),
@@ -53,6 +54,9 @@ function fixture({sceneReady=false,inviteReadyDelay=0,captureRasters=false}={}) 
   void(async()=>{let reply={};switch(id){
    case "OBR_TOOL_CREATE":{const tool=document.getElementById("archives-tool");tool.disabled=false;tool.onclick=()=>post(modalFrame("background"),"OBR_TOOL_EVENT_CLICK",{id:data.id,context:{}});break}
    case "OBR_PLAYER_GET_ROLE":reply={role};break;
+   case "OBR_PLAYER_GET_SELECTION":reply={selection:player.selection};break;
+   case "OBR_PLAYER_SELECT":player.selection=data.replace?[...data.items]:[...new Set([...player.selection,...data.items])];allPost("OBR_PLAYER_EVENT_CHANGE",{player});break;
+   case "OBR_PLAYER_DESELECT":player.selection=data.items?player.selection.filter(id=>!data.items.includes(id)):[];allPost("OBR_PLAYER_EVENT_CHANGE",{player});break;
    case "OBR_PLAYER_GET_CONNECTION_ID":reply={connectionId};break;
    case "OBR_SCENE_IS_READY":reply={ready:${sceneReady}};break;
    case "OBR_SCENE_GET_METADATA":reply={metadata:await fixtureHub("sceneMetadata")};break;
