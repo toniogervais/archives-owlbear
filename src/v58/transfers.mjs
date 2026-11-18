@@ -4,7 +4,7 @@ import {isPacket,packet,validRoomId,validSession} from "../v56/link.mjs?v=4590";
 import { artworkBlob,assetKey,blobDigest,privateArtworkStore,sceneKey,validArtwork } from "./model.mjs?v=4590";
 import { normalizeCrop } from "../v61/token-crop.mjs";
 import {safeHostedImage} from "./hosted-assets.mjs?v=4590";
-import {normalizeTokenNpcSheet,hasTokenNpcSheet} from '../v82/npc-token-model.mjs?v=4650';
+import {normalizeTokenNpcSheet,publicTokenMarker} from '../v82/npc-token-model.mjs?v=4650';
 
 // Only the GM talks to this local channel. Unrevealed artwork never enters a
 // shared item, broadcast, room metadata, public bucket, or player snapshot.
@@ -55,8 +55,7 @@ export async function installArtworkTransfers() {
       .plainText(record.label||'').textItemType("LABEL")
       .layer(hidden ? "POPOVER" : (record.kind === "TOKEN" ? "CHARACTER" : "PROP"))
       .position(record.position).visible(true)
-      .metadata({[assetKey]:{id:record.id,version:record.version,
-        hasSheet:record.kind==='TOKEN'&&hasTokenNpcSheet(record.npcSheet)}}).build();
+      .metadata({[assetKey]:publicTokenMarker(record)}).build();
     Object.assign(item,pose(record));
     // Private tokens must be clearly visible to the GM. The local scene keeps
     // them entirely absent from the shared scene, regardless of opacity.
