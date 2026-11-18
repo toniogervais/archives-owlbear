@@ -11,6 +11,11 @@ on:
       - 'tests/owlbear-fixture.cjs'
       - 'tests/browser-npc-click-v470.cjs'
       - 'npc-token-v82.html'
+      - 'manifest-v55.json'
+      - 'archives.html'
+      - 'archives-app-v64-v55.html'
+      - 'background-v55.html'
+      - 'src/v57/room.mjs'
       - '.github/workflows/verify-v470-npc.yml'
   workflow_dispatch:
 jobs:
