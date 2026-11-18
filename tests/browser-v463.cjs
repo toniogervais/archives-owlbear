@@ -44,7 +44,7 @@ const data={activeBoardId:'a',boards:[{id:'a',name:'Acte Shadowrun',links:[],nod
   await page.waitForFunction(()=>DuneApp.getState().nodes[0].npcSheet?.condition.physical.damage===3);
   assert.equal(await physical.locator('input:checked').count(),3,'checking the third box records three wounds');
   const saved=await page.evaluate(()=>DuneApp.getState().nodes.find(n=>n.id==='pnj1').npcSheet);
-  assert.equal(saved.professionalisme,3);assert.equal(saved.attributes.CON,'5');assert.equal(saved.attributes.ESS,'4,7');
+  assert.equal(saved.professionnalisme,3);assert.equal(saved.attributes.CON,'5');assert.equal(saved.attributes.ESS,'4,7');
   assert.equal(saved.sections.armes,'Pistolet Colt America');assert.equal(saved.condition.physical.damage,3);
   assert.ok(!JSON.stringify(await page.evaluate(()=>ArchivesRelay.publicView())).includes('Pistolet Colt America'),'NPC sheet is not in player snapshot');
   await page.reload();await page.waitForFunction(()=>window.ArchivesCellBrief&&window.ArchivesNpcSheet&&DuneApp.getState().nodes.some(n=>n.id==='pnj1'));
