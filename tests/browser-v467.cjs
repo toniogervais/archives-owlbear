@@ -39,28 +39,24 @@ const frame=p=>p.frames().find(f=>f.url().includes('owl-editor=1'));
     return window.ArchivesCellTransfer.sendSelected();
   });
   await transfer(gm).locator('[data-submit]:not([disabled])').waitFor();
-  await transfer(gm).getByRole('button',{name:'Placer caché',exact:true}).click();
+  await transfer(gm).getByRole('button',{name:'Placer en Hide (joueurs)',exact:true}).click();
   await transfer(gm).waitFor({state:'detached'});
-  await gm.waitForFunction(()=>window.fixture.local().length===1);
-  assert.equal((await gm.evaluate(()=>window.fixture.scene())).items.length,0);
-  const [hidden]=await gm.evaluate(()=>window.fixture.local());
-  assert.equal(hidden.layer,'CHARACTER','GM-only token remains a proper character token');
-  assert.equal(hidden.visible,true);
-  assert.equal(hidden.metadata[assetKey].privateForGM,true);
+  await gm.waitForFunction(async()=>(await window.fixture.scene()).items.length===1);
+  assert.equal((await gm.evaluate(()=>window.fixture.local())).length,0);
+  const [hidden]=(await gm.evaluate(()=>window.fixture.scene())).items;
+  assert.equal(hidden.layer,'CHARACTER','native Owlbear character layer');
+  assert.equal(hidden.visible,false,'the token is in the native Hide state');
+  assert.equal(hidden.metadata[assetKey].privateForGM,false);
   assert.equal(hidden.metadata[assetKey].kind,'TOKEN');
   assert.equal((await player.evaluate(()=>window.fixture.local())).length,0);
-  assert.ok(!JSON.stringify(await player.evaluate(()=>window.fixture.wire())).includes('Garde de sécurité'));
-  await e.waitForFunction(()=>window.ArchivesTokenSync?.bySource('cell:test:guard')?.private===true);
+  assert.equal((await player.evaluate(()=>window.fixture.scene())).items.filter(item=>item.visible).length,0);
+  assert.ok(!JSON.stringify(await player.evaluate(()=>window.fixture.wire())).includes('SECRET_FICHE_467'));
+  await e.waitForFunction(()=>window.ArchivesTokenSync?.bySource('cell:test:guard')?.private===false);
   assert.equal(await e.evaluate(()=>window.ArchivesTokenSync.bySource('cell:test:guard').revealed),false);
-  // Owlbear's native Hide cannot make a private local token disappear for the GM.
-  await gm.evaluate(id=>window.fixture.setLocalVisible(id,false),hidden.id);
-  await gm.waitForFunction(id=>window.fixture.local().find(x=>x.id===id)?.visible===true,hidden.id);
-  assert.equal((await gm.evaluate(()=>window.fixture.scene())).items.length,0);
 
-  // Explicit Owlbear context menu reveals local token without opening Archives.
+  // Owlbear native Show/Hide works for the very first hidden token.
   await gm.evaluate(({id,item})=>window.fixture.clickMenu(id,item),{id:menuId,item:hidden});
-  await gm.waitForFunction(id=>window.fixture.local().length===0,hidden.id);
-  await gm.waitForFunction(async()=>(await window.fixture.scene()).items.length===1);
+  await gm.waitForFunction(async id=>(await window.fixture.scene()).items.find(item=>item.id===id)?.visible===true,hidden.id);
   let [shared]=(await gm.evaluate(()=>window.fixture.scene())).items;
   assert.equal(shared.id,hidden.id,'same stable ID when revealed');
   assert.equal(shared.layer,'CHARACTER');
@@ -99,7 +95,7 @@ const frame=p=>p.frames().find(f=>f.url().includes('owl-editor=1'));
     n.title='Garde actualisé';s.selectedId=n.id;return window.ArchivesCellTransfer.sendSelected();
   });
   await transfer(gm).locator('[data-submit]:not([disabled])').waitFor();
-  await transfer(gm).getByRole('button',{name:'Placer caché',exact:true}).click();
+  await transfer(gm).getByRole('button',{name:'Placer en Hide (joueurs)',exact:true}).click();
   await transfer(gm).waitFor({state:'detached'});
   await e.waitForFunction(()=>window.ArchivesTokenSync?.bySource('cell:test:guard')?.revealed===false);
   assert.equal((await gm.evaluate(()=>window.fixture.scene())).items.length,1);
@@ -128,6 +124,6 @@ const frame=p=>p.frames().find(f=>f.url().includes('owl-editor=1'));
   assert.equal((await gm.evaluate(()=>window.fixture.scene())).items.length,1);
   assert.ok(!JSON.stringify(await player.evaluate(()=>window.fixture.wire())).includes('SECRET_FICHE_467'));
   assert.deepEqual(errors,[]);
-  console.log('V4.67: hidden local CHARACTER, Owlbear native hide/show, context reveal/hide, MJ live state, stable ID and position, secrets protected');
+  console.log('V4.69: native Hide/Show from initial token placement, GM context, stable ID/position and private sheets');
  }finally{await gmContext.close();await playerContext.close();await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1});
