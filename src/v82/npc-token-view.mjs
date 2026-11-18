@@ -2,7 +2,7 @@
 import OBR from '../../assets/owlbear-transfer-sdk-v55.mjs';
 import {assetKey,sceneKey,privateArtworkStore} from '../v58/model.mjs';
 import {validSession} from '../v56/link.mjs';
-import {ATTRIBUTES,COMBAT,SECTIONS,privateTokenSheet,updatePrivateTokenCondition} from './npc-token-model.mjs?v=4660';
+import {ATTRIBUTES,COMBAT,SECTIONS,privateTokenSheet,updatePrivateTokenCondition} from './npc-token-model.mjs?v=4700';
 const modalId='fr.archives-imaginaire.bridge/npc-token-view-v82';
 const $=id=>document.getElementById(id);
 const element=(tag,cls,text)=>{
@@ -132,7 +132,7 @@ function render(record,sheet){
     const section=element('section');section.append(element('h2',null,'Compétences et équipement'),details);
     sheetRoot.append(section);
   }
-  const tracks=element('section');tracks.append(element('h2',null,'Moniteurs de blessures'));
+  const tracks=element('section');tracks.append(element('h2',null,'Points de vie et moniteurs de blessures'));
   const grid=element('div','tracks');
   grid.append(track('physical','Physique',sheet.condition.physical),
     track('stun','Étourdissement',sheet.condition.stun));
