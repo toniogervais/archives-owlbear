@@ -7,6 +7,7 @@ on:
       - "src/v68/cell-brief.mjs"
       - "src/v80/**"
       - "src/v81/**"
+      - "tests/npc-sheet-v463.test.mjs"
       - "tests/npc-import-v464.test.mjs"
       - "tests/browser-v451.cjs"
       - "tests/browser-v463.cjs"
