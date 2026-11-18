@@ -1,0 +1,42 @@
+name: Pré-V5 — correctif sécurité Playwright
+on:
+  push:
+    branches:
+      - pre-v5/stabilisation-20261118
+    paths:
+      - '.github/workflows/update-playwright-pre-v5.yml'
+permissions:
+  contents: write
+jobs:
+  correctif:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Mettre à jour Playwright et verrouiller ses dépendances
+        run: npm install --package-lock-only --save-dev --save-exact --ignore-scripts playwright@1.55.1
+      - run: npm ci
+      - name: Aucune dépendance avec vulnérabilité élevée
+        run: npm audit --audit-level=high
+      - run: npm test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: package-lock-pre-v5
+          path: |
+            package.json
+            package-lock.json
+      - name: Enregistrer uniquement le correctif sur la branche de stabilisation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "security(pre-v5): update Playwright to 1.55.1"
+            git push origin HEAD:pre-v5/stabilisation-20261118
+          fi
