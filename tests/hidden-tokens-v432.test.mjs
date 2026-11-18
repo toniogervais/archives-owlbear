@@ -17,7 +17,7 @@ test('V4.69 — un token en Hide dans Owlbear est un item CHARACTER partagé mai
 
 test('V4.69 — l’ancien token local caché est migré sans changer de position ni être rendu visible',()=>{
   const code=read('src/v58/transfers.mjs');
-  assert.match(code,/if\(record\.kind!=='TOKEN'\|\|record\.revealed===true\|\|isDeleted\(record\)/);
+  assert.match(code,/if\(record\.kind!=='TOKEN'\|\|record\.revealed===true\|\|record\.nativeVisibility===true\|\|isDeleted\(record\)/);
   assert.match(code,/item\.visible=false/);
   assert.match(code,/Object\.assign\(record,pose\(local\)\)/);
   assert.match(code,/await deleteLocalItems\(\[record\.id\]\)/);
