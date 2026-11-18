@@ -23,16 +23,25 @@ h2{font-size:13px;color:#e7b2a5;letter-spacing:.05em;margin:0 0 10px;text-transf
 .tracks{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
 .track strong{display:flex;justify-content:space-between;gap:10px;color:#edc99c}
 .boxes{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
-.boxes i{width:17px;height:17px;border:1px solid #9e8869;border-radius:3px;background:#120f19}
-.boxes i.mark{background:#cf7773;border-color:#e4aaa4}
+.track-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:10px 0 5px}
+.track-field{display:grid;gap:4px;min-width:0;font-size:11px;color:#dcc7ab}
+.track-field input{width:100%;min-width:0;font:inherit;font-size:15px;padding:7px 8px;color:#fff2d7;background:#100d17;border:1px solid #a38a6c;border-radius:6px}
+.track-remaining{display:block;color:#b7abb9;font-size:11px;margin-bottom:5px}
+.boxes .track-box{display:block;flex:none;width:19px;height:19px;min-width:19px;min-height:19px;padding:0;border:1px solid #9e8869;border-radius:3px;background:#120f19}
+.boxes .track-box.mark{background:#cf7773;border-color:#e4aaa4}
+.boxes .track-box:hover{border-color:#f7c985}
+#save-status{margin:8px 0 0;color:#c7deb4;font-size:12px}
+#save-status.error{color:#f2abab}
+#save-status[hidden]{display:none!important}
 .prof{color:#b6a7b5;font-size:13px;margin:0}
 @media(max-width:420px){body{padding:10px}section{padding:9px}.stats{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}.stat{padding:5px 2px}.stat small{font-size:10px}.stat strong{font-size:15px}}
 </style>
-<script type="module" src="./src/v82/npc-token-view.mjs?v=4650"></script>
+<script type="module" src="./src/v82/npc-token-view.mjs?v=4660"></script>
 </head>
 <body>
 <header><div><div class="eyebrow">Les Archives · Fiche MJ · Shadowrun 6</div><h1 id="title">Personnage</h1></div>
 <button type="button" id="close" aria-label="Fermer la fiche">✕</button></header>
 <p id="status" role="status">Chargement des caractéristiques…</p>
+<p id="save-status" role="status" aria-live="polite" hidden></p>
 <main id="sheet" hidden aria-label="Caractéristiques du personnage"></main>
 </body></html>
