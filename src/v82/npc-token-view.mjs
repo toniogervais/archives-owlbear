@@ -132,7 +132,7 @@ function render(record,sheet){
     const section=element('section');section.append(element('h2',null,'Compétences et équipement'),details);
     sheetRoot.append(section);
   }
-  const tracks=element('section');tracks.append(element('h2',null,'Moniteurs de blessures'));
+  const tracks=element('section');tracks.append(element('h2',null,'Points de vie et moniteurs de blessures'));
   const grid=element('div','tracks');
   grid.append(track('physical','Physique',sheet.condition.physical),
     track('stun','Étourdissement',sheet.condition.stun));
