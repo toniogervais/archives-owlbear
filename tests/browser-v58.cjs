@@ -130,6 +130,7 @@ async function openCharacter(page){
   await managerRow(gm,'Page publique').getByRole('button',{name:'Cacher',exact:true}).waitFor();await waitShared(gm,4);
   wire=await player.evaluate(()=>window.fixture.wire());assert.ok(!JSON.stringify(wire).includes('PAGE ONE PRIVATE'));assert.ok(!JSON.stringify(wire).includes('528-secret'));
   await managerRow(gm,'Page publique').getByRole('button',{name:'Cacher',exact:true}).click();await waitShared(gm,4);await waitLocal(gm,0);
+  await gm.waitForFunction(async()=>(await window.fixture.scene()).items.find(item=>item.name==='Page publique')?.visible===false);
   assert.equal((await gm.evaluate(()=>window.fixture.scene())).items.find(item=>item.name==='Page publique').visible,false);
   await closeDialog(gm);
   // Scene changes invalidate an already-open transfer, before any new upload.
