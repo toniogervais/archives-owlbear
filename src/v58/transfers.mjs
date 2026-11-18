@@ -191,7 +191,7 @@ export async function installArtworkTransfers() {
       // V4.69: Convert legacy private tokens to actual Owlbear Hide items.
       // Characters remain on CHARACTER, with visible=false for players.
       for(const record of currentRecords){
-        if(record.kind!=='TOKEN'||record.revealed===true||isDeleted(record)||
+        if(record.kind!=='TOKEN'||record.revealed===true||record.nativeVisibility===true||isDeleted(record)||
            currentItems.some(item=>item.id===record.id&&item.metadata?.[assetKey]?.id===item.id))continue;
         if(closed||role!=='GM'||await OBR.player.getRole()!=='GM'||
            (await OBR.scene.getMetadata())?.[sceneKey]!==key)return;
@@ -202,7 +202,7 @@ export async function installArtworkTransfers() {
         item.visible=false;
         await OBR.scene.items.addItems([item]);
         currentItems.push(item);
-        record.revealed=false;
+        record.revealed=false;record.nativeVisibility=true;
         await store.put(record);
         if(local?.metadata?.[assetKey]?.id===record.id)
           await deleteLocalItems([record.id]);
@@ -224,6 +224,9 @@ export async function installArtworkTransfers() {
       for(const record of currentRecords){
         const item=currentItems.find(entry=>entry.id===record.id&&entry.metadata?.[assetKey]?.id===entry.id);
         if(!item)continue;
+        if(record.kind==='TOKEN'&&record.nativeVisibility!==true){
+          record.nativeVisibility=true;await store.put(record);
+        }
         const marker={...publicTokenMarker(record),privateForGM:false};
         if(JSON.stringify(item.metadata[assetKey])===JSON.stringify(marker))continue;
         await OBR.scene.items.updateItems([record.id],draft=>{
@@ -243,7 +246,8 @@ export async function installArtworkTransfers() {
       if(key&&role==="GM"&&!closed&&await OBR.player.getRole()==="GM"&&
           await OBR.scene.isReady()&&(await OBR.scene.getMetadata())?.[sceneKey]===key){
         const ids=new Set(currentItems.filter(item=>item.metadata?.[assetKey]?.id===item.id).map(item=>item.id));
-        const absent=currentRecords.filter(record=>record.revealed===true&&!ids.has(record.id));
+        const absent=currentRecords.filter(record=>
+          (record.revealed===true||record.nativeVisibility===true)&&!ids.has(record.id));
         for(const record of absent)await store.remove(record.id);
         const removed=new Set(absent.map(record=>record.id));currentRecords=currentRecords.filter(record=>!removed.has(record.id));
       }
@@ -284,6 +288,7 @@ export async function installArtworkTransfers() {
       });
     }
     record.revealed = reveal;
+    if(record.kind==='TOKEN')record.nativeVisibility=true;
     await store.put(record);
     await refresh();
     if(!reveal){
