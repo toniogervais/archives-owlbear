@@ -1,0 +1,68 @@
+/* V4.63 — Fiche MJ PNJ inspirée des encadrés Shadowrun 6. */
+#archives-cell-brief .npc-sheet{flex:none;border-top:1px solid #a47a7180;margin-top:10px;padding:11px 2px 4px;color:#f4eaf0;min-width:0}
+#archives-cell-brief .npc-sheet-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+#archives-cell-brief .npc-professionalism{display:flex;align-items:baseline;gap:9px;min-width:0;flex-wrap:wrap}
+#archives-cell-brief .npc-professionalism>span{font-size:11px;font-weight:850;color:#f2a5aa;letter-spacing:1.05px}
+#archives-cell-brief .npc-professionalism>strong{font-size:20px;line-height:1.1;color:#fff2e1}
+#archives-cell-brief .npc-sheet-edit{flex:none;width:34px;height:34px;display:grid;place-items:center;border:1px solid #e57883;border-radius:9px;color:#fff0ee;background:#572534;font-size:19px}
+#archives-cell-brief .npc-sheet-edit:hover{background:#803547}
+#archives-cell-brief .npc-stats-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin-bottom:8px;padding:8px 4px;border:1px solid #ac768052;border-radius:7px;background:#261722bf}
+#archives-cell-brief .npc-stats-grid.npc-combat{grid-template-columns:repeat(3,minmax(0,1fr))}
+#archives-cell-brief .npc-stat{text-align:center;min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px}
+#archives-cell-brief .npc-stat-label{color:#ff6b7f!important;font-weight:900;font-size:10px;letter-spacing:.3px;text-transform:uppercase;white-space:normal;overflow-wrap:anywhere}
+#archives-cell-brief .npc-stat-value{color:#fff5ef;font-size:12px;font-variant-numeric:tabular-nums;font-weight:730;overflow-wrap:anywhere;line-height:1.4}
+#archives-cell-brief .npc-sheet-info{padding:5px 1px 9px;display:flex;flex-direction:column;gap:5px}
+#archives-cell-brief .npc-info-line{display:flex;gap:4px;flex-wrap:wrap;font-size:12px;line-height:1.45}
+#archives-cell-brief .npc-info-line strong{color:#ff919c;font-weight:800}
+#archives-cell-brief .npc-info-line span{white-space:pre-wrap;overflow-wrap:anywhere;min-width:0}
+#archives-cell-brief .npc-monitors{display:flex;flex-direction:column;gap:10px;border-top:1px solid #9b626260;padding:10px 0}
+#archives-cell-brief .npc-track{min-width:0}
+#archives-cell-brief .npc-track-head{display:flex;align-items:baseline;gap:8px;justify-content:space-between;font-size:11px;margin-bottom:5px}
+#archives-cell-brief .npc-track-head strong{font-weight:850;color:#f6c4c9}
+#archives-cell-brief .npc-track-value{color:#fff1d9;font-variant-numeric:tabular-nums}
+#archives-cell-brief .npc-track-boxes{display:grid;grid-template-columns:repeat(auto-fill,minmax(21px,1fr));gap:5px}
+#archives-cell-brief .npc-track-box{appearance:none;-webkit-appearance:none;width:100%;height:23px;margin:0;border:1px solid #a5a0a8;border-radius:4px;background:#171520;cursor:pointer;position:relative;touch-action:manipulation}
+#archives-cell-brief .npc-track-box:checked{background:#b9475c;border-color:#f5a5ad}
+#archives-cell-brief .npc-track-box:checked:after{content:'×';color:white;font-size:19px;font-weight:900;position:absolute;inset:0;display:grid;place-items:center;line-height:1}
+#archives-cell-brief .npc-track-box:focus-visible{outline:3px solid #f6e0a9;outline-offset:2px}
+#archives-cell-brief .npc-track-empty{display:block;color:#ad9da8;font-size:11px;font-style:italic}
+#archives-cell-brief .brief-card[data-npc-sheet="true"] .brief-portrait{scrollbar-width:thin}
+#archives-cell-brief[data-count]:not([data-count="1"]) .brief-card[data-npc-sheet="true"] .brief-portrait{flex:0 1 62%;max-height:65%;min-height:150px}
+#archives-cell-brief[data-count]:not([data-count="1"]) .brief-card[data-npc-sheet="true"] .brief-figure{height:115px}
+@media(max-width:690px){
+ #archives-cell-brief .brief-card[data-npc-sheet="true"] .brief-portrait{max-height:60%;min-height:160px}
+ #archives-cell-brief .npc-stats-grid{gap:3px;padding:7px 3px}
+}
+#archives-npc-editor{box-sizing:border-box;width:min(820px,96vw);max-width:96vw;max-height:94dvh;margin:auto;padding:0;border:1px solid #be818c;border-radius:14px;background:#17131e;color:#f8edf2;box-shadow:0 18px 80px #000e;font:14px/1.5 "Segoe UI",system-ui,sans-serif;overflow:auto}
+#archives-npc-editor::backdrop{background:#070408dd}
+#archives-npc-editor *{box-sizing:border-box}
+#archives-npc-editor .npc-editor-form{display:flex;flex-direction:column;gap:0;min-width:0}
+#archives-npc-editor .npc-editor-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:15px 22px;border-bottom:1px solid #9a667a;background:#2b1d2d}
+#archives-npc-editor .npc-editor-eyebrow{display:block;color:#fa9cad;font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:850}
+#archives-npc-editor h2{font-size:20px;margin:4px 0 0;color:#fff0e8;overflow-wrap:anywhere}
+#archives-npc-editor button{font:inherit;cursor:pointer}
+#archives-npc-editor .npc-editor-close{width:38px;height:38px;flex:none;border:1px solid #d28d9b;border-radius:8px;background:#3b2333;color:#fff;font-size:22px}
+#archives-npc-editor .npc-editor-section{padding:15px 22px;border-bottom:1px solid #6e536251}
+#archives-npc-editor h3{font-size:13px;color:#ff899a;font-weight:850;text-transform:uppercase;letter-spacing:.6px;margin:0 0 10px}
+#archives-npc-editor h4{font-size:13px;margin:0 0 8px;color:#f5c5ca}
+#archives-npc-editor .npc-editor-grid{display:grid;gap:9px}
+#archives-npc-editor .npc-editor-attributes{grid-template-columns:repeat(5,minmax(0,1fr))}
+#archives-npc-editor .npc-editor-combat{grid-template-columns:repeat(3,minmax(0,1fr))}
+#archives-npc-editor .npc-editor-health{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+#archives-npc-editor .npc-editor-track{display:flex;flex-direction:column;gap:8px}
+#archives-npc-editor .npc-edit-field{display:flex;flex-direction:column;gap:4px;margin-bottom:8px;min-width:0}
+#archives-npc-editor .npc-edit-field>span{font-size:11px;color:#ff899a;font-weight:800;line-height:1.3}
+#archives-npc-editor input,#archives-npc-editor textarea{font:inherit;font-size:14px;color:#fff2f3;width:100%;max-width:100%;min-width:0;min-height:36px;padding:8px 9px;border:1px solid #876b7c;border-radius:7px;background:#100d19}
+#archives-npc-editor textarea{resize:vertical;min-height:54px}
+#archives-npc-editor input:focus-visible,#archives-npc-editor textarea:focus-visible{outline:2px solid #ef9ba7;outline-offset:1px}
+#archives-npc-editor .npc-editor-status{padding:0 22px;color:#ffacae}
+#archives-npc-editor .npc-editor-foot{position:sticky;bottom:0;display:flex;justify-content:flex-end;gap:10px;padding:12px 22px;background:#281a2e;border-top:1px solid #9d7085}
+#archives-npc-editor .npc-editor-foot button{min-height:40px;border-radius:8px;padding:8px 16px;border:1px solid #ad8b9b;background:#3b2a42;color:#fff1ed}
+#archives-npc-editor .npc-editor-foot .npc-editor-save{background:#842f47;border-color:#ef9baa;font-weight:800}
+@media(max-width:560px){
+ #archives-npc-editor .npc-editor-section{padding:12px}
+ #archives-npc-editor .npc-editor-attributes{grid-template-columns:repeat(3,minmax(0,1fr))}
+ #archives-npc-editor .npc-editor-combat{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #archives-npc-editor .npc-editor-health{grid-template-columns:1fr}
+ #archives-npc-editor .npc-editor-head,#archives-npc-editor .npc-editor-foot{padding:12px}
+}

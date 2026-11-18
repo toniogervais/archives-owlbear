@@ -6,8 +6,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="./src/v77/player.css?v=4620">
-<link rel="stylesheet" href="./src/v78/responsive.css?v=4620">
+<link rel="stylesheet" href="./src/v77/player.css?v=4630">
+<link rel="stylesheet" href="./src/v78/responsive.css?v=4630">
 <title>Les Archives de l’Imaginaire — Jeu de rôle</title>
 <style id="core-styles">
 :root {
@@ -5847,6 +5847,36 @@ window.DuneApp = (function() {
       });
       pushUndoSnapshot();node.gmDetails=values;saveState();window.dispatchEvent(new Event('archives:gm-details'));return true;
     },
+    // Shadowrun 6: données de PNJ privées, stockées avec les cellules de la campagne.
+    setNpcSheet: function(id,details) {
+      if(state.playerMode||state.strictReadOnly)return false;
+      var node=getNode(id);
+      if(!node||node.category!=="personnage"||!details||typeof details!=="object"||Array.isArray(details))return false;
+      var normalize=window.ArchivesNpcSheet?.normalize;
+      if(typeof normalize!=="function")return false;
+      var sheet=normalize(details);
+      if(!sheet||typeof sheet!=="object")return false;
+      pushUndoSnapshot();
+      node.npcSheet=sheet;
+      saveState();
+      window.dispatchEvent(new Event('archives:npc-sheet'));
+      return true;
+    },
+    setNpcCondition: function(id,kind,damage) {
+      if(state.playerMode||state.strictReadOnly)return false;
+      if(kind!=="physical"&&kind!=="stun")return false;
+      var node=getNode(id),normalize=window.ArchivesNpcSheet?.normalize;
+      if(!node||node.category!=="personnage"||typeof normalize!=="function")return false;
+      var sheet=normalize(node.npcSheet),monitor=sheet.condition[kind];
+      if(!Number.isInteger(damage)||damage<0||damage>monitor.total)return false;
+      if(monitor.damage===damage)return true;
+      pushUndoSnapshot();
+      monitor.damage=damage;
+      node.npcSheet=sheet;
+      saveState();
+      window.dispatchEvent(new Event('archives:npc-sheet'));
+      return true;
+    },
     copySelection: function(ids,targetId) {
       if(state.playerMode||state.strictReadOnly)throw Error('Sélection réservée au MJ.');
       var source=state.boards.find(function(b){return b.id===state.activeBoardId;}),target=state.boards.find(function(b){return b.id===targetId;});
@@ -6026,7 +6056,7 @@ window.DuneApp = (function() {
 
     openPlayerTab: function() {
       var baseUrl = window.location.href.split("?")[0].split("#")[0];
-      window.open(baseUrl + "?ro=1&v=4620" + (state.liveRoomId ? ("&room=" + encodeURIComponent(state.liveRoomId)) : ""), "_blank");
+      window.open(baseUrl + "?ro=1&v=4630" + (state.liveRoomId ? ("&room=" + encodeURIComponent(state.liveRoomId)) : ""), "_blank");
     },
 
     exportPlayerProgression: function() {
@@ -7196,15 +7226,15 @@ window.ArchivesRevealJournal={start,stop,refresh:()=>monitor?monitor.refresh():P
 
 })();
 </script>
-<link rel="stylesheet" href="./src/v56/bridge.css?v=4620">
-<script type="module" src="./src/v56/relay.mjs?v=4620"></script>
-<script type="module" src="./src/v56/navigation.mjs?v=4620"></script>
-<script type="module" src="./src/v58/main-relay.mjs?v=4620"></script>
-<script type="module" src="./src/v58/transfer-ui.mjs?v=4620"></script>
-<script type="module" src="./src/v60/library.mjs?v=4620"></script>
+<link rel="stylesheet" href="./src/v56/bridge.css?v=4630">
+<script type="module" src="./src/v56/relay.mjs?v=4630"></script>
+<script type="module" src="./src/v56/navigation.mjs?v=4630"></script>
+<script type="module" src="./src/v58/main-relay.mjs?v=4630"></script>
+<script type="module" src="./src/v58/transfer-ui.mjs?v=4630"></script>
+<script type="module" src="./src/v60/library.mjs?v=4630"></script>
 <script defer src="./src/v54/polish.js"></script>
 <script type="module" src="./src/v62/motion.mjs?v=4210"></script>
-<script type="module" src="./src/v63/workbench.mjs?v=4620"></script>
+<script type="module" src="./src/v63/workbench.mjs?v=4630"></script>
 </body>
 </html>
 <style id="v19-player-reveal-transitions">
@@ -7460,22 +7490,24 @@ body.player-mode .player-cell-resize:hover{opacity:1}
   #soundshow-sounds-dock > button {box-shadow:none!important}
 }
 </style>
-<script type="module" src="./src/v65/cell-picture.mjs?v=4620"></script>
-<script type="module" src="./src/v70/player-image.mjs?v=4620"></script>
-<script type="module" src="./src/v65/storage.mjs?v=4620"></script>
-<script type="module" src="./src/soundshow/archives.mjs?v=4620"></script>
-<script type="module" src="./src/v66/workspace.mjs?v=4620"></script>
-<script type="module" src="./src/v68/cell-brief.mjs?v=4620"></script>
+<script type="module" src="./src/v65/cell-picture.mjs?v=4630"></script>
+<script type="module" src="./src/v70/player-image.mjs?v=4630"></script>
+<script type="module" src="./src/v65/storage.mjs?v=4630"></script>
+<script type="module" src="./src/soundshow/archives.mjs?v=4630"></script>
+<script type="module" src="./src/v66/workspace.mjs?v=4630"></script>
+<link rel="stylesheet" href="./src/v80/npc-sheet.css?v=4630">
+<script type="module" src="./src/v80/npc-sheet.mjs?v=4630"></script>
+<script type="module" src="./src/v68/cell-brief.mjs?v=4630"></script>
 
 
-<script type="module" src="./src/v72/gm-details.mjs?v=4620"></script>
-<script type="module" src="./src/v72/selection.mjs?v=4620"></script>
-<script type="module" src="./src/v72/presentation.mjs?v=4620"></script>
-<script type="module" src="./src/v72/google-search.mjs?v=4620"></script>
+<script type="module" src="./src/v72/gm-details.mjs?v=4630"></script>
+<script type="module" src="./src/v72/selection.mjs?v=4630"></script>
+<script type="module" src="./src/v72/presentation.mjs?v=4630"></script>
+<script type="module" src="./src/v72/google-search.mjs?v=4630"></script>
 
-<script type="module" src="./src/v74/reserve-ui.mjs?v=4620"></script>
+<script type="module" src="./src/v74/reserve-ui.mjs?v=4630"></script>
 
-<script type="module" src="./src/v75/gm-description.mjs?v=4620"></script>
-<script type="module" src="./src/v77/touch-canvas.mjs?v=4620"></script>
-<script type="module" src="./src/v77/player-ui.mjs?v=4620"></script>
-<script type="module" src="./src/v78/responsive.mjs?v=4620"></script>
+<script type="module" src="./src/v75/gm-description.mjs?v=4630"></script>
+<script type="module" src="./src/v77/touch-canvas.mjs?v=4630"></script>
+<script type="module" src="./src/v77/player-ui.mjs?v=4630"></script>
+<script type="module" src="./src/v78/responsive.mjs?v=4630"></script>

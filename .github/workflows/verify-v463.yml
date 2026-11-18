@@ -1,0 +1,34 @@
+name: Validation V4.63 — fiches MJ et caractéristiques des PNJ
+on:
+  push:
+    branches: [main]
+    paths:
+      - "archives-app-v64-v55.html"
+      - "src/v68/cell-brief.mjs"
+      - "src/v80/**"
+      - "tests/npc-sheet-v463.test.mjs"
+      - "tests/browser-v463.cjs"
+      - ".github/workflows/verify-v463.yml"
+  workflow_dispatch:
+jobs:
+  tests-unitaires:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npm test
+  navigateur-npc:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: node tests/browser-v463.cjs

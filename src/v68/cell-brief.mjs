@@ -284,10 +284,15 @@ function renderCard(node,index){
     img.onerror=()=>photo.replaceChildren(el('span','brief-no-picture','Image indisponible'));photo.append(img);
   }else photo.append(el('span','brief-no-picture','Aucun portrait ou illustration associé à cette cellule'));
   const category=el('div','brief-subtitle',[node.category||'Cellule',node.faction||'',node.revealed?'Cellule révélée':'Cellule cachée'].filter(Boolean).join(' · '));category.id=id('category');portrait.append(picture,category);
+  card.dataset.npcSheet=String(node.category==='personnage');
   if(typeof url==='string'&&url){
     const show=el('button','brief-share-image','▣ Montrer l’image aux joueurs');show.type='button';
     show.title='Présenter uniquement l’image, sans révéler la cellule ni ses indices';
     show.onclick=()=>void window.ArchivesPresentation?.presentCell(node.id);portrait.append(show);
+  }
+  if(node.category==='personnage'){
+    const npc=window.ArchivesNpcSheet?.renderNpcPanel?.(node);
+    if(npc)portrait.append(npc);
   }
   for(const field of Array.isArray(node.gmDetails)?node.gmDetails:[]){
     const section=el('section','brief-gm-field');section.append(el('h3',null,field.title),el('div','brief-gm-text',field.text||''));portrait.append(section);
@@ -323,9 +328,9 @@ function renderDeck(){
   activeNodeIds=activeNodeIds.filter(id=>currentNode(id));
   if(!activeNodeIds.length){dialog.close();return}
   const deck=document.getElementById('archives-brief-deck'),scroll=new Map();
-  for(const card of deck.children)scroll.set(card.dataset.nodeId,[card.querySelector('.brief-desc').scrollTop,card.querySelector('.brief-clue-list').scrollTop]);
+  for(const card of deck.children)scroll.set(card.dataset.nodeId,[card.querySelector('.brief-desc').scrollTop,card.querySelector('.brief-clue-list').scrollTop,card.querySelector('.brief-portrait').scrollTop]);
   deck.replaceChildren(...activeNodeIds.map((id,index)=>renderCard(currentNode(id),index)));
-  for(const card of deck.children){const saved=scroll.get(card.dataset.nodeId);if(saved){card.querySelector('.brief-desc').scrollTop=saved[0];card.querySelector('.brief-clue-list').scrollTop=saved[1]}}
+  for(const card of deck.children){const saved=scroll.get(card.dataset.nodeId);if(saved){card.querySelector('.brief-desc').scrollTop=saved[0];card.querySelector('.brief-clue-list').scrollTop=saved[1];card.querySelector('.brief-portrait').scrollTop=saved[2]||0}}
   dialog.dataset.count=String(activeNodeIds.length);deck.style.setProperty('--brief-count',activeNodeIds.length);
   const select=document.getElementById('archives-brief-picker'),previous=select.value;
   select.replaceChildren(el('option',null,'Choisir une cellule…'));select.firstChild.value='';
@@ -410,6 +415,8 @@ function install(){
   schedule();
   window.addEventListener('archives:campaign-restored',schedule);
   window.addEventListener('archives:gm-details',schedule);
+  window.addEventListener('archives:npc-sheet',schedule);
+  window.addEventListener('archives:npc-sheet-ready',schedule);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule()});
 }
 window.ArchivesCellBrief={open,close:()=>document.getElementById(DIALOG_ID)?.close()};
