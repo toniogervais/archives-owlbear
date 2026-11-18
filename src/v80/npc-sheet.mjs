@@ -16,14 +16,14 @@ export function normalizeNpcSheet(input){
  for(const key of ATTRIBUTES)attributes[key]=bounded(raw.attributes?.[key],32);
  for(const key of COMBAT)combat[key]=bounded(raw.combat?.[key],72);
  for(const [key]of SECTIONS)sections[key]=bounded(raw.sections?.[key],12000);
- const professionalism=raw.professionalisme===''||raw.professionalisme==null?null:clamp(raw.professionalisme,0,99);
+ const professionalism=raw.professionnalisme===''||raw.professionnalisme==null?null:clamp(raw.professionnalisme,0,99);
  const condition={};
  for(const key of ['physical','stun']){
   const rawTrack=raw.condition?.[key]||{};
   const total=clamp(rawTrack.total,0,60);
   condition[key]={total,damage:clamp(rawTrack.damage,0,total)};
  }
- return {professionalisme:professionalism,attributes,combat,sections,condition};
+ return {professionnalisme:professionalism,attributes,combat,sections,condition};
 }
 function field(label,value,name,kind='text'){
  const wrapper=$('label','npc-edit-field');
@@ -32,7 +32,7 @@ function field(label,value,name,kind='text'){
  input.name=name;input.value=value==null?'':String(value);
  if(kind==='textarea'){input.rows=3;input.maxLength=12000}else{
   input.type=kind==='number'?'number':'text';
-  if(kind==='number'){input.min='0';input.max=name==='npc-professionalisme'?'99':'60';input.step='1'}
+  if(kind==='number'){input.min='0';input.max=name==='npc-professionnalisme'?'99':'60';input.step='1'}
   else input.maxLength=name.startsWith('attribute:')?32:72;
  }
  wrapper.append(input);
@@ -55,7 +55,7 @@ export function openNpcEditor(id){
  const head=$('header','npc-editor-head');
  head.append($('div',null,''));head.firstChild.append($('span','npc-editor-eyebrow','Fiche MJ · Shadowrun 6'),$('h2',null,node.title||'Personnage'));
  const close=$('button','npc-editor-close','×');close.type='button';close.setAttribute('aria-label','Fermer sans enregistrer');close.onclick=()=>dialog.close();head.append(close);form.append(head);
- const prof=$('section','npc-editor-section');prof.append($('h3',null,'Professionnalisme'),field('Professionnalisme',data.professionalisme,'npc-professionalisme','number'));form.append(prof);
+ const prof=$('section','npc-editor-section');prof.append($('h3',null,'Professionnalisme'),field('Professionnalisme',data.professionnalisme,'npc-professionnalisme','number'));form.append(prof);
  const attributes=$('section','npc-editor-section'),ag=$('div','npc-editor-grid npc-editor-attributes');
  attributes.append($('h3',null,'Caractéristiques'));
  for(const key of ATTRIBUTES)ag.append(field(key,data.attributes[key],'attribute:'+key));
@@ -82,7 +82,7 @@ export function openNpcEditor(id){
   event.preventDefault();
   if(!nodeOf(id)){status.hidden=false;status.textContent='La fiche MJ n’est plus disponible.';return}
   const read=name=>form.elements.namedItem(name)?.value??'';
-  const next={professionalisme:read('npc-professionalisme'),attributes:{},combat:{},sections:{},condition:{}};
+  const next={professionnalisme:read('npc-professionnalisme'),attributes:{},combat:{},sections:{},condition:{}};
   for(const key of ATTRIBUTES)next.attributes[key]=read('attribute:'+key);
   for(const key of COMBAT)next.combat[key]=read('combat:'+key);
   for(const [key]of SECTIONS)next.sections[key]=read('section:'+key);
@@ -94,7 +94,7 @@ export function openNpcEditor(id){
  });
  dialog.replaceChildren(form);
  if(!dialog.open)dialog.showModal();
- form.querySelector('[name="npc-professionalisme"]')?.focus();
+ form.querySelector('[name="npc-professionnalisme"]')?.focus();
  return true;
 }
 function statsGrid(fields,values,cls){
@@ -129,7 +129,7 @@ export function renderNpcPanel(node){
  const data=normalizeNpcSheet(node.npcSheet),panel=$('section','npc-sheet');
  panel.setAttribute('aria-label','Caractéristiques MJ du personnage');
  const head=$('div','npc-sheet-head'),prof=$('div','npc-professionalism');
- prof.append($('span',null,'PROFESSIONNALISME'),$('strong',null,data.professionalisme==null?'—':data.professionalisme));
+ prof.append($('span',null,'PROFESSIONNALISME'),$('strong',null,data.professionnalisme==null?'—':data.professionnalisme));
  const edit=$('button','npc-sheet-edit','✎');edit.type='button';edit.title='Modifier les caractéristiques et équipements';
  edit.setAttribute('aria-label','Modifier la fiche PNJ : caractéristiques, équipement et moniteurs');
  edit.addEventListener('click',()=>openNpcEditor(node.id));

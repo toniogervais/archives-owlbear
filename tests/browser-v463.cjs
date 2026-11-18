@@ -26,7 +26,7 @@ const data={activeBoardId:'a',boards:[{id:'a',name:'Acte Shadowrun',links:[],nod
   assert.equal(cssColor,'rgb(255, 107, 127)','red characteristic labels, as requested');
   await brief.getByRole('button',{name:'Modifier la fiche PNJ : caractéristiques, équipement et moniteurs'}).click();
   const editor=page.locator('#archives-npc-editor[open]');
-  await editor.locator('[name="npc-professionalisme"]').fill('3');
+  await editor.locator('[name="npc-professionnalisme"]').fill('3');
   await editor.locator('[name="attribute:CON"]').fill('5');
   await editor.locator('[name="attribute:VOL"]').fill('4');
   await editor.locator('[name="attribute:ESS"]').fill('4,7');
@@ -35,7 +35,7 @@ const data={activeBoardId:'a',boards:[{id:'a',name:'Acte Shadowrun',links:[],nod
   await editor.locator('[name="section:equipement"]').fill('Commlink de sécurité');
   await editor.locator('[name="track-total:physical"]').fill('11');
   await editor.locator('[name="track-total:stun"]').fill('10');
-  await editor.getByRole('button',{name:'Enregistrer'}).click();
+  await editor.getByRole('button',{name:'Enregistrer',exact:true}).click();
   await editor.waitFor({state:'hidden'});
   await page.waitForFunction(()=>DuneApp.getState().nodes[0].npcSheet?.condition.physical.total===11);
   await brief.locator('.npc-track-box').first().waitFor();
