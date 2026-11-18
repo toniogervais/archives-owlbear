@@ -4,7 +4,7 @@ import {isPacket,packet,validRoomId,validSession} from "../v56/link.mjs?v=4590";
 import { artworkBlob,assetKey,blobDigest,privateArtworkStore,sceneKey,validArtwork } from "./model.mjs?v=4590";
 import { normalizeCrop } from "../v61/token-crop.mjs";
 import {safeHostedImage} from "./hosted-assets.mjs?v=4590";
-import {normalizeTokenNpcSheet,publicTokenMarker} from '../v82/npc-token-model.mjs?v=4650';
+import {mergeTransferredTokenCondition,publicTokenMarker} from '../v82/npc-token-model.mjs?v=4660';
 
 // Only the GM talks to this local channel. Unrevealed artwork never enters a
 // shared item, broadcast, room metadata, public bucket, or player snapshot.
@@ -278,10 +278,11 @@ export async function installArtworkTransfers() {
     await requireGM(currentScene);await refresh();
     const previous = records.find(entry => entry.sourceKey === command.sourceKey && entry.kind === command.kind);
     const wasRevealed=previous ? Boolean(shared(previous.id)?.visible || previous.revealed) : false;
+    const npc=command.kind==='TOKEN'?mergeTransferredTokenCondition(previous,command.npcSheet):{sheet:null,origin:null};
     const record = {...previous,id:previous?.id || command.art.id,version:command.art.version,scene:currentScene,
       sourceKey:command.sourceKey,title:command.title.trim(),label:command.label===undefined?(previous?.label||''):command.label.trim(),kind:command.kind,image,grid:grid(command.kind,image),
       position:previous?.position || position || await centre(),scale:previous?.scale || {x:1,y:1},rotation:previous?.rotation || 0,locked:previous?.locked || false,
-      npcSheet:command.kind==='TOKEN'?normalizeTokenNpcSheet(command.npcSheet):null,revealed:false};
+      npcSheet:npc.sheet,npcConditionOrigin:npc.origin,revealed:false};
     deleted.delete(record.id);
     await store.put(record);
     const framing = command.framing;
