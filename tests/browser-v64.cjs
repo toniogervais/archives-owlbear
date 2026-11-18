@@ -50,7 +50,7 @@ async function contextAction(page,id){
   await app(gm).evaluate(()=>{window.DuneApp.getState().selectedId='portrait';window.DuneApp.openActiveEditor()});
   await editor(gm).locator('#archives-v45-transfer-button').click();
   // Un clic lance un transfert asynchrone : attendre aussi sa confirmation finale.
-  await editor(gm).locator('#archives-v45-transfer-button:not([disabled])').waitFor();
+  await app(gm).waitForFunction(()=>document.getElementById('archives-v45-transfer-button')?.disabled===false);
   // V4.69 : un pion Hide est dans la scène native, sur CHARACTER, visible=false.
   await gm.waitForFunction(async()=> (await window.fixture.scene()).items[0]?.visible===false);
   assert.deepEqual(await gm.evaluate(()=>window.fixture.pickers()),{upload:0,download:0},'configured private hosting places directly without native pickers');
@@ -61,7 +61,7 @@ async function contextAction(page,id){
   assert.equal(hidden.visible,false);
   assert.ok(!JSON.stringify(await gm.evaluate(()=>window.fixture.wire())).includes('DESCRIPTION_MJ_856'),'private scenario notes stay private');
   await contextAction(gm,'archives-ctx-owl-reveal');
-  await editor(gm).locator('#archives-v45-transfer-button:not([disabled])').waitFor();
+  await app(gm).waitForFunction(()=>document.getElementById('archives-v45-transfer-button')?.disabled===false);
   await gm.waitForFunction(async()=> (await window.fixture.scene()).items[0]?.visible===true);
   assert.equal((await gm.evaluate(()=>window.fixture.local())).length,0,'native Show has no local duplicate');
   assert.deepEqual(await gm.evaluate(()=>window.fixture.pickers()),{upload:0,download:0},'existing crop places directly, without either native picker');
@@ -76,7 +76,7 @@ async function contextAction(page,id){
   const framed=await gm.evaluate(async()=> (await window.fixture.scene()).items[0].image.url);
   assert.notEqual(framed,hidden.image.url);assert.deepEqual(await gm.evaluate(()=>window.fixture.pickers()),{upload:0,download:0});
   await contextAction(gm,'archives-ctx-owl-reveal');
-  await editor(gm).locator('#archives-v45-transfer-button:not([disabled])').waitFor();
+  await app(gm).waitForFunction(()=>document.getElementById('archives-v45-transfer-button')?.disabled===false);
   await gm.waitForFunction(async framed=>(await window.fixture.scene()).items[0]?.image.url===framed,framed);
   assert.deepEqual(await gm.evaluate(()=>window.fixture.pickers()),{upload:0,download:0},'direct placement reuses the manually adjusted framing');
   await app(gm).evaluate(()=>window.DuneApp.closeActiveEditor());
@@ -85,11 +85,11 @@ async function contextAction(page,id){
   await app(gm).evaluate(()=>window.ArchivesCatalogue.libraryPanel('images'));
   const libraryCard=editor(gm).locator('#archives-image-library-grid article').filter({hasText:'Portrait-bibliotheque'});
   await libraryCard.getByRole('button',{name:'Owlbear · Placer caché',exact:true}).click();
-  await editor(gm).locator('#archives-v45-transfer-button:not([disabled])').waitFor();
+  await app(gm).waitForFunction(()=>document.getElementById('archives-v45-transfer-button')?.disabled===false);
   await gm.waitForFunction(async()=> (await window.fixture.scene()).items.length===2 && (await window.fixture.scene()).items.some(item=>item.visible===false));
   assert.equal(await editor(gm).locator('#archives-owl-transfer').count(),0,'library character also skips a mandatory preview');
   await libraryCard.getByRole('button',{name:'Owlbear · Placer et révéler',exact:true}).click();
-  await editor(gm).locator('#archives-v45-transfer-button:not([disabled])').waitFor();
+  await app(gm).waitForFunction(()=>document.getElementById('archives-v45-transfer-button')?.disabled===false);
   await gm.waitForFunction(async()=> (await window.fixture.scene()).items.length===2);
   assert.deepEqual(await gm.evaluate(()=>window.fixture.pickers()),{upload:0,download:0},'same rendered portrait is reused across sources');
   assert.equal(await app(gm).evaluate(()=>window.fixtureCloudUploads.length),2,'only the original and changed crop require distinct stored images');
