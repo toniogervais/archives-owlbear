@@ -7,6 +7,87 @@ const pending = new Map();
 const $ = id => document.getElementById(id);
 let activeDialog;
 const directTransfers = new Set();
+// V4.68 — Sérialiser Hide/Show par token et ignorer les échos pendant l'envoi.
+const visibilityQueues=new Map(),visibilityPending=new Map();
+function matchCell(sourceKey,state){
+  if(typeof sourceKey!=='string'||!sourceKey.startsWith('cell:'))return null;
+  for(const board of state.boards||[])for(const node of board.nodes||[])
+    if(node.category==='personnage'&&
+       'cell:'+String(board.id)+':'+String(node.id)===sourceKey)
+      return {board,node};
+  return null;
+}
+function matchingSourceKeys(originalId,state){
+  const found=new Set();
+  for(const board of state.boards||[])for(const node of board.nodes||[]){
+    if(node.category==='personnage'&&(node.originalId||node.id)===originalId)
+      found.add('cell:'+String(board.id)+':'+String(node.id));
+  }
+  return found;
+}
+async function saveVisibility(record,revealed){
+  const id=record.id,oldQueue=visibilityQueues.get(id)||Promise.resolve();
+  const intention={desired:revealed};
+  visibilityPending.set(id,intention);
+  const run=oldQueue.catch(()=>{}).then(async()=>{
+    // A newer click supersedes an older change before it is sent.
+    if(visibilityPending.get(id)!==intention)return;
+    await request({action:'visibility',scene:tokenSync.scene,assetId:id,reveal:revealed});
+  }).catch(error=>{
+    if(visibilityPending.get(id)===intention){
+      notify('Synchronisation Owlbear impossible : '+(error?.message||'Erreur de liaison')+
+        '. La visibilité sera vérifiée de nouveau.');
+      // Do not falsely report success: restore the last confirmed Owlbear state.
+      const confirmed=tokenSync.byId(id);
+      if(confirmed&&typeof confirmed.revealed==='boolean')
+        window.DuneApp?.setTransferredCellReveal?.(confirmed.sourceKey,confirmed.revealed);
+    }
+  }).finally(async()=>{
+    if(visibilityPending.get(id)===intention){
+      visibilityPending.delete(id);
+      try{
+        // Request the authoritative native Owlbear state, even if its latest
+        // event arrived while the outgoing command was still in flight.
+        const fresh=await request({action:'list',scene:tokenSync.scene});
+        applyTokenSync({scene:fresh.scene,records:fresh.records.map(entry=>({
+          ...entry,private:entry.privateLayer!=='Owlbear · masqué'
+        }))},id);
+      }catch(error){
+        console.warn('Vérification de la visibilité Owlbear',error);
+      }
+    }
+    if(visibilityQueues.get(id)===run)visibilityQueues.delete(id);
+  });
+  visibilityQueues.set(id,run);
+  return run;
+}
+function propagateVisibility(originalId,revealed,exceptId){
+  let state;
+  try{state=gmState();}catch{return;}
+  const sources=matchingSourceKeys(originalId,state);
+  for(const record of tokenSync.records){
+    if(record.kind!=='TOKEN'||record.id===exceptId||!sources.has(record.sourceKey))continue;
+    if(visibilityPending.get(record.id)?.desired===revealed)continue;
+    if(record.revealed===revealed&&!visibilityPending.has(record.id))continue;
+    void saveVisibility(record,revealed);
+  }
+}
+async function onCellVisibility(detail){
+  let state;
+  try{state=gmState();}catch{return;}
+  if(!detail||typeof detail.revealed!=='boolean'||typeof detail.originalId!=='string')return;
+  // The cell remains fully editable when it was never transferred to Owlbear.
+  if(!tokenSync.scene){
+    try{
+      const fresh=await request({action:'list'});
+      tokenSync.scene=fresh.scene;
+      tokenSync.records=fresh.records.map(record=>({...record,
+        private:record.privateLayer!=='Owlbear · masqué'}));
+    }catch{return;}
+  }
+  propagateVisibility(detail.originalId,detail.revealed);
+}
+window.addEventListener('archives:cell-visibility',event=>{void onCellVisibility(event.detail);});
 const tokenSync={scene:'',records:[],byId(id){return this.records.find(r=>r.id===id)||null;},
   bySource(sourceKey){return this.records.find(r=>r.sourceKey===sourceKey)||null;}};
 window.ArchivesTokenSync=tokenSync;
@@ -16,13 +97,32 @@ function tokenStatus(record){
       (record.private?'caché · présent côté MJ (CHARACTER/PROP)':'masqué dans Owlbear · présent côté MJ'):
       'caché · ABSENT côté MJ');
 }
-function applyTokenSync(data){
+function applyTokenSync(data,forceId=null){
   try{gmState();}catch{return;}
   if(typeof data?.scene!=='string'||!Array.isArray(data.records)||data.records.length>3000)return;
   if(!data.records.every(r=>r&&typeof r.id==='string'&&typeof r.sourceKey==='string'&&
      typeof r.title==='string'&&['TOKEN','DOCUMENT'].includes(r.kind)))return;
+  const previous=new Map(tokenSync.records.map(item=>[item.id,item]));
   tokenSync.scene=data.scene;
   tokenSync.records=data.records;
+  // The Owlbear scene is authoritative for transferred tokens changed in Owlbear.
+  // Do not overwrite a cell while the MJ is sending its Hide/Show request.
+  const chosen=new Set();
+  const candidates=data.records.filter(item=>item.kind==='TOKEN'&&
+    item.sourceKey.startsWith('cell:')&&!visibilityPending.has(item.id)&&
+    (item.id===forceId||previous.get(item.id)?.revealed!==item.revealed));
+  for(const record of candidates){
+    const state=window.DuneApp?.getState?.();
+    const match=state&&!state.playerMode&&!state.strictReadOnly?matchCell(record.sourceKey,state):null;
+    if(!match)continue;
+    const originalId=match.node.originalId||match.node.id;
+    if(chosen.has(originalId))continue;
+    chosen.add(originalId);
+    window.DuneApp?.setTransferredCellReveal?.(record.sourceKey,record.revealed);
+    // A mirrored cell present in several acts may have several transferred
+    // tokens; keep all their Owlbear representations in the same state.
+    propagateVisibility(originalId,record.revealed,record.id);
+  }
   const dialog=activeDialog;
   if(dialog?.open){
     for(const row of dialog.querySelectorAll('.record[data-asset-id]')){
