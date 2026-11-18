@@ -1,0 +1,50 @@
+name: Validation V4.68 — Synchronisation des commandes Hide/Show
+on:
+  push:
+    branches:
+      - main
+      - fix/token-hide-show-two-way-v468
+    paths:
+      - 'archives-app-v64-v55.html'
+      - 'src/v58/**'
+      - 'src/v55/background.mjs'
+      - 'src/v83/**'
+      - 'tests/browser-v468.cjs'
+      - 'tests/browser-v467.cjs'
+      - '.github/workflows/verify-v468.yml'
+  workflow_dispatch:
+jobs:
+  tests-unitaires:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm test
+  synchronisation-bidirectionnelle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: node tests/browser-v468.cjs
+  regressions-tokens:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: node tests/browser-v467.cjs
+      - run: node tests/browser-v58.cjs
+      - run: node tests/browser-v465.cjs
