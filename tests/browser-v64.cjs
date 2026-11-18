@@ -49,7 +49,10 @@ async function contextAction(page,id){
   });
   await app(gm).evaluate(()=>{window.DuneApp.getState().selectedId='portrait';window.DuneApp.openActiveEditor()});
   await editor(gm).locator('#archives-v45-transfer-button').click();
-  await gm.waitForFunction(async()=>(await window.fixture.scene()).items.length===1);
+  await gm.waitForFunction(async()=>{
+    const items=(await window.fixture.scene()).items;
+    return items.length===1&&items[0]?.layer==='CHARACTER'&&items[0]?.visible===false;
+  });
   assert.deepEqual(await gm.evaluate(()=>window.fixture.pickers()),{upload:0,download:0},'configured private hosting places directly without native pickers');
   assert.equal(await editor(gm).locator('#archives-owl-transfer').count(),0,'direct action skips the preview and its extra submit');
   const hidden=(await gm.evaluate(()=>window.fixture.scene())).items[0];
