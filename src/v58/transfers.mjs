@@ -27,6 +27,24 @@ export async function installArtworkTransfers() {
   }
   const pose = item => ({position:item.position, scale:item.scale, rotation:item.rotation, locked:item.locked});
   const shared = id => items.find(item => item.id === id && item.metadata?.[assetKey]?.id === id);
+  function scheduleSync(){
+    clearTimeout(syncTimer);
+    syncTimer=setTimeout(()=>{
+      if(closed||role!=='GM'||!scene)return;
+      // Only delivered locally to this GM/browser; never broadcast to players.
+      const state={scene,records:records.filter(record=>!isDeleted(record)).map(record=>{
+        const native=shared(record.id)||locals.get(record.id);
+        return {id:record.id,sourceKey:record.sourceKey,title:record.title,kind:record.kind,
+          revealed:Boolean(shared(record.id)?.visible),visibleToGM:!!native,
+          private:!shared(record.id),position:native?.position||record.position};
+      })};
+      channel.postMessage({type:'artwork-sync',...state});
+      try{
+        if(primaryTab&&!primaryTab.closed&&primaryTab.location.origin===location.origin)
+          primaryTab.postMessage(packet('artwork-main-sync',{roomId:OBR.room.id,...state}),location.origin);
+      }catch{}
+    },90);
+  }
   const isDeleted = record => deleted.get(record.id)?.scene === record.scene && deleted.get(record.id)?.version === record.version;
   const grid = (kind, image) => ({dpi:kind === "TOKEN" ? Math.max(image.width,image.height) : 150,
     offset:{x:image.width / 2,y:image.height / 2}});
@@ -93,6 +111,7 @@ export async function installArtworkTransfers() {
         records=records.filter(entry=>entry.id!==record.id||entry.version!==marker.version);
       }
       await queueRender();
+      scheduleSync();
     }).catch(error=>console.warn("Suppression du transfert Owlbear",error));
   }
   // Local items are ephemeral Owlbear overlays. Reconcile against the *real*
@@ -395,7 +414,27 @@ export async function installArtworkTransfers() {
       if(before.metadata?.[assetKey]?.id===before.id)nativeDeletion(records.find(record=>record.id===before.id),before.metadata[assetKey].version);
     }
     value.forEach(item=>expectedSharedRemovals.delete(item.id));
-    items = value;void queueRender().catch(console.warn);
+    for(const item of value){
+      if(item.metadata?.[assetKey]?.id!==item.id)continue;
+      const record=records.find(entry=>entry.id===item.id&&!isDeleted(entry));
+      if(!record||record.version!==item.metadata?.[assetKey]?.version)continue;
+      const revealed=item.visible===true,nativePose=pose(item);
+      const label=typeof item.text?.plainText==='string'?item.text.plainText:null;
+      if(record.revealed===revealed&&JSON.stringify(pose(record))===JSON.stringify(nativePose)&&
+         (label===null||label===record.label))continue;
+      Object.assign(record,nativePose);record.revealed=revealed;if(label!==null)record.label=label;
+      const version=record.version,recordScene=record.scene;
+      commands=commands.catch(()=>{}).then(async()=>{
+        if(isDeleted(record))return;
+        await requireGM(recordScene);
+        const current=await store.get(item.id);
+        if(!current||current.version!==version||current.scene!==recordScene)return;
+        Object.assign(current,nativePose);current.revealed=revealed;
+        if(label!==null)current.label=label;
+        await store.put(current);
+      }).catch(error=>console.warn('Synchronisation token Owlbear',error));
+    }
+    items = value;void queueRender().then(scheduleSync).catch(console.warn);
   }));
   offs.push(OBR.scene.local.onChange(value => {
     if (role !== "GM" || closed) return;
@@ -408,8 +447,19 @@ export async function installArtworkTransfers() {
       if (!before || !record || isDeleted(record) || JSON.stringify(pose(before)) === JSON.stringify(pose(item))) continue;
       locals.set(item.id,item);
       Object.assign(record,pose(item));
-      commands = commands.then(async () => { if(isDeleted(record))return;await requireGM(record.scene);if(!isDeleted(record))await store.put(record); }).catch(console.warn);
+      commands = commands.then(async () => { if(isDeleted(record))return;await requireGM(record.scene);
+        const current=await store.get(record.id);
+        if(current?.version===record.version&&!isDeleted(record)){
+          Object.assign(current,pose(item));if(typeof item.text?.plainText==='string')current.label=item.text.plainText;
+          await store.put(current);
+        }
+      }).catch(console.warn);
     }
+    // Native "Hide" of a private token cannot erase it from the GM view.
+    if(value.some(item=>item.metadata?.[assetKey]?.id===item.id&&
+         (item.visible!==true||item.layer!==(records.find(r=>r.id===item.id)?.kind==='TOKEN'?'CHARACTER':'PROP'))))
+      void queueRender().catch(console.warn);
+    scheduleSync();
   }));
   offs.push(OBR.scene.onReadyChange(() => { void refresh().catch(console.warn); }));
   offs.push(OBR.scene.onMetadataChange(() => { void refresh().catch(console.warn); }));
@@ -426,7 +476,9 @@ export async function installArtworkTransfers() {
     closed = true;
     generation++;
     offs.forEach(off => off?.());
+    clearTimeout(syncTimer);
     if (locals.size) void OBR.scene.local.deleteItems(Array.from(locals.keys())).catch(() => {});
+    delete window.ArchivesTokenVisibility;
     channel.close();
     void commands.finally(() => store?.close());
   },{once:true});
@@ -441,6 +493,7 @@ export async function installArtworkTransfers() {
         !opener.location.pathname.endsWith('/archives-app-v64-v55.html'))return;
       primaryTab=opener;
       opener.postMessage(packet('artwork-main-ready',{roomId:OBR.room.id}),location.origin);
+      scheduleSync();
     }catch{}
   }
   function onMainCommand(event){
@@ -469,6 +522,12 @@ export async function installArtworkTransfers() {
   window.addEventListener('pagehide',()=>{
     clearInterval(announceTimer);window.removeEventListener('message',onMainCommand);
   },{once:true});
+  window.ArchivesTokenVisibility=(id,reveal)=>{
+    if(!validSession(id)||typeof reveal!=='boolean')return Promise.reject(Error('Identifiant de token invalide.'));
+    const run=commands.catch(()=>{}).then(()=>execute({action:'visibility',assetId:id,reveal}));
+    commands=run.catch(()=>{});
+    return run;
+  };
   await queuePurge();
   await refresh();
   announceMain();
