@@ -59,6 +59,7 @@ async function openArchives(p){await p.locator('#archives-tool').click();await e
   await gm.evaluate(()=>window.fixture.changeRole('GM'));
   await until(async()=>(await shared(gm)).length===1,'native token retained');
   assert.equal((await shared(gm))[0].visible,false);
+  await openArchives(gm); // Owlbear closes the editor on loss of GM role.
   // Image menu measures its real height; short screens scroll rather than clip.
   await app(gm).evaluate(()=>ArchivesCatalogue.libraryPanel('images'));await editor(gm).locator('#archives-image-library-files').setInputFiles([
    {name:'SECRET_FICHIER_PUBLIC_444.png',mimeType:'image/png',buffer:Buffer.from(pictures[0].split(',')[1],'base64')},{name:'SECRET_FICHIER_PRIVE_444.png',mimeType:'image/png',buffer:Buffer.from(pictures[1].split(',')[1],'base64')}
