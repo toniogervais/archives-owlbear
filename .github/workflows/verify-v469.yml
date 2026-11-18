@@ -52,3 +52,4 @@ jobs:
       - run: node tests/browser-v58.cjs
       - run: node tests/browser-v467.cjs
       - run: node tests/browser-v465.cjs
+      - run: node tests/browser-v63.cjs
