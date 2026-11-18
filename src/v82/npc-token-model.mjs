@@ -35,14 +35,26 @@ export function hasTokenNpcSheet(sheet) {
     ['physical','stun'].some(key=>Number(sheet.condition?.[key]?.total)>0)
   );
 }
+// Every Owlbear character has a private, editable sheet, even before any
+// statistics or health boxes have been entered in the Archives.
+export function emptyTokenNpcSheet() {
+  return {
+    professionnalisme:null,
+    attributes:Object.fromEntries(ATTRIBUTES.map(key=>[key,''])),
+    combat:Object.fromEntries(COMBAT.map(key=>[key,''])),
+    sections:Object.fromEntries(SECTIONS.map(([key])=>[key,''])),
+    condition:{physical:{total:0,damage:0},stun:{total:0,damage:0}}
+  };
+}
 export function privateTokenSheet(record) {
-  return record?.kind==='TOKEN' ? normalizeTokenNpcSheet(record.npcSheet) : null;
+  return record?.kind==='TOKEN' ?
+    normalizeTokenNpcSheet(record.npcSheet)||emptyTokenNpcSheet() : null;
 }
 
 // Public marker: never include the actual characteristics, notes or wounds.
 export function publicTokenMarker(record){
   return {id:record.id,version:record.version,kind:record.kind,
-    hasSheet:record.kind==='TOKEN'&&hasTokenNpcSheet(record.npcSheet)};
+    hasSheet:record.kind==='TOKEN'};
 }
 
 
@@ -68,8 +80,7 @@ export function updatePrivateTokenCondition(record,kind,patch){
   return {...record,npcSheet:sheet};
 }
 export function mergeTransferredTokenCondition(previous,input){
-  const sheet=normalizeTokenNpcSheet(input);
-  if(!sheet)return {sheet:null,origin:null};
+  const sheet=normalizeTokenNpcSheet(input)||emptyTokenNpcSheet();
   const origin={};
   for(const kind of kinds){
     const incoming={...sheet.condition[kind]};

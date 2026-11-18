@@ -1,0 +1,59 @@
+name: Validation V4.70 — clic token et points de vie Owlbear
+on:
+  push:
+    branches:
+      - main
+      - feature/npc-clickable-sheets-v470
+    paths:
+      - 'src/v82/**'
+      - 'src/v58/transfers.mjs'
+      - 'src/v55/background.mjs'
+      - 'tests/owlbear-fixture.cjs'
+      - 'tests/browser-npc-click-v470.cjs'
+      - 'tests/npc-import-v464.test.mjs'
+      - 'tests/npc-sheet-v463.test.mjs'
+      - 'tests/npc-token-v465.test.mjs'
+      - 'npc-token-v82.html'
+      - 'manifest-v55.json'
+      - 'archives.html'
+      - 'archives-app-v64-v55.html'
+      - 'background-v55.html'
+      - 'src/v57/room.mjs'
+      - '.github/workflows/verify-v470-npc.yml'
+  workflow_dispatch:
+jobs:
+  unitaire-et-securite:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm test
+  clic-et-fiche-owlbear:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: node tests/browser-npc-click-v470.cjs
+      - run: node tests/browser-v465.cjs
+  regression-tokens:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 23
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: node tests/browser-v468.cjs
+      - run: node tests/browser-v467.cjs
+      - run: node tests/browser-v58.cjs
