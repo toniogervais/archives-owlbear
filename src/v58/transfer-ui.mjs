@@ -62,7 +62,7 @@ function request(command,report) {
 }
 window.addEventListener("message",event => {
   if (event.source !== window.parent || event.origin !== location.origin || !isPacket(event.data) ||
-      !["owl-transfer-result","owl-transfer-progress"].includes(event.data.type)) return;
+      !["owl-transfer-result","owl-transfer-progress","owl-token-sync"].includes(event.data.type)) return;
   if(event.data.type==='owl-token-sync'){applyTokenSync(event.data);return;}
   const entry = pending.get(event.data.id);
   if (!entry) return;
