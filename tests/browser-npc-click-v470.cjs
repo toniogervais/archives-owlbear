@@ -60,9 +60,8 @@ const menuId='fr.archives-imaginaire.bridge/npc-token-sheet-v82';
   await view.getByRole('button',{name:'Fermer la fiche'}).click();
   await gm.locator('[id="'+modalId+'"]').waitFor({state:'detached'});
 
-  // Deselect/reselect opens the same saved health sheet; unchanged selection
-  // must not reopen automatically on unrelated Owlbear player updates.
-  await gm.evaluate(()=>fixture.selectToken(null));
+  // One more simple click opens the same saved sheet; closing the popup deselects the token.
+  // Unrelated Owlbear updates must not open another popup.
   await gm.evaluate(id=>fixture.selectToken(id),token.id);
   await view.locator('#sheet:not([hidden])').waitFor();
   await physical.locator('.track-count').getByText('4 / 12').waitFor();
