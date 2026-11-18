@@ -1,0 +1,58 @@
+name: Stabilisation pré-V5 — scénarios complets
+on:
+  push:
+    branches:
+      - stabilization/v470-pre-release
+    paths:
+      - 'src/**'
+      - 'archives-app-v64-v55.html'
+      - 'tests/**'
+      - '.github/workflows/verify-v470.yml'
+  workflow_dispatch:
+jobs:
+  unitaires-securite:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm test
+  validation-interface-joueurs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: node tests/browser-v65.cjs
+  validation-reconnexion-et-modes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: node tests/browser-v458.cjs
+      - run: node tests/browser-v459.cjs
+  validation-soundshow-et-transferts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 26
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: node tests/browser-v60.cjs
+      - run: node tests/browser-soundshow.cjs
+      - run: node tests/browser-soundshow-archives.cjs
