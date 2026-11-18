@@ -60,7 +60,7 @@ async function run(browser,mode){
   if(mode==='preview'){
    await page.locator('#quick-mode-switch').click();await page.locator('#archives-player-tools').waitFor({state:'hidden'});assert.equal(await page.locator('#quick-icon-dock').isVisible(),true);
    const popup=page.waitForEvent('popup');await page.evaluate(()=>DuneApp.openPlayerTab());const player=await popup;
-   await player.waitForURL(/\bv=4620\b/);assert.equal(new URL(player.url()).searchParams.get('v'),'4620','the second screen loads the current application version');await player.close();
+   await player.waitForURL(/\bv=4690\b/);assert.equal(new URL(player.url()).searchParams.get('v'),'4690','the second screen loads the current application version');await player.close();
   }
   assert.deepEqual(errors,[]);console.log('V4.58 desktop '+mode+': one toolbar, click across synchronization, organization, zoom, grip, collapse and hide/restore passed.');
  }finally{await context.close()}
