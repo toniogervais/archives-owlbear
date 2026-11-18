@@ -82,7 +82,11 @@ async function openCharacter(page){
   await frame(gm).evaluate(()=>window.ArchivesCellTransfer.showManager());
   await managerRow(gm,'Personnage secret').getByRole('button',{name:'Show',exact:true}).click();
   await waitShared(gm,1);
+  // La scene et l'index persistant Owlbear doivent confirmer le meme etat.
+  // Un instant fugace visible=true ne suffit pas apres un rechargement.
   await gm.waitForFunction(async()=> (await window.fixture.scene()).items[0]?.visible===true);
+  const confirmed=await frame(gm).evaluate(()=>window.ArchivesCellTransfer.request({action:'list'}));
+  assert.equal(confirmed.records.find(r=>r.title==='Personnage secret')?.revealed,true,'Owlbear confirms persisted Show');
   await waitLocal(gm,0);
   let item=(await gm.evaluate(()=>window.fixture.scene())).items[0];
   assert.equal(item.layer,'CHARACTER');assert.equal(item.id,hidden.id);assert.deepEqual(item.position,{x:123,y:456});assert.equal(item.image.url,hidden.image.url);assert.equal(item.visible,true);
