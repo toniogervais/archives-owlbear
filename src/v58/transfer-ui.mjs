@@ -243,7 +243,8 @@ async function openSource(input,report = notify) {
         const art = await renderSource(source,{kind,title,page,text:ui("text").value,includeText:ui("include").checked,crop:framing.crop});
         gmState();
         const hosted = await tryDirectHosting(art,message=>{if(dialog.open)ui("status").textContent=message;},true);
-        const result = await request({action:"transfer",scene:context.scene,sourceKey:source.key,kind,title,label:ui('label').value,reveal,art,hosted,framing},message => {
+        const result = await request({action:"transfer",scene:context.scene,sourceKey:source.key,kind,title,label:ui('label').value,reveal,art,hosted,framing,
+          npcSheet:kind==='TOKEN'?input.npcSheet:null},message => {
           if (dialog.open) ui("status").textContent = message;
         });
         if (!dialog.open) return;
@@ -262,7 +263,8 @@ async function openSource(input,report = notify) {
 }
 function cellSource(node,boardId) {
   return {key:"cell:" + String(boardId || "bibliotheque") + ":" + String(node.id),title:node.title,
-    kind:node.category === "personnage" ? "TOKEN" : "DOCUMENT",data:node.bgImg || node.image || node.imageData || "",text:node.desc || ""};
+    kind:node.category === "personnage" ? "TOKEN" : "DOCUMENT",data:node.bgImg || node.image || node.imageData || "",text:node.desc || "",
+    npcSheet:node.category==='personnage'?(node.npcSheet??null):null};
 }
 function imageSource(item) {
   return {key:'library:'+item.id,title:item.name,data:item.data,
@@ -291,7 +293,7 @@ async function placeSource(input,reveal = null) {
     gmState();
     const hosted = await tryDirectHosting(art,notify);
     const result = await request({action:'transfer',scene:context.scene,sourceKey:source.key,
-      kind:'TOKEN',title:source.title,reveal,art,hosted,framing},notify);
+      kind:'TOKEN',title:source.title,reveal,art,hosted,framing,npcSheet:input.npcSheet??null},notify);
     notify(result.revealed ? '« '+result.title+' » placé et révélé dans Owlbear.' :
       '« '+result.title+' » placé dans ta vue MJ, caché aux joueurs.');
   } catch (error) { notify(error.message); }
