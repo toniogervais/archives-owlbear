@@ -25,6 +25,7 @@ const transfer=page=>page.frameLocator('#viewer').frameLocator('#app').locator('
   await gm.waitForFunction(id=>!!window.fixture.contextMenus()[id],menuId);
   const icon=await gm.evaluate(id=>window.fixture.contextMenus()[id].icons[0],menuId);
   assert.deepEqual(icon.filter.roles,['GM'],'menu restricted to MJ');
+  assert.equal(await player.evaluate(id=>Boolean(window.fixture.contextMenus()[id]),menuId),false,'player menu must not be registered');
   assert.equal(icon.filter.max,1);
   await gm.locator('#archives-tool').click();
   await gm.frameLocator('#viewer').frameLocator('#app').locator('body').waitFor();
@@ -56,10 +57,55 @@ const transfer=page=>page.frameLocator('#viewer').frameLocator('#app').locator('
   assert.equal(await view.locator('#sheet .stat').count(),16);
   assert.ok((await view.locator('#sheet').textContent()).includes('GRAND_SECRET_PNJ_465'),'MJ sees saved notes');
   assert.ok((await view.locator('#sheet').textContent()).includes('3 / 10'),'damage monitor present');
+  const physical=view.locator('.track[data-kind="physical"]');
+  const stun=view.locator('.track[data-kind="stun"]');
+  await physical.locator('.track-box').nth(5).click();
+  await physical.locator('.track-count').getByText('6 / 10').waitFor();
+  await physical.getByRole('spinbutton',{name:'Physique — Cases totales'}).fill('12');
+  await physical.getByRole('spinbutton',{name:'Physique — Cases totales'}).press('Tab');
+  await physical.locator('.track-count').getByText('6 / 12').waitFor();
+  await stun.getByRole('spinbutton',{name:'Étourdissement — Dégâts'}).fill('4');
+  await stun.getByRole('spinbutton',{name:'Étourdissement — Dégâts'}).press('Tab');
+  await stun.locator('.track-count').getByText('4 / 9').waitFor();
   assert.equal(await player.locator('[id="'+modalId+'"]').count(),0,'no player sheet modal');
+  assert.ok(!JSON.stringify(await player.evaluate(()=>window.fixture.wire())).includes('6 / 12'),
+    'wounds are never sent to players');
   await view.getByRole('button',{name:'Fermer la fiche'}).click();
   await gm.locator('[id="'+modalId+'"]').waitFor({state:'detached'});
+  await gm.evaluate(({id,item})=>window.fixture.clickMenu(id,item),{id:menuId,item});
+  await view.locator('#sheet:not([hidden])').waitFor();
+  await physical.locator('.track-count').getByText('6 / 12').waitFor();
+  await stun.locator('.track-count').getByText('4 / 9').waitFor();
+  await view.getByRole('button',{name:'Fermer la fiche'}).click();
+  await gm.locator('[id="'+modalId+'"]').waitFor({state:'detached'});
+
+  // A later Archives transfer updates other fields without erasing GM wounds.
+  await frame.evaluate(()=>{
+    const state=window.DuneApp.getState(),npc=state.nodes.find(n=>n.id==='npc-v465');
+    npc.npcSheet.attributes.CON='7';state.selectedId=npc.id;
+    return window.ArchivesCellTransfer.sendSelected();
+  });
+  await transfer(gm).locator('[data-share]:not([disabled])').waitFor();
+  await transfer(gm).getByRole('button',{name:'Placer et révéler'}).click();
+  await transfer(gm).waitFor({state:'detached'});
+  await gm.waitForFunction(async()=>(await window.fixture.scene()).items.length===1);
+  const [updatedItem]= (await gm.evaluate(()=>window.fixture.scene())).items;
+  await gm.evaluate(({id,item})=>window.fixture.clickMenu(id,item),{id:menuId,item:updatedItem});
+  await view.locator('#sheet:not([hidden])').waitFor();
+  await view.getByText('7',{exact:true}).first().waitFor();
+  await physical.locator('.track-count').getByText('6 / 12').waitFor();
+  await stun.locator('.track-count').getByText('4 / 9').waitFor();
+  await view.getByRole('button',{name:'Fermer la fiche'}).click();
+  await gm.locator('[id="'+modalId+'"]').waitFor({state:'detached'});
+  
+  // Role changes remove the menu physically, not merely block its actions.
+  await gm.evaluate(()=>window.fixture.changeRole('PLAYER'));
+  await gm.waitForFunction(id=>!window.fixture.contextMenus()[id],menuId);
+  await gm.evaluate(()=>window.fixture.changeRole('GM'));
+  await gm.waitForFunction(id=>!!window.fixture.contextMenus()[id],menuId);
+  await player.waitForFunction(()=>document.querySelector('iframe#background')!==null);
+  assert.equal(await player.evaluate(id=>Boolean(window.fixture.contextMenus()[id]),menuId),false);
   assert.deepEqual(errors,[]);
-  console.log('V4.65 — token -> fiche MJ Owlbear, 16 statistics, damage tracks, and private notes never broadcast');
+  console.log('V4.66 — GM-only menu and role changes, editable wounds, persistent state, no player leak, later transfer keeps damage');
  }finally{await gmContext.close();await playerContext.close();await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});
