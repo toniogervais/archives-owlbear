@@ -1,4 +1,7 @@
 name: Pré-V5 — contrôles de non-régression
+concurrency:
+  group: pre-v5-validation-${{ github.ref }}
+  cancel-in-progress: true
 on:
   push:
     branches:
