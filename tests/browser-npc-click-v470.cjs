@@ -46,7 +46,7 @@ const menuId='fr.archives-imaginaire.bridge/npc-token-sheet-v82';
   await view.locator('#sheet:not([hidden])').waitFor();
   assert.equal(await view.locator('#title').textContent(),'Personnage sans fiche');
   assert.equal(await view.locator('#sheet .stat').count(),16);
-  assert.ok((await view.locator('#sheet').innerText()).includes('Points de vie'));
+  assert.equal(await view.locator('#sheet .track').count(),2,'les deux compteurs de points de vie sont affichés');
   const physical=view.locator('.track[data-kind="physical"]');
   await physical.getByRole('spinbutton',{name:'Physique — Cases totales'}).fill('12');
   await physical.getByRole('spinbutton',{name:'Physique — Cases totales'}).press('Tab');
