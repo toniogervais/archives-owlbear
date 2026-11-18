@@ -125,7 +125,7 @@ async function closePane(page,id){await pane(page,id).locator('header button').c
   debug('public dossier and focus');
   await app(gm).evaluate(()=>window.ArchivesCellTransfer.showManager());
   const transfer=()=>pane(gm,'archives-owl-transfer');
-  await transfer().locator('.record').filter({hasText:'Portrait montré'}).getByRole('button',{name:'Révéler',exact:true}).click();
+  await transfer().locator('.record').filter({hasText:'Portrait montré'}).getByRole('button',{name:'Show',exact:true}).click();
   await gm.waitForFunction(async()=>(await window.fixture.scene()).items.length===1);
   await closePane(gm,'archives-owl-transfer');
   await editor(player).locator('#archives-dossier-open').click();
