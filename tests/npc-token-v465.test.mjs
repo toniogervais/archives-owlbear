@@ -57,7 +57,7 @@ test('V4.65 — le transfert, les lots et la fenêtre utilisent la même fiche p
   const menu=readFileSync('src/v82/npc-token-context.mjs','utf8');
   const background=readFileSync('src/v55/background.mjs','utf8');
   assert.match(transfer,/npcSheet:npc\.sheet,npcConditionOrigin:npc\.origin/);
-  assert.match(transfer,/\.metadata\(\{\[assetKey\]:publicTokenMarker\(record\)\}\)/);
+  assert.ok(transfer.includes('.metadata({[assetKey]:{...publicTokenMarker(record),privateForGM:hidden}})'));
   assert.match(ui,/npcSheet:node\.category==='personnage'/);
   assert.match(batch,/npcSheet:state\.kind\.value==='TOKEN'/);
   assert.match(viewer,/await OBR\.player\.getRole\(\)!=='GM'/);
