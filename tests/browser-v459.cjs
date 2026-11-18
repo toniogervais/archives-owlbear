@@ -62,6 +62,7 @@ async function native(browser){
   await app(g).evaluate(()=>{ArchivesCloudBridge={getClient:()=>({auth:{getUser:async()=>({data:{user:{id:'12345678-1234-1234-1234-123456789abc'}}})},storage:{from:()=>({upload:async()=>({data:{}}),createSignedUrl:async path=>({data:{signedUrl:'https://fixture-project.supabase.co/storage/v1/object/sign/archives-owlbear-assets/'+path+'?token=fixture'}})})}})};});
   await app(g).evaluate(()=>{window.placed=ArchivesCellTransfer.placeCell(DuneApp.getState().nodes[0],'a',false);});
   // Depuis V4.67, un token Hide est un vrai item de scène, et non un pion local.
+  await app(g).evaluate(()=>window.placed);
   await g.waitForFunction(async()=> (await fixture.scene()).items.length===1);
   const token=await g.evaluate(async()=> (await fixture.scene()).items[0]);
   assert.equal(token.visible,false,'Hide natif dès le placement');
