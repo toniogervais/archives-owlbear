@@ -14,12 +14,11 @@ async function setTokenVisibility(sourceKey,reveal){
   gmState();
   if(typeof sourceKey!=='string'||!sourceKey||typeof reveal!=='boolean')
     throw Error('Choisis la visibilité du token.');
-  let record=tokenSync.bySource(sourceKey);
-  if(!record){
-    const fresh=await request({action:'list'});
-    applyTokenSync({scene:fresh.scene,records:fresh.records});
-    record=tokenSync.bySource(sourceKey);
-  }
+  // Always use the current Owlbear scene; a cached token from a previous
+  // scene must never change another character by mistake.
+  const fresh=await request({action:'list'});
+  applyTokenSync({scene:fresh.scene,records:fresh.records});
+  const record=tokenSync.bySource(sourceKey);
   if(!record || record.kind!=='TOKEN')
     throw Error('Ce personnage n’a pas encore de token dans la scène Owlbear. Envoie-le d’abord.');
   const id=record.id,scene=tokenSync.scene;
