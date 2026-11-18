@@ -1,0 +1,52 @@
+name: Validation V4.65 — caractéristiques des tokens Owlbear
+on:
+  push:
+    branches:
+      - main
+      - feature/npc-token-sheets-v465
+    paths:
+      - 'src/v82/**'
+      - 'src/v58/transfers.mjs'
+      - 'src/v58/transfer-ui.mjs'
+      - 'src/v63/batch.mjs'
+      - 'src/v55/background.mjs'
+      - 'archives-app-v64-v55.html'
+      - 'npc-token-v82.html'
+      - 'tests/npc-token-v465.test.mjs'
+      - 'tests/browser-v465.cjs'
+      - 'tests/owlbear-fixture.cjs'
+      - '.github/workflows/verify-v465.yml'
+  workflow_dispatch:
+jobs:
+  tests-unitaires:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm test
+  tests-navigateur:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: node tests/browser-v465.cjs
+  regression-transferts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: node tests/browser-v58.cjs

@@ -13,7 +13,7 @@ function fixture({sceneReady=false,inviteReadyDelay=0,captureRasters=false}={}) 
  const name=params.get("joueur")||"MJ",connectionId="fixture-"+name;
  const player={role,name,connectionId};
  const ref=btoa(location.origin+" fixture-single-room"),listeners=new Map();
- let localItems=[];const uploads=[],focus=[],modals=[],pickers={upload:0,download:0};let cancelPick=false,modalLayer=100;
+ let localItems=[];const uploads=[],focus=[],modals=[],contextMenus={},pickers={upload:0,download:0};let cancelPick=false,modalLayer=100;
  function post(frame,id,data){frame?.contentWindow?.postMessage({id,data},archives)}
  function allPost(id,data){for(const frame of document.querySelectorAll("iframe"))post(frame,id,data)}
  function modalFrame(id){return document.getElementById(id===viewerId?"viewer":id===inviteId?"invite":id)}
@@ -40,7 +40,9 @@ function fixture({sceneReady=false,inviteReadyDelay=0,captureRasters=false}={}) 
   injectLocal(item){localItems.push(item);allPost("OBR_SCENE_LOCAL_EVENT_CHANGE",{items:localItems})},
   deleteLocal(ids){localItems=localItems.filter(item=>!ids.includes(item.id));allPost("OBR_SCENE_LOCAL_EVENT_CHANGE",{items:localItems})},
   deleteShared:ids=>fixtureHub("deleteItems",{ids}),
-  local:()=>localItems,uploads:()=>uploads,pickers:()=>pickers,focus:()=>focus,modals:()=>modals,cancelPick:()=>{cancelPick=true},
+  local:()=>localItems,uploads:()=>uploads,pickers:()=>pickers,focus:()=>focus,modals:()=>modals,
+  contextMenus:()=>contextMenus,clickMenu:(id,item)=>allPost('OBR_CONTEXT_MENU_EVENT_CLICK',{id,context:{items:[item]},elementId:id}),
+  cancelPick:()=>{cancelPick=true},
   scene:()=>fixtureHub("scene"),wire:()=>fixtureHub("wire"),setScene:()=>fixtureHub("newScene"),
   moveShared:(id,position)=>fixtureHub("updateItems",{updates:[{id,position}]})
  };
@@ -87,6 +89,8 @@ function fixture({sceneReady=false,inviteReadyDelay=0,captureRasters=false}={}) 
    case "OBR_BROADCAST_SUBSCRIBE":if(!listeners.has(event.source))listeners.set(event.source,new Set());listeners.get(event.source).add(data.channel);break;
    case "OBR_BROADCAST_UNSUBSCRIBE":listeners.get(event.source)?.delete(data.channel);break;
    case "OBR_BROADCAST_SEND_MESSAGE":await fixtureHub("broadcast",data);break;
+   case 'OBR_CONTEXT_MENU_CREATE':contextMenus[data.id]=data;break;
+   case 'OBR_CONTEXT_MENU_REMOVE':delete contextMenus[data.id];break;
    case "OBR_MODAL_OPEN":modals.push({action:'open',...data});addFrame(data.url,data.id);break;
    case "OBR_MODAL_CLOSE":modals.push({action:'close',...data});setTimeout(()=>modalFrame(data.id)?.remove(),0);break;
   }if(nonce)event.source.postMessage({id:id+"_RESPONSE"+nonce,data:reply},archives)})().catch(console.error);

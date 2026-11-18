@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fiche du personnage · Les Archives</title>
+<style>
+:root{font:14px/1.48 "Segoe UI",system-ui,sans-serif;color-scheme:dark;background:#130f18;color:#f1e5d1}
+*{box-sizing:border-box}body{margin:0;padding:16px;min-height:100dvh}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;border-bottom:1px solid #a886514a;padding:0 0 13px}
+.eyebrow{color:#b99b76;text-transform:uppercase;letter-spacing:.14em;font-size:10px}
+h1{font:600 clamp(19px,4vw,27px) Georgia,serif;color:#f5dbaf;margin:3px 0 0;overflow-wrap:anywhere}
+button{background:#30243a;border:1px solid #b39166;border-radius:8px;color:#f8e5c7;cursor:pointer;padding:8px 13px;font:inherit}
+button:hover{background:#44314e}button:focus-visible{outline:2px solid #f3ca79;outline-offset:3px}
+#status{padding:16px 2px;color:#dcc39b}#status[hidden],#sheet[hidden]{display:none!important}
+#sheet{display:grid;gap:12px;padding-top:14px}section{min-width:0;border:1px solid #725f4a72;border-radius:11px;padding:12px;background:#211b28}
+h2{font-size:13px;color:#e7b2a5;letter-spacing:.05em;margin:0 0 10px;text-transform:uppercase}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(58px,1fr));gap:7px}
+.stat{display:grid;gap:3px;min-width:0;text-align:center;border-radius:8px;padding:8px 3px;background:#100d17;border:1px solid #ffffff12}
+.stat small{font-size:11px;font-weight:700;color:#ee9b9b;white-space:nowrap}.stat strong{font-size:17px;color:#fff4dc;overflow-wrap:anywhere}
+.details{display:grid;gap:8px}.detail{border-bottom:1px solid #ffffff12;padding-bottom:8px}
+.detail:last-child{border-bottom:0;padding-bottom:0}.detail strong{color:#f1ce9f;display:block;margin-bottom:4px}
+.detail div{white-space:pre-wrap;overflow-wrap:anywhere}
+.tracks{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.track strong{display:flex;justify-content:space-between;gap:10px;color:#edc99c}
+.boxes{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.boxes i{width:17px;height:17px;border:1px solid #9e8869;border-radius:3px;background:#120f19}
+.boxes i.mark{background:#cf7773;border-color:#e4aaa4}
+.prof{color:#b6a7b5;font-size:13px;margin:0}
+@media(max-width:420px){body{padding:10px}section{padding:9px}.stats{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}.stat{padding:5px 2px}.stat small{font-size:10px}.stat strong{font-size:15px}}
+</style>
+<script type="module" src="./src/v82/npc-token-view.mjs?v=4650"></script>
+</head>
+<body>
+<header><div><div class="eyebrow">Les Archives · Fiche MJ · Shadowrun 6</div><h1 id="title">Personnage</h1></div>
+<button type="button" id="close" aria-label="Fermer la fiche">✕</button></header>
+<p id="status" role="status">Chargement des caractéristiques…</p>
+<main id="sheet" hidden aria-label="Caractéristiques du personnage"></main>
+</body></html>

@@ -119,7 +119,8 @@ export async function openBatch() {
         const framing = {identity:state.source.identity,page:Number(state.page.value),crop:state.crop.getState()};
         const art = await renderSource(state.source,{kind:state.kind.value,title:state.title.value.trim(),page:framing.page,crop:framing.crop,
           text:state.source.text,includeText:!state.source.bitmap && !state.source.pdf && !!state.source.text});
-        commands.push({sourceKey:state.input.key,kind:state.kind.value,title:state.title.value.trim(),art,framing});
+        commands.push({sourceKey:state.input.key,kind:state.kind.value,title:state.title.value.trim(),art,framing,
+          npcSheet:state.kind.value==='TOKEN'?(state.input.npcSheet??null):null});
       }
       const result = await window.ArchivesCellTransfer.request({action:'batch',scene:context.scene,reveal,commands},message => { if (dialog.open) status.textContent = message; });
       if (!dialog.open) return;dialog.close();notice(result.count+' élément(s) placé(s) '+(result.revealed ? 'et révélé(s) dans Owlbear.' : 'dans ta vue MJ, cachés aux joueurs.'));
@@ -130,7 +131,8 @@ export async function openBatch() {
   try {
     const state = window.DuneApp.getState();
     sources = state.boards.flatMap(board => board.nodes.map(node => ({key:'cell:'+board.id+':'+node.id,title:node.title || 'Sans titre',
-      kind:node.category === 'personnage' ? 'TOKEN' : 'DOCUMENT',data:node.bgImg || node.image || node.imageData || '',text:node.desc || '',group:'cell',label:'Cellule · '+board.name})));
+      kind:node.category === 'personnage' ? 'TOKEN' : 'DOCUMENT',data:node.bgImg || node.image || node.imageData || '',text:node.desc || '',
+      npcSheet:node.category==='personnage'?(node.npcSheet??null):null,group:'cell',label:'Cellule · '+board.name})));
     const files = await libraryRequest({action:'list'}),images = await catalogImages();if (closed) return;
     sources.push(...files.entries.filter(entry => entry.kind === 'DOCUMENT').map(entry => ({key:'documents:'+entry.id,fileId:entry.id,title:entry.title,kind:'DOCUMENT',group:'file',label:'Document · '+entry.name})));
     sources.push(...images.map(image => ({key:'library:'+image.id,title:image.name,data:image.data,kind:image.category === 'personnage' ? 'TOKEN' : 'DOCUMENT',group:'image',label:'Bibliothèque d’images'})));

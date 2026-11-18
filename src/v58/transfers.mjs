@@ -4,6 +4,7 @@ import {isPacket,packet,validRoomId,validSession} from "../v56/link.mjs?v=4590";
 import { artworkBlob,assetKey,blobDigest,privateArtworkStore,sceneKey,validArtwork } from "./model.mjs?v=4590";
 import { normalizeCrop } from "../v61/token-crop.mjs";
 import {safeHostedImage} from "./hosted-assets.mjs?v=4590";
+import {normalizeTokenNpcSheet,publicTokenMarker} from '../v82/npc-token-model.mjs?v=4650';
 
 // Only the GM talks to this local channel. Unrevealed artwork never enters a
 // shared item, broadcast, room metadata, public bucket, or player snapshot.
@@ -54,7 +55,7 @@ export async function installArtworkTransfers() {
       .plainText(record.label||'').textItemType("LABEL")
       .layer(hidden ? "POPOVER" : (record.kind === "TOKEN" ? "CHARACTER" : "PROP"))
       .position(record.position).visible(true)
-      .metadata({[assetKey]:{id:record.id,version:record.version}}).build();
+      .metadata({[assetKey]:publicTokenMarker(record)}).build();
     Object.assign(item,pose(record));
     // Private tokens must be clearly visible to the GM. The local scene keeps
     // them entirely absent from the shared scene, regardless of opacity.
@@ -127,7 +128,8 @@ export async function installArtworkTransfers() {
            current.image?.width!==desired.image?.width ||
            current.image?.height!==desired.image?.height ||
            current.visible!==true ||
-           current.name!==desired.name || current.layer!==desired.layer || current.text?.plainText!==desired.text?.plainText){
+           current.name!==desired.name || current.layer!==desired.layer || current.text?.plainText!==desired.text?.plainText ||
+           current.metadata?.[assetKey]?.hasSheet!==desired.metadata?.[assetKey]?.hasSheet){
           const updated={...desired,...pose(current)};
           await OBR.scene.local.updateItems([record.id],draft=>{Object.assign(draft[0],updated);});
           locals.set(record.id,updated);
@@ -227,7 +229,9 @@ export async function installArtworkTransfers() {
     typeof command.title === 'string' && !!command.title.trim() && command.title.length <= 120 && validArtwork(command.art) &&
     (command.label===undefined||typeof command.label==='string'&&command.label.length<=120) &&
     (!command.hosted || (safeHostedImage(command.hosted)&&command.hosted.mime===command.art.mime&&
-      command.hosted.width===command.art.width&&command.hosted.height===command.art.height));
+      command.hosted.width===command.art.width&&command.hosted.height===command.art.height)) &&
+    (command.npcSheet==null || (command.kind==='TOKEN' && typeof command.npcSheet==='object' &&
+      !Array.isArray(command.npcSheet) && JSON.stringify(command.npcSheet).length<=100000));
   async function nativeImages(batch,progress) {
     const entries = [],missing = new Map();
     for (const command of batch) {
@@ -276,7 +280,8 @@ export async function installArtworkTransfers() {
     const wasRevealed=previous ? Boolean(shared(previous.id)?.visible || previous.revealed) : false;
     const record = {...previous,id:previous?.id || command.art.id,version:command.art.version,scene:currentScene,
       sourceKey:command.sourceKey,title:command.title.trim(),label:command.label===undefined?(previous?.label||''):command.label.trim(),kind:command.kind,image,grid:grid(command.kind,image),
-      position:previous?.position || position || await centre(),scale:previous?.scale || {x:1,y:1},rotation:previous?.rotation || 0,locked:previous?.locked || false,revealed:false};
+      position:previous?.position || position || await centre(),scale:previous?.scale || {x:1,y:1},rotation:previous?.rotation || 0,locked:previous?.locked || false,
+      npcSheet:command.kind==='TOKEN'?normalizeTokenNpcSheet(command.npcSheet):null,revealed:false};
     deleted.delete(record.id);
     await store.put(record);
     const framing = command.framing;
