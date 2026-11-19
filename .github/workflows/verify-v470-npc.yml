@@ -4,6 +4,7 @@ on:
     branches:
       - main
       - feature/npc-clickable-sheets-v470
+      - fix/token-menu-native-v471
     paths:
       - 'src/v82/**'
       - 'src/v58/transfers.mjs'
