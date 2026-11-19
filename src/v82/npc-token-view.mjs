@@ -19,13 +19,8 @@ function feedback(message,error=false){
   saveStatus.hidden=false;
 }
 $('close').addEventListener('click',()=>{
-  void (async()=>{
-    // Libérer la sélection après fermeture pour qu'un simple nouveau clic sur
-    // le même token puisse rouvrir sa fiche, sans geste supplémentaire.
-    if(currentId&&await OBR.player.getRole()==='GM')
-      await OBR.player.deselect([currentId]).catch(()=>{});
-    await OBR.modal.close(modalId);
-  })().catch(()=>feedback('Impossible de fermer la fiche depuis Owlbear.',true));
+  // Ne pas toucher à la sélection : Owlbear garde toutes ses actions natives.
+  void OBR.modal.close(modalId).catch(()=>feedback('Impossible de fermer la fiche depuis Owlbear.',true));
 });
 window.addEventListener('pagehide',()=>{active=false;},{once:true});
 function stats(title,keys,values){
