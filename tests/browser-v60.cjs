@@ -117,7 +117,10 @@ async function present(page,title,publicTitle){
   await library(gm).screenshot({path:'/tmp/archives-library-v60.png'});
   await card(gm,'ENREGISTREMENT_PRIVE_466').getByRole('button',{name:'Aperçu et présentation…',exact:true}).click();
   assert.equal(await library(gm).locator('[data-reveal]').isChecked(),false);
-  await library(gm).getByRole('button',{name:'Arrêter la présentation',exact:true}).click();
+  // L'ouverture de l'aperçu charge le média de façon asynchrone.
+  // Attendre le vrai bouton visible et actif avant de demander l'arrêt.
+  await library(gm).locator('[data-preview]:not([hidden]) [data-present]:not([disabled])').waitFor();
+  await library(gm).locator('[data-preview] [data-present]').click();
   await player.locator('[id="'+mediaId+'"]').waitFor({state:'detached'});await late.locator('[id="'+mediaId+'"]').waitFor({state:'detached'});
   debug('PDF token');
   // Original PDF in the library can become a native round token.
@@ -125,7 +128,7 @@ async function present(page,title,publicTitle){
   await card(gm,'DOCUMENT_PRIVE_833').getByRole('button',{name:'Aperçu et transfert…',exact:true}).click();
   const transfer=editor(gm).locator('#archives-owl-transfer');await transfer.locator('[data-submit]:not([disabled])').waitFor();
   await transfer.locator('[data-kind]').selectOption('TOKEN');
-  await transfer.getByRole('button',{name:'Placer et révéler',exact:true}).click();
+  await transfer.getByRole('button',{name:'Placer en Show (joueurs)',exact:true}).click();
   await transfer.waitFor({state:'detached'});
   const item=(await gm.evaluate(()=>window.fixture.scene())).items[0];assert.equal(item.layer,'CHARACTER');assert.equal(item.image.width,2048);
 
