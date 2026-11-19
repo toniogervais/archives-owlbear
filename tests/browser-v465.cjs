@@ -109,6 +109,21 @@ const transfer=page=>page.frameLocator('#viewer').frameLocator('#app').locator('
   await gm.waitForFunction(id=>!!window.fixture.contextMenus()[id],menuId);
   await player.waitForFunction(()=>document.querySelector('iframe#background')!==null);
   assert.equal(await player.evaluate(id=>Boolean(window.fixture.contextMenus()[id]),menuId),false);
+
+  // V5: a full GM browser reload must retain private wounds and role isolation,
+  // not just a close/reopen of the same modal in the same page.
+  await gm.reload();
+  await gm.waitForFunction(id=>!!window.fixture.contextMenus()[id],menuId);
+  const retainedItem=(await gm.evaluate(()=>window.fixture.scene())).items.find(x=>x.id===updatedItem.id);
+  assert.ok(retainedItem,'the original token still exists after reloading the MJ page');
+  await gm.evaluate(({id,item})=>window.fixture.clickMenu(id,item),{id:menuId,item:retainedItem});
+  await view.locator('#sheet:not([hidden])').waitFor();
+  await physical.locator('.track-count').getByText('6 / 12').waitFor();
+  await stun.locator('.track-count').getByText('4 / 9').waitFor();
+  assert.equal(await player.locator('[id="'+modalId+'"]').count(),0,'the player still has no private modal after GM reload');
+  assert.ok(!JSON.stringify(await player.evaluate(()=>window.fixture.wire())).includes('GRAND_SECRET_PNJ_465'));
+  await view.getByRole('button',{name:'Fermer la fiche'}).click();
+  await gm.locator('[id="'+modalId+'"]').waitFor({state:'detached'});
   assert.deepEqual(errors,[]);
   console.log('V4.66 — GM-only menu and role changes, editable wounds, persistent state, no player leak, later transfer keeps damage');
  }finally{await gmContext.close();await playerContext.close();await browser.close()}
