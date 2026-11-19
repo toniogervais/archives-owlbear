@@ -69,10 +69,11 @@ test('V4.65 — le transfert, les lots et la fenêtre utilisent la même fiche p
 test('V4.71 — la fiche reste une action du menu natif et jamais de la sélection',()=>{
   const menu=readFileSync('src/v82/npc-token-context.mjs','utf8');
   const viewer=readFileSync('src/v82/npc-token-view.mjs','utf8');
-  assert.match(menu,/OBR\\.contextMenu\\.create\\(menu\\)/);
-  assert.match(menu,/label:'Caractéristiques et PV'/);
-  assert.doesNotMatch(menu,/selectionChanged|OBR\\.player\\.getSelection\\(/);
-  assert.doesNotMatch(viewer,/OBR\\.player\\.deselect\\(/);
+  assert.ok(menu.includes('OBR.contextMenu.create(menu)'), 'la commande du menu Owlbear reste disponible');
+  assert.ok(menu.includes("label:'Caractéristiques et PV'"));
+  assert.ok(!menu.includes('selectionChanged'), 'aucun déclenchement sur sélection');
+  assert.ok(!menu.includes('OBR.player.getSelection('), 'aucune écoute de la sélection native');
+  assert.ok(!viewer.includes('OBR.player.deselect('), 'fermer la fiche ne change pas la sélection');
 });
 
 test('V4.66 — une blessure cliquée modifie uniquement le moniteur demandé',()=>{
