@@ -63,7 +63,8 @@ async function screenFor(gm,name,policy,target){
   await log.getByRole('button',{name:'📝 Notes & #Tags',exact:true}).click();await log.locator('#inp-journal-text').fill('NOTE_JOURNAL_ALIX_852');
   await log.locator('[onclick="DuneApp.closeJournal()"]').click();
   debug('touch resize during MJ publication');const gmSize=await app(gm).evaluate(()=>({w:window.DuneApp.getState().nodes[0].w,h:window.DuneApp.getState().nodes[0].h}));
-  await app(alix).evaluate(()=>window.ArchivesPlayerUI.setArrange(true));
+  // Depuis V4.58 les cellules joueurs se déplacent et se redimensionnent directement.
+  // L'ancien mode « organiser » et son API setArrange n'existent plus.
   await touchDrag(alix,cell(alix,'portrait').locator('.resize-handle'),100,75,async()=>{
    await app(gm).evaluate(()=>window.DuneApp.commitCellPicture('portrait',{bgZoom:1.15,bgOffsetX:0,bgOffsetY:0}));
    await app(alix).waitForFunction(()=>!!window.DuneApp.getState().pendingPlayerView);
