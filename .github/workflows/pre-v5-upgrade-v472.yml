@@ -3,6 +3,7 @@ on:
   push:
     branches: [pre-v5/integration-v472-20261119]
     paths: ['.github/workflows/pre-v5-upgrade-v472.yml']
+  workflow_dispatch:
 permissions:
   contents: write
 jobs:
@@ -29,5 +30,6 @@ jobs:
           git add package.json package-lock.json
           if ! git diff --cached --quiet; then
             git commit -m "security(pre-v5): update Playwright on V4.72"
+            git pull --rebase origin pre-v5/integration-v472-20261119
             git push origin HEAD:pre-v5/integration-v472-20261119
           fi
