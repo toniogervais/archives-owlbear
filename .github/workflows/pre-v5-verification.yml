@@ -18,6 +18,8 @@ jobs:
           node-version: '22'
       - run: npm ci
       - run: npm test
+      - name: Vérifier que tous les parcours navigateur sont couverts
+        run: node tests/verify-browser-coverage.cjs
       - name: Bloquer les vulnérabilités importantes des dépendances
         run: npm audit --audit-level=high
       - name: Inventaire sécurité des dépendances
@@ -35,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        groupe: [interface-joueurs, tokens-fiches, medias-son, integrations, parcours-historiques]
+        groupe: [interface-joueurs, tokens-fiches, medias-son, integrations, parcours-historiques, archives-fondations, archives-transitions, archives-historiques, presentations-historiques]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -77,5 +79,37 @@ jobs:
               node tests/browser-v444.cjs
               node tests/browser-v448.cjs
               node tests/browser-v457.cjs
+              ;;
+            archives-fondations)
+              node tests/browser.cjs
+              node tests/browser-startup.cjs
+              node tests/browser-v51.cjs
+              node tests/browser-v53.cjs
+              node tests/browser-v54.cjs
+              node tests/browser-v55.cjs
+              ;;
+            archives-transitions)
+              node tests/browser-v56.cjs
+              node tests/browser-v57.cjs
+              node tests/browser-v59.cjs
+              node tests/browser-v62.cjs
+              node tests/browser-v463.cjs
+              node tests/browser-v464.cjs
+              ;;
+            archives-historiques)
+              node tests/browser-v442.cjs
+              node tests/browser-v443.cjs
+              node tests/browser-v445.cjs
+              node tests/browser-v446.cjs
+              node tests/browser-v449.cjs
+              node tests/browser-conflicts-v457.cjs
+              ;;
+            presentations-historiques)
+              node tests/browser-v450.cjs
+              node tests/browser-v451.cjs
+              node tests/browser-v453.cjs
+              node tests/browser-v454.cjs
+              node tests/browser-v455.cjs
+              node tests/browser-v456.cjs
               ;;
           esac
