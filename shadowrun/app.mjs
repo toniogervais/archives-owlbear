@@ -1,10 +1,10 @@
-import {VERSION,validateLibrary,parseLibraryText,parseLibraryFileText,normalize,literalPrice,quantity,safeCart,inventoryText} from './model.mjs';
-import {prepareEntries,searchEntries,makeAliases,libraryPages,profileText,profileRolls} from './search.mjs';
-import {getStored,putStored,deleteStored} from './storage.mjs';
-import {bridge,ready,OBR} from './bridge.mjs';
-import {sectionExcerpt} from './reader.mjs';
-import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './content.mjs';
-import {readBookPdf} from './pdf-import.mjs';
+import {VERSION,validateLibrary,parseLibraryText,parseLibraryFileText,normalize,literalPrice,quantity,safeCart,inventoryText} from './model.mjs?v=122';
+import {prepareEntries,searchEntries,makeAliases,libraryPages,profileText,profileRolls} from './search.mjs?v=122';
+import {getStored,putStored,deleteStored} from './storage.mjs?v=122';
+import {bridge,ready,OBR} from './bridge.mjs?v=122';
+import {sectionExcerpt} from './reader.mjs?v=122';
+import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './content.mjs?v=122';
+import {readBookPdf} from './pdf-import.mjs?v=122';
 
 const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -245,7 +245,7 @@ async function init(){
   for(const b of books){const option=document.createElement('option');option.value=b.id;option.textContent=b.displayTitle||b.title;$('#source').append(option);}
   counts();renderCart();welcome();if($('#booksDialog').open)showBooks();$('#coverage').textContent=`${books.length} ouvrages · ${fmt(coverage.pages)} pages indexées · v${VERSION}`;
   try{
-   const w=new Worker(new URL('./search-worker.mjs',import.meta.url),{type:'module'});state.worker=w;
+   const w=new Worker(new URL('./search-worker.mjs?v=122',import.meta.url),{type:'module'});state.worker=w;
    w.onmessage=({data})=>{if(data.type==='results')renderResults(data);if(data.type==='ready'){state.workerReady=true;runSearch();}if(data.type==='library-ready')runSearch();if(data.type==='error')fail(Error(data.message));};
    w.onerror=()=>{w.terminate();state.worker=null;state.workerReady=false;runSearch();};w.postMessage({type:'init',entries:state.entries,terms:terms.terms});
   }catch{state.worker=null;}
@@ -253,7 +253,7 @@ async function init(){
   const params=new URLSearchParams(location.search);const e=resolveEntry(params.get('entry'));if(e)selectEntry(e);
   void restoreLibrary();
   void setupBridge().catch(fail);
-  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=122').catch(()=>{});
  }catch(e){$('#resultCount').textContent='Chargement interrompu';$('#detail').innerHTML='<h2>Le compendium ne s’est pas chargé.</h2><p>Le chargement a été interrompu.</p><button id="retryLoad">Réessayer</button>';$('#retryLoad').onclick=()=>location.reload();fail(e);}
 }
 $('#search').addEventListener('input',()=>{state.seq++;state.pendingAction=null;clearTimeout(searchTimer);searchTimer=setTimeout(()=>runSearch(),100);});
