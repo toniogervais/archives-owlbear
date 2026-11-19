@@ -1,13 +1,15 @@
 {
-  "name": "Archives Imaginaire — Owlbear",
-  "version": "2.7.2",
+  "name": "Archives Imaginaire",
+  "version": "4.72.0",
   "manifest_version": 1,
-  "description": "Passerelle test Owlbear/Supabase : salle, mode et scène active.",
+  "description": "Archives privées du MJ, vue joueur et bibliothèque de documents, sons et vidéos avec révélation choisie.",
+  "icon": "https://toniogervais.github.io/archives-owlbear/icon-archives-v43.svg",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/background-v72.html?v=4720",
   "action": {
-    "title": "Archives — Synchronisation",
-    "icon": "https://toniogervais.github.io/archives-owlbear/icon.svg",
-    "popover": "https://toniogervais.github.io/archives-owlbear/index-v272.html",
-    "width": 400,
-    "height": 600
+    "title": "Les Archives",
+    "icon": "https://toniogervais.github.io/archives-owlbear/icon-archives-v43.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/index-v72.html?v=4720",
+    "width": 360,
+    "height": 240
   }
 }

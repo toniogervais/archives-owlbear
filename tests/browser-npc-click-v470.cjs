@@ -40,6 +40,21 @@ const menuId='fr.archives-imaginaire.bridge/npc-token-sheet-v82';
   assert.equal(token.layer,'CHARACTER');
   assert.equal((await player.evaluate(()=>fixture.scene())).items.filter(x=>x.visible).length,0);
 
+  // Test d'une ancienne version encore en cache : son ouverture automatique
+  // ne porte pas l'autorisation explicite du menu et doit être rejetée.
+  const background=gm.frames().find(f=>f.url().includes('/background-v55.html'));
+  assert.ok(background,'background integration loaded');
+  await background.evaluate(async id=>{
+    const {default:OBR}=await import('/assets/owlbear-transfer-sdk-v55.mjs');
+    await OBR.modal.open({
+      id:'fr.archives-imaginaire.bridge/npc-token-view-v82',
+      url:location.origin+'/npc-token-v82.html?item='+encodeURIComponent(id),
+      width:780,height:650
+    });
+  },token.id);
+  await gm.waitForFunction(id=>window.fixture.modals().some(m=>m.action==='close'&&m.id===id),modalId);
+  await gm.locator('[id="'+modalId+'"]').waitFor({state:'detached'});
+
   // Left-click selection preserves Owlbear's native token operations:
   // the character sheet opens only from the explicit menu command.
   await gm.evaluate(id=>fixture.selectToken(id),token.id);

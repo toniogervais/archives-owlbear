@@ -142,7 +142,15 @@ function render(record,sheet){
 }
 async function load(){
   try{
-    const id=new URLSearchParams(location.search).get('item');
+    // Interdire toute ouverture automatique demandée par un ancien module.
+    const query=new URLSearchParams(location.search);
+    if(query.get('source')!=='menu-v472'){
+      document.documentElement.style.visibility='hidden';
+      await new Promise(resolve=>OBR.onReady(resolve));
+      await OBR.modal.close(modalId).catch(()=>{});
+      return;
+    }
+    const id=query.get('item');
     if(!validSession(id))throw Error('Identifiant du token invalide.');
     await new Promise(resolve=>OBR.onReady(resolve));
     currentId=id;

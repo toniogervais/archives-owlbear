@@ -76,6 +76,19 @@ test('V4.71 — la fiche reste une action du menu natif et jamais de la sélecti
   assert.ok(!viewer.includes('OBR.player.deselect('), 'fermer la fiche ne change pas la sélection');
 });
 
+test('V4.72 — anciennes ouvertures automatiques refusées',()=>{
+  const menu=readFileSync('src/v82/npc-token-context.mjs','utf8');
+  const viewer=readFileSync('src/v82/npc-token-view.mjs','utf8');
+  const html=readFileSync('npc-token-v82.html','utf8');
+  const manifest=JSON.parse(readFileSync('manifest-v55.json','utf8'));
+  assert.ok(menu.includes("url.searchParams.set('source','menu-v472')"));
+  assert.ok(viewer.includes("query.get('source')!=='menu-v472'"));
+  assert.ok(viewer.includes("await OBR.modal.close(modalId)"));
+  assert.ok(html.includes("get('source')!=='menu-v472'"));
+  assert.ok(manifest.background_url.includes('/background-v72.html?v=4720'));
+  assert.ok(manifest.action.popover.includes('/index-v72.html?v=4720'));
+});
+
 test('V4.66 — une blessure cliquée modifie uniquement le moniteur demandé',()=>{
   const record={kind:'TOKEN',id:'agent',npcSheet:normalizeTokenNpcSheet({
     attributes:{CON:'6'},sections:{notes:'SECRET_RESTE_PRIVE'},
@@ -122,5 +135,5 @@ test('V4.66 — le menu PJ ne reçoit pas la commande et les fiches Owlbear sont
   assert.match(viewer,/store\.put\(next\)/);
   assert.match(viewer,/updatePrivateTokenCondition/);
   assert.match(html,/save-status/);
-  assert.match(html,/npc-token-view\.mjs\?v=4710/);
+  assert.match(html,/npc-token-view\.mjs\?v=4720/);
 });
