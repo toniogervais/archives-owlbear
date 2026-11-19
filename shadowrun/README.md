@@ -7,11 +7,15 @@ Extension indépendante des Archives, consultation également possible dans un n
 
 Recherche commune, filtres par type / ouvrage / domaine, favoris, notes personnelles, navigation au clavier et affichage téléphone/tablette. Le lecteur local peut ouvrir la section recherchée et retrouver n’importe quelle page. Les originaux anglais sont identifiés. Les options du Companion ne remplacent pas silencieusement les règles de base.
 
-Les textes des six livres ne sont pas hébergés dans le dépôt public. Dans **Mes livres**, importer le fichier personnel `SR6_Compendium_FR_V1_1.html` déjà fourni, ou `SR6_Compendium_six_ouvrages.json`, pour les consulter et les rechercher. L’import du HTML lit uniquement les données intégrées et n’exécute aucun de ses scripts. Les anciens imports des cinq livres restent compatibles. Les textes, favoris et notes utilisent le stockage de cet appareil ; leur import n’envoie pas les livres à un serveur.
+Les textes des six livres restent dans le fichier personnel, hors dépôt public. **Mes livres** accepte les anciens fichiers HTML et JSON, le fichier V2, le fichier V2.1 compressé, ainsi que chaque PDF source. L’import du HTML ne lit que les données et n’exécute aucun script du fichier. Les PDF sont traités sur cet appareil ; aucun texte ni PDF n’est envoyé à un serveur.
 
-## État de la couverture
+## Contenu et rapidité
 
-Lire `data/coverage.json` pour les nombres issus de la dernière génération. Cette version fournit l’index des 1 252 pages, 217 rappels rédigés en français, 1 231 entrées d’équipement et 229 profils chiffrés, dont 181 de Wild Life. Une référence d’index n’est pas un rappel rédigé. Les descriptions narratives anglaises et les sections sans rappel restent dans leur langue source. La rédaction française exhaustive et l’audit de chaque entrée d’équipement restent à poursuivre.
+Cette version contient 372 rappels français, 1 231 références d’équipement et 255 profils chiffrés, dont 181 de Wild Life et 26 nouveaux contacts du Companion. Les valeurs des contacts et des créatures conservent leurs cellules originales. Les rubriques supplémentaires restent directement lisibles dans les livres personnels : leur présence dans l’index ne signifie pas que toutes disposent déjà d’un résumé français rédigé.
+
+Les situations courantes affichent le jet, l’opposition, le seuil, le résultat, les limites et les liens vers le matériel utile. Les questions ordinaires, les accents, les synonymes et une faute de frappe sont pris en charge. Les résultats du catalogue s’affichent immédiatement ; le chargement des livres et leur recherche ne bloquent pas les fiches. Les passages longs des fiches déjà résumées ne sont préparés qu’à leur ouverture.
+
+`build_fast_personal.py` corrige le démarrage du fichier V2, conserve ses tables auditées et ses avertissements de divergence, compresse ses livres et prépare l’index en arrière-plan. Le fichier V2.1 conserve les 1 252 pages, les 3 322 rubriques, les 1 318 passages de tests et les quatre fac-similés. Son contenu intégral demeure personnel. Ne jamais ajouter les fichiers HTML générés ou leurs données de livres à ce dépôt.
 
 Les attributs, moniteurs, déplacements, valeurs matricielles et astrales des profils conservent leurs cellules source. Le tableau de comparaison rend la localisation inspectable. Les formules d’esprit F deviennent P, les dommages S deviennent E, et les deux R du furfur sont distingués par leur position dans le tableau. Les ambiguïtés réelles du PDF sont signalées ; aucune valeur n’est recalculée silencieusement.
 

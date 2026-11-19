@@ -13,6 +13,8 @@ from pathlib import Path
 from localization import title as french_title, terms, norm, TITLE_MAP, NOTES_FR, SECTION_OVERRIDES
 from rulecards import RULES
 from extract_profiles import DERIVED, ATTR
+from extract_contacts import contact_profiles
+from contact_localization import localize_contact
 
 ROOT=Path(sys.argv[1]);DATA=Path(__file__).parent/'data';ANALYSIS=ROOT/'analysis_sources'
 
@@ -109,9 +111,9 @@ for i,h in enumerate(headings):
     e=dict(id=f'wild-section-{i}',source='wild',title=french_title(h['title']),originalTitle=h['title'],level=2,page=h['page'],printedPage=h['page']-1,endPage=h['page'],topic='creatures',path=[habitat(h['page'])] if 20<=h['page']<=175 else ['Règles des créatures'])
     e['kind']=kind(e);index.append(e)
 
-profiles=read(ANALYSIS/'profiles.raw.json')
+profiles=read(ANALYSIS/'profiles.raw.json')+contact_profiles(ROOT)
 for e in profiles:
-    en=e['name'];e['title']=french_title(en) if e['source']=='wild' else en
+    en=e['name'];e['title']=french_title(en) if e['source'] in ('wild','companion') else en
     e['originalTitle']=en;e['topic']='creatures' if e['kind']=='creature' else 'mj'
     if e['source']=='wild':
         e['habitat']=habitat(e['page'])
@@ -125,6 +127,9 @@ for e in profiles:
         e['title']=e['title'][0].upper()+e['title'][1:]
         e['comparison']=[dict(en=c['label'],fr=c['fr'],source=c['value'],value=e['attributes'][c['fr']]) for c in e['original'].get('attributeCells',[])]
         for (en_key,raw_value),(fr_key,fr_value) in zip(e['original']['derived'].items(),e['derived'].items()):e['comparison'].append(dict(en=en_key,fr=fr_key,source=raw_value,value=fr_value))
+    if e['source']=='companion':localize_contact(e)
+    if e['source']=='wild':
+        e['summary']='Profil de '+e['title']+'. Habitat : '+e['habitat']+'.'
     for ref in index:
         if ref['source']==e['source'] and abs(ref['page']-e['page'])<=2 and norm(ref.get('originalTitle',ref['title']))==norm(en):ref['isStructural']=True
 

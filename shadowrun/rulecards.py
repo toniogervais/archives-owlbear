@@ -251,3 +251,10 @@ R('hacker',32,'Détournement d’infrastructure','Majeure illégale, accès Admi
 R('hacker',32,'En dérangement','Mineure illégale, accès Invité. Piratage (Guerre électronique) + LOG contre INT + Corruption ou Corruption ×2. L’appareil ne peut envoyer ni recevoir de messages pendant un nombre de minutes égal aux succès nets.',topic='matrice',kind='action')
 R('hacker',32,'Exploiter une backdoor connue','Majeure illégale liée à Corruption, accès Invité. Piratage (Hacking) + LOG contre VOL + Firewall ou Firewall ×2. Ne demande pas de sondage préalable. Le hacker ne gagne ni ne dépense d’Atout ; la cible reçoit une remise de 1. Une réussite donne un accès Administrateur qui ne compte pas comme illégal pour ce seul accès ; les actions ultérieures illégales augmentent toujours le SS. Un échec ne déclenche pas automatiquement l’alerte.',topic='matrice',kind='action')
 R('hacker',32,'Mascarade','Majeure illégale, accès Invité. Piratage (Guerre électronique) + LOG contre INT + Traitement de données ou Corruption + Traitement de données. Imiter un persona une minute par succès net ; l’effet cesse quand l’original se déconnecte. Ne change pas la propriété et ne trompe pas les contrôles renforcés des virements majeurs ou transferts de propriétaire.',topic='matrice',kind='action')
+
+# Practical procedures from the supplied core edition.
+from practical_rules import supplement
+supplement(RULES, R)
+
+from companion_qualities import add_qualities
+add_qualities(RULES, R)

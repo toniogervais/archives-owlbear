@@ -1,4 +1,4 @@
-export const VERSION='1.1.0';
+export const VERSION='1.2.1';
 export const NAMESPACE='fr.archives-imaginaire.shadowrun';
 export const TAB_LABELS={combat:'Combat',magie:'Magie',rigging:'Rigging',matrice:'Matrice',equipement:'Équipement',livres:'Livres',favoris:'Favoris',mj:'PNJ'};
 export function normalize(text){return String(text??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('fr').replace(/[’'‐‑–—]/g,' ').replace(/\s+/g,' ').trim();}
@@ -6,7 +6,7 @@ export function matches(text,query){const hay=normalize(text);return normalize(q
 export function equipmentText(item){return [item.name,item.category,item.source,...(item.path||[]),...(item.fields||[]).flatMap(f=>[f.label,f.value])].join(' ');}
 export function pageLabel(book,page){const printed=page-(book?.printedOffset??2);return printed>0?`p. ${printed} · PDF ${page}`:`PDF ${page}`;}
 export function validateLibrary(input){
- if(!input||input.schema!=='fr.archives-imaginaire.sr6.library'||![1,2].includes(input.version)||!Array.isArray(input.books)||![5,6].includes(input.books.length))throw Error('Ce fichier n’est pas une bibliothèque Shadowrun compatible.');
+ if(!input||input.schema!=='fr.archives-imaginaire.sr6.library'||![1,2].includes(input.version)||!Array.isArray(input.books)||!(input.partial===true?input.books.length>=1&&input.books.length<=6:[5,6].includes(input.books.length)))throw Error('Ce fichier n’est pas une bibliothèque Shadowrun compatible.');
  const expected={core:322,feu:154,companion:210,rigger:186,hacker:186,wild:194};const seen=new Set();let total=0;
  for(const book of input.books){
   if(!book||seen.has(book.id)||expected[book.id]!==book.pageCount||!Array.isArray(book.pages)||book.pages.length!==book.pageCount)throw Error('Le nombre de pages d’un livre est incorrect.');
@@ -15,8 +15,10 @@ export function validateLibrary(input){
    const p=book.pages[i];if(!p||p.number!==i+1||typeof p.text!=='string'||p.text.length>120000||typeof p.layout!=='string'||p.layout.length>150000)throw Error('Une page du fichier est invalide.');total++;
   }
  }
- for(const id of ['core','feu','companion','rigger','hacker'])if(!seen.has(id))throw Error('Un ouvrage est absent de la bibliothèque.');
- if(total!==(seen.has('wild')?1252:1058))throw Error('Le nombre total de pages est incorrect.');
+ if(!input.partial){
+  for(const id of ['core','feu','companion','rigger','hacker'])if(!seen.has(id))throw Error('Un ouvrage est absent de la bibliothèque.');
+  if(total!==(seen.has('wild')?1252:1058))throw Error('Le nombre total de pages est incorrect.');
+ }
  return input;
 }
 export function parseLibraryText(text){
@@ -30,6 +32,24 @@ export function parseLibraryText(text){
   json=match[1];
  }
  return validateLibrary(JSON.parse(json));
+}
+export async function parseLibraryFileText(text){
+ try{return parseLibraryText(text);}catch(error){
+  if(typeof text!=='string'||!text.trim().startsWith('<'))throw error;
+ }
+ const script=id=>new RegExp('<script\\b[^>]*\\bid\\s*=\\s*["\']'+id+'["\'][^>]*>([\\s\\S]*?)<\\/script\\s*>','i').exec(text)?.[1];
+ let data;
+ const packed=script('sr6-packed');
+ if(packed){
+  if(typeof DecompressionStream==='undefined')throw Error('Ce navigateur ne peut pas lire ce fichier compressé. Utilise le PDF ou le fichier JSON.');
+  const bytes=Uint8Array.from(atob(packed.trim()),c=>c.charCodeAt(0));
+  const expanded=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  if(expanded.length>60*1024*1024)throw Error('Le contenu du fichier dépasse 60 Mo.');
+  data=JSON.parse(expanded);
+ }else{
+  const json=script('data');if(!json)throw Error('Ce fichier HTML ne contient pas de bibliothèque compatible.');data=JSON.parse(json);
+ }
+ return validateLibrary({schema:'fr.archives-imaginaire.sr6.library',version:2,books:data.books});
 }
 export function rollResult(values,wildValue=null){
  if(!Array.isArray(values)||!values.length||values.some(v=>!Number.isInteger(v)||v<1||v>6))throw Error('Le jet doit contenir des dés à six faces.');

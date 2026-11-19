@@ -1,10 +1,12 @@
 import test from 'node:test';
+import {gzipSync} from 'node:zlib';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {validateLibrary,parseLibraryText,rollResult,inventoryText} from '../model.mjs';
-import {prepareEntries,searchEntries,makeAliases} from '../search.mjs';
+import {validateLibrary,parseLibraryText,parseLibraryFileText,rollResult,inventoryText} from '../model.mjs';
+import {prepareEntries,searchEntries,makeAliases,profileRolls,queryWords} from '../search.mjs';
 import {createBridge} from '../bridge-core.mjs';
 import {sectionExcerpt} from '../reader.mjs';
+import {assembleEntries,localKeyPoints,SITUATIONS} from '../content.mjs';
 
 const json=async name=>JSON.parse(await readFile(new URL(`../data/${name}.json`,import.meta.url),'utf8'));
 const [sources,index,equipment,profiles,rules,coverage,terminology]=await Promise.all(['sources','index','equipment','profiles','rules','coverage','terminology'].map(json));
@@ -25,7 +27,7 @@ test('all six sources and every published reference have valid, bounded source p
 
 test('English profiles retain every attribute cell and every numeric value after localization',()=>{
  const numbers=s=>String(s).match(/\d+(?:[.,]\d+)?/g)||[];
- for(const e of profiles.filter(e=>e.source==='wild')){
+ for(const e of profiles.filter(e=>['wild','companion'].includes(e.source))){
   assert.equal(e.issues.length,0,e.title);assert.equal(e.original.attributeCells.length,Object.keys(e.attributes).length,e.title);
   for(const c of e.original.attributeCells)assert.equal(typeof e.attributes[c.fr],'string',`${e.title}: ${c.label}`);
   assert.equal(e.comparison.length,e.original.attributeCells.length+Object.keys(e.original.derived).length,e.title);
@@ -86,7 +88,7 @@ test('the section reader ignores mentions inside paragraphs and stops at the nex
  const index=[{id:'a',source:'core',title:'Esquiver (L)',level:4,page:1,endPage:1},{id:'b',source:'core',title:'Bloquer (L)',level:4,page:1,endPage:1}];
  const book={pageCount:1,pages:[{text:'Introduction : Esquiver (L) est mentionné ici.\nEsquiver (L)\nLe texte précis de cette action et de ses limites se trouve ici.\nBloquer (L)\nCette autre action ne doit pas être incluse.'}]};
  const excerpt=sectionExcerpt(index[0],book,index);assert.equal(excerpt.text,'Le texte précis de cette action et de ses limites se trouve ici.');
- assert.equal(sectionExcerpt({...index[0],id:'inconnu'},book,index),null);
+ assert.equal(sectionExcerpt({...index[0],id:'inconnu',title:'Titre absent'},book,index),null);
 });
 
 function fixture(role='GM',archives=false){
@@ -119,4 +121,61 @@ test('a standalone compendium identifies its scene without sharing an inventory 
  const b=createBridge(f.obr,f.storage,equipment);const [a,c]=await Promise.all([b.context(),b.context()]);assert.equal(a.scene,c.scene);assert.ok(a.scene);assert.deepEqual(Object.keys(metadata),['fr.archives-imaginaire.shadowrun/scene-key']);
  metadata={};const fresh=await b.context();assert.notEqual(fresh.scene,a.scene);
  assert.equal(f.calls.some(c=>c[0]==='write'||c[0]==='archives'),false);
+});
+
+
+test('natural questions prioritise the playable procedure, not an outline page',()=>{
+ const cases=[['quel jet de dés pour crocheter une serrure','Crocheter une serrure'],['soigner un blessé','Administrer les premiers soins'],['tirer sur une cible','Tirer avec une arme à feu'],['passer discrètement','Se déplacer sans être repéré'],['pirater une caméra','Forcer l’accès']];
+ for(const [query,title] of cases){const r=searchEntries(searchData,{query,limit:1},aliases);assert.equal(r.items[0]?.title,title,query);assert.ok(r.items[0].procedure.test);}
+ assert.deepEqual(queryWords('Quel jet de dés pour crocheter une serrure ?'),['des','crocheter','serrure'].filter(x=>x!=='des'));
+ const typo=searchEntries(searchData,{query:'medikitt',limit:20},aliases);assert.equal(typo.corrected,true);assert.ok(typo.items.some(e=>/médikit/i.test(e.title||e.name)));
+});
+
+test('the first-aid procedure keeps its threshold, timing, effects and required kit',()=>{
+ const r=rules.find(e=>e.title==='Administrer les premiers soins');
+ assert.equal(r.procedure.test,'Biotech + Logique');assert.match(r.procedure.threshold,/5 − Essence/);assert.match(r.procedure.action,/minute/);assert.match(r.procedure.effect,/2 succès nets/);assert.ok(r.kit.includes('kit de premiers soins'));
+ const med=rules.find(e=>e.title==='Soigner avec un médikit');assert.match(med.procedure.test,/indice du médikit \+ Logique/);
+ const heal=rules.find(e=>e.title==='Récupérer naturellement de ses blessures');assert.equal(heal.procedure.test,'Constitution + Volonté');
+});
+
+test('profile quick pools use the translated attribute, never a similarly named one',()=>{
+ const furfur=profiles.find(e=>e.name.toLowerCase()==='furfur');const rolls=profileRolls(furfur);
+ assert.equal(rolls.find(r=>r.label==='Défense physique').value,Number(furfur.attributes['RÉA'])+Number(furfur.attributes.INT)+'D6');
+ const spirit=profiles.find(e=>e.name==='Gashadokuro');assert.equal(profileRolls(spirit).length,0);
+});
+
+test('individual local PDFs can be saved progressively without accepting corrupt complete imports',()=>{
+ const meta=sources[0],book={...meta,pages:Array.from({length:meta.pageCount},(_,i)=>({number:i+1,text:'Source',layout:'Source'}))};
+ assert.ok(validateLibrary({schema:'fr.archives-imaginaire.sr6.library',version:2,partial:true,books:[book]}));
+ assert.throws(()=>validateLibrary({schema:'fr.archives-imaginaire.sr6.library',version:2,books:[book]}));
+});
+
+
+test('every original index entry still resolves in the assembled catalog or the book browser',()=>{
+ const {entries,replacements}=assembleEntries({rules,profiles,equipment,index});const ids=new Set(entries.map(e=>e.id));
+ for(const e of index){if(e.isStructural)continue;assert.ok(ids.has(e.id)||ids.has(replacements.get(e.id)),e.id);}
+ for(const s of SITUATIONS)assert.ok(rules.some(r=>r.title===s.title),s.title);
+ assert.equal(profiles.filter(p=>p.source==='companion').length,26);
+});
+
+test('local key points come verbatim from the local source and never claim to translate English',()=>{
+ const text='Un test de Perception + Intuition permet de remarquer les détails de la pièce. Chaque succès améliore les informations obtenues. Le personnage doit avoir le matériel adapté.';
+ for(const point of localKeyPoints(text))assert.ok(text.includes(point));
+ assert.deepEqual(localKeyPoints(text,'en'),[]);
+});
+
+test('a matrix action heading with an initiative marker still opens its own body',()=>{
+ const idx=[{id:'a',source:'hacker',title:'Calibrage',page:1,endPage:1,level:3},{id:'b',source:'hacker',title:'Commande retardée',page:1,endPage:1,level:3}];
+ const book={pageCount:1,pages:[{text:'Calibrage (I)\nCette action donne le bonus exact de son propre paragraphe.\nCommande retardée (I)\nCe second paragraphe ne concerne pas Calibrage.'}]};
+ assert.equal(sectionExcerpt(idx[0],book,idx).text,'Cette action donne le bonus exact de son propre paragraphe.');
+});
+
+
+test('imports V2 and compressed V2.1 data without executing HTML scripts',async()=>{
+ const books=sources.map(b=>({...b,pages:Array.from({length:b.pageCount},(_,i)=>({number:i+1,text:'Texte conservé',layout:'Table conservée'}))}));
+ const data=JSON.stringify({books});const full='<script>throw Error("never execute");</script><script id="data" type="application/json">'+data+'</script>';
+ assert.deepEqual((await parseLibraryFileText(full)).books,books);
+ const packed=gzipSync(data).toString('base64');const fast='<script id="data">{"books":[]}</script><script id="sr6-packed" type="application/octet-stream">'+packed+'</script>';
+ assert.deepEqual((await parseLibraryFileText(fast)).books,books);
+ await assert.rejects(()=>parseLibraryFileText('<script id="sr6-packed">invalid</script>'));
 });
