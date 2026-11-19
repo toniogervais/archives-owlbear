@@ -3,9 +3,11 @@ concurrency:
   group: pre-v5-validation-${{ github.ref }}
   cancel-in-progress: true
 on:
-  push:
+  # Vérifier la branche candidate dans la PR, avec des contrôles consultables
+  # avant toute fusion. Conserver le déclenchement manuel pour la recette finale.
+  pull_request:
     branches:
-      - pre-v5/stabilisation-20261118
+      - main
   workflow_dispatch:
 jobs:
   unitaires:
