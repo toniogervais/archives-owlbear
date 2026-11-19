@@ -7,7 +7,13 @@ Extension indépendante des Archives, consultation également possible dans un n
 
 Recherche commune, filtres par type / ouvrage / domaine, favoris, notes personnelles, navigation au clavier et affichage téléphone/tablette. Le lecteur local peut ouvrir la section recherchée et retrouver n’importe quelle page. Les originaux anglais sont identifiés. Les options du Companion ne remplacent pas silencieusement les règles de base.
 
-Les textes des six livres restent dans le fichier personnel, hors dépôt public. **Mes livres** accepte les anciens fichiers HTML et JSON, le fichier V2, le fichier V2.1 compressé, ainsi que chaque PDF source. L’import du HTML ne lit que les données et n’exécute aucun script du fichier. Les PDF sont traités sur cet appareil ; aucun texte ni PDF n’est envoyé à un serveur.
+Les textes et les illustrations des six livres sont accessibles par le lien personnel de la table et restent hors du dépôt public. **Mes livres** accepte les anciens fichiers HTML et JSON, le fichier V2, le fichier V2.1 compressé, ainsi que chaque PDF source. L’import du HTML ne lit que les données et n’exécute aucun script du fichier. Les PDF sont traités sur cet appareil ; aucun texte ni PDF n’est envoyé à un serveur.
+
+## Consultation par thème et par table
+
+Le sommaire regroupe quinze thèmes. Le filtre « Jets à prévoir » réunit les procédures qui donnent une réserve et les passages de test indexés. Les compétences, les notes et les favoris se consultent dans le panneau Owlbear. Sa taille suit la fiche ouverte.
+
+Le manifeste personnel de la table ouvre le même client avec accès aux six ouvrages. Le lecteur récupère le texte du livre et les planches à la demande. La recherche intégrale démarre lors de la première recherche. Un lien vers la page d’origine permet de consulter aussi les tableaux et les illustrations dans leur mise en page. Le service de lecture vérifie l’accès de la table pour chaque requête. Conserver les liens de table et les originaux hors du dépôt public.
 
 ## Contenu et rapidité
 

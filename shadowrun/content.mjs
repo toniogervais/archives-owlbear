@@ -1,4 +1,4 @@
-import {normalize} from './model.mjs?v=122';
+import {normalize} from './model.mjs?v=130';
 
 const key=e=>normalize(e.originalTitle||e.title||e.name).replace(/\s*\([il]\)\s*$/,'');
 export function assembleEntries({rules,profiles,equipment,index}){
@@ -8,7 +8,8 @@ export function assembleEntries({rules,profiles,equipment,index}){
  const byName=new Map();
  for(const e of entries){const k=e.source+':'+key(e);if(!byName.has(k))byName.set(k,[]);byName.get(k).push(e);}
  for(const ref of index){
-  if(replacements.has(ref.id)||ref.isStructural)continue;
+  if(replacements.has(ref.id))continue;
+  if(ref.isStructural){entries.push({...ref,kind:"rule",sourceOnly:true});continue;}
   const matches=(byName.get(ref.source+':'+key(ref))||[]).filter(e=>Math.abs(e.page-ref.page)<=4);
   if(matches.length===1){replacements.set(ref.id,matches[0].id);continue;}
   const near=profiles.filter(p=>p.source===ref.source&&Math.abs(p.page-ref.page)<=1&&(key(p).includes(key(ref))||key(ref).includes(key(p))));
