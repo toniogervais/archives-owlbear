@@ -21,7 +21,8 @@ export async function installNpcTokenContext(){
       if(closed||await OBR.player.getRole()!=='GM')return;
       const url=new URL('../../npc-token-v82.html',import.meta.url);
       url.searchParams.set('item',actual.id);
-      url.searchParams.set('v','4710');
+      url.searchParams.set('source','menu-v472');
+      url.searchParams.set('v','4720');
       await OBR.modal.open({id:modalId,url:url.href,width:780,height:650});
     }finally{opening=false;}
   }
