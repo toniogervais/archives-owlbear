@@ -112,5 +112,5 @@ test('V4.66 — le menu PJ ne reçoit pas la commande et les fiches Owlbear sont
   assert.match(viewer,/store\.put\(next\)/);
   assert.match(viewer,/updatePrivateTokenCondition/);
   assert.match(html,/save-status/);
-  assert.match(html,/npc-token-view\.mjs\?v=4700/);
+  assert.match(html,/npc-token-view\.mjs\?v=4710/);
 });
