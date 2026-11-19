@@ -10,7 +10,7 @@ async function openToken(page){
  await dialog(page).locator('[data-submit]:not([disabled])').waitFor();
 }
 async function place(page,reveal=false){
- await dialog(page).getByRole('button',{name:reveal?'Placer et révéler':'Placer caché',exact:true}).click();
+ await dialog(page).getByRole('button',{name:reveal?'Placer en Show (joueurs)':'Placer en Hide (joueurs)',exact:true}).click();
  await dialog(page).waitFor({state:'detached'});
 }
 const pixel=page=>crop(page).evaluate(canvas=>[...canvas.getContext('2d').getImageData(256,256,1,1).data]);
@@ -79,7 +79,17 @@ const pixel=page=>crop(page).evaluate(canvas=>[...canvas.getContext('2d').getIma
   assert.deepEqual(await gm.evaluate(()=>window.fixture.pickers()),{upload:1,download:1});
   const imageUrl=uploaded.image.url;
   let wire=JSON.stringify(await player.evaluate(()=>window.fixture.wire()));
-  for(const secret of ['PORTRAIT_PRIVE_834','SECRET_ORIGINAL_915','BORD_PRIVE_612',imageUrl,original])assert.ok(!wire.includes(secret));
+  // V4.69 : Hide est un pion natif Owlbear. Son nom et son URL de rendu
+  // circulent dans la scene, meme si visible=false ; Hide ne chiffre rien.
+  // Les sources originales, descriptions et notes privees du MJ restent
+  // elles intransmissibles aux autres clients.
+  const [hiddenToken]=(await gm.evaluate(()=>window.fixture.scene())).items;
+  assert.equal(hiddenToken.visible,false,'Hide doit utiliser la visibilite native');
+  assert.equal(hiddenToken.layer,'CHARACTER');
+  assert.equal(hiddenToken.image.url,imageUrl);
+  for(const secret of ['SECRET_ORIGINAL_915','BORD_PRIVE_612',original])
+    assert.ok(!wire.includes(secret),'fuite de source privee MJ : '+secret.slice(0,25));
+  assert.equal((await player.evaluate(()=>window.fixture.scene())).items.filter(item=>item.visible).length,0);
   // Reopening restores the crop; repeating the same pixels uses no asset picker.
   await openToken(gm);assert.equal(await dialog(gm).locator('[data-zoom]').inputValue(),'180');assert.deepEqual(await pixel(gm),[224,32,48,255]);
   await dialog(gm).locator('[data-title]').fill('Portrait montré');

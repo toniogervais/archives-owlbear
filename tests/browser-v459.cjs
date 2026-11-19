@@ -60,10 +60,18 @@ async function native(browser){
   assert.equal(await app(g).evaluate(()=>DuneApp.getState().nodes[0].revealed),false,'presenting media does not reveal its cell');
 
   await app(g).evaluate(()=>{ArchivesCloudBridge={getClient:()=>({auth:{getUser:async()=>({data:{user:{id:'12345678-1234-1234-1234-123456789abc'}}})},storage:{from:()=>({upload:async()=>({data:{}}),createSignedUrl:async path=>({data:{signedUrl:'https://fixture-project.supabase.co/storage/v1/object/sign/archives-owlbear-assets/'+path+'?token=fixture'}})})}})};});
-  await app(g).evaluate(()=>{window.placed=ArchivesCellTransfer.placeCell(DuneApp.getState().nodes[0],'a',false);});await g.waitForFunction(()=>fixture.local().length===1);
-  let token=await g.evaluate(()=>fixture.local()[0]);assert.equal(token.text.plainText,'','new tokens do not add an automatic account or cell label');assert.equal(token.createdUserId,'fixture-MJ');
-  await app(g).evaluate(id=>ArchivesCellTransfer.request({action:'label',assetId:id,label:'Le Gardien'}),token.id);await g.waitForFunction(()=>fixture.local()[0]?.text?.plainText==='Le Gardien');
-  await app(g).evaluate(id=>ArchivesCellTransfer.request({action:'visibility',assetId:id,reveal:true}),token.id);await g.waitForFunction(async()=> (await fixture.scene()).items[0]?.text?.plainText==='Le Gardien');
+  await app(g).evaluate(()=>{window.placed=ArchivesCellTransfer.placeCell(DuneApp.getState().nodes[0],'a',false);});
+  // Depuis V4.67, un token Hide est un vrai item de scène, et non un pion local.
+  await app(g).evaluate(()=>window.placed);
+  await g.waitForFunction(async()=> (await fixture.scene()).items.length===1);
+  const token=await g.evaluate(async()=> (await fixture.scene()).items[0]);
+  assert.equal(token.visible,false,'Hide natif dès le placement');
+  assert.equal(await g.evaluate(()=>fixture.local().length),0,'pas de doublon local MJ');
+  assert.equal(token.text.plainText,'','new tokens do not add an automatic account or cell label');assert.equal(token.createdUserId,'fixture-MJ');
+  await app(g).evaluate(id=>ArchivesCellTransfer.request({action:'label',assetId:id,label:'Le Gardien'}),token.id);
+  await g.waitForFunction(async()=> (await fixture.scene()).items[0]?.text?.plainText==='Le Gardien');
+  await app(g).evaluate(id=>ArchivesCellTransfer.request({action:'visibility',assetId:id,reveal:true}),token.id);
+  await g.waitForFunction(async()=> (await fixture.scene()).items[0]?.visible===true);
   await app(g).evaluate(id=>ArchivesCellTransfer.request({action:'label',assetId:id,label:''}),token.id);await g.waitForFunction(async()=> (await fixture.scene()).items[0]?.text?.plainText==='');
   assert.deepEqual(errors,[]);console.log('V4.59 targeted native picture/document with encrypted fallback, denied unauthorized requests, all-player presentation and MJ-owned optional token labels passed.');
  }finally{for(const c of contexts)await c.close();}

@@ -1,0 +1,35 @@
+name: Pré-V5 V4.72 — mise à jour Playwright
+on:
+  push:
+    branches: [pre-v5/integration-v472-20261119]
+    paths: ['.github/workflows/pre-v5-upgrade-v472.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  upgrade:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Actualiser la dépendance de test et son verrouillage
+        run: npm install --package-lock-only --save-dev --save-exact --ignore-scripts playwright@1.55.1
+      - run: npm ci
+      - run: npm audit --audit-level=high
+      - run: npm test
+      - run: npm run test:sr6
+      - name: Enregistrer le correctif sur la branche candidate uniquement
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "security(pre-v5): update Playwright on V4.72"
+            git pull --rebase origin pre-v5/integration-v472-20261119
+            git push origin HEAD:pre-v5/integration-v472-20261119
+          fi

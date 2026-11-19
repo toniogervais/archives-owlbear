@@ -22,6 +22,12 @@ const data={activeBoardId:'a',boards:[{id:'a',name:'Acte Shadowrun',links:[],nod
   assert.equal(await brief.locator('.npc-attributes .npc-stat').count(),10);
   assert.equal(await brief.locator('.npc-combat .npc-stat').count(),6);
   assert.equal(await brief.locator('.brief-card[data-node-id="pnj1"] .npc-track-box').count(),0,'health monitors need a manually assigned capacity');
+  // La fiche se redessine après l'ouverture : une étiquette détachée renvoie
+  // momentanément une couleur vide. Tester le style du nœud courant, connecté.
+  await page.waitForFunction(() => {
+    const label=document.querySelector('#archives-cell-brief[open] .npc-stat-label');
+    return !!label?.isConnected && getComputedStyle(label).color==='rgb(255, 107, 127)';
+  });
   const cssColor=await brief.locator('.npc-stat-label').first().evaluate(el=>getComputedStyle(el).color);
   assert.equal(cssColor,'rgb(255, 107, 127)','red characteristic labels, as requested');
   await brief.getByRole('button',{name:'Modifier la fiche PNJ : caractéristiques, équipement et moniteurs'}).click();

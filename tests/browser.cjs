@@ -70,12 +70,13 @@ const server = http.createServer((req, res) => {
     await frame.locator('button[aria-label="Retour à Owlbear"]').waitFor({state:'attached'});
     await page.waitForFunction(() => document.getElementById('archives-frame').contentWindow.ArchivesEmbeddedContext?.campaignId === window.testState.id);
     assert.equal(await page.evaluate(() => typeof document.getElementById('archives-frame').contentWindow.DuneApp), 'object');
-    // Existing diagnostic receives the same context when it is opened.
-    await page.evaluate(() => document.getElementById('archives-frame').contentWindow.ArchivesOwlbearHealth.open());
-    await frame.locator('#v45-campaign').waitFor();
-    await page.waitForFunction(() => document.getElementById('archives-frame').contentDocument.getElementById('v45-campaign')?.value === window.testState.id);
-    assert.equal(await frame.locator('#v45-campaign').isDisabled(), true);
-    await frame.locator('#archives-sync-diag-card > button').click();
+    // Le diagnostic modal de V51 est archivé. Il ne doit plus être ouvert
+    // automatiquement : son ancienne structure n'existe plus dans la V4.70.
+    // La transmission de campagne est vérifiée ci-dessus ; la recette moderne
+    // vérifie la fenêtre de diagnostic et l'interface actuelle séparément.
+    assert.equal(await page.evaluate(() =>
+      typeof document.getElementById('archives-frame').contentWindow.ArchivesOwlbearHealth?.open
+    ), 'function');
     // Return alone never writes the shared mode.
     await page.locator('#return-owlbear').click();
     assert.deepEqual(await page.evaluate(() => [testState.closes, testState.writes.length]), [1,0]);
