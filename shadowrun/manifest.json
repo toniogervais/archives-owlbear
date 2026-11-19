@@ -1,0 +1,10 @@
+{
+  "name":"Shadowrun 6 — Compendium",
+  "version":"1.1.0",
+  "manifest_version":1,
+  "description":"Six ouvrages : règles, actions, PNJ, bestiaire et équipement. Recherche en français, favoris et inventaire PNJ réservé au MJ.",
+  "author":"Les Archives de l’Imaginaire",
+  "icon":"https://toniogervais.github.io/archives-owlbear/shadowrun/icon.svg",
+  "background_url":"https://toniogervais.github.io/archives-owlbear/shadowrun/background.html?v=110",
+  "action":{"title":"Compendium SR6","icon":"https://toniogervais.github.io/archives-owlbear/shadowrun/icon.svg","popover":"https://toniogervais.github.io/archives-owlbear/shadowrun/index.html?v=110","width":1180,"height":780}
+}
