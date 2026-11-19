@@ -40,9 +40,17 @@ const menuId='fr.archives-imaginaire.bridge/npc-token-sheet-v82';
   assert.equal(token.layer,'CHARACTER');
   assert.equal((await player.evaluate(()=>fixture.scene())).items.filter(x=>x.visible).length,0);
 
-  // One click selects an Owlbear token: it opens characteristics and health.
+  // Left-click selection preserves Owlbear's native token operations:
+  // the character sheet opens only from the explicit menu command.
   await gm.evaluate(id=>fixture.selectToken(id),token.id);
   const view=gm.frameLocator('[id="'+modalId+'"]');
+  await gm.waitForTimeout(350);
+  assert.deepEqual(await gm.evaluate(()=>fixture.selected()),[token.id]);
+  assert.equal(await gm.locator('[id="'+modalId+'"]').count(),0,
+    'selecting a token must not cover Owlbear native controls');
+
+  // The MJ can open the private sheet from Owlbear's normal context menu.
+  await gm.evaluate(({id,item})=>fixture.clickMenu(id,item),{id:menuId,item:token});
   await view.locator('#sheet:not([hidden])').waitFor();
   assert.equal(await view.locator('#title').textContent(),'Personnage sans fiche');
   assert.equal(await view.locator('#sheet .stat').count(),16);
@@ -59,10 +67,18 @@ const menuId='fr.archives-imaginaire.bridge/npc-token-sheet-v82';
   await stun.locator('.track-count').getByText('2 / 9').waitFor();
   await view.getByRole('button',{name:'Fermer la fiche'}).click();
   await gm.locator('[id="'+modalId+'"]').waitFor({state:'detached'});
+  assert.deepEqual(await gm.evaluate(()=>fixture.selected()),[token.id],
+    'closing the sheet must not deselect the Owlbear token');
 
-  // One more simple click opens the same saved sheet; closing the popup deselects the token.
-  // Unrelated Owlbear updates must not open another popup.
+  // Repeated left and right selection operations must not open the sheet.
+  await gm.evaluate(()=>fixture.selectToken(null));
   await gm.evaluate(id=>fixture.selectToken(id),token.id);
+  await gm.waitForTimeout(350);
+  assert.equal(await gm.locator('[id="'+modalId+'"]').count(),0);
+  assert.deepEqual(await gm.evaluate(()=>fixture.selected()),[token.id]);
+
+  // Reopen it from the same menu, without losing injuries or Hide/Show.
+  await gm.evaluate(({id,item})=>fixture.clickMenu(id,item),{id:menuId,item:token});
   await view.locator('#sheet:not([hidden])').waitFor();
   await physical.locator('.track-count').getByText('4 / 12').waitFor();
   await stun.locator('.track-count').getByText('2 / 9').waitFor();
@@ -71,6 +87,7 @@ const menuId='fr.archives-imaginaire.bridge/npc-token-sheet-v82';
   assert.ok(!JSON.stringify(await player.evaluate(()=>fixture.wire())).includes('SECRET_MJ_V470'));
   await view.getByRole('button',{name:'Fermer la fiche'}).click();
   await gm.locator('[id="'+modalId+'"]').waitFor({state:'detached'});
+  assert.deepEqual(await gm.evaluate(()=>fixture.selected()),[token.id]);
 
   // A PLAYER selecting the same token never opens the private interface.
   await player.evaluate(id=>fixture.selectToken(id),token.id);
@@ -78,6 +95,6 @@ const menuId='fr.archives-imaginaire.bridge/npc-token-sheet-v82';
   assert.equal(await player.locator('[id="'+modalId+'"]').count(),0);
   assert.equal(await player.evaluate(id=>!!fixture.contextMenus()[id],menuId),false);
   assert.deepEqual(errors,[]);
-  console.log('V4.70: one-click GM token sheet, blank NPC, editable physical/stun health, reload of saved values and player privacy.');
+  console.log('V4.71: ordinary Owlbear selection, GM-only context menu sheet, saved physical/stun health and player privacy.');
  }finally{await gc.close();await pc.close();await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1});

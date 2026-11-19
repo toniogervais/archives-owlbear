@@ -43,7 +43,7 @@ function fixture({sceneReady=false,inviteReadyDelay=0,captureRasters=false}={}) 
   injectLocal(item){localItems.push(item);allPost("OBR_SCENE_LOCAL_EVENT_CHANGE",{items:localItems})},
   deleteLocal(ids){localItems=localItems.filter(item=>!ids.includes(item.id));allPost("OBR_SCENE_LOCAL_EVENT_CHANGE",{items:localItems})},
   deleteShared:ids=>fixtureHub("deleteItems",{ids}),
-  local:()=>localItems,uploads:()=>uploads,pickers:()=>pickers,focus:()=>focus,modals:()=>modals,
+  local:()=>localItems,selected:()=>[...player.selection],uploads:()=>uploads,pickers:()=>pickers,focus:()=>focus,modals:()=>modals,
   contextMenus:()=>contextMenus,clickMenu:(id,item)=>allPost('OBR_CONTEXT_MENU_EVENT_CLICK',{id,context:{items:[item]},elementId:id}),
   cancelPick:()=>{cancelPick=true},
   scene:()=>fixtureHub("scene"),wire:()=>fixtureHub("wire"),setScene:()=>fixtureHub("newScene"),

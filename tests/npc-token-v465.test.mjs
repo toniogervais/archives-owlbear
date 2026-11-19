@@ -66,6 +66,16 @@ test('V4.65 — le transfert, les lots et la fenêtre utilisent la même fiche p
   assert.match(background,/installNpcTokenContext/);
 });
 
+test('V4.71 — la fiche reste une action du menu natif et jamais de la sélection',()=>{
+  const menu=readFileSync('src/v82/npc-token-context.mjs','utf8');
+  const viewer=readFileSync('src/v82/npc-token-view.mjs','utf8');
+  assert.ok(menu.includes('OBR.contextMenu.create(menu)'), 'la commande du menu Owlbear reste disponible');
+  assert.ok(menu.includes("label:'Caractéristiques et PV'"));
+  assert.ok(!menu.includes('selectionChanged'), 'aucun déclenchement sur sélection');
+  assert.ok(!menu.includes('OBR.player.getSelection('), 'aucune écoute de la sélection native');
+  assert.ok(!viewer.includes('OBR.player.deselect('), 'fermer la fiche ne change pas la sélection');
+});
+
 test('V4.66 — une blessure cliquée modifie uniquement le moniteur demandé',()=>{
   const record={kind:'TOKEN',id:'agent',npcSheet:normalizeTokenNpcSheet({
     attributes:{CON:'6'},sections:{notes:'SECRET_RESTE_PRIVE'},
@@ -112,5 +122,5 @@ test('V4.66 — le menu PJ ne reçoit pas la commande et les fiches Owlbear sont
   assert.match(viewer,/store\.put\(next\)/);
   assert.match(viewer,/updatePrivateTokenCondition/);
   assert.match(html,/save-status/);
-  assert.match(html,/npc-token-view\.mjs\?v=4700/);
+  assert.match(html,/npc-token-view\.mjs\?v=4710/);
 });

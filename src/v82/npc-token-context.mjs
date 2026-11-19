@@ -1,5 +1,5 @@
-/* Fiche des personnages Owlbear : sélection directe pour le MJ et bouton natif de secours.
- * Aucun clic joueur ne peut demander la fiche privée.
+/* Fiche des personnages Owlbear : commande explicite du menu du token, réservée au MJ.
+ * Les clics de sélection, déplacements et menus natifs Owlbear sont conservés.
  */
 import OBR from '../../assets/owlbear-transfer-sdk-v55.mjs';
 import {assetKey} from '../v58/model.mjs';
@@ -11,7 +11,6 @@ const isCharacter=item=>item?.layer==='CHARACTER'&&
 
 export async function installNpcTokenContext(){
   let registered=false,closed=false,changeQueue=Promise.resolve(),opening=false;
-  let selectedId=null,lastRole=null,selectionEpoch=0;
   async function openSheet(item){
     if(closed||opening||!isCharacter(item)||await OBR.player.getRole()!=='GM')return;
     if(!await OBR.scene.isReady())return;
@@ -22,6 +21,7 @@ export async function installNpcTokenContext(){
       if(closed||await OBR.player.getRole()!=='GM')return;
       const url=new URL('../../npc-token-v82.html',import.meta.url);
       url.searchParams.set('item',actual.id);
+      url.searchParams.set('v','4710');
       await OBR.modal.open({id:modalId,url:url.href,width:780,height:650});
     }finally{opening=false;}
   }
@@ -58,34 +58,13 @@ export async function installNpcTokenContext(){
     changeQueue=changeQueue.catch(()=>{}).then(reconcile);
     return changeQueue;
   }
-  function selectionChanged(player){
-    const next=Array.isArray(player.selection)&&player.selection.length===1?
-      player.selection[0]:null;
-    const moved=next!==selectedId,alreadyGM=lastRole==='GM';
-    selectedId=next;lastRole=player.role;
-    if(player.role!== 'GM'||!alreadyGM||!moved||!next||closed||!registered)return;
-    const epoch=++selectionEpoch;
-    // A simple click selects a character in Owlbear. Open its fiche without
-    // replacing the native select/move tools. Ignore fast deselection or a
-    // selection changed while the async scene request was running.
-    void(async()=>{
-      const [item]=await OBR.scene.items.getItems([next]);
-      if(closed||epoch!==selectionEpoch||!isCharacter(item)||!item.metadata[assetKey].hasSheet)return;
-      const current=await OBR.player.getSelection();
-      if(closed||epoch!==selectionEpoch||current?.length!==1||current[0]!==next)return;
-      await openSheet(item);
-    })().catch(error=>console.warn('Sélection du personnage Owlbear',error));
-  }
-  // Do not open a modal for a token already selected before reloading the app.
-  lastRole=await OBR.player.getRole();
-  const existing=await OBR.player.getSelection();
-  selectedId=Array.isArray(existing)&&existing.length===1?existing[0]:null;
-  const off=OBR.player.onChange(player=>{
-    selectionChanged(player);
+  // La sélection du token ne doit jamais ouvrir automatiquement la fiche.
+  // Écouter seulement le rôle pour créer/retirer la commande du menu MJ.
+  const off=OBR.player.onChange(()=>{
     void refresh().catch(error=>console.warn('Menu privé Owlbear',error));
   });
   window.addEventListener('pagehide',()=>{
-    closed=true;selectionEpoch++;off?.();
+    closed=true;off?.();
     void changeQueue.finally(()=>registered?OBR.contextMenu.remove(id):undefined).catch(()=>{});
   },{once:true});
   await refresh();
