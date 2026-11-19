@@ -1,0 +1,66 @@
+name: Pré-V5 — validation de la base V4.72
+concurrency:
+  group: pre-v5-v472-${{ github.ref }}
+  cancel-in-progress: true
+on:
+  push:
+    branches: [pre-v5/integration-v472-20261119]
+  workflow_dispatch:
+jobs:
+  unitaires-et-compendium:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm test
+      - run: npm run test:sr6
+      - run: npm audit --audit-level=high
+  navigateurs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        groupe: [fiches-tokens, joueurs, soundshow, transferts]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - name: Parcours ${{ matrix.groupe }}
+        shell: bash
+        env:
+          GROUP: ${{ matrix.groupe }}
+        run: |
+          set -euo pipefail
+          case "$GROUP" in
+            fiches-tokens)
+              node tests/browser-v465.cjs
+              node tests/browser-npc-click-v470.cjs
+              node tests/browser-v467.cjs
+              node tests/browser-v468.cjs
+              ;;
+            joueurs)
+              node tests/browser-v65.cjs
+              node tests/browser-v458.cjs
+              node tests/browser-v459.cjs
+              ;;
+            soundshow)
+              node tests/browser-soundshow.cjs
+              node tests/browser-soundshow-archives.cjs
+              node tests/browser-v60.cjs
+              node tests/browser-v61.cjs
+              ;;
+            transferts)
+              node tests/browser-v58.cjs
+              node tests/browser-v63.cjs
+              node tests/browser-v64.cjs
+              node tests/browser-v452.cjs
+              ;;
+          esac
