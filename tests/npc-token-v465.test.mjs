@@ -66,6 +66,15 @@ test('V4.65 — le transfert, les lots et la fenêtre utilisent la même fiche p
   assert.match(background,/installNpcTokenContext/);
 });
 
+test('V4.71 — la fiche reste une action du menu natif et jamais de la sélection',()=>{
+  const menu=readFileSync('src/v82/npc-token-context.mjs','utf8');
+  const viewer=readFileSync('src/v82/npc-token-view.mjs','utf8');
+  assert.match(menu,/OBR\\.contextMenu\\.create\\(menu\\)/);
+  assert.match(menu,/label:'Caractéristiques et PV'/);
+  assert.doesNotMatch(menu,/selectionChanged|OBR\\.player\\.getSelection\\(/);
+  assert.doesNotMatch(viewer,/OBR\\.player\\.deselect\\(/);
+});
+
 test('V4.66 — une blessure cliquée modifie uniquement le moniteur demandé',()=>{
   const record={kind:'TOKEN',id:'agent',npcSheet:normalizeTokenNpcSheet({
     attributes:{CON:'6'},sections:{notes:'SECRET_RESTE_PRIVE'},
