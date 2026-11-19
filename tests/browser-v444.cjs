@@ -8,7 +8,7 @@ const records=p=>background(p).evaluate(()=>new Promise((resolve,reject)=>{const
 async function transfer(p,image,reveal){
  await app(p).evaluate(image=>ArchivesCellTransfer.sendImage(image),image);
  const dialog=editor(p).locator('#archives-owl-transfer[open]');await dialog.locator('[data-submit]:not([disabled])').waitFor();
- await dialog.getByRole('button',{name:reveal?'Placer et révéler':'Placer caché',exact:true}).click();await dialog.waitFor({state:'detached'});
+ await dialog.getByRole('button',{name:reveal?'Placer en Show (joueurs)':'Placer en Hide (joueurs)',exact:true}).click();await dialog.waitFor({state:'detached'});
 }
 async function openArchives(p){await p.locator('#archives-tool').click();await editor(p).locator('#world').waitFor();await app(p).waitForFunction(()=>!!window.ArchivesCellTransfer)}
 (async()=>{
@@ -21,26 +21,48 @@ async function openArchives(p){await p.locator('#archives-tool').click();await e
   const scenario={activeBoardId:'act',boards:[{id:'act',name:'SECRET_ACTE_444',links:[],nodes:[{id:'secret',title:'SECRET_CELLULE_444',category:'personnage',revealed:false,bgImg:pictures[1],desc:'SECRET_DESCRIPTION_444',x:100,y:100,w:250,h:160,clues:[]}]}]};
   const [chooser]=await Promise.all([gm.waitForEvent('filechooser'),editor(gm).getByRole('button',{name:'Importer un scénario'}).click()]);await chooser.setFiles({name:'scenario.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(scenario))});
   await editor(gm).locator('.node-cell[data-id="secret"]').waitFor();await player.frameLocator('#invite').getByRole('button',{name:'Afficher les Archives',exact:true}).click();await editor(player).locator('#world').waitFor();
-  const image={id:'source-image-444',name:'SECRET_TOKEN_444',category:'personnage',data:pictures[0]};await transfer(gm,image,false);await until(async()=>(await local(gm)).length===1,'hidden token created');
-  let id=(await local(gm))[0].id;
-  await gm.reload();await openArchives(gm);await until(async()=>(await local(gm)).length===1,'ordinary reload must keep a hidden preparation');
-  await gm.evaluate(id=>window.fixture.deleteLocal([id]),id);await until(async()=>!(await records(gm)).some(r=>r.id===id),'native hidden deletion persisted');
-  await gm.reload();await openArchives(gm);assert.equal((await local(gm)).length,0);assert.equal((await records(gm)).length,0);
-  await transfer(gm,image,true);await until(async()=>(await shared(gm)).length===1,'explicit retransmission works');id=(await shared(gm))[0].id;
-  await gm.evaluate(id=>window.fixture.deleteShared([id]),id);await until(async()=>(await records(gm)).length===0,'native revealed deletion persisted');await until(async()=>(await local(gm)).length===0,'no private ghost after public deletion');
-  await gm.reload();await openArchives(gm);assert.equal((await local(gm)).length,0);assert.equal((await shared(gm)).length,0);
-  // Reveal/hide is an internal layer transition, not a user deletion.
-  await transfer(gm,image,false);await until(async()=>(await local(gm)).length===1,'new hidden token');
-  for(let i=0;i<2;i++){await transfer(gm,image,true);assert.equal((await records(gm)).length,1);await transfer(gm,image,false);assert.equal((await records(gm)).length,1)}
-  // Demotion, promotion and scene changes keep private preparations.
-  await gm.evaluate(()=>window.fixture.changeRole('PLAYER'));await until(async()=>(await local(gm)).length===0,'role cleanup');assert.equal((await records(gm)).length,1);await gm.evaluate(()=>window.fixture.changeRole('GM'));await until(async()=>(await local(gm)).length===1,'promotion restores preparation');
-  const sceneKey='fr.archives-imaginaire.bridge/scene-key',oldScene=await gm.evaluate(async key=>(await window.fixture.scene()).metadata[key],sceneKey);
-  await gm.evaluate(()=>window.fixture.setScene());await until(async()=>(await local(gm)).length===0,'scene cleanup');assert.equal((await records(gm)).length,1);
-  await gm.evaluate(({key,value})=>fixtureHub('setSceneMetadata',{[key]:value}),{key:sceneKey,value:oldScene});await until(async()=>(await local(gm)).length===1,'return to scene restores preparation');
-  // Repair old versions' missing revealed placements, without deleting a hidden preparation.
-  await background(gm).evaluate(()=>new Promise(resolve=>{const r=indexedDB.open('archives-imaginaire-private-artwork',2);r.onsuccess=()=>{const db=r.result,tx=db.transaction('artwork','readwrite'),s=tx.objectStore('artwork'),read=s.getAll();read.onsuccess=()=>{const old=read.result[0],id=crypto.randomUUID();s.put({...old,id,revealed:true,title:'ANCIEN_FANTOME_444'},[old.scope[0],old.scope[1],id])};tx.oncomplete=()=>{db.close();resolve()}}}));
-  await gm.reload();await openArchives(gm);await until(async()=>(await local(gm)).length===1,'keep actual preparation');assert.equal((await records(gm)).length,1);
-  id=(await local(gm))[0].id;await gm.evaluate(id=>window.fixture.deleteLocal([id]),id);await until(async()=>(await records(gm)).length===0,'hidden deletion still works after role and scene transitions');
+  // V4.69 : les tokens Hide sont de vrais pions CHARACTER de la scene.
+  const image={id:'source-image-444',name:'SECRET_TOKEN_444',category:'personnage',data:pictures[0]};
+  await transfer(gm,image,false);
+  await until(async()=>(await shared(gm)).length===1,'native Hide token created');
+  let hidden=(await shared(gm))[0],id=hidden.id;
+  assert.equal(hidden.visible,false);assert.equal(hidden.layer,'CHARACTER');
+  assert.equal((await local(gm)).length,0,'no private duplicate');
+  await gm.reload();await openArchives(gm);
+  await until(async()=>(await shared(gm)).some(item=>item.id===id),'Hide persists after reload');
+  assert.equal((await shared(gm)).find(item=>item.id===id).visible,false);
+  await gm.evaluate(id=>window.fixture.deleteShared([id]),id);
+  await until(async()=>!(await records(gm)).some(r=>r.id===id),'native Hide deletion persisted');
+  await gm.reload();await openArchives(gm);
+  assert.equal((await shared(gm)).length,0);assert.equal((await local(gm)).length,0);
+  await transfer(gm,image,true);
+  await until(async()=>(await shared(gm)).length===1,'new Show token created');
+  id=(await shared(gm))[0].id;
+  await gm.evaluate(id=>window.fixture.deleteShared([id]),id);
+  await until(async()=>!(await records(gm)).some(r=>r.id===id),'native Show deletion persisted');
+  await gm.reload();await openArchives(gm);
+  assert.equal((await shared(gm)).length,0);assert.equal((await local(gm)).length,0);
+  await transfer(gm,image,false);
+  await until(async()=>(await shared(gm)).length===1,'new Hide token');
+  id=(await shared(gm))[0].id;
+  for(let i=0;i<2;i++){
+    await transfer(gm,image,true);
+    await until(async()=>(await shared(gm)).find(item=>item.id===id)?.visible===true,'Show applied');
+    assert.equal((await shared(gm)).length,1);
+    await transfer(gm,image,false);
+    await until(async()=>(await shared(gm)).find(item=>item.id===id)?.visible===false,'Hide applied');
+    assert.equal((await shared(gm)).length,1);
+  }
+  await gm.evaluate(()=>window.fixture.changeRole('PLAYER'));
+  await until(async()=> (await local(gm)).length===0,'role cleanup');
+  assert.equal((await shared(gm)).find(item=>item.id===id)?.visible,false);
+  await gm.evaluate(()=>window.fixture.changeRole('GM'));
+  await until(async()=> (await shared(gm)).find(item=>item.id===id)?.visible===false,'GM role restored');
+  assert.equal((await local(gm)).length,0);
+  await gm.evaluate(()=>window.fixture.setScene());
+  await until(async()=> (await shared(gm)).length===0,'new scene starts empty');
+  await gm.reload();await openArchives(gm);
+  assert.equal((await shared(gm)).length,0);assert.equal((await local(gm)).length,0);
   // Image menu measures its real height; short screens scroll rather than clip.
   await app(gm).evaluate(()=>ArchivesCatalogue.libraryPanel('images'));await editor(gm).locator('#archives-image-library-files').setInputFiles([
    {name:'SECRET_FICHIER_PUBLIC_444.png',mimeType:'image/png',buffer:Buffer.from(pictures[0].split(',')[1],'base64')},{name:'SECRET_FICHIER_PRIVE_444.png',mimeType:'image/png',buffer:Buffer.from(pictures[1].split(',')[1],'base64')}
@@ -62,6 +84,6 @@ async function openArchives(p){await p.locator('#archives-tool').click();await e
   // Ending a presentation while its image loads cancels the pending publication.
   await app(gm).evaluate(async()=>{const result=ArchivesPlayerImage.show({data:document.querySelector('#archives-image-library-grid img').src});ArchivesPlayerImage.hide();await result});assert.equal(await shown.count(),0);
   const wire=JSON.stringify(await player.evaluate(()=>window.fixture.wire()));for(const secret of ['SECRET_ACTE_444','SECRET_CELLULE_444','SECRET_DESCRIPTION_444','SECRET_FICHIER_PUBLIC_444','SECRET_FICHIER_PRIVE_444',pictures[1]])assert.ok(!wire.includes(secret),'private data leak: '+secret.slice(0,40));
-  assert.deepEqual(errors,[]);console.log('V4.44: native hidden/public deletion survives reload, ordinary reload/reveal/hide/role/scene changes preserve preparations, old ghosts repaired, menus stay on screen, chosen image shown/hidden without leaking library or scenario.');
+  assert.deepEqual(errors,[]);console.log('Pré-V5: native Hide/Show suppression, persistance, roles, changement de scene, sans doublon, menus et presentation d image sans fuite MJ.');
  }finally{await browser.close()}
 })().catch(error=>{console.error(error);process.exitCode=1});
