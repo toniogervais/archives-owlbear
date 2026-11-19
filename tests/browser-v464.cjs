@@ -19,6 +19,13 @@ const {archives,hub,configure}=require('./owlbear-fixture.cjs');
   const brief=page.locator('#archives-cell-brief[open]'),card=brief.locator('.brief-card[data-node-id="npc"]');
   await card.locator('img.brief-picture').waitFor();
   await card.locator('img.brief-picture').evaluate(img=>img.decode());
+  // Le rafraîchissement asynchrone de la fiche peut remplacer le nœud image
+  // après decode(). Attendre l'élément CONNECTÉ et sa feuille de style avant
+  // de mesurer object-fit, sinon getComputedStyle retourne parfois ''.
+  await page.waitForFunction(() => {
+    const img=document.querySelector('#archives-cell-brief[open] .brief-card[data-node-id="npc"] img.brief-picture');
+    return !!img?.isConnected && getComputedStyle(img).objectFit==='contain';
+  });
   assert.equal(await card.getByRole('button',{name:'Montrer l’image aux joueurs'}).count(),0,'no unnecessary presentation button');
   const imageFit=async()=>card.locator('.brief-figure').evaluate(el=>{
    const img=el.querySelector('img'),frame=el.querySelector('.brief-photo'),fit=getComputedStyle(img).objectFit,box=frame.getBoundingClientRect(),photo=img.getBoundingClientRect();
