@@ -1,6 +1,6 @@
-import {hasRoll, topicsOf} from './themes.mjs?v=133';
-import {normalize} from './model.mjs?v=133';
-import {matchFacet} from './catalog.mjs?v=133';
+import {hasRoll, topicsOf} from './themes.mjs?v=134';
+import {normalize} from './model.mjs?v=134';
+import {matchFacet,quickEquipmentFacet} from './catalog.mjs?v=134';
 
 const EXTRA={pv:['moniteur','dommages','blessures'],armure:['armure','armor','defensif'],initiative:['initiative','i/di'],piratage:['piratage','hacking','pirater','matrice'],pirater:['piratage','hacking','hacker'],drone:['drone','drones'],pnj:['npc','pnj','professionnalisme'],recharger:['recharger','recharge','chargeur'],tirer:['tir','tirer','attaque','firearms'],soigner:['soins','soigner','guerison','premiers','healing','medikit'],blesse:['blesse','blessures','dommages'],bete:['creature','bete'],saignement:['saignement','bleeding'],crocheter:['crocheter','crochetage','serrure'],esquiver:['esquiver','esquive','defense','dodge'],negocier:['negocier','negociation','influence'],discretement:['furtivite','discretion','se faufiler'],grimper:['escalade','escalader'],frapper:['frapper','combat rapproche','melee'],courir:['sprinter','sprint','course'],pistolet:['pistolet','pistols'],fusil:['fusil','rifle'],soin:['soins','soigner','guerison']};
 const STOP=new Set('a au aux avec ce cet cette ces c est dans de des du d en et faire faut il je jet jets le les la l mon ma mes ne on ou par pas pour qu que quel quelle quels quelles qui sa se ses son sur tel tels un une vous comment dois doit situation situations'.split(' '));
@@ -43,6 +43,22 @@ export function searchEntries(entries,{query='',kind='',topic='',source='',favor
  }
  collect();let corrected=false;if(!results.length&&gs.some(g=>g[0].length>=5)){collect(true);corrected=results.length>0;}
  results.sort((a,b)=>q?(b.score-a.score||(a.entry.title||a.entry.name).localeCompare(b.entry.title||b.entry.name,'fr')||a.entry.page-b.entry.page):((a.entry.title||a.entry.name).localeCompare(b.entry.title||b.entry.name,'fr')||a.entry.source.localeCompare(b.entry.source,'fr')||a.entry.page-b.entry.page));
+ // Browse without a typed query: interleave items across families/types.
+ // This avoids presenting only the first 75 alphabetic AK/crossbow variants.
+ if(!q&&kind==='equipment'){
+  const buckets=new Map();
+  for(const result of results){
+   const facet=quickEquipmentFacet(result.entry);
+   const key=family?facet.subcategory:facet.family;
+   if(!buckets.has(key))buckets.set(key,[]);
+   buckets.get(key).push(result);
+  }
+  const order=[...buckets.values()],balanced=[];
+  for(let i=0;balanced.length<results.length;i++){
+   for(const bucket of order)if(i<bucket.length)balanced.push(bucket[i]);
+  }
+  results=balanced;
+ }
  return {total:results.length,corrected,items:results.slice(offset,offset+limit).map(({entry:{_text,_title,_tags,...entry}})=>entry)};
 }
 export function libraryPages(library){return (library?.books||[]).flatMap(b=>b.pages.filter(p=>p.text.trim()).map(p=>({id:`page:${b.id}:${p.number}`,title:`${b.displayTitle||b.title} · p. ${p.printed>0?p.printed:'PDF '+p.number}`,kind:'page',source:b.id,topic:p.topic,page:p.number,printedPage:p.printed,summary:p.text.slice(0,190),_title:normalize(b.title),_text:normalize(p.text)})));}

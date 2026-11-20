@@ -1,16 +1,16 @@
-import {VERSION,validateLibrary,parseLibraryText,parseLibraryFileText,normalize,literalPrice,quantity,safeCart,inventoryText} from './model.mjs?v=133';
-import {prepareEntries,searchEntries,makeAliases,libraryPages,profileText,profileRolls} from './search.mjs?v=133';
-import {getStored,putStored,deleteStored} from './storage.mjs?v=133';
-import {bridge,ready,OBR} from './bridge.mjs?v=133';
-import {sectionExcerpt} from './reader.mjs?v=133';
-import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './content.mjs?v=133';
-import {readBookPdf} from './pdf-import.mjs?v=133';
+import {VERSION,validateLibrary,parseLibraryText,parseLibraryFileText,normalize,literalPrice,quantity,safeCart,inventoryText} from './model.mjs?v=134';
+import {prepareEntries,searchEntries,makeAliases,libraryPages,profileText,profileRolls} from './search.mjs?v=134';
+import {getStored,putStored,deleteStored} from './storage.mjs?v=134';
+import {bridge,ready,OBR} from './bridge.mjs?v=134';
+import {sectionExcerpt} from './reader.mjs?v=134';
+import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './content.mjs?v=134';
+import {readBookPdf} from './pdf-import.mjs?v=134';
 
-import {THEMES, topicOf, topicsOf, hasRoll, mergeTableRules} from './themes.mjs?v=133';
-import {hasTable, tableShelf, startTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=133';
-import {observePanel} from './panel-size.mjs?v=133';
-import {catalogHierarchy,classifyEntry,KIND_NAMES} from './catalog.mjs?v=133';
-import {installWindowControls} from './window-controls.mjs?v=133';
+import {THEMES, topicOf, topicsOf, hasRoll, mergeTableRules} from './themes.mjs?v=134';
+import {hasTable, tableShelf, startTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=134';
+import {observePanel} from './panel-size.mjs?v=134';
+import {quickCatalogHierarchy,classifyEntry,KIND_NAMES} from './catalog.mjs?v=134';
+import {installWindowControls} from './window-controls.mjs?v=134';
 
 const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -45,12 +45,11 @@ function setKind(kind,{keepQuery=false}={}){
  else welcome();
 }
 function updateCategoryFilter(){
- const select=$('#category'),previous=state.browse.family||select.value;
- const groups=currentHierarchy();select.replaceChildren();
- select.hidden=!state.kind&&!$('#topic').value;
- select.append(new Option('Toutes les catégories',''));
- for(const group of groups)select.append(new Option(group.name+' ('+fmt(group.count)+')',group.name));
- select.value=groups.some(g=>g.name===previous)?previous:'';
+ const select=$('#category');select.replaceChildren();select.append(new Option('Toutes les catégories',''));
+ for(const g of currentHierarchy())select.append(new Option(g.name,g.name));
+ select.value=state.browse.family;
+ // Compact chips replace the duplicated category dropdown.
+ select.hidden=true;
 }
 function searchOptions(){return {query:$('#search').value,kind:state.kind==='favorites'?'':state.kind,topic:$('#topic').value,source:$('#source').value,favorites:state.kind==='favorites'?[...state.favorites]:null,family:state.browse.family,subcategory:state.browse.sub,offset:0,limit:state.offset+75,practicalOnly:$('#practicalOnly').checked,category:''};}
 function runSearch(append=false){
@@ -318,7 +317,7 @@ async function restoreLibrary(){
 async function init(){
  try{
   const files=['sources','index','equipment','profiles','rules','coverage','terminology'];
-  const values=await Promise.all(files.map(async name=>{const r=await fetch(`data/${name}.json?v=133`,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw Error('Impossible de charger '+name);return r.json();}));
+  const values=await Promise.all(files.map(async name=>{const r=await fetch(`data/${name}.json?v=134`,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw Error('Impossible de charger '+name);return r.json();}));
   const [books,index,equipment,profiles,rules,coverage,terms]=values;Object.assign(state,{books,index,equipment,profiles,rules,baseRules:rules,coverage,terms});
   buildEntries();
   const [prefs,cart]=await Promise.all([getStored('preferences',{}),getStored('cart',[])]);
@@ -333,21 +332,21 @@ async function init(){
   void restoreLibrary();
   void activateTable(selection);
   void setupBridge().catch(fail);
-  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=133').catch(()=>{});
+  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=134').catch(()=>{});
  }catch(e){$('#resultCount').textContent='Chargement interrompu';$('#detail').innerHTML='<h2>Le compendium ne s’est pas chargé.</h2><button id="retryLoad">Réessayer</button>';$('#retryLoad').onclick=()=>location.reload();fail(e);}
 }
 function initWorker(){
  try{
-   const w=new Worker(new URL('./search-worker.mjs?v=133',import.meta.url),{type:'module'});state.worker=w;
+   const w=new Worker(new URL('./search-worker.mjs?v=134',import.meta.url),{type:'module'});state.worker=w;
    w.onmessage=({data})=>{if(data.type==='results')renderResults(data);if(data.type==='ready'){state.workerReady=true;runSearch();}if(data.type==='library-ready')runSearch();if(data.type==='error')fail(Error(data.message));};
    w.onerror=()=>{w.terminate();state.worker=null;state.workerReady=false;runSearch();};w.postMessage({type:'init',entries:state.entries,terms:state.terms.terms});
   }catch{state.worker=null;}
 }
-$('#search').addEventListener('input',()=>{state.seq++;state.pendingAction=null;if($('#search').value.trim()){if($('.workspace').classList.contains('browse-catalog'))showBrowseHint('Recherche');}else if(!state.browse.family&&(state.kind||$('#topic').value))renderCategoryLanding();$('.workspace').classList.remove('show-detail');clearTimeout(searchTimer);searchTimer=setTimeout(()=>runSearch(),90);});
+$('#search').addEventListener('input',()=>{state.seq++;state.pendingAction=null;$('.workspace').classList.remove('show-detail','browse-catalog');clearTimeout(searchTimer);searchTimer=setTimeout(()=>runSearch(),90);});
 $('#search').addEventListener('keydown',ev=>{if(ev.key==='ArrowDown'||ev.key==='Enter'){ev.preventDefault();clearTimeout(searchTimer);state.pendingAction=ev.key==='Enter'?'open':'focus';runSearch();}});
 $('#results').addEventListener('keydown',ev=>{if(!['ArrowDown','ArrowUp'].includes(ev.key))return;const buttons=[...$('#results').querySelectorAll('.result')],at=buttons.indexOf(document.activeElement);if(at<0)return;ev.preventDefault();buttons[Math.max(0,Math.min(buttons.length-1,at+(ev.key==='ArrowDown'?1:-1)))].focus();});
-$('#category').onchange=()=>{$('#category').value?chooseFamily($('#category').value):(renderCategoryLanding(),runSearch());};
-$('#practicalOnly').onchange=()=>{state.browse={family:'',sub:''};updateCategoryFilter();renderCategoryLanding();runSearch();};
+$('#category').onchange=()=>{$('#category').value?chooseFamily($('#category').value):(state.browse={family:'',sub:''},renderQuickBar(),runSearch());};
+$('#practicalOnly').onchange=()=>{state.browse={family:'',sub:''};renderCategoryLanding();runSearch();};
 $('#source').onchange=()=>{state.browse={family:'',sub:''};updateCategoryFilter();renderCategoryLanding();runSearch();};$('#topic').onchange=()=>{state.browse={family:'',sub:''};updateCategoryFilter();renderCategoryLanding();runSearch();};$('#fulltext').onchange=()=>runSearch();
 $('#tabs').querySelectorAll('[data-kind]').forEach(b=>b.onclick=()=>setKind(b.dataset.kind));
 $('#quick').querySelectorAll('[data-query]').forEach(b=>b.onclick=()=>{$('#search').value=b.dataset.query;runSearch();});
@@ -400,7 +399,6 @@ async function activateTable(desired) {
   const selected=resolveEntry(state.selected?.id||desired);
   if(selected)selectEntry(selected,{mobile:false,remember:false});
   else if(state.browse.family)chooseFamily(state.browse.family,state.browse.sub);
-  else if($('#detail .catalog-landing'))renderCategoryLanding();
   else if($('#detail .theme-grid'))welcome();
  }catch(error){
   if(!hasTable())return;
@@ -506,7 +504,7 @@ function themeLanding(id){renderCategoryLanding();}
 
 
 function currentHierarchy(){
- return catalogHierarchy(state.entries,{kind:state.kind,topic:$('#topic').value,source:$('#source').value,
+ return quickCatalogHierarchy(state.entries,{kind:state.kind,topic:$('#topic').value,source:$('#source').value,
   favorites:state.kind==='favorites'?state.favorites:null,practicalOnly:$('#practicalOnly').checked});
 }
 function showBrowseHint(title){
@@ -516,56 +514,56 @@ function showBrowseHint(title){
 function renderCategoryLanding(){
  if(!state.kind&&!$('#topic').value){welcome();return;}
  state.browse={family:'',sub:''};
- $('#category').value='';$('#catalogTrail').hidden=true;
- const groups=currentHierarchy();
- const heading=state.kind?(state.kind==='rolls'?'Jets à prévoir':KIND_NAMES[state.kind]||'Catalogue'):topics[$('#topic').value]||'Thème';
- const total=groups.reduce((sum,g)=>sum+g.count,0);
- const root=$('#detail');releaseArt();state.selected=null;delete root.dataset.inventory;
- root.innerHTML='<div class="catalog-landing"><div class="catalog-landing-top"><div><h2>'+esc(heading)+'</h2><p>'+fmt(total)+' fiches classées : choisis une catégorie, puis une sous-catégorie si nécessaire.</p></div><button id="catalogAll" class="subtle">Toutes les références</button></div><div class="catalog-grid"></div></div>';
- const grid=root.querySelector('.catalog-grid');
- for(const g of groups){
-  const b=document.createElement('button');b.type='button';b.className='catalog-tile';
-  b.innerHTML='<strong>'+esc(g.name)+'</strong><span>'+fmt(g.count)+' références</span><small>'+esc(g.children.slice(0,3).map(x=>x.name).join(' · '))+'</small>';
-  b.onclick=()=>chooseFamily(g.name);grid.append(b);
- }
- root.querySelector('#catalogAll').onclick=()=>{
-  state.browse={family:'',sub:''};$('#catalogTrail').hidden=true;showBrowseHint(heading);runSearch();
- };
- $('.workspace').classList.add('browse-catalog','show-detail');
- $('#quick').hidden=true;
+ updateCategoryFilter();renderQuickBar();
+ showBrowseHint(state.kind?(KIND_NAMES[state.kind]||'Catalogue'):(topics[$('#topic').value]||'Thème'));
 }
-function renderSubcategoryLanding(item){
- const root=$('#detail');releaseArt();state.selected=null;
- root.innerHTML='<div class="catalog-landing"><div class="catalog-landing-top"><div><h2>'+esc(item.name)+'</h2><p>'+fmt(item.count)+' références · Choisis une sous-catégorie.</p></div><button id="catalogAll" class="subtle">Voir toutes les références</button></div><div class="catalog-grid"></div></div>';
- for(const part of item.children){
-  const tile=document.createElement('button');tile.type='button';tile.className='catalog-tile';
-  tile.innerHTML='<strong>'+esc(part.name)+'</strong><span>'+fmt(part.count)+' références</span>';
-  tile.onclick=()=>chooseFamily(item.name,part.name);
-  root.querySelector('.catalog-grid').append(tile);
- }
- root.querySelector('#catalogAll').onclick=()=>{
-  state.browse={family:item.name,sub:''};
-  showBrowseHint(item.name);runSearch();
+function renderQuickBar(){
+ const groups=currentHierarchy();
+ const bar=$('#catalogTrail');bar.replaceChildren();
+ bar.hidden=!state.kind&&!$('#topic').value;
+ if(bar.hidden)return;
+ const chip=(text,active,callback)=>{
+  const b=document.createElement('button');b.type='button';
+  b.className='catalog-chip'+(active?' selected':'');b.textContent=text;b.onclick=callback;return b;
  };
- $('.workspace').classList.add('browse-catalog','show-detail');
+ bar.append(chip('Tout',!state.browse.family,()=>{
+  state.browse={family:'',sub:''};updateCategoryFilter();renderQuickBar();
+  showBrowseHint('Toutes les fiches');runSearch();
+ }));
+ // Eight shortcuts for equipment; no wall of subcategories.
+ const top=state.kind==='equipment'?groups:groups.slice(0,7);
+ for(const group of top){
+  bar.append(chip(group.name,state.browse.family===group.name,()=>chooseFamily(group.name)));
+ }
+ if(groups.length>top.length){
+  const more=document.createElement('select');more.className='catalog-more';
+  more.setAttribute('aria-label','Autres catégories');
+  more.append(new Option('Autres catégories…',''));
+  for(const g of groups.slice(top.length))more.append(new Option(g.name,g.name));
+  if(groups.slice(top.length).some(g=>g.name===state.browse.family))more.value=state.browse.family;
+  more.onchange=()=>chooseFamily(more.value);bar.append(more);
+ }
+ const current=groups.find(g=>g.name===state.browse.family);
+ if(current&&current.children.length>1){
+  const filter=document.createElement('select');filter.className='catalog-refine';
+  filter.setAttribute('aria-label','Filtrer par type précis');
+  filter.append(new Option('Tous les types',''));
+  for(const c of current.children)filter.append(new Option(c.name+' ('+fmt(c.count)+')',c.name));
+  filter.value=state.browse.sub;
+  filter.hidden=!state.browse.sub;
+  const show=chip(state.browse.sub?'Type : '+state.browse.sub:'Affiner ▾',Boolean(state.browse.sub),()=>{
+   filter.hidden=!filter.hidden;if(!filter.hidden)filter.focus();
+  });
+  filter.onchange=()=>chooseFamily(current.name,filter.value);
+  bar.append(show,filter);
+ }
 }
 function chooseFamily(family,sub=''){
  const item=currentHierarchy().find(g=>g.name===family);
- if(!item)return renderCategoryLanding();
+ if(!item){state.browse={family:'',sub:''};renderQuickBar();runSearch();return;}
  state.browse={family,sub:item.children.some(x=>x.name===sub)?sub:''};
- $('#category').value=family;state.selected=null;
- const trail=$('#catalogTrail');trail.replaceChildren();trail.hidden=false;
- const back=document.createElement('button');back.textContent='← Catégories';back.className='subtle';
- back.onclick=()=>{updateCategoryFilter();renderCategoryLanding();runSearch();};trail.append(back);
- const heading=document.createElement('strong');heading.textContent=family+' · '+fmt(item.count);trail.append(heading);
- const all=document.createElement('button');all.className='catalog-chip';all.textContent='Tout afficher';
- all.onclick=()=>{state.browse={family,sub:''};showBrowseHint(family);runSearch();};trail.append(all);
- for(const child of item.children){
-  const b=document.createElement('button');b.className='catalog-chip'+(state.browse.sub===child.name?' selected':'');
-  b.textContent=child.name+' · '+fmt(child.count);b.title='Afficher '+child.name;
-  b.onclick=()=>chooseFamily(family,child.name);trail.append(b);
- }
- if(!state.browse.sub)renderSubcategoryLanding(item);else showBrowseHint(state.browse.sub);
+ updateCategoryFilter();renderQuickBar();
+ showBrowseHint(state.browse.sub||family);
  runSearch();
 }
 function restoreCatalogRoute(){
@@ -579,7 +577,7 @@ function restoreCatalogRoute(){
  $('#quick').hidden=Boolean(state.kind);
  updateCategoryFilter();
  if(family&&currentHierarchy().some(g=>g.name===family))chooseFamily(family,sub);
- else if(p.get('search')||state.kind==='favorites')showBrowseHint('Résultats');
+ else if(p.get('search')||state.kind==='favorites'){renderQuickBar();showBrowseHint('Résultats');}
  else if(state.kind||$('#topic').value)renderCategoryLanding();
  else welcome();
 }
