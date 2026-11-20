@@ -24,7 +24,8 @@ export async function decodeSr6Import(value){
    !['personnage','objet'].includes(payload.node.category)||
    !Array.isArray(payload.node.clues)||payload.node.clues.length||
    !Array.isArray(payload.node.gmDetails)||
-   payload.node.revealed!==false||payload.node.bgImg)throw Error('Les informations de la fiche ne sont pas valides.');
+   payload.node.revealed!==false||
+   (payload.node.bgImg&&(!/^data:image\/webp;base64,[A-Za-z0-9+/]+=*$/.test(payload.node.bgImg)||payload.node.bgImg.length>28000)))throw Error('Les informations de la fiche ne sont pas valides.');
  return payload;
 }
 function ownerReady(){
