@@ -252,11 +252,10 @@ function highlightText(root,text,query){
  const parts=text.split(re);for(let i=0;i<parts.length;i++){if(i%2){const mark=document.createElement('mark');mark.textContent=parts[i];root.append(mark);}else root.append(document.createTextNode(parts[i]));}
 }
 function bindDetail(e){
- $('#detail').querySelectorAll('[data-sr6-export]').forEach(btn=>btn.onclick=async()=>{
+ $('#detail').querySelectorAll('[data-sr6-export]').forEach(btn=>btn.onclick=()=>{
   const destination=btn.dataset.sr6Export;
-  if(OBR.isAvailable&&await OBR.player.getRole()!=='GM'){toast('Transfert réservé au MJ dans Owlbear.');return;}
   btn.disabled=true;
-  try{const message=await sendToArchives(e,destination,{obr:OBR});toast(message);}
+  try{const message=sendToArchives(e,destination);toast(message);}
   catch(error){toast(error.message||String(error));}
   finally{btn.disabled=false;}
  });
