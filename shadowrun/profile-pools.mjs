@@ -28,10 +28,10 @@ export const ATTRIBUTE_NAMES={CON:'Constitution',AGI:'Agilité','RÉA':'Réactio
 const byName=new Map(SKILLS.map(s=>[normalize(s.name),s]));
 const names=SKILLS.map(s=>s.name).sort((a,b)=>b.length-a.length).join('|');
 const pattern=new RegExp('(?:^|[,;]\\s*|\\s+)('+names+'|Lancement de sorts)(?:\\s*\\(([^)]+)\\))?\\s+(\\d{1,2})(?:\\s*\\((\\d{1,2})\\))?(?:\\s*\\(([^)]+)\\))?','giu');
-const num=x=>/^\\d+$/.test(String(x??'').trim())?Number(x):null;
+const num=x=>/^\d+$/.test(String(x??'').trim())?Number(x):null;
 const attrValue=(profile,key)=>{
  const raw=String(profile.attributes?.[key]??'').trim();
- const matched=/^(\\d+)(?:\\s*\\((\\d+)\\))?$/.exec(raw);
+ const matched=/^(\d+)(?:\s*\((\d+)\))?$/.exec(raw);
  return {raw,value:matched?Number(matched[1]):null,alternative:matched?.[2]?Number(matched[2]):null};
 };
 export function parseProfileSkills(value=''){
@@ -40,9 +40,9 @@ export function parseProfileSkills(value=''){
   const name=m[1],def=byName.get(normalize(name==='Lancement de sorts'?'Sorcellerie':name));
   if(!def)continue;
   const embedded=m[2],rank=Number(m[3]),alternateRank=m[4]?Number(m[4]):null;
-  const spec=m[5]?.match(/^\\s*(.*?)\\s*\\+\\s*(2|3)\\s*$/);
+  const spec=m[5]?.match(/^\s*(.*?)\s*\+\s*(2|3)\s*$/);
   const specialty=spec?.[1]||'',bonus=spec?Number(spec[2]):0;
-  const label=embedded&&!/^\\d+$/.test(embedded)?name+' ('+embedded.trim()+')':name;
+  const label=embedded&&!/^\d+$/.test(embedded)?name+' ('+embedded.trim()+')':name;
   const key=normalize(label)+'|'+rank+'|'+normalize(specialty);
   if(seen.has(key))continue;
   seen.add(key);rows.push({name:label,rank,alternateRank,specialty,bonus,definition:def});
