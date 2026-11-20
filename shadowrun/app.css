@@ -25,3 +25,10 @@ dialog.image-reader{width:min(96vw,1100px);max-height:94dvh}.image-reader #infoB
 @media(max-width:700px){main#app{padding:.5rem .65rem .2rem}.masthead{padding:.55rem .75rem}.workspace{height:auto;min-height:0}.detail{height:100%;padding:.8rem .15rem 1.2rem}.results-pane{height:100%}.theme-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.theme-card{min-height:70px}.find{margin-bottom:.35rem}.filters select{min-height:37px}.table-retry{line-height:1.15}footer{flex-direction:row;align-items:center}.art-section .plate-thumb{min-width:0}.procedure-row p{overflow-wrap:anywhere}}
 @media(max-height:520px){.masthead{padding:.3rem .65rem}.masthead .eyebrow{display:none}.find{margin-bottom:.3rem}footer{display:none}.searchbox{padding:.3rem .65rem}}
 .reference-buttons{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap;margin:.5rem 0}.reference-buttons>span{font-size:.8rem;color:var(--muted);margin-right:.35rem}
+
+/* Clearly separate indexed classification, mechanics and the checked book passage. */
+.entry-taxonomy{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:.5rem;margin:.7rem 0 1rem}
+.entry-taxonomy>div{display:flex;flex-direction:column;gap:.2rem;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:.58rem .75rem}
+.entry-taxonomy span{font-size:.72rem;color:var(--muted)}
+.entry-taxonomy strong{font-size:.9rem;line-height:1.4;overflow-wrap:anywhere}
+.source-warning{color:var(--gold);font-size:.85rem;line-height:1.5;padding:.6rem .85rem;border-left:2px solid var(--gold)}

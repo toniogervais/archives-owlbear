@@ -1,4 +1,4 @@
-import {normalize} from './model.mjs?v=131';
+import {normalize} from './model.mjs?v=132';
 
 const key=e=>normalize(e.originalTitle||e.title||e.name).replace(/\s*\([il]\)\s*$/,'');
 export function assembleEntries({rules,profiles,equipment,index}){
@@ -7,13 +7,26 @@ export function assembleEntries({rules,profiles,equipment,index}){
  const entries=[...rules,...profiles,...equipment.map(e=>({...e,title:e.name,kind:'equipment',topic:'equipement'}))];
  const byName=new Map();
  for(const e of entries){const k=e.source+':'+key(e);if(!byName.has(k))byName.set(k,[]);byName.get(k).push(e);}
+ const seenIndex=new Map();
+ const compatible=(ref,e)=>{
+  if(e.kind==='equipment')return ref.topic==='equipement';
+  if(e.kind==='npc')return ref.topic==='pnj'||ref.topic==='mj';
+  if(e.kind==='creature')return ref.topic==='creatures';
+  return !['equipement','creatures','pnj'].includes(ref.topic);
+ };
  for(const ref of index){
-  if(replacements.has(ref.id))continue;
-  if(ref.isStructural){entries.push({...ref,kind:"rule",sourceOnly:true});continue;}
-  const matches=(byName.get(ref.source+':'+key(ref))||[]).filter(e=>Math.abs(e.page-ref.page)<=4);
-  if(matches.length===1){replacements.set(ref.id,matches[0].id);continue;}
+  // Same name in another chapter is intentional; only identical index locations are duplicates.
+  const signature=[ref.source,key(ref),ref.page,ref.level,(ref.path||[]).map(normalize).join('/')].join('|');
+  if(seenIndex.has(signature)){replacements.set(ref.id,seenIndex.get(signature));continue;}
+  if(replacements.has(ref.id)){seenIndex.set(signature,replacements.get(ref.id));continue;}
+  if(ref.isStructural){entries.push({...ref,kind:'rule',sourceOnly:true});seenIndex.set(signature,ref.id);continue;}
+  const matches=(byName.get(ref.source+':'+key(ref))||[]).filter(e=>
+   compatible(ref,e)&&Math.min(Math.abs(e.page-ref.page),Math.abs((e.descriptionPage||e.page)-ref.page))<=1
+  );
+  if(matches.length===1){replacements.set(ref.id,matches[0].id);seenIndex.set(signature,matches[0].id);continue;}
   const near=profiles.filter(p=>p.source===ref.source&&Math.abs(p.page-ref.page)<=1&&(key(p).includes(key(ref))||key(ref).includes(key(p))));
   entries.push({...ref,kind:ref.kind||'rule',linkedProfiles:near.map(p=>p.id),sourceOnly:true});
+  seenIndex.set(signature,ref.id);
  }
  return {entries,replacements};
 }

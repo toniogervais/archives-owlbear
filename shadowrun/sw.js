@@ -1,5 +1,5 @@
-const CACHE='archives-sr6-compendium-1.3.1';
-const FILES=['./','./index.html','./app.css','./app.mjs','./model.mjs','./reader.mjs','./content.mjs','./themes.mjs','./table-books.mjs','./panel-size.mjs','./pdf-import.mjs','./search.mjs','./search-worker.mjs','./storage.mjs','./bridge.mjs','./bridge-core.mjs','./icon.svg','./data/sources.json','./data/index.json','./data/equipment.json','./data/profiles.json','./data/rules.json','./data/coverage.json','./data/terminology.json','../assets/owlbear-transfer-sdk-v55.mjs'].map(path=>path+'?v=131');
+const CACHE='archives-sr6-compendium-1.3.2';
+const FILES=['./','./index.html','./app.css','./app.mjs','./model.mjs','./reader.mjs','./content.mjs','./themes.mjs','./table-books.mjs','./panel-size.mjs','./pdf-import.mjs','./search.mjs','./search-worker.mjs','./storage.mjs','./bridge.mjs','./bridge-core.mjs','./icon.svg','./data/sources.json','./data/index.json','./data/equipment.json','./data/profiles.json','./data/rules.json','./data/coverage.json','./data/terminology.json','../assets/owlbear-transfer-sdk-v55.mjs'].map(path=>path+'?v=132');
 const allowed=new Set(FILES.map(p=>new URL(p,self.location.href).pathname));
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('archives-sr6-compendium-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));

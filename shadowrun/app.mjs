@@ -1,14 +1,14 @@
-import {VERSION,validateLibrary,parseLibraryText,parseLibraryFileText,normalize,literalPrice,quantity,safeCart,inventoryText} from './model.mjs?v=131';
-import {prepareEntries,searchEntries,makeAliases,libraryPages,profileText,profileRolls} from './search.mjs?v=131';
-import {getStored,putStored,deleteStored} from './storage.mjs?v=131';
-import {bridge,ready,OBR} from './bridge.mjs?v=131';
-import {sectionExcerpt} from './reader.mjs?v=131';
-import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './content.mjs?v=131';
-import {readBookPdf} from './pdf-import.mjs?v=131';
+import {VERSION,validateLibrary,parseLibraryText,parseLibraryFileText,normalize,literalPrice,quantity,safeCart,inventoryText} from './model.mjs?v=132';
+import {prepareEntries,searchEntries,makeAliases,libraryPages,profileText,profileRolls} from './search.mjs?v=132';
+import {getStored,putStored,deleteStored} from './storage.mjs?v=132';
+import {bridge,ready,OBR} from './bridge.mjs?v=132';
+import {sectionExcerpt} from './reader.mjs?v=132';
+import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './content.mjs?v=132';
+import {readBookPdf} from './pdf-import.mjs?v=132';
 
-import {THEMES, topicOf, topicsOf, hasRoll, mergeTableRules} from './themes.mjs?v=131';
-import {hasTable, tableShelf, startTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=131';
-import {observePanel} from './panel-size.mjs?v=131';
+import {THEMES, topicOf, topicsOf, hasRoll, mergeTableRules} from './themes.mjs?v=132';
+import {hasTable, tableShelf, startTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=132';
+import {observePanel} from './panel-size.mjs?v=132';
 
 const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -79,6 +79,12 @@ function relationHtml(e){
  return `<h3>À consulter aussi</h3>${rel.map(e=>`<button class="relation" data-entry="${esc(e.id)}">${esc(title(e))}</button>`).join('')}`;
 }
 function headerHtml(e){return `<div class="topline"><button class="subtle back-mobile" id="backResults">Résultats</button><span class="breadcrumb">${esc(topics[topicOf(e)]||e.habitat||e.category||'Compendium')}</span><button id="favorite" class="iconbutton" aria-label="${state.favorites.has(e.id)?'Retirer des favoris':'Ajouter aux favoris'}" aria-pressed="${state.favorites.has(e.id)}">${state.favorites.has(e.id)?'★':'☆'}</button></div><div class="badges"><span class="badge">${esc(labels[e.kind]||'Référence')}</span>${e.summary&&e.kind!=='page'?'<span class="badge summary">Rappel en français</span>':''}${e.optional?'<span class="badge optional">Règle optionnelle</span>':''}${e.verification==='a-verifier'?'<span class="badge optional">Extraction à vérifier dans la source</span>':''}</div><h2>${esc(title(e))}</h2>${e.originalTitle&&e.originalTitle!==title(e)?`<p class="original-title">${esc(e.originalTitle)}</p>`:''}`;}
+function categoryHtml(e){
+ const category=e.category||e.habitat||topics[topicOf(e)]||'Système de jeu';
+ const path=(e.path||[]).filter(Boolean);
+ const subcategory=path.length?path.slice(-2).join(' › '):'';
+ return '<div class="entry-taxonomy"><div><span>Catégorie</span><strong>'+esc(category)+'</strong></div>'+(subcategory?'<div><span>Sous-catégorie</span><strong>'+esc(subcategory)+'</strong></div>':'')+'</div>';
+}
 function procedureHtml(p){
  const names={test:'Jet de dés',opposition:'Opposition',threshold:'Seuil',action:'Action et timing',access:'Accès nécessaire',effect:'Résultat',limits:'À ne pas oublier',cost:'Karma',example:'Exemple'};
  return `<section class="procedure" aria-label="Procédure de jeu">${Object.entries(names).filter(([k])=>p[k]).map(([k,n])=>`<div class="procedure-row ${k==='test'?'main-roll':''}"><span>${n}</span><p>${esc(p[k])}</p></div>`).join('')}</section>`;
@@ -86,11 +92,12 @@ function procedureHtml(p){
 async function selectEntry(e,{mobile=true,remember=true}={}){
  if(!e)return;
  if(remember&&state.trail[state.trailAt]!==e.id){state.trail.splice(state.trailAt+1);state.trail.push(e.id);state.trailAt=state.trail.length-1;}
- releaseArt();state.selected=e;const url=new URL(location.href);url.searchParams.set('entry',e.id);history.replaceState(null,'',url.href);const root=$('#detail');delete root.dataset.inventory;root.innerHTML=headerHtml(e);
+ releaseArt();state.selected=e;const url=new URL(location.href);url.searchParams.set('entry',e.id);history.replaceState(null,'',url.href);const root=$('#detail');delete root.dataset.inventory;root.innerHTML=headerHtml(e)+categoryHtml(e);
  root.insertAdjacentHTML('afterbegin',`<div class="detail-nav"><button id="entryPrev" class="subtle" ${state.trailAt<=0?'disabled':''}>Retour</button><button id="entryNext" class="subtle" ${state.trailAt>=state.trail.length-1?'disabled':''}>Suivant</button><button id="copyEntry" class="subtle">Copier la fiche</button></div>`);
  if(e.kind==='roll'&&e.pools?.length)root.insertAdjacentHTML('beforeend',`<section class="pool-list"><h3>Réserves citées dans le passage</h3>${e.pools.map(pool=>`<p>${esc(pool)}</p>`).join('')}</section>`);
  if(e.procedure)root.insertAdjacentHTML('beforeend',procedureHtml(e.procedure));
  if(e.attributes){
+  root.insertAdjacentHTML('beforeend','<h3>Caractéristiques</h3>');
   root.insertAdjacentHTML('beforeend',`<dl class="stat-grid">${Object.entries(e.attributes).map(([k,v])=>`<div class="stat"><dt title="${esc(state.terms.attributes?.find(a=>a.fr===k)?.french||k)}">${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl><div class="derived">${Object.entries(e.derived||{}).map(([k,v])=>`<span><b>${esc(k)}</b>${esc(v)}</span>`).join('')}</div>`);
   const rolls=profileRolls(e);if(rolls.length)root.insertAdjacentHTML('beforeend',`<h3>Jets courants</h3><div class="profile-rolls">${rolls.map(r=>`<div><span>${esc(r.label)}</span><strong>${esc(r.value)}</strong><small>${esc(r.formula)}</small></div>`).join('')}</div>`);
   for(const [k,v] of Object.entries(e.sections||{})){root.insertAdjacentHTML('beforeend',`<h3>${esc(k)}</h3><p>${esc(v)}</p>`);}
@@ -100,8 +107,8 @@ async function selectEntry(e,{mobile=true,remember=true}={}){
    root.insertAdjacentHTML('beforeend',`<details><summary>Vérifier les valeurs anglais / français</summary><div class="table-wrap"><table><thead><tr><th>Anglais</th><th>Français</th><th>Valeur source</th><th>Valeur affichée</th></tr></thead><tbody>${(e.comparison||[]).map(c=>`<tr><td>${esc(c.en)}</td><td>${esc(c.fr)}</td><td>${esc(c.source)}</td><td>${esc(c.value)}</td></tr>`).join('')}</tbody></table></div></details>`);
   }
  }
- if(e.summary&&e.kind!=='page')root.insertAdjacentHTML('beforeend',`<div class="summary-body"><p>${esc(e.summary)}</p>${e.steps?.length?`<ol>${e.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>`:''}${e.warning?`<p class="warn">${esc(e.warning)}</p>`:''}</div>`);
- if(e.fields?.length)root.insertAdjacentHTML('beforeend',tableRows(e.fields));
+ if(e.summary&&e.kind!=='page')root.insertAdjacentHTML('beforeend',`<div class="summary-body"><h3>Description / rappel</h3><p>${esc(e.summary)}</p>${e.steps?.length?`<ol>${e.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>`:''}${e.warning?`<p class="warn">${esc(e.warning)}</p>`:''}</div>`);
+ if(e.fields?.length){root.insertAdjacentHTML('beforeend','<h3>Caractéristiques</h3>');root.insertAdjacentHTML('beforeend',tableRows(e.fields));}
  if(e.kind==='equipment')root.insertAdjacentHTML('beforeend','<div class="detail-actions"><button id="addCart" class="primary">Ajouter au panier</button></div>');
  root.insertAdjacentHTML('beforeend',relationHtml({...e,related:[...new Set([...(e.related||[]),...(e.linkedProfiles||[]),...suggestedRules(e,state.rules)])]}));
  if(e.kit?.length)root.insertAdjacentHTML('beforeend',`<h3>Matériel utile</h3><div class="kit-links">${e.kit.map(q=>`<button class="relation" data-gear="${esc(q)}">${esc(q)}</button>`).join('')}</div>`);
@@ -131,7 +138,7 @@ function renderSource(e,root){
  const book=getPrivateBook(e.source);
  if(!book&&hasTable()){
   const area=document.createElement('div');area.className='remote-source';root.append(area);
-  const auto=e.kind==='roll'||e.kind==='page'||!(e.summary||e.attributes||e.fields?.length);
+  const auto=e.kind==='roll'||e.kind==='page'||e.kind==='equipment'||!(e.summary||e.attributes||e.fields?.length);
   const open=document.createElement('button');open.className='subtle';open.textContent='Lire la section du livre';area.append(open);
   const load=async()=>{
    open.disabled=true;open.textContent='Ouverture de la section…';
@@ -145,7 +152,7 @@ function renderSource(e,root){
   else root.insertAdjacentHTML('beforeend','<div class="source-empty"><h3>Texte de cette section</h3><p>Ajoute le PDF de cet ouvrage dans Mes livres pour afficher ici son contenu détaillé.</p><button id="openBooks" class="primary">Ajouter mon PDF ou mon fichier personnel</button></div>');
   return;
  }
- const details=document.createElement('details');details.className='source-reader';details.open=e.kind==='roll'||(!e.summary&&!e.attributes&&!e.fields?.length)||e.kind==='page';
+ const details=document.createElement('details');details.className='source-reader';details.open=e.kind==='roll'||e.kind==='equipment'||(!e.summary&&!e.attributes&&!e.fields?.length)||e.kind==='page';
  const sum=document.createElement('summary');sum.textContent=book.language==='en'?'Section détaillée · original anglais':'Section détaillée du livre';details.append(sum);
  const reader=document.createElement('div');details.append(reader);root.append(details);let rendered=false;
  const populate=()=>{
@@ -154,9 +161,15 @@ function renderSource(e,root){
   const pageText=book.pages[readingPage-1]?.text||'';
   const passage=e.kind==='roll'&&book.anchors?pageText.slice(e.start,e.end):'';
   const excerpt=passage||e.kind==='page'?null:sectionExcerpt(e,book,state.index);
-  const text=passage||excerpt?.text||pageText;
+  const text=passage||(e.kind==='page'?pageText:excerpt?.text||'');
   if(e.kind!=='roll'&&e.kind!=='page'&&!e.summary&&!e.attributes){const points=localKeyPoints(text,book.language);if(points.length){const section=document.createElement('section');section.className='local-points';section.innerHTML=`<h3>Points clés de la section</h3><ul>${points.map(p=>`<li>${esc(p)}</li>`).join('')}</ul>`;root.insertBefore(section,details);}}
-  if(text){const body=document.createElement('div');body.className='booktext';highlightText(body,text,state.query);reader.append(body);const full=document.createElement('button');full.className='subtle';full.textContent='Consulter le contexte et les pages suivantes';full.onclick=()=>renderPage(reader,e.source,excerpt?.page||readingPage);reader.append(full);}else renderPage(reader,e.source,readingPage);
+  if(text){const body=document.createElement('div');body.className='booktext';highlightText(body,text,state.query);reader.append(body);const full=document.createElement('button');full.className='subtle';full.textContent='Consulter le contexte et les pages suivantes';full.onclick=()=>renderPage(reader,e.source,excerpt?.page||readingPage);reader.append(full);
+    if(excerpt?.truncated){const notice=document.createElement('p');notice.className='source-warning';notice.textContent='Cette rubrique se prolonge au-delà des deux pages présentées. Consulte la page originale pour lire la suite.';reader.append(notice);}
+   }else{
+    const warning=document.createElement('p');warning.className='source-warning';warning.textContent='Impossible de délimiter cette description avec certitude. Aucun texte d’une rubrique voisine n’est attribué à cette fiche.';
+    const openPage=document.createElement('button');openPage.className='subtle';openPage.textContent='Consulter la page originale';openPage.onclick=()=>renderPage(reader,e.source,readingPage);
+    reader.append(warning,openPage);
+   }
  };
  details.addEventListener('toggle',populate);if(details.open)populate();
 }
@@ -276,7 +289,7 @@ async function restoreLibrary(){
 async function init(){
  try{
   const files=['sources','index','equipment','profiles','rules','coverage','terminology'];
-  const values=await Promise.all(files.map(async name=>{const r=await fetch(`data/${name}.json?v=131`,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw Error('Impossible de charger '+name);return r.json();}));
+  const values=await Promise.all(files.map(async name=>{const r=await fetch(`data/${name}.json?v=132`,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw Error('Impossible de charger '+name);return r.json();}));
   const [books,index,equipment,profiles,rules,coverage,terms]=values;Object.assign(state,{books,index,equipment,profiles,rules,baseRules:rules,coverage,terms});
   buildEntries();
   const [prefs,cart]=await Promise.all([getStored('preferences',{}),getStored('cart',[])]);
@@ -291,12 +304,12 @@ async function init(){
   void restoreLibrary();
   void activateTable(selection);
   void setupBridge().catch(fail);
-  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=131').catch(()=>{});
+  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=132').catch(()=>{});
  }catch(e){$('#resultCount').textContent='Chargement interrompu';$('#detail').innerHTML='<h2>Le compendium ne s’est pas chargé.</h2><button id="retryLoad">Réessayer</button>';$('#retryLoad').onclick=()=>location.reload();fail(e);}
 }
 function initWorker(){
  try{
-   const w=new Worker(new URL('./search-worker.mjs?v=131',import.meta.url),{type:'module'});state.worker=w;
+   const w=new Worker(new URL('./search-worker.mjs?v=132',import.meta.url),{type:'module'});state.worker=w;
    w.onmessage=({data})=>{if(data.type==='results')renderResults(data);if(data.type==='ready'){state.workerReady=true;runSearch();}if(data.type==='library-ready')runSearch();if(data.type==='error')fail(Error(data.message));};
    w.onerror=()=>{w.terminate();state.worker=null;state.workerReady=false;runSearch();};w.postMessage({type:'init',entries:state.entries,terms:state.terms.terms});
   }catch{state.worker=null;}
