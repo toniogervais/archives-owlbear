@@ -208,6 +208,9 @@ export function quickCatalogHierarchy(entries,options={}){
 
 export function matchFacet(e,{kind='',topic='',family='',subcategory=''}={}){
  if(!family&&!subcategory)return true;
- const info=kind==='equipment'&&QUICK_EQUIPMENT_GROUPS.some(g=>g.name===family)?quickEquipmentFacet(e):kind?classifyEntry(e):topic?themeFacet(e):{family:KIND_NAMES[e.kind]||'Références',subcategory:classifyEntry(e).family};
- return (!family||info.family===family)&&(!subcategory||info.subcategory===subcategory);
+ const quick=kind==='equipment'&&QUICK_EQUIPMENT_GROUPS.some(g=>g.name===family);
+ const info=quick?quickEquipmentFacet(e):kind?classifyEntry(e):topic?themeFacet(e):{family:KIND_NAMES[e.kind]||'Références',subcategory:classifyEntry(e).family};
+ // Keep precise existing links and searches usable even after replacing the deep menu.
+ const precise=quick&&subcategory===classifyEntry(e).subcategory;
+ return (!family||info.family===family)&&(!subcategory||info.subcategory===subcategory||precise);
 }
