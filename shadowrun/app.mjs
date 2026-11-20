@@ -15,7 +15,7 @@ import {installWindowControls} from './window-controls.mjs?v=136';
 
 const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const labels={rule:'Règle',action:'Action',equipment:'Équipement',npc:'PNJ',creature:'Bestiaire',page:'Texte du livre',reference:'Référence',roll:'Passage sur un jet'};
+const labels={rule:'Règle',action:'Action',equipment:'Équipement',npc:'PNJ',creature:'Bestiaire',page:'Texte du livre',reference:'Référence',roll:'Passage sur un jet',skillguide:'Compétence'};
 const topics=Object.fromEntries(Object.entries(THEMES).map(([k,v])=>[k,v[0]]));
 const state={entries:[],books:[],equipment:[],profiles:[],rules:[],coverage:{},terms:{},favorites:new Set(),notes:{},library:null,kind:'',selected:null,query:'',topic:'',source:'',offset:0,cart:[],seq:0,worker:null,bridge:null,isGm:false,trail:[],trailAt:-1,browse:{family:'',sub:''},workerReady:false};
 let toastTimer,searchTimer;
@@ -107,6 +107,12 @@ function renderEquipmentAlternatives(entry,root){
  }
  root.append(section);
 }
+function skillRelatedRules(e,rules){
+ if(e.kind!=='skillguide')return [];
+ const needle=normalize(e.title);
+ return rules.filter(r=>r.procedure?.test&&normalize(r.procedure.test).includes(needle))
+  .slice(0,22).map(r=>r.id);
+}
 function skillPoolHtml(rows){
  const tr=rows.map(s=>{
   const value=s.total===null?'—':s.total+' D6';
@@ -157,7 +163,7 @@ async function selectEntry(e,{mobile=true,remember=true}={}){
  if(e.fields?.length){root.insertAdjacentHTML('beforeend','<h3>Caractéristiques</h3>');root.insertAdjacentHTML('beforeend',tableRows(e.fields));}
  if(e.kind==='equipment')root.insertAdjacentHTML('beforeend','<div class="detail-actions"><button id="addCart" class="primary">Ajouter au panier</button></div>');
   if(e.kind==='equipment')renderEquipmentAlternatives(e,root);
- root.insertAdjacentHTML('beforeend',relationHtml({...e,related:[...new Set([...(e.related||[]),...(e.linkedProfiles||[]),...suggestedRules(e,state.rules)])]}));
+ root.insertAdjacentHTML('beforeend',relationHtml({...e,related:[...new Set([...(e.related||[]),...(e.linkedProfiles||[]),...suggestedRules(e,state.rules),...skillRelatedRules(e,state.rules)])]}));
  if(e.kit?.length)root.insertAdjacentHTML('beforeend',`<h3>Matériel utile</h3><div class="kit-links">${e.kit.map(q=>`<button class="relation" data-gear="${esc(q)}">${esc(q)}</button>`).join('')}</div>`);
  root.insertAdjacentHTML('beforeend',`<div class="source-line">${esc(sourceLabel(e))} · PDF ${e.page}</div>`);
  const refs=[...(e.refs||[]),...(e.kind==='equipment'&&e.descriptionPage&&e.descriptionPage!==e.page?[{source:e.source,page:e.descriptionPage}]:[])].filter(r=>r.source!==e.source||r.page!==e.page);
