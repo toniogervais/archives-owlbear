@@ -9,7 +9,7 @@ import {readBookPdf} from './pdf-import.mjs?v=133';
 import {THEMES, topicOf, topicsOf, hasRoll, mergeTableRules} from './themes.mjs?v=133';
 import {hasTable, tableShelf, startTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=133';
 import {observePanel} from './panel-size.mjs?v=133';
-import {catalogHierarchy,KIND_NAMES} from './catalog.mjs?v=133';
+import {catalogHierarchy,classifyEntry,KIND_NAMES} from './catalog.mjs?v=133';
 import {installWindowControls} from './window-controls.mjs?v=133';
 
 const $=s=>document.querySelector(s);
@@ -73,7 +73,9 @@ function renderResults(r){
  const frag=document.createDocumentFragment();
  for(const e of r.items){
   const button=document.createElement('button');button.className='result'+(state.selected?.id===e.id?' active':'');button.dataset.id=e.id;
-  button.innerHTML=`<span class="name">${state.favorites.has(e.id)?'★ ':''}${esc(title(e))}</span><span class="meta"><span class="type">${esc(labels[e.kind]||'Référence')}</span><span>${esc(sourceLabel(e))}</span>${e.optional?'<span>Optionnelle</span>':''}</span>${e.procedure?.test||e.pools?.length?`<span class="result-roll">${esc(e.procedure?.test||e.pools.join(' · '))}</span>`:''}${e.summary?`<span class="excerpt">${esc(e.summary)}</span>`:''}`;
+  const folder=classifyEntry(e);
+  const folderText=e.kind==='equipment'?folder.family+' › '+folder.subcategory:e.kind==='creature'?folder.family:folder.subcategory;
+  button.innerHTML=`<span class="name">${state.favorites.has(e.id)?'★ ':''}${esc(title(e))}</span><span class="meta"><span class="type">${esc(labels[e.kind]||'Référence')}</span><span class="result-folder">${esc(folderText)}</span><span>${esc(sourceLabel(e))}</span>${e.optional?'<span>Optionnelle</span>':''}</span>${e.procedure?.test||e.pools?.length?`<span class="result-roll">${esc(e.procedure?.test||e.pools.join(' · '))}</span>`:''}${e.summary?`<span class="excerpt">${esc(e.summary)}</span>`:''}`;
   button.addEventListener('click',()=>selectEntry(e));const item=document.createElement('div');item.setAttribute('role','listitem');item.append(button);frag.append(item);
  }
  root.append(frag);
@@ -372,6 +374,8 @@ async function activateTable(desired) {
   if($('#booksDialog').open)showBooks();
   const selected=resolveEntry(state.selected?.id||desired);
   if(selected)selectEntry(selected,{mobile:false,remember:false});
+  else if(state.browse.family)chooseFamily(state.browse.family,state.browse.sub);
+  else if($('#detail .catalog-landing'))renderCategoryLanding();
   else if($('#detail .theme-grid'))welcome();
  }catch(error){
   if(!hasTable())return;
