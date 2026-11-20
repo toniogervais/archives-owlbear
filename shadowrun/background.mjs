@@ -1,2 +1,2 @@
-import {bridge,ready} from './bridge.mjs?v=132';
+import {bridge,ready} from './bridge.mjs?v=133';
 if(await ready()){const b=bridge([]);const cleanup=await b.installMenu();window.addEventListener('pagehide',cleanup,{once:true});}
