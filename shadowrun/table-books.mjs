@@ -1,4 +1,4 @@
-import {getStored, putStored} from './storage.mjs?v=132';
+import {getStored, putStored} from './storage.mjs?v=133';
 
 export const TABLE_HOST='https://compendium-sr6-table-archives.justperiwinkle5.chatgpt.site';
 const valid=key=>/^[A-Za-z0-9_-]{32}$/.test(key||'');
