@@ -117,3 +117,20 @@ dialog.image-reader{width:min(96vw,1100px);max-height:94dvh}.image-reader #infoB
  .pool-total{font-size:1.06rem}
  .pool-variant{font-size:.72rem}
 }
+
+/* 1.3.7 — fiche source : transfert direct et section dédiée aux jets de dés. */
+.archives-export{margin:12px 0;padding:12px 14px;border:1px solid #b39a5b75;background:#1b2026;border-radius:10px;display:grid;gap:8px}
+.archives-export-title{font-weight:700;color:#e9d5a2}
+.archives-export-actions{display:flex;gap:8px;flex-wrap:wrap}
+.archives-export-actions button{flex:1 1 130px;min-height:37px}
+.archives-export .small{margin:0;line-height:1.35}
+.source-related{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.dice-overview{max-width:900px}
+.dice-overview .eyebrow{font-size:.75rem;color:var(--muted)}
+.dice-overview p{line-height:1.5}
+.dice-domains{display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:10px}
+.dice-domain{background:#162027;border:1px solid #a8996240;padding:12px;border-radius:10px}
+.dice-domain h3{margin:0 0 10px;color:var(--ink);font-size:.94rem}
+.dice-links{display:flex;flex-wrap:wrap;gap:6px}
+.dice-links button{font-size:.79rem;text-align:left;white-space:normal;min-height:35px}
+@media(max-width:640px){.dice-domains{grid-template-columns:1fr}.archives-export{padding:10px}.archives-export-actions button{font-size:.79rem}}
