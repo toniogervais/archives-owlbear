@@ -1,20 +1,22 @@
-import {VERSION,validateLibrary,parseLibraryText,parseLibraryFileText,normalize,literalPrice,quantity,safeCart,inventoryText} from './model.mjs?v=132';
-import {prepareEntries,searchEntries,makeAliases,libraryPages,profileText,profileRolls} from './search.mjs?v=132';
-import {getStored,putStored,deleteStored} from './storage.mjs?v=132';
-import {bridge,ready,OBR} from './bridge.mjs?v=132';
-import {sectionExcerpt} from './reader.mjs?v=132';
-import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './content.mjs?v=132';
-import {readBookPdf} from './pdf-import.mjs?v=132';
+import {VERSION,validateLibrary,parseLibraryText,parseLibraryFileText,normalize,literalPrice,quantity,safeCart,inventoryText} from './model.mjs?v=133';
+import {prepareEntries,searchEntries,makeAliases,libraryPages,profileText,profileRolls} from './search.mjs?v=133';
+import {getStored,putStored,deleteStored} from './storage.mjs?v=133';
+import {bridge,ready,OBR} from './bridge.mjs?v=133';
+import {sectionExcerpt} from './reader.mjs?v=133';
+import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './content.mjs?v=133';
+import {readBookPdf} from './pdf-import.mjs?v=133';
 
-import {THEMES, topicOf, topicsOf, hasRoll, mergeTableRules} from './themes.mjs?v=132';
-import {hasTable, tableShelf, startTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=132';
-import {observePanel} from './panel-size.mjs?v=132';
+import {THEMES, topicOf, topicsOf, hasRoll, mergeTableRules} from './themes.mjs?v=133';
+import {hasTable, tableShelf, startTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=133';
+import {observePanel} from './panel-size.mjs?v=133';
+import {catalogHierarchy,KIND_NAMES} from './catalog.mjs?v=133';
+import {installWindowControls} from './window-controls.mjs?v=133';
 
 const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const labels={rule:'Règle',action:'Action',equipment:'Équipement',npc:'PNJ',creature:'Bestiaire',page:'Texte du livre',reference:'Référence',roll:'Passage sur un jet'};
 const topics=Object.fromEntries(Object.entries(THEMES).map(([k,v])=>[k,v[0]]));
-const state={entries:[],books:[],equipment:[],profiles:[],rules:[],coverage:{},terms:{},favorites:new Set(),notes:{},library:null,kind:'',selected:null,query:'',topic:'',source:'',offset:0,cart:[],seq:0,worker:null,bridge:null,isGm:false,trail:[],trailAt:-1,workerReady:false};
+const state={entries:[],books:[],equipment:[],profiles:[],rules:[],coverage:{},terms:{},favorites:new Set(),notes:{},library:null,kind:'',selected:null,query:'',topic:'',source:'',offset:0,cart:[],seq:0,worker:null,bridge:null,isGm:false,trail:[],trailAt:-1,browse:{family:'',sub:''},workerReady:false};
 let toastTimer,searchTimer;
 const onlineBooks=new Map(), pendingBooks=new Map();
 let selectedArtUrls=[];
@@ -28,23 +30,29 @@ function sourceLabel(e){return `${sourceName(e.source)} · ${e.printedPage>0?'p.
 function fmt(n){return n.toLocaleString('fr-FR');}
 function title(e){return e.title||e.name;}
 async function savePreferences(){const r=await putStored('preferences',{favorites:[...state.favorites],notes:state.notes});if(!r.persistent)toast('Les préférences ne sont pas conservées : '+r.message);}
-function setKind(kind){
+function setKind(kind,{keepQuery=false}={}){
  if(kind==='mj'){void showNpcInventory();return;}
- state.kind=kind;$('#tabs').querySelectorAll('[data-kind]').forEach(b=>{b.classList.toggle('active',b.dataset.kind===kind);b.setAttribute('aria-pressed',String(b.dataset.kind===kind));});
+ state.kind=kind;state.browse={family:'',sub:''};state.selected=null;
+ if(!keepQuery)$('#search').value='';
+ $('#topic').value='';$('#category').value='';
+ $('#tabs').querySelectorAll('[data-kind]').forEach(b=>{b.classList.toggle('active',b.dataset.kind===kind);b.setAttribute('aria-pressed',String(b.dataset.kind===kind));});
  updateCategoryFilter();
- $('#quick').hidden=Boolean(kind);$('#homeButton').setAttribute('aria-pressed','false');$('.workspace').classList.remove('show-detail');runSearch();
+ $('#quick').hidden=Boolean(kind);$('#homeButton').setAttribute('aria-pressed','false');
+ $('.workspace').classList.remove('show-detail','browse-catalog');runSearch();
+ if(keepQuery&&$('#search').value.trim())showBrowseHint('Résultats de recherche');
+ else if(kind&&kind!=='favorites')renderCategoryLanding();
+ else if(kind==='favorites')showBrowseHint('Mes favoris');
+ else welcome();
 }
 function updateCategoryFilter(){
- const select=$('#category'),previous=select.value;select.replaceChildren();
- const relevant=state.kind==='equipment'||state.kind==='creature';select.hidden=!relevant;
- const first=document.createElement('option');first.value='';first.textContent=state.kind==='creature'?'Tous les habitats':'Toutes les familles';select.append(first);
- if(!relevant)return;
- const values=new Map(),freq=new Map();const entries=state.entries.filter(e=>e.kind===state.kind);
- for(const e of entries)for(const part of new Set(e.path||[])){const k=normalize(part);freq.set(k,(freq.get(k)||0)+1);}
- for(const e of entries){if(state.kind==='creature'){if(e.habitat)values.set(normalize(e.habitat),e.habitat);}else{if(e.category)values.set(normalize(e.category),e.category);for(const part of e.path||[])if(freq.get(normalize(part))>=5&&!/catalogue|arsenal|tables|boîte à outils|la vie|introduction/i.test(part))values.set(normalize(part),part);}}
- for(const value of [...values.values()].sort((a,b)=>a.localeCompare(b,'fr'))){const option=document.createElement('option');option.value=value;option.textContent=value;select.append(option);}select.value=[...values.values()].includes(previous)?previous:'';
+ const select=$('#category'),previous=state.browse.family||select.value;
+ const groups=currentHierarchy();select.replaceChildren();
+ select.hidden=!state.kind&&!$('#topic').value;
+ select.append(new Option('Toutes les catégories',''));
+ for(const group of groups)select.append(new Option(group.name+' ('+fmt(group.count)+')',group.name));
+ select.value=groups.some(g=>g.name===previous)?previous:'';
 }
-function searchOptions(){return {query:$('#search').value,kind:state.kind==='favorites'?'':state.kind,topic:$('#topic').value,source:$('#source').value,favorites:state.kind==='favorites'?[...state.favorites]:null,offset:0,limit:state.offset+75,practicalOnly:$('#practicalOnly').checked,category:$('#category').value};}
+function searchOptions(){return {query:$('#search').value,kind:state.kind==='favorites'?'':state.kind,topic:$('#topic').value,source:$('#source').value,favorites:state.kind==='favorites'?[...state.favorites]:null,family:state.browse.family,subcategory:state.browse.sub,offset:0,limit:state.offset+75,practicalOnly:$('#practicalOnly').checked,category:''};}
 function runSearch(append=false){
  if(!state.prepared)return;
  if(!append)state.offset=0;const seq=++state.seq;const options=searchOptions();state.query=options.query;
@@ -59,7 +67,7 @@ function runSearch(append=false){
 function renderResults(r){
  if(r.seq!==state.seq)return;
  const root=$('#results');root.replaceChildren();
- $('#resultCount').textContent=`${fmt(r.total)} ${r.total===1?'résultat':'résultats'}${r.corrected?' · orthographe approchée':''}`;
+ $('#resultCount').textContent=`${fmt(r.total)} ${r.total===1?'résultat':'résultats'}${r.corrected?' · orthographe approchée':''}${r.items.length<r.total?' · '+fmt(r.items.length)+' affichés':''}`;
  $('#more').hidden=r.items.length>=r.total;
  if(!r.total){state.pendingAction=null;root.innerHTML='<div class="empty">Aucun résultat. Essaie un terme plus court ou un autre ouvrage.</div>';return;}
  const frag=document.createDocumentFragment();
@@ -191,7 +199,7 @@ function bindDetail(e){
  $('#entryPrev').onclick=()=>{state.trailAt--;selectEntry(resolveEntry(state.trail[state.trailAt]),{remember:false});};
  $('#entryNext').onclick=()=>{state.trailAt++;selectEntry(resolveEntry(state.trail[state.trailAt]),{remember:false});};
  $('#copyEntry').onclick=()=>copy(profileText(e));
- $('#detail').querySelectorAll('[data-gear]').forEach(b=>b.onclick=()=>{state.kind='equipment';$('#source').value='';$('#topic').value='';$('#search').value=b.dataset.gear;setKind('equipment');});
+ $('#detail').querySelectorAll('[data-gear]').forEach(b=>b.onclick=()=>{$('#source').value='';setKind('equipment');$('#search').value=b.dataset.gear;showBrowseHint('Équipement');runSearch();});
  $('#favorite').onclick=async()=>{state.favorites.has(e.id)?state.favorites.delete(e.id):state.favorites.add(e.id);await savePreferences();counts();runSearch();selectEntry(e,{mobile:false});};
  $('#backResults')?.addEventListener('click',()=>$('.workspace').classList.remove('show-detail'));
  $('#openBooks')?.addEventListener('click',showBooks);
@@ -289,14 +297,14 @@ async function restoreLibrary(){
 async function init(){
  try{
   const files=['sources','index','equipment','profiles','rules','coverage','terminology'];
-  const values=await Promise.all(files.map(async name=>{const r=await fetch(`data/${name}.json?v=132`,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw Error('Impossible de charger '+name);return r.json();}));
+  const values=await Promise.all(files.map(async name=>{const r=await fetch(`data/${name}.json?v=133`,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw Error('Impossible de charger '+name);return r.json();}));
   const [books,index,equipment,profiles,rules,coverage,terms]=values;Object.assign(state,{books,index,equipment,profiles,rules,baseRules:rules,coverage,terms});
   buildEntries();
   const [prefs,cart]=await Promise.all([getStored('preferences',{}),getStored('cart',[])]);
   state.favorites=new Set((prefs.favorites||[]).filter(id=>typeof id==='string'));state.notes=prefs.notes&&typeof prefs.notes==='object'?prefs.notes:{};
   try{state.cart=cart.length?safeCart(cart,equipment):[];}catch{state.cart=[];}
   for(const b of books){const option=document.createElement('option');option.value=b.id;option.textContent=b.displayTitle||b.title;$('#source').append(option);}
-  counts();renderCart();if($('#topic').value)themeLanding($('#topic').value);else welcome();if($('#booksDialog').open)showBooks();$('#coverage').textContent=`${books.length} ouvrages · ${fmt(coverage.pages)} pages indexées · v${VERSION}`;
+  counts();renderCart();restoreCatalogRoute();if($('#booksDialog').open)showBooks();$('#coverage').textContent=`${books.length} ouvrages · ${fmt(coverage.pages)} pages indexées · v${VERSION}`;
   initWorker();
   runSearch();
   const selection=new URLSearchParams(location.search).get('entry');
@@ -304,25 +312,25 @@ async function init(){
   void restoreLibrary();
   void activateTable(selection);
   void setupBridge().catch(fail);
-  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=132').catch(()=>{});
+  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=133').catch(()=>{});
  }catch(e){$('#resultCount').textContent='Chargement interrompu';$('#detail').innerHTML='<h2>Le compendium ne s’est pas chargé.</h2><button id="retryLoad">Réessayer</button>';$('#retryLoad').onclick=()=>location.reload();fail(e);}
 }
 function initWorker(){
  try{
-   const w=new Worker(new URL('./search-worker.mjs?v=132',import.meta.url),{type:'module'});state.worker=w;
+   const w=new Worker(new URL('./search-worker.mjs?v=133',import.meta.url),{type:'module'});state.worker=w;
    w.onmessage=({data})=>{if(data.type==='results')renderResults(data);if(data.type==='ready'){state.workerReady=true;runSearch();}if(data.type==='library-ready')runSearch();if(data.type==='error')fail(Error(data.message));};
    w.onerror=()=>{w.terminate();state.worker=null;state.workerReady=false;runSearch();};w.postMessage({type:'init',entries:state.entries,terms:state.terms.terms});
   }catch{state.worker=null;}
 }
-$('#search').addEventListener('input',()=>{state.seq++;state.pendingAction=null;$('.workspace').classList.remove('show-detail');clearTimeout(searchTimer);searchTimer=setTimeout(()=>runSearch(),100);});
+$('#search').addEventListener('input',()=>{state.seq++;state.pendingAction=null;if($('#search').value.trim()){if($('.workspace').classList.contains('browse-catalog'))showBrowseHint('Recherche');}else if(!state.browse.family&&(state.kind||$('#topic').value))renderCategoryLanding();$('.workspace').classList.remove('show-detail');clearTimeout(searchTimer);searchTimer=setTimeout(()=>runSearch(),90);});
 $('#search').addEventListener('keydown',ev=>{if(ev.key==='ArrowDown'||ev.key==='Enter'){ev.preventDefault();clearTimeout(searchTimer);state.pendingAction=ev.key==='Enter'?'open':'focus';runSearch();}});
 $('#results').addEventListener('keydown',ev=>{if(!['ArrowDown','ArrowUp'].includes(ev.key))return;const buttons=[...$('#results').querySelectorAll('.result')],at=buttons.indexOf(document.activeElement);if(at<0)return;ev.preventDefault();buttons[Math.max(0,Math.min(buttons.length-1,at+(ev.key==='ArrowDown'?1:-1)))].focus();});
-$('#category').onchange=()=>runSearch();
-$('#practicalOnly').onchange=()=>runSearch();
-$('#source').onchange=()=>runSearch();$('#topic').onchange=()=>{runSearch();state.selected=null;themeLanding($('#topic').value);if($('#topic').value)$('.workspace').classList.remove('show-detail');};$('#fulltext').onchange=()=>runSearch();
+$('#category').onchange=()=>{$('#category').value?chooseFamily($('#category').value):(renderCategoryLanding(),runSearch());};
+$('#practicalOnly').onchange=()=>{state.browse={family:'',sub:''};updateCategoryFilter();renderCategoryLanding();runSearch();};
+$('#source').onchange=()=>{state.browse={family:'',sub:''};updateCategoryFilter();renderCategoryLanding();runSearch();};$('#topic').onchange=()=>{state.browse={family:'',sub:''};updateCategoryFilter();renderCategoryLanding();runSearch();};$('#fulltext').onchange=()=>runSearch();
 $('#tabs').querySelectorAll('[data-kind]').forEach(b=>b.onclick=()=>setKind(b.dataset.kind));
 $('#quick').querySelectorAll('[data-query]').forEach(b=>b.onclick=()=>{$('#search').value=b.dataset.query;runSearch();});
-$('#reset').onclick=()=>{$('#category').value='';$('#search').value='';$('#source').value='';$('#topic').value='';$('#fulltext').checked=false;$('#practicalOnly').checked=false;setKind('');welcome();};
+$('#reset').onclick=()=>{$('#source').value='';$('#fulltext').checked=false;$('#practicalOnly').checked=false;setKind('');};
 $('#more').onclick=()=>{state.offset+=75;runSearch(true);};
 $('#situationsButton').onclick=()=>{situations();$('.workspace').classList.add('show-detail');};
 $('#booksButton').onclick=showBooks;$('#importLibrary').onchange=e=>importLibrary(e.target.files[0]);
@@ -337,8 +345,9 @@ $('#exportPreferences').onclick=()=>downloadJson({schema:'sr6.preferences',versi
 $('#importPreferences').onchange=async ev=>{try{const f=ev.target.files[0];if(!f)return;if(f.size>5*1024*1024)throw Error('Fichier trop volumineux.');const d=JSON.parse(await f.text());if(d.schema!=='sr6.preferences'||!Array.isArray(d.favorites)||!d.notes||typeof d.notes!=='object')throw Error('Fichier de préférences invalide.');state.favorites=new Set(d.favorites.filter(id=>resolveEntry(id)));state.notes=Object.fromEntries(Object.entries(d.notes).filter(([id,v])=>resolveEntry(id)&&typeof v==='string'&&v.length<=12000));await savePreferences();counts();runSearch();toast('Favoris et notes restaurés.');}catch(e){fail(e);}finally{ev.target.value='';}};
 document.addEventListener('keydown',ev=>{if(ev.key==='/'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)&&!document.querySelector('dialog[open]')){ev.preventDefault();$('#search').focus();}if(ev.key==='Escape'&&!document.querySelector('dialog[open]'))$('.workspace').classList.remove('show-detail');});
 for(const [id,[name]] of Object.entries(THEMES)){const o=new Option(name,id);$('#topic').append(o);}
-$('#homeButton').onclick=()=>{state.selected=null;const u=new URL(location.href);u.searchParams.delete('entry');history.replaceState(null,'',u.href);$('#topic').value='';$('#source').value='';$('#search').value='';$('#category').value='';setKind('');welcome();};
+$('#homeButton').onclick=()=>{state.selected=null;const u=new URL(location.href);u.searchParams.delete('entry');history.replaceState(null,'',u.href);$('#source').value='';setKind('');};
 welcome();
+installWindowControls({OBR,ready,viewState:()=>({kind:state.kind,topic:$('#topic').value,source:$('#source').value,search:$('#search').value,family:state.browse.family,sub:state.browse.sub,entry:state.selected?.id||''})});
 void init();
 
 function buildEntries(extra,tests=[]) {
@@ -446,7 +455,7 @@ async function openPlate(id,art,isPage=false) {
 $('#infoDialog').addEventListener('close',()=>{openImageId++;$('#infoDialog').classList.remove('image-reader');$('#infoBody').classList.remove('zoomed');if(dialogImageUrl){URL.revokeObjectURL(dialogImageUrl);dialogImageUrl=null;}});
 function welcome() {
  const node=$('#detail');releaseArt();state.selected=null;delete node.dataset.inventory;
- $('#homeButton').setAttribute('aria-pressed','true');
+ $('#homeButton').setAttribute('aria-pressed','true');$('#catalogTrail').hidden=true;$('.workspace').classList.remove('browse-catalog');
  node.innerHTML='<div class="theme-home"><h2>Thèmes du compendium</h2><div class="theme-grid"></div></div>';
  const grid=node.querySelector('.theme-grid');
  for(const [id,[name,desc]] of Object.entries(THEMES)){
@@ -458,15 +467,11 @@ function welcome() {
 }
 function browseTheme(id){
  if(!THEMES[id])return;
- $('#search').value='';$('#topic').value=id;$('#category').value='';$('#practicalOnly').checked=false;state.selected=null;setKind('');
- themeLanding(id);$('.workspace').classList.remove('show-detail');$('.results-pane').scrollTop=0;
+ state.kind='';state.browse={family:'',sub:''};state.selected=null;
+ $('#search').value='';$('#source').value='';$('#topic').value=id;
+ $('#tabs').querySelectorAll('[data-kind]').forEach(b=>b.classList.toggle('active',b.dataset.kind===''));
+ $('#homeButton').setAttribute('aria-pressed','false');updateCategoryFilter();
+ renderCategoryLanding();runSearch();
 }
-function themeLanding(id){
- if(!THEMES[id]){welcome();return;}
- const root=$('#detail'),[name,desc]=THEMES[id];releaseArt();delete root.dataset.inventory;
- root.innerHTML=`<div class="theme-entry"><button type="button" class="subtle" data-home>Thèmes</button><h2>${esc(name)}</h2><p>${esc(desc)}</p><div class="theme-links"></div></div>`;
- root.querySelector('[data-home]').onclick=()=>$('#homeButton').click();
- const sample=state.entries.filter(e=>topicsOf(e).includes(id)&&(!$('#source').value||e.source===$('#source').value));
- const seen=new Set();const choices=sample.filter(e=>{const k=normalize(title(e));if(seen.has(k)||!e.summary&&!e.attributes&&!e.fields?.length)return false;seen.add(k);return true;}).slice(0,8);
- for(const e of choices){const b=document.createElement('button');b.className='relation';b.textContent=title(e);b.onclick=()=>selectEntry(e);root.querySelector('.theme-links').append(b);}
-}
+function themeLanding(id){renderCategoryLanding();}
+
