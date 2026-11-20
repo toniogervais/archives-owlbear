@@ -107,6 +107,14 @@ function usefulLast(e){
  const parts=(e.path||[]).filter(Boolean);
  return [...parts].reverse().find(p=>!/(^(?:table(s)?|introduction|generalites|équipement|catalogue d.equipement|arsenal|table des matieres|matrices?)$)/i.test(n(p)))||'Généralités';
 }
+function themeFacet(e){
+ const candidates=(e.path||[]).map(v=>String(v).trim()).filter(Boolean);
+ const generic=/^(?:informations de jeu|introduction|generalites|guide pratique|catalogue d.equipement|table des matieres|tables recapitulatives)$/i;
+ const useful=candidates.filter(p=>!generic.test(n(p)));
+ const family=useful[0]||'Généralités';
+ const subcategory=useful.length>1?useful[useful.length-1]:KIND_NAMES[e.kind]||'Rubriques';
+ return {family,subcategory};
+}
 export function classifyEntry(e){
  if(e.kind==='equipment')return {family:e.category||'Équipement général',subcategory:equipmentSub(e)};
  if(e.kind==='creature')return {family:e.habitat||'Habitats non précisés',subcategory:usefulLast(e)==='Généralités'?'Créatures':usefulLast(e)};
@@ -123,7 +131,7 @@ export function catalogHierarchy(entries,{kind='',topic='',source='',favorites=n
  const maps=new Map();
  for(const e of entries){
   if(!entryMatchesKind(e,kind)||topic&&!topicsOf(e).includes(topic)||source&&e.source!==source||favorites&&!favorites.has(e.id)||practicalOnly&&!e.summary&&!e.attributes&&!e.fields?.length)continue;
-  const info=kind?classifyEntry(e):{family:KIND_NAMES[e.kind]||'Références',subcategory:classifyEntry(e).family};
+  const info=kind?classifyEntry(e):topic?themeFacet(e):{family:KIND_NAMES[e.kind]||'Références',subcategory:classifyEntry(e).family};
   let node=maps.get(info.family);if(!node){node={name:info.family,count:0,subs:new Map()};maps.set(info.family,node);}
   node.count++;node.subs.set(info.subcategory,(node.subs.get(info.subcategory)||0)+1);
  }
@@ -134,8 +142,8 @@ export function catalogHierarchy(entries,{kind='',topic='',source='',favorites=n
   return b.count-a.count||a.name.localeCompare(b.name,'fr');
  });
 }
-export function matchFacet(e,{kind='',family='',subcategory=''}={}){
+export function matchFacet(e,{kind='',topic='',family='',subcategory=''}={}){
  if(!family&&!subcategory)return true;
- const info=kind?classifyEntry(e):{family:KIND_NAMES[e.kind]||'Références',subcategory:classifyEntry(e).family};
+ const info=kind?classifyEntry(e):topic?themeFacet(e):{family:KIND_NAMES[e.kind]||'Références',subcategory:classifyEntry(e).family};
  return (!family||info.family===family)&&(!subcategory||info.subcategory===subcategory);
 }
