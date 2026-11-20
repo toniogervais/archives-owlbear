@@ -67,7 +67,7 @@ export async function archivesImportUrl(e,destination){
  if(!['canvas','library'].includes(destination))throw Error('Destination Archives invalide.');
  const payload={schema:'archives-sr6-transfer',version:1,destination,node:toArchiveCell(e)};
  const code=await encodeArchiveImport(payload);
- const url=new URL('../archives.html',import.meta.url);
+ const url=new URL('../archives-app-v64-v55.html?v=4721',import.meta.url);
  url.hash='sr6i='+code;
  if(url.href.length>MAX_LINK_LENGTH)throw Error('Cette fiche est trop longue : utilise l’export JSON.');
  return url.href;
@@ -80,7 +80,7 @@ export function sendToArchives(e,destination){
  const payload={schema:'archives-sr6-transfer',version:1,destination,node:toArchiveCell(e)};
  const raw=new TextEncoder().encode(JSON.stringify(payload));
  if(raw.length>45000)throw Error('Cette fiche est trop longue pour un lien direct.');
- const url=new URL('../archives.html',import.meta.url);
+ const url=new URL('../archives-app-v64-v55.html?v=4721',import.meta.url);
  url.hash='sr6i=json.'+toBase64(raw);
  if(url.href.length>MAX_LINK_LENGTH)throw Error('Cette fiche dépasse la taille du lien.');
  const target=window.open(url.href,'archives-main');
