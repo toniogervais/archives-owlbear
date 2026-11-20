@@ -319,7 +319,7 @@ async function loadBundledJson(name){
  for(let attempt=1;attempt<=2;attempt++){
   try{
    const response=await fetch('data/'+name+'.json?v=135',{
-    signal:typeof AbortSignal.timeout==='function'?AbortSignal.timeout(attempt===1?16000:25000):undefined,
+    signal:typeof AbortSignal.timeout==='function'?AbortSignal.timeout(attempt===1?8000:12000):undefined,
     cache:attempt===1?'default':'reload'
    });
    if(!response.ok)throw Error('HTTP '+response.status);
