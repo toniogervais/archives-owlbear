@@ -147,6 +147,7 @@ async function selectEntry(e,{mobile=true,remember=true}={}){
   root.insertAdjacentHTML('beforeend',`<dl class="stat-grid">${Object.entries(e.attributes).map(([k,v])=>`<div class="stat"><dt title="${esc(state.terms.attributes?.find(a=>a.fr===k)?.french||k)}">${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl><div class="derived">${Object.entries(e.derived||{}).map(([k,v])=>`<span><b>${esc(k)}</b>${esc(v)}</span>`).join('')}</div>`);
    const rows=profileSkillPools(e);
    if(rows.length)root.insertAdjacentHTML('beforeend',skillPoolHtml(rows));
+   else if(e.sections?.Compétences)root.insertAdjacentHTML('beforeend','<p class="warn">Cette fiche énumère des compétences sans leur attribuer de rang chiffré. Aucun pool de D6 n’est déduit automatiquement : consulter la règle spécifique de la créature ou de l’esprit.</p>');
    const rolls=profileRolls(e).filter(r=>r.label==='Défense physique'||r.label==='Résister aux dommages');
    if(rolls.length)root.insertAdjacentHTML('beforeend',`<h3>Autres tests courants</h3><div class="profile-rolls">${rolls.map(r=>`<div><span>${esc(r.label)}</span><strong>${esc(r.value)}</strong><small>${esc(r.formula)}</small></div>`).join('')}</div>`);
    for(const [k,v] of Object.entries(e.sections||{})){
