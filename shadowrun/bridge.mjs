@@ -1,6 +1,6 @@
-import OBR from '../assets/owlbear-transfer-sdk-v55.mjs?v=130';
-import * as storage from './storage.mjs?v=130';
-import {createBridge} from './bridge-core.mjs?v=130';
+import OBR from '../assets/owlbear-transfer-sdk-v55.mjs?v=131';
+import * as storage from './storage.mjs?v=131';
+import {createBridge} from './bridge-core.mjs?v=131';
 export {OBR};
 export function bridge(equipment){return createBridge(OBR,storage,equipment);}
 export function ready(){return new Promise(resolve=>{if(!OBR.isAvailable)return resolve(false);OBR.onReady(()=>resolve(true));});}

@@ -36,3 +36,9 @@ test('known anchors stop at the actual end of the source passage',()=>{
  const index=[{id:'x',title:'Exemple',page:1,source:'core',level:2}];
  assert.equal(sectionExcerpt(index[0],book,index).text,'La règle précise le seuil à atteindre.');
 });
+test('the equipment recap links to its identified illustration on the description page',()=>{
+ const art={feu:[{page:14,label:'Serres digitales',entries:['claws']},{page:14,label:'Tomahawk',entries:['axe']}]};
+ const item={source:'feu',id:'claws',name:'Serres digitales',kind:'equipment',page:147,descriptionPage:14};
+ assert.deepEqual(selectPlates(item,art).map(a=>a.entries),[['claws']]);
+ assert.deepEqual(selectPlates({...item,id:'x',name:'autre équipement'},art),[]);
+});

@@ -1,4 +1,4 @@
-import {normalize} from './model.mjs?v=130';
+import {normalize} from './model.mjs?v=131';
 const escape=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
 function headingPattern(title){
  const words=String(title).trim().replace(/\s*\([IL]\)$/i,'').split(/\s+/).filter(Boolean).map(escape);

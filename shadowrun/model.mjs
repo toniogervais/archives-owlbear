@@ -1,7 +1,7 @@
-export const VERSION='1.3.0';
+export const VERSION='1.3.1';
 export const NAMESPACE='fr.archives-imaginaire.shadowrun';
 export const TAB_LABELS={combat:'Combat',magie:'Magie',rigging:'Rigging',matrice:'Matrice',equipement:'Équipement',livres:'Livres',favoris:'Favoris',mj:'PNJ'};
-export function normalize(text){return String(text??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('fr').replace(/[’'‐‑–—]/g,' ').replace(/\s+/g,' ').trim();}
+export function normalize(text){return String(text??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('fr').replace(/œ/g,'oe').replace(/æ/g,'ae').replace(/[’'‐‑–—]/g,' ').replace(/\s+/g,' ').trim();}
 export function matches(text,query){const hay=normalize(text);return normalize(query).split(' ').filter(Boolean).every(word=>hay.includes(word));}
 export function equipmentText(item){return [item.name,item.category,item.source,...(item.path||[]),...(item.fields||[]).flatMap(f=>[f.label,f.value])].join(' ');}
 export function pageLabel(book,page){const printed=page-(book?.printedOffset??2);return printed>0?`p. ${printed} · PDF ${page}`:`PDF ${page}`;}

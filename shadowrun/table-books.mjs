@@ -1,4 +1,4 @@
-import {getStored, putStored} from './storage.mjs?v=130';
+import {getStored, putStored} from './storage.mjs?v=131';
 
 export const TABLE_HOST='https://compendium-sr6-table-archives.justperiwinkle5.chatgpt.site';
 const valid=key=>/^[A-Za-z0-9_-]{32}$/.test(key||'');
@@ -36,6 +36,8 @@ export async function fetchPlate(id,file){
 const comparison=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[-’']/g,' ').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
 export function selectPlates(e, artwork) {
  const art=artwork?.[e.source]||[], names=[e.originalTitle,e.original?.name,e.name,e.title].filter(Boolean).map(comparison);
+ const identified=art.filter(a=>a.entries?.includes(e.id));
+ if(identified.length)return identified;
  const near=art.filter(a=>Math.abs(a.page-(e.descriptionPage||e.page))<=3);
  const matched=near.filter(a=>a.label&&names.some(n=>{
   const l=comparison(a.label);
@@ -46,5 +48,5 @@ export function selectPlates(e, artwork) {
  // become its portrait. Unlabelled illustrations are explicitly page views.
  if(e.source==='wild'&&e.kind==='creature')return [];
  const target=e.descriptionPage||e.page;
- return art.filter(a=>a.page===target);
+ return art.filter(a=>a.page===target&&(!(e.kind==='equipment'&&a.entries?.length)));
 }

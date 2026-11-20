@@ -1,14 +1,14 @@
-import {VERSION,validateLibrary,parseLibraryText,parseLibraryFileText,normalize,literalPrice,quantity,safeCart,inventoryText} from './model.mjs?v=130';
-import {prepareEntries,searchEntries,makeAliases,libraryPages,profileText,profileRolls} from './search.mjs?v=130';
-import {getStored,putStored,deleteStored} from './storage.mjs?v=130';
-import {bridge,ready,OBR} from './bridge.mjs?v=130';
-import {sectionExcerpt} from './reader.mjs?v=130';
-import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './content.mjs?v=130';
-import {readBookPdf} from './pdf-import.mjs?v=130';
+import {VERSION,validateLibrary,parseLibraryText,parseLibraryFileText,normalize,literalPrice,quantity,safeCart,inventoryText} from './model.mjs?v=131';
+import {prepareEntries,searchEntries,makeAliases,libraryPages,profileText,profileRolls} from './search.mjs?v=131';
+import {getStored,putStored,deleteStored} from './storage.mjs?v=131';
+import {bridge,ready,OBR} from './bridge.mjs?v=131';
+import {sectionExcerpt} from './reader.mjs?v=131';
+import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './content.mjs?v=131';
+import {readBookPdf} from './pdf-import.mjs?v=131';
 
-import {THEMES, topicOf, topicsOf, hasRoll, mergeTableRules} from './themes.mjs?v=130';
-import {hasTable, tableShelf, startTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=130';
-import {observePanel} from './panel-size.mjs?v=130';
+import {THEMES, topicOf, topicsOf, hasRoll, mergeTableRules} from './themes.mjs?v=131';
+import {hasTable, tableShelf, startTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=131';
+import {observePanel} from './panel-size.mjs?v=131';
 
 const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -106,7 +106,7 @@ async function selectEntry(e,{mobile=true,remember=true}={}){
  root.insertAdjacentHTML('beforeend',relationHtml({...e,related:[...new Set([...(e.related||[]),...(e.linkedProfiles||[]),...suggestedRules(e,state.rules)])]}));
  if(e.kit?.length)root.insertAdjacentHTML('beforeend',`<h3>Matériel utile</h3><div class="kit-links">${e.kit.map(q=>`<button class="relation" data-gear="${esc(q)}">${esc(q)}</button>`).join('')}</div>`);
  root.insertAdjacentHTML('beforeend',`<div class="source-line">${esc(sourceLabel(e))} · PDF ${e.page}</div>`);
- const refs=(e.refs||[]).filter(r=>r.source!==e.source||r.page!==e.page);
+ const refs=[...(e.refs||[]),...(e.kind==='equipment'&&e.descriptionPage&&e.descriptionPage!==e.page?[{source:e.source,page:e.descriptionPage}]:[])].filter(r=>r.source!==e.source||r.page!==e.page);
  if(refs.length){
   const nav=document.createElement('div');nav.className='reference-buttons';
   const label=document.createElement('span');label.textContent='Autres pages citées';nav.append(label);
@@ -150,12 +150,13 @@ function renderSource(e,root){
  const reader=document.createElement('div');details.append(reader);root.append(details);let rendered=false;
  const populate=()=>{
   if(rendered||!details.open)return;rendered=true;
-  const pageText=book.pages[e.page-1]?.text||'';
+  const readingPage=e.kind==='equipment'?(e.descriptionPage||e.page):e.page;
+  const pageText=book.pages[readingPage-1]?.text||'';
   const passage=e.kind==='roll'&&book.anchors?pageText.slice(e.start,e.end):'';
   const excerpt=passage||e.kind==='page'?null:sectionExcerpt(e,book,state.index);
   const text=passage||excerpt?.text||pageText;
   if(e.kind!=='roll'&&e.kind!=='page'&&!e.summary&&!e.attributes){const points=localKeyPoints(text,book.language);if(points.length){const section=document.createElement('section');section.className='local-points';section.innerHTML=`<h3>Points clés de la section</h3><ul>${points.map(p=>`<li>${esc(p)}</li>`).join('')}</ul>`;root.insertBefore(section,details);}}
-  if(text){const body=document.createElement('div');body.className='booktext';highlightText(body,text,state.query);reader.append(body);const full=document.createElement('button');full.className='subtle';full.textContent='Consulter le contexte et les pages suivantes';full.onclick=()=>renderPage(reader,e.source,e.page);reader.append(full);}else renderPage(reader,e.source,e.page);
+  if(text){const body=document.createElement('div');body.className='booktext';highlightText(body,text,state.query);reader.append(body);const full=document.createElement('button');full.className='subtle';full.textContent='Consulter le contexte et les pages suivantes';full.onclick=()=>renderPage(reader,e.source,excerpt?.page||readingPage);reader.append(full);}else renderPage(reader,e.source,readingPage);
  };
  details.addEventListener('toggle',populate);if(details.open)populate();
 }
@@ -275,7 +276,7 @@ async function restoreLibrary(){
 async function init(){
  try{
   const files=['sources','index','equipment','profiles','rules','coverage','terminology'];
-  const values=await Promise.all(files.map(async name=>{const r=await fetch(`data/${name}.json?v=130`,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw Error('Impossible de charger '+name);return r.json();}));
+  const values=await Promise.all(files.map(async name=>{const r=await fetch(`data/${name}.json?v=131`,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw Error('Impossible de charger '+name);return r.json();}));
   const [books,index,equipment,profiles,rules,coverage,terms]=values;Object.assign(state,{books,index,equipment,profiles,rules,baseRules:rules,coverage,terms});
   buildEntries();
   const [prefs,cart]=await Promise.all([getStored('preferences',{}),getStored('cart',[])]);
@@ -290,12 +291,12 @@ async function init(){
   void restoreLibrary();
   void activateTable(selection);
   void setupBridge().catch(fail);
-  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=130').catch(()=>{});
+  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=131').catch(()=>{});
  }catch(e){$('#resultCount').textContent='Chargement interrompu';$('#detail').innerHTML='<h2>Le compendium ne s’est pas chargé.</h2><button id="retryLoad">Réessayer</button>';$('#retryLoad').onclick=()=>location.reload();fail(e);}
 }
 function initWorker(){
  try{
-   const w=new Worker(new URL('./search-worker.mjs?v=130',import.meta.url),{type:'module'});state.worker=w;
+   const w=new Worker(new URL('./search-worker.mjs?v=131',import.meta.url),{type:'module'});state.worker=w;
    w.onmessage=({data})=>{if(data.type==='results')renderResults(data);if(data.type==='ready'){state.workerReady=true;runSearch();}if(data.type==='library-ready')runSearch();if(data.type==='error')fail(Error(data.message));};
    w.onerror=()=>{w.terminate();state.worker=null;state.workerReady=false;runSearch();};w.postMessage({type:'init',entries:state.entries,terms:state.terms.terms});
   }catch{state.worker=null;}
@@ -329,7 +330,9 @@ void init();
 
 function buildEntries(extra,tests=[]) {
  state.rules=mergeTableRules(state.baseRules,extra);
- const catalog=assembleEntries({rules:state.rules,index:state.index,equipment:state.equipment,profiles:state.profiles});
+ const pages=tableShelf()?.gearPages||{};
+ const equipment=state.equipment.map(e=>pages[e.id]?{...e,descriptionPage:pages[e.id]}:e);
+ const catalog=assembleEntries({rules:state.rules,index:state.index,equipment,profiles:state.profiles});
  state.entries=[...catalog.entries,...tests].map(e=>({...e,topic:topicOf(e)}));
  state.byId=new Map(state.entries.map(e=>[e.id,e]));
  for(const [id,target] of catalog.replacements)state.byId.set(id,state.byId.get(target));
@@ -394,7 +397,7 @@ function renderArtwork(e,root) {
  const art=selectPlates(e,shelf.art);
  const wrap=document.createElement('section');wrap.className='art-section';
  if(art.length){
-  const h=document.createElement('h3');h.textContent=art.length===1?'Illustration du livre':'Illustrations du livre';wrap.append(h);
+  const h=document.createElement('h3');h.textContent=art.every(a=>!a.label)?(art.length===1?'Illustration de la page':'Illustrations de la page'):(art.length===1?'Illustration du livre':'Illustrations du livre');wrap.append(h);
   const grid=document.createElement('div');grid.className='plate-gallery';wrap.append(grid);
   for(const a of art){
    const b=document.createElement('button');b.className='plate-thumb';b.type='button';
