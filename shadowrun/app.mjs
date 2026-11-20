@@ -70,12 +70,16 @@ function renderResults(r){
  $('#resultCount').textContent=`${fmt(r.total)} ${r.total===1?'résultat':'résultats'}${r.corrected?' · orthographe approchée':''}${r.items.length<r.total?' · '+fmt(r.items.length)+' affichés':''}`;
  $('#more').hidden=r.items.length>=r.total;
  if(!r.total){state.pendingAction=null;root.innerHTML='<div class="empty">Aucun résultat. Essaie un terme plus court ou un autre ouvrage.</div>';return;}
- const frag=document.createDocumentFragment();
+ const frag=document.createDocumentFragment(),shown=new Set();
  for(const e of r.items){
+  const groupKey=e.kind==='equipment'?normalize(title(e))+'|'+normalize(e.category||''):e.id;
+  if(shown.has(groupKey))continue;
+  shown.add(groupKey);
   const button=document.createElement('button');button.className='result'+(state.selected?.id===e.id?' active':'');button.dataset.id=e.id;
   const folder=classifyEntry(e);
   const folderText=e.kind==='equipment'?folder.family+' › '+folder.subcategory:e.kind==='creature'?folder.family:folder.subcategory;
-  button.innerHTML=`<span class="name">${state.favorites.has(e.id)?'★ ':''}${esc(title(e))}</span><span class="meta"><span class="type">${esc(labels[e.kind]||'Référence')}</span><span class="result-folder">${esc(folderText)}</span><span>${esc(sourceLabel(e))}</span>${e.optional?'<span>Optionnelle</span>':''}</span>${e.procedure?.test||e.pools?.length?`<span class="result-roll">${esc(e.procedure?.test||e.pools.join(' · '))}</span>`:''}${e.summary?`<span class="excerpt">${esc(e.summary)}</span>`:''}`;
+   const editions=e.kind==='equipment'?(state.equipmentGroups?.get(groupKey)?.length||1):1;
+  button.innerHTML=`<span class="name">${state.favorites.has(e.id)?'★ ':''}${esc(title(e))}</span><span class="meta"><span class="type">${esc(labels[e.kind]||'Référence')}</span><span class="result-folder">${esc(folderText)}</span><span>${esc(sourceLabel(e))}</span>${editions>1?'<span class="editions">'+editions+' ouvrages / variantes</span>':''}${e.optional?'<span>Optionnelle</span>':''}</span>${e.procedure?.test||e.pools?.length?`<span class="result-roll">${esc(e.procedure?.test||e.pools.join(' · '))}</span>`:''}${e.summary?`<span class="excerpt">${esc(e.summary)}</span>`:''}`;
   button.addEventListener('click',()=>selectEntry(e));const item=document.createElement('div');item.setAttribute('role','listitem');item.append(button);frag.append(item);
  }
  root.append(frag);
@@ -89,6 +93,20 @@ function relationHtml(e){
  return `<h3>À consulter aussi</h3>${rel.map(e=>`<button class="relation" data-entry="${esc(e.id)}">${esc(title(e))}</button>`).join('')}`;
 }
 function headerHtml(e){return `<div class="topline"><button class="subtle back-mobile" id="backResults">Résultats</button><span class="breadcrumb">${esc(topics[topicOf(e)]||e.habitat||e.category||'Compendium')}</span><button id="favorite" class="iconbutton" aria-label="${state.favorites.has(e.id)?'Retirer des favoris':'Ajouter aux favoris'}" aria-pressed="${state.favorites.has(e.id)}">${state.favorites.has(e.id)?'★':'☆'}</button></div><div class="badges"><span class="badge">${esc(labels[e.kind]||'Référence')}</span>${e.summary&&e.kind!=='page'?'<span class="badge summary">Rappel en français</span>':''}${e.optional?'<span class="badge optional">Règle optionnelle</span>':''}${e.verification==='a-verifier'?'<span class="badge optional">Extraction à vérifier dans la source</span>':''}</div><h2>${esc(title(e))}</h2>${e.originalTitle&&e.originalTitle!==title(e)?`<p class="original-title">${esc(e.originalTitle)}</p>`:''}`;}
+function renderEquipmentAlternatives(entry,root){
+ const key=normalize(title(entry))+'|'+normalize(entry.category||'');
+ const options=state.equipmentGroups?.get(key)||[];
+ if(options.length<=1)return;
+ const section=document.createElement('section');section.className='source-alternatives';
+ section.innerHTML='<h3>Autres ouvrages / variantes</h3><p class="small">Même désignation dans plusieurs livres : caractéristiques conservées séparément pour éviter de confondre les éditions.</p>';
+ for(const variant of options.filter(x=>x.id!==entry.id)){
+  const button=document.createElement('button');button.className='relation';
+  button.textContent=sourceLabel(variant)+(variant.fields?.length?' · '+variant.fields.length+' caractéristiques':'');
+  button.onclick=()=>selectEntry(variant);
+  section.append(button);
+ }
+ root.append(section);
+}
 function categoryHtml(e){
  const category=e.category||e.habitat||topics[topicOf(e)]||'Système de jeu';
  const path=(e.path||[]).filter(Boolean);
@@ -120,6 +138,7 @@ async function selectEntry(e,{mobile=true,remember=true}={}){
  if(e.summary&&e.kind!=='page')root.insertAdjacentHTML('beforeend',`<div class="summary-body"><h3>Description / rappel</h3><p>${esc(e.summary)}</p>${e.steps?.length?`<ol>${e.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>`:''}${e.warning?`<p class="warn">${esc(e.warning)}</p>`:''}</div>`);
  if(e.fields?.length){root.insertAdjacentHTML('beforeend','<h3>Caractéristiques</h3>');root.insertAdjacentHTML('beforeend',tableRows(e.fields));}
  if(e.kind==='equipment')root.insertAdjacentHTML('beforeend','<div class="detail-actions"><button id="addCart" class="primary">Ajouter au panier</button></div>');
+  if(e.kind==='equipment')renderEquipmentAlternatives(e,root);
  root.insertAdjacentHTML('beforeend',relationHtml({...e,related:[...new Set([...(e.related||[]),...(e.linkedProfiles||[]),...suggestedRules(e,state.rules)])]}));
  if(e.kit?.length)root.insertAdjacentHTML('beforeend',`<h3>Matériel utile</h3><div class="kit-links">${e.kit.map(q=>`<button class="relation" data-gear="${esc(q)}">${esc(q)}</button>`).join('')}</div>`);
  root.insertAdjacentHTML('beforeend',`<div class="source-line">${esc(sourceLabel(e))} · PDF ${e.page}</div>`);
@@ -358,6 +377,12 @@ function buildEntries(extra,tests=[]) {
  const equipment=state.equipment.map(e=>pages[e.id]?{...e,descriptionPage:pages[e.id]}:e);
  const catalog=assembleEntries({rules:state.rules,index:state.index,equipment,profiles:state.profiles});
  state.entries=[...catalog.entries,...tests].map(e=>({...e,topic:topicOf(e)}));
+  state.equipmentGroups=new Map();
+  for(const e of state.entries.filter(e=>e.kind==='equipment')){
+   const key=normalize(title(e))+'|'+normalize(e.category||'');
+   if(!state.equipmentGroups.has(key))state.equipmentGroups.set(key,[]);
+   state.equipmentGroups.get(key).push(e);
+  }
  state.byId=new Map(state.entries.map(e=>[e.id,e]));
  for(const [id,target] of catalog.replacements)state.byId.set(id,state.byId.get(target));
  state.prepared=prepareEntries(state.entries);
