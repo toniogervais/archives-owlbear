@@ -189,7 +189,7 @@ export function quickEquipmentFacet(e){
  return {family,subcategory};
 }
 export function quickCatalogHierarchy(entries,options={}){
- if(options.kind!=='equipment')return old;
+ if(options.kind!=='equipment')return catalogHierarchy(entries,options);
  const counts=new Map(QUICK_EQUIPMENT_GROUPS.map(x=>[x.name,{name:x.name,count:0,subs:new Map()}]));
  for(const e of entries){
   if(!entryMatchesKind(e,'equipment')||options.source&&e.source!==options.source||
