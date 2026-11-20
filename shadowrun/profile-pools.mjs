@@ -1,0 +1,82 @@
+import {normalize} from './model.mjs?v=136';
+
+// Compétences actives : Shadowrun Sixième Édition, « Compétences » (p. 98–105).
+// Les attributs secondaires ne remplacent l'attribut principal que pour l'action indiquée.
+export const SKILLS=[
+ ['Armes à feu','AGI',99,'Combat','Attaques avec armes à feu.','Défense : Réaction + Intuition.'],
+ ['Armes exotiques','AGI',100,'Combat','Utiliser les armes exotiques, selon le type.','Défense : Réaction + Intuition.'],
+ ['Astral','INT',100,'Magie','Perception et lecture de signatures astrales.','',{attr:'VOL',when:'Combat astral'}],
+ ['Athlétisme','AGI',100,'Physique','Archerie, escalade, lancer, saut, sprint, natation, vol.','',{attr:'FOR',when:'Effort contre une résistance'}],
+ ['Biotech','LOG',101,'Soins','Biotechnologie, cybertechnologie, médecine, premiers soins.','',{attr:'INT',when:'Situations atypiques'}],
+ ['Combat rapproché','AGI',102,'Combat','Attaques de mêlée et à mains nues.','Défense : Réaction + Intuition.'],
+ ['Conjuration','MAG',102,'Magie','Invocation et bannissement des esprits. Vérifier le Drain.'],
+ ['Électronique','LOG',102,'Matrice','Utilisation légale de la Matrice, informatique, électronique.','',{attr:'INT',when:'Bidouillage'}],
+ ['Enchantement','MAG',102,'Magie','Alchimie, création d’artefacts, désenchantement.'],
+ ['Escroquerie','CHA',102,'Social','Comédie, déguisement, imposture, représentation.','Résistance : Intuition + Volonté.'],
+ ['Furtivité','AGI',102,'Physique','Camouflage, discrétion et escamotage.','Détection : Perception + Intuition.'],
+ ['Influence','CHA',103,'Social','Étiquette, enseignement, intimidation, leadership et négociation.','Résistance : Volonté + Intuition (ou Volonté + Logique pour un argument logique).',{attr:'LOG',when:'Argument logique'}],
+ ['Ingénierie','LOG',103,'Technique','Armurerie, mécanique, fabrication, réparation, bricolage, crochetage.','',{attr:'INT',when:'Bricolage'},{attr:'AGI',when:'Crochetage'}],
+ ['Perception','INT',103,'Enquête','Observer et déceler un détail, une présence ou des indices.','Opposition : Furtivité + Agilité.',{attr:'LOG',when:'Repérer des schémas et formes'}],
+ ['Pilotage','RÉA',104,'Rigging','Conduite, manœuvres et poursuites.','Poursuite : Pilotage + Réaction contre Pilotage + Réaction.'],
+ ['Piratage','LOG',104,'Matrice','Actions matricielles illégales : cybercombat, hacking, guerre électronique.'],
+ ['Plein air','INT',104,'Exploration','Orientation, pistage et survie.'],
+ ['Sorcellerie','MAG',105,'Magie','Sorts, contresorts et magie rituelle. Vérifier les tests de Drain.'],
+ ['Technomancie','RÉS',105,'Matrice','Compilation, décompilation et inscription.']
+].map(([name,attr,page,group,use,opposition,...alternate])=>({name,attr,page,group,use,opposition,alternate}));
+
+export const ATTRIBUTE_NAMES={CON:'Constitution',AGI:'Agilité','RÉA':'Réaction',FOR:'Force',VOL:'Volonté',LOG:'Logique',INT:'Intuition',CHA:'Charisme',MAG:'Magie','RÉS':'Résonance'};
+const byName=new Map(SKILLS.map(s=>[normalize(s.name),s]));
+const names=SKILLS.map(s=>s.name).sort((a,b)=>b.length-a.length).join('|');
+const pattern=new RegExp('(?:^|[,;]\\s*|\\s+)('+names+'|Lancement de sorts)(?:\\s*\\(([^)]+)\\))?\\s+(\\d{1,2})(?:\\s*\\((\\d{1,2})\\))?(?:\\s*\\(([^)]+)\\))?','giu');
+const num=x=>/^\\d+$/.test(String(x??'').trim())?Number(x):null;
+const attrValue=(profile,key)=>{
+ const raw=String(profile.attributes?.[key]??'').trim();
+ const matched=/^(\\d+)(?:\\s*\\((\\d+)\\))?$/.exec(raw);
+ return {raw,value:matched?Number(matched[1]):null,alternative:matched?.[2]?Number(matched[2]):null};
+};
+export function parseProfileSkills(value=''){
+ const rows=[],seen=new Set();pattern.lastIndex=0;let m;
+ while((m=pattern.exec(String(value)))){
+  const name=m[1],def=byName.get(normalize(name==='Lancement de sorts'?'Sorcellerie':name));
+  if(!def)continue;
+  const embedded=m[2],rank=Number(m[3]),alternateRank=m[4]?Number(m[4]):null;
+  const spec=m[5]?.match(/^\\s*(.*?)\\s*\\+\\s*(2|3)\\s*$/);
+  const specialty=spec?.[1]||'',bonus=spec?Number(spec[2]):0;
+  const label=embedded&&!/^\\d+$/.test(embedded)?name+' ('+embedded.trim()+')':name;
+  const key=normalize(label)+'|'+rank+'|'+normalize(specialty);
+  if(seen.has(key))continue;
+  seen.add(key);rows.push({name:label,rank,alternateRank,specialty,bonus,definition:def});
+ }
+ return rows;
+}
+export function profileSkillPools(profile){
+ return parseProfileSkills(profile?.sections?.Compétences||'').map(s=>{
+  const a=attrValue(profile,s.definition.attr);
+  const total=a.value===null?null:a.value+s.rank;
+  const contextual=s.definition.alternate.map(c=>{
+   const v=attrValue(profile,c.attr);
+   return {attr:c.attr,when:c.when,attributeValue:v.value,total:v.value===null?null:s.rank+v.value};
+  });
+  return {name:s.name,rank:s.rank,attr:s.definition.attr,attrName:ATTRIBUTE_NAMES[s.definition.attr],
+   attributeValue:a.value,rawAttribute:a.raw,total,alternateAttributeTotal:a.alternative===null?null:s.rank+a.alternative,
+   specialty:s.specialty,bonus:s.bonus,specialtyTotal:total===null||!s.bonus?null:total+s.bonus,
+   alternateRank:s.alternateRank,alternateRankTotal:s.alternateRank===null||a.value===null?null:s.alternateRank+a.value,
+   contextual};
+ });
+}
+export function skillGuideEntries(){
+ return SKILLS.map((s,i)=>({
+  id:'skill:core:'+i,source:'core',page:s.page+2,printedPage:s.page,title:s.name,kind:'skillguide',topic:'competences',
+  path:['Compétences',s.group],
+  tags:['jets de dés','D6','pool','réserve de dés',ATTRIBUTE_NAMES[s.attr],s.name,s.group],
+  summary:s.use,
+  procedure:{test:s.name+' + '+ATTRIBUTE_NAMES[s.attr],...(s.opposition?{opposition:s.opposition}:{})},
+  fields:[
+   {label:'Attribut principal',value:ATTRIBUTE_NAMES[s.attr]+' ('+s.attr+')'},
+   {label:'Réserve de base',value:s.name+' + '+s.attr},
+   ...s.alternate.map(a=>({label:'Attribut secondaire : '+a.when,value:ATTRIBUTE_NAMES[a.attr]+' ('+a.attr+')'})),
+   {label:'Spécialisation / maîtrise',value:'+2 D6 si applicable ; +3 D6 avec une maîtrise. Un seul bonus de ce type par test.'},
+   {label:'Source',value:'Livre de base, compétences p. '+s.page}
+  ]
+ }));
+}
