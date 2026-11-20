@@ -42,7 +42,7 @@ export function searchEntries(entries,{query='',kind='',topic='',source='',favor
   }
  }
  collect();let corrected=false;if(!results.length&&gs.some(g=>g[0].length>=5)){collect(true);corrected=results.length>0;}
- results.sort((a,b)=>b.score-a.score||(a.entry.title||a.entry.name).localeCompare(b.entry.title||b.entry.name,'fr')||a.entry.page-b.entry.page);
+ results.sort((a,b)=>q?(b.score-a.score||(a.entry.title||a.entry.name).localeCompare(b.entry.title||b.entry.name,'fr')||a.entry.page-b.entry.page):((a.entry.title||a.entry.name).localeCompare(b.entry.title||b.entry.name,'fr')||a.entry.source.localeCompare(b.entry.source,'fr')||a.entry.page-b.entry.page));
  return {total:results.length,corrected,items:results.slice(offset,offset+limit).map(({entry:{_text,_title,_tags,...entry}})=>entry)};
 }
 export function libraryPages(library){return (library?.books||[]).flatMap(b=>b.pages.filter(p=>p.text.trim()).map(p=>({id:`page:${b.id}:${p.number}`,title:`${b.displayTitle||b.title} · p. ${p.printed>0?p.printed:'PDF '+p.number}`,kind:'page',source:b.id,topic:p.topic,page:p.number,printedPage:p.printed,summary:p.text.slice(0,190),_title:normalize(b.title),_text:normalize(p.text)})));}
