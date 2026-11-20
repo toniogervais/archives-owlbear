@@ -15,6 +15,17 @@ function equipmentSub(e){
  const check=arr=>match(label,arr)||match(trail,arr);
  switch(cat){
  case 'Armes':{
+  // Prefer the precise printed family of the item's own table row.
+  // Earlier path components can contain a previous heading on a multi-column page.
+  const last=n((e.path||[]).at(-1)||'');
+  const precise=match(last,[
+   [/pistolets? de poche/,'Pistolets de poche'],[/pistolets? legers?/,'Pistolets légers'],
+   [/pistolets? lourds?/,'Pistolets lourds'],[/pistolets? automatiques?/,'Pistolets automatiques'],
+   [/mitraillettes?/,'Mitraillettes'],[/mitrailleuses?/,'Mitrailleuses'],
+   [/shotguns?|fusils? a pompe/,'Shotguns'],[/fusils?/,'Fusils'],
+   [/armes? tranchantes/,'Armes tranchantes'],[/armes? contondantes/,'Armes contondantes']
+  ]);
+  if(precise)return precise;
   const named=match(label,[
    [/arbalet|arbalete/,'Arbalètes'],[/\barc\b|arc a poulies/,'Arcs et armes de trait'],
    [/taser|pulsar|shock/,'Tasers'],[/pistolet|predator|manhunter|slivergun|roomsweeper|guardian/,'Pistolets'],
