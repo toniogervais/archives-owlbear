@@ -67,6 +67,15 @@ export async function archivesImportUrl(e,destination){
  if(!['canvas','library'].includes(destination))throw Error('Destination Archives invalide.');
  const payload={schema:'archives-sr6-transfer',version:1,destination,node:toArchiveCell(e)};
  const code=await encodeArchiveImport(payload);
+ // If the compendium is opened *inside* Les Archives, keep the active campaign
+ // and transfer the cell directly; no URL navigation, tab or public Owlbear data.
+ try{
+  const parent=window.parent;
+  if(parent!==window&&parent.document?.getElementById('archives-sr6-frame')?.contentWindow===window){
+   parent.postMessage({type:'archives:sr6-transfer:v1',code:'json.'+toBase64(raw)},location.origin);
+   return 'Fiche envoyée aux Archives de cette campagne.';
+  }
+ }catch{/* Separate Owlbear iframe: use the main Archives window below. */}
  const url=new URL('../archives-app-v64-v55.html?v=4721&resume=1',import.meta.url);
  url.hash='sr6i='+code;
  if(url.href.length>MAX_LINK_LENGTH)throw Error('Cette fiche est trop longue : utilise l’export JSON.');
