@@ -5,6 +5,7 @@ import {selectPlates} from '../table-books.mjs';
 import {topicsOf,mergeTableRules} from '../themes.mjs';
 import {prepareEntries,searchEntries} from '../search.mjs';
 import {sectionExcerpt} from '../reader.mjs';
+import {assembleEntries} from '../content.mjs';
 
 test('short cards shrink, long illustrated cards fit the host, including a telephone',()=>{
  const host={screenWidth:1280,screenHeight:800};
@@ -41,4 +42,43 @@ test('the equipment recap links to its identified illustration on the descriptio
  const item={source:'feu',id:'claws',name:'Serres digitales',kind:'equipment',page:147,descriptionPage:14};
  assert.deepEqual(selectPlates(item,art).map(a=>a.entries),[['claws']]);
  assert.deepEqual(selectPlates({...item,id:'x',name:'autre équipement'},art),[]);
+});
+
+test('a two-page source section stops at the next named heading',()=>{
+ const pages=[{text:'Premiers soins\nLe test suit la procédure de soins. Le résultat se poursuit sur la page suivante.'},{text:'Les limitations sont précisées ici.\nMédikit\nCette deuxième procédure est distincte.'}];
+ const index=[{id:'care',source:'core',title:'Premiers soins',page:1,endPage:2,level:3},{id:'kit',source:'core',title:'Médikit',page:2,endPage:2,level:3}];
+ const result=sectionExcerpt(index[0],{pages},index);
+ assert.equal(result.endPage,2);
+ assert.match(result.text,/limitations/);
+ assert.doesNotMatch(result.text,/deuxième procédure/);
+});
+test('a missing section heading never falls back to an unrelated page',()=>{
+ const book={pages:[{text:'Autre règle\nUn paragraphe sur une règle totalement différente.'}]};
+ assert.equal(sectionExcerpt({source:'core',title:'Premiers soins',page:1},book,[]),null);
+});
+test('sections never silently absorb a third page',()=>{
+ const pages=[{text:'Test\nDescription suffisamment longue pour servir de premier paragraphe.'},{text:'Suite de la description avec des conditions différentes.'},{text:'Une troisième page qui ne doit pas être mélangée.'}];
+ const index=[{id:'a',source:'core',title:'Test',page:1,endPage:3,level:3}];
+ const result=sectionExcerpt(index[0],{pages,anchors:{a:[1,0,3,40]}},index);
+ assert.equal(result.endPage,2);
+ assert.equal(result.truncated,true);
+ assert.doesNotMatch(result.text,/troisième page/);
+});
+test('the index merges identical locations but keeps same-name sections in different chapters',()=>{
+ const index=[
+  {id:'a',source:'core',title:'Initiative',page:41,level:3,path:['Personnage'],topic:'regles'},
+  {id:'b',source:'core',title:'Initiative',page:41,level:3,path:['Personnage'],topic:'regles'},
+  {id:'c',source:'core',title:'Initiative',page:111,level:2,path:['Combat'],topic:'combat'}
+ ];
+ const result=assembleEntries({rules:[],profiles:[],equipment:[],index});
+ assert.equal(result.entries.length,2);
+ assert.equal(result.replacements.get('b'),'a');
+ assert.equal(result.replacements.has('c'),false);
+});
+test('a distant recap is joined to its equipment only through a verified description page',()=>{
+ const equipment=[{id:'digital',source:'feu',name:'Serres digitales',page:147,descriptionPage:14,category:'Armes'}];
+ const index=[{id:'entry',source:'feu',title:'Serres digitales',page:14,level:4,path:['Arsenal'],topic:'equipement'}];
+ const result=assembleEntries({rules:[],profiles:[],equipment,index});
+ assert.equal(result.entries.length,1);
+ assert.equal(result.replacements.get('entry'),'digital');
 });
