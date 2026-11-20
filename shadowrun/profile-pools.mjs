@@ -24,6 +24,7 @@ export const SKILLS=[
  ['Technomancie','RÉS',105,'Matrice','Compilation, décompilation et inscription.']
 ].map(([name,attr,page,group,use,opposition,...alternate])=>({name,attr,page,group,use,opposition,alternate}));
 
+const UNTRAINED=new Set(['Armes à feu','Athlétisme','Combat rapproché','Électronique','Escroquerie','Furtivité','Influence','Ingénierie','Perception','Pilotage','Plein air']);
 export const ATTRIBUTE_NAMES={CON:'Constitution',AGI:'Agilité','RÉA':'Réaction',FOR:'Force',VOL:'Volonté',LOG:'Logique',INT:'Intuition',CHA:'Charisme',MAG:'Magie','RÉS':'Résonance'};
 const byName=new Map(SKILLS.map(s=>[normalize(s.name),s]));
 const names=SKILLS.map(s=>s.name).sort((a,b)=>b.length-a.length).join('|');
@@ -73,6 +74,7 @@ export function skillGuideEntries(){
   procedure:{test:s.name+' + '+ATTRIBUTE_NAMES[s.attr],...(s.opposition?{opposition:s.opposition}:{})},
   fields:[
    {label:'Attribut principal',value:ATTRIBUTE_NAMES[s.attr]+' ('+s.attr+')'},
+   {label:'Sans rang dans cette compétence',value:UNTRAINED.has(s.name)?'Test possible avec l’attribut associé −1 D6, sous réserve des autres modificateurs.':'Impossible de tenter le test en étant Inexpérimenté.'},
    {label:'Réserve de base',value:s.name+' + '+s.attr},
    ...s.alternate.map(a=>({label:'Attribut secondaire : '+a.when,value:ATTRIBUTE_NAMES[a.attr]+' ('+a.attr+')'})),
    {label:'Spécialisation / maîtrise',value:'+2 D6 si applicable ; +3 D6 avec une maîtrise. Un seul bonus de ce type par test.'},
