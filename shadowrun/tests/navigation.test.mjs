@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
-import {catalogHierarchy,classifyEntry,matchFacet,EQUIPMENT_ORDER} from '../catalog.mjs';
+import {catalogHierarchy,classifyEntry,matchFacet,EQUIPMENT_ORDER,quickCatalogHierarchy,quickEquipmentFacet} from '../catalog.mjs';
 import {prepareEntries,searchEntries} from '../search.mjs';
 import {panelSize} from '../panel-size.mjs';
 import {installWindowControls} from '../window-controls.mjs';
@@ -79,4 +79,36 @@ test('fullscreen opens the native Owlbear overlay and closes it from the modal',
   await elements.restoreButton.onclick();
   assert.equal(closed,opened.id);
  }finally{globalThis.document=previous.document;globalThis.window=previous.window;}
+});
+
+
+test('navigation rapide : huit catégories, sans perdre de matériel',()=>{
+ const quick=quickCatalogHierarchy(gear,{kind:'equipment'});
+ assert.equal(quick.length,8);
+ assert.equal(quick.reduce((sum,g)=>sum+g.count,0),1231);
+ assert.ok(quick.every(g=>g.children.length<=7));
+ const prepared=prepareEntries(gear);
+ for(const g of quick){
+  const result=searchEntries(prepared,{kind:'equipment',family:g.name,limit:2000});
+  assert.equal(result.total,g.count,'Famille : '+g.name);
+  for(const child of g.children){
+   const filtered=searchEntries(prepared,{kind:'equipment',family:g.name,subcategory:child.name,limit:2000});
+   assert.equal(filtered.total,child.count,'Type facultatif : '+g.name+' / '+child.name);
+  }
+ }
+});
+test('pas de sous-catégorie obligatoire : ouvrir Armes affiche aussitôt une liste variée',()=>{
+ const prepared=prepareEntries(gear);
+ const result=searchEntries(prepared,{kind:'equipment',family:'Armes',limit:75});
+ assert.equal(result.total,410);
+ const types=new Set(result.items.slice(0,20).map(e=>quickEquipmentFacet(e).subcategory));
+ assert.ok(types.size>=5,'La liste doit varier les types, pas uniquement les AK et arbalètes');
+ assert.ok(result.items.some(e=>e.kind==='equipment'));
+ const precise=searchEntries(prepared,{kind:'equipment',family:'Armes',query:'Ares Predator VI'});
+ assert.equal(precise.items[0].name,'Ares Predator VI');
+});
+test('la recherche globale ne commence pas par 75 références similaires',()=>{
+ const prepared=prepareEntries(gear);
+ const result=searchEntries(prepared,{kind:'equipment',limit:75});
+ assert.ok(new Set(result.items.slice(0,24).map(e=>quickEquipmentFacet(e).family)).size>=7);
 });
