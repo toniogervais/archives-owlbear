@@ -534,6 +534,21 @@ function renderCategoryLanding(){
  $('.workspace').classList.add('browse-catalog','show-detail');
  $('#quick').hidden=true;
 }
+function renderSubcategoryLanding(item){
+ const root=$('#detail');releaseArt();state.selected=null;
+ root.innerHTML='<div class="catalog-landing"><div class="catalog-landing-top"><div><h2>'+esc(item.name)+'</h2><p>'+fmt(item.count)+' références · Choisis une sous-catégorie.</p></div><button id="catalogAll" class="subtle">Voir toutes les références</button></div><div class="catalog-grid"></div></div>';
+ for(const part of item.children){
+  const tile=document.createElement('button');tile.type='button';tile.className='catalog-tile';
+  tile.innerHTML='<strong>'+esc(part.name)+'</strong><span>'+fmt(part.count)+' références</span>';
+  tile.onclick=()=>chooseFamily(item.name,part.name);
+  root.querySelector('.catalog-grid').append(tile);
+ }
+ root.querySelector('#catalogAll').onclick=()=>{
+  state.browse={family:item.name,sub:''};
+  showBrowseHint(item.name);runSearch();
+ };
+ $('.workspace').classList.add('browse-catalog','show-detail');
+}
 function chooseFamily(family,sub=''){
  const item=currentHierarchy().find(g=>g.name===family);
  if(!item)return renderCategoryLanding();
@@ -543,14 +558,15 @@ function chooseFamily(family,sub=''){
  const back=document.createElement('button');back.textContent='← Catégories';back.className='subtle';
  back.onclick=()=>{updateCategoryFilter();renderCategoryLanding();runSearch();};trail.append(back);
  const heading=document.createElement('strong');heading.textContent=family+' · '+fmt(item.count);trail.append(heading);
- const all=document.createElement('button');all.className='catalog-chip'+(!state.browse.sub?' selected':'');all.textContent='Tout';
- all.onclick=()=>chooseFamily(family,'');trail.append(all);
+ const all=document.createElement('button');all.className='catalog-chip';all.textContent='Tout afficher';
+ all.onclick=()=>{state.browse={family,sub:''};showBrowseHint(family);runSearch();};trail.append(all);
  for(const child of item.children){
   const b=document.createElement('button');b.className='catalog-chip'+(state.browse.sub===child.name?' selected':'');
   b.textContent=child.name+' · '+fmt(child.count);b.title='Afficher '+child.name;
   b.onclick=()=>chooseFamily(family,child.name);trail.append(b);
  }
- showBrowseHint(state.browse.sub||family);runSearch();
+ if(!state.browse.sub)renderSubcategoryLanding(item);else showBrowseHint(state.browse.sub);
+ runSearch();
 }
 function restoreCatalogRoute(){
  const p=new URLSearchParams(location.search);
