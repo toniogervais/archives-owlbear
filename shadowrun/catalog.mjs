@@ -142,7 +142,7 @@ export function catalogHierarchy(entries,{kind='',topic='',source='',favorites=n
  const maps=new Map();
  for(const e of entries){
   if(!entryMatchesKind(e,kind)||topic&&!topicsOf(e).includes(topic)||source&&e.source!==source||favorites&&!favorites.has(e.id)||practicalOnly&&!e.summary&&!e.attributes&&!e.fields?.length)continue;
-  const info=kind?classifyEntry(e):topic?themeFacet(e):{family:KIND_NAMES[e.kind]||'Références',subcategory:classifyEntry(e).family};
+  const info=kind==='equipment'&&QUICK_EQUIPMENT_GROUPS.some(g=>g.name===family)?quickEquipmentFacet(e):kind?classifyEntry(e):topic?themeFacet(e):{family:KIND_NAMES[e.kind]||'Références',subcategory:classifyEntry(e).family};
   let node=maps.get(info.family);if(!node){node={name:info.family,count:0,subs:new Map()};maps.set(info.family,node);}
   node.count++;node.subs.set(info.subcategory,(node.subs.get(info.subcategory)||0)+1);
  }
@@ -153,6 +153,60 @@ export function catalogHierarchy(entries,{kind='',topic='',source='',favorites=n
   return b.count-a.count||a.name.localeCompare(b.name,'fr');
  });
 }
+// Navigation rapide : huit grandes portes d'entrée, les 12 catégories sources
+// et leurs sous-catégories restent inchangées et consultables dans les fiches.
+export const QUICK_EQUIPMENT_GROUPS=[
+ {name:'Armes & munitions',categories:['Armes','Munitions et explosifs']},
+ {name:'Protections',categories:['Armures et protections']},
+ {name:'Augmentations',categories:['Augmentations']},
+ {name:'Matrice',categories:['Matrice et logiciels']},
+ {name:'Véhicules & drones',categories:['Véhicules','Drones']},
+ {name:'Matériel & accessoires',categories:['Équipement général','Modifications et accessoires']},
+ {name:'Magie',categories:['Matériel magique']},
+ {name:'PACKs & divers',categories:['PACKs','Équipement pour créatures']}
+];
+export function quickEquipmentFacet(e){
+ const group=QUICK_EQUIPMENT_GROUPS.find(g=>g.categories.includes(e.category));
+ const family=group?.name||'PACKs & divers';
+ const detail=n(classifyEntry(e).subcategory);
+ const cat=e.category;
+ let subcategory;
+ if(family==='Armes & munitions'){
+  if(cat==='Munitions et explosifs')subcategory='Munitions';
+  else if(/pistolet/.test(detail))subcategory='Pistolets';
+  else if(/fusil|mitraillette|mitrailleuse|shotgun|canon/.test(detail))subcategory='Armes longues';
+  else if(/tranchant|contondant|melee|corps a corps/.test(detail))subcategory='Corps à corps';
+  else if(/arbalet|arc|trait|jet/.test(detail))subcategory='Arcs & arbalètes';
+  else if(/explosif|lanceur|grenade/.test(detail))subcategory='Explosifs & lanceurs';
+  else subcategory='Autres armes';
+ }else if(family==='Véhicules & drones')subcategory=cat;
+ else if(family==='Matériel & accessoires')subcategory=cat==='Équipement général'?'Matériel général':'Accessoires & modifications';
+ else if(family==='PACKs & divers')subcategory=cat;
+ else if(family==='Augmentations')subcategory=/bioware/.test(detail)?'Bioware':/cyber|implant|membre/.test(detail)?'Cyberware':'Autres augmentations';
+ else if(family==='Matrice')subcategory=/commlink/.test(detail)?'Commlinks':/cyberdeck|cyberhack|cyberjack/.test(detail)?'Cyberdecks':/programme|logiciel|autosoft/.test(detail)?'Logiciels':'Autre matériel matriciel';
+ else if(family==='Protections')subcategory=/armure|gilet|vetement/.test(detail)?'Armures & vêtements':'Protections & accessoires';
+ else subcategory='Matériel magique';
+ return {family,subcategory};
+}
+export function quickCatalogHierarchy(entries,options={}){
+ const old=catalogHierarchy(entries,options);
+ if(options.kind!=='equipment')return old;
+ const counts=new Map(QUICK_EQUIPMENT_GROUPS.map(x=>[x.name,{name:x.name,count:0,subs:new Map()}]));
+ for(const e of entries){
+  if(!entryMatchesKind(e,'equipment')||options.source&&e.source!==options.source||
+     options.topic&&!topicsOf(e).includes(options.topic)||
+     options.practicalOnly&&!e.summary&&!e.attributes&&!e.fields?.length||
+     options.favorites&&!options.favorites.has(e.id))continue;
+  const {family,subcategory}=quickEquipmentFacet(e),g=counts.get(family);
+  if(!g)continue;
+  g.count++;g.subs.set(subcategory,(g.subs.get(subcategory)||0)+1);
+ }
+ return [...counts.values()].filter(g=>g.count).map(g=>({
+  name:g.name,count:g.count,
+  children:[...g.subs].map(([name,count])=>({name,count})).sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name,'fr'))
+ }));
+}
+
 export function matchFacet(e,{kind='',topic='',family='',subcategory=''}={}){
  if(!family&&!subcategory)return true;
  const info=kind?classifyEntry(e):topic?themeFacet(e):{family:KIND_NAMES[e.kind]||'Références',subcategory:classifyEntry(e).family};
