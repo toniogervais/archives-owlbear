@@ -1,5 +1,5 @@
-import {normalize} from './model.mjs?v=134';
-import {THEMES,topicOf,topicsOf,hasRoll} from './themes.mjs?v=134';
+import {normalize} from './model.mjs?v=135';
+import {THEMES,topicOf,topicsOf,hasRoll} from './themes.mjs?v=135';
 
 export const KIND_NAMES={rule:'Règles',action:'Actions',roll:'Jets',equipment:'Équipement',npc:'PNJ',creature:'Bestiaire',reference:'Références',page:'Pages'};
 export const EQUIPMENT_ORDER=['Armes','Munitions et explosifs','Armures et protections','Modifications et accessoires','Augmentations','Matrice et logiciels','Véhicules','Drones','Équipement général','Matériel magique','PACKs','Équipement pour créatures'];
@@ -189,7 +189,7 @@ export function quickEquipmentFacet(e){
  return {family,subcategory};
 }
 export function quickCatalogHierarchy(entries,options={}){
- if(options.kind!=='equipment')return old;
+ if(options.kind!=='equipment')return catalogHierarchy(entries,options);
  const counts=new Map(QUICK_EQUIPMENT_GROUPS.map(x=>[x.name,{name:x.name,count:0,subs:new Map()}]));
  for(const e of entries){
   if(!entryMatchesKind(e,'equipment')||options.source&&e.source!==options.source||
