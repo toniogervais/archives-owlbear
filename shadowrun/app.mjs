@@ -1,16 +1,16 @@
-import {VERSION,validateLibrary,parseLibraryText,parseLibraryFileText,normalize,literalPrice,quantity,safeCart,inventoryText} from './model.mjs?v=134';
-import {prepareEntries,searchEntries,makeAliases,libraryPages,profileText,profileRolls} from './search.mjs?v=134';
-import {getStored,putStored,deleteStored} from './storage.mjs?v=134';
-import {bridge,ready,OBR} from './bridge.mjs?v=134';
-import {sectionExcerpt} from './reader.mjs?v=134';
-import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './content.mjs?v=134';
-import {readBookPdf} from './pdf-import.mjs?v=134';
+import {VERSION,validateLibrary,parseLibraryText,parseLibraryFileText,normalize,literalPrice,quantity,safeCart,inventoryText} from './model.mjs?v=135';
+import {prepareEntries,searchEntries,makeAliases,libraryPages,profileText,profileRolls} from './search.mjs?v=135';
+import {getStored,putStored,deleteStored} from './storage.mjs?v=135';
+import {bridge,ready,OBR} from './bridge.mjs?v=135';
+import {sectionExcerpt} from './reader.mjs?v=135';
+import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './content.mjs?v=135';
+import {readBookPdf} from './pdf-import.mjs?v=135';
 
-import {THEMES, topicOf, topicsOf, hasRoll, mergeTableRules} from './themes.mjs?v=134';
-import {hasTable, tableShelf, startTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=134';
-import {observePanel} from './panel-size.mjs?v=134';
-import {quickCatalogHierarchy,classifyEntry,KIND_NAMES} from './catalog.mjs?v=134';
-import {installWindowControls} from './window-controls.mjs?v=134';
+import {THEMES, topicOf, topicsOf, hasRoll, mergeTableRules} from './themes.mjs?v=135';
+import {hasTable, tableShelf, startTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=135';
+import {observePanel} from './panel-size.mjs?v=135';
+import {quickCatalogHierarchy,classifyEntry,KIND_NAMES} from './catalog.mjs?v=135';
+import {installWindowControls} from './window-controls.mjs?v=135';
 
 const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -314,10 +314,25 @@ async function showNpcInventory(){
 async function restoreLibrary(){
  try{const library=await getStored('library');if(!library)return;state.library=validateLibrary(library);$('#fulltext').disabled=false;$('#fulltext').checked=true;$('#libraryDot').textContent='●';state.worker?.postMessage({type:'library',library:state.library});if($('#booksDialog').open)showBooks();if(state.selected)selectEntry(state.selected,{mobile:false,remember:false});}catch{}
 }
+async function loadBundledJson(name){
+ let lastError;
+ for(let attempt=1;attempt<=2;attempt++){
+  try{
+   const response=await fetch('data/'+name+'.json?v=135',{
+    signal:typeof AbortSignal.timeout==='function'?AbortSignal.timeout(attempt===1?16000:25000):undefined,
+    cache:attempt===1?'default':'reload'
+   });
+   if(!response.ok)throw Error('HTTP '+response.status);
+   return await response.json();
+  }catch(error){lastError=error;}
+ }
+ throw Error('Données du compendium ('+name+') indisponibles : '+(lastError?.message||'problème réseau'));
+}
 async function init(){
  try{
+  $('#resultCount').textContent='Chargement automatique du catalogue…';
   const files=['sources','index','equipment','profiles','rules','coverage','terminology'];
-  const values=await Promise.all(files.map(async name=>{const r=await fetch(`data/${name}.json?v=134`,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw Error('Impossible de charger '+name);return r.json();}));
+  const values=await Promise.all(files.map(loadBundledJson));
   const [books,index,equipment,profiles,rules,coverage,terms]=values;Object.assign(state,{books,index,equipment,profiles,rules,baseRules:rules,coverage,terms});
   buildEntries();
   const [prefs,cart]=await Promise.all([getStored('preferences',{}),getStored('cart',[])]);
@@ -332,12 +347,18 @@ async function init(){
   void restoreLibrary();
   void activateTable(selection);
   void setupBridge().catch(fail);
-  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=134').catch(()=>{});
- }catch(e){$('#resultCount').textContent='Chargement interrompu';$('#detail').innerHTML='<h2>Le compendium ne s’est pas chargé.</h2><button id="retryLoad">Réessayer</button>';$('#retryLoad').onclick=()=>location.reload();fail(e);}
+  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=135').catch(()=>{});
+ }catch(e){
+   $('#resultCount').textContent='Chargement interrompu';
+   $('#detail').innerHTML='<div class="startup-error"><h2>Le catalogue n’a pas pu s’ouvrir</h2><p id="startupErrorText"></p><button id="retryLoad" class="primary">Réessayer le chargement</button></div>';
+   $('#startupErrorText').textContent=String(e?.message||e);
+   $('#retryLoad').onclick=()=>location.reload();
+   fail(e);
+  }
 }
 function initWorker(){
  try{
-   const w=new Worker(new URL('./search-worker.mjs?v=134',import.meta.url),{type:'module'});state.worker=w;
+   const w=new Worker(new URL('./search-worker.mjs?v=135',import.meta.url),{type:'module'});state.worker=w;
    w.onmessage=({data})=>{if(data.type==='results')renderResults(data);if(data.type==='ready'){state.workerReady=true;runSearch();}if(data.type==='library-ready')runSearch();if(data.type==='error')fail(Error(data.message));};
    w.onerror=()=>{w.terminate();state.worker=null;state.workerReady=false;runSearch();};w.postMessage({type:'init',entries:state.entries,terms:state.terms.terms});
   }catch{state.worker=null;}
