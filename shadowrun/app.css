@@ -96,3 +96,24 @@ dialog.image-reader{width:min(96vw,1100px);max-height:94dvh}.image-reader #infoB
  .catalog-trail .catalog-chip{font-size:.71rem;padding:.26rem .45rem;min-height:30px}
  .catalog-trail .catalog-refine,.catalog-trail .catalog-more{font-size:.72rem;min-height:30px}
 }
+
+/* SR6 — pools chiffrés, lisibles pendant la partie. */
+.skill-pools{margin-top:1.3rem}
+.skill-pools h3{margin-bottom:.35rem}
+.skill-pools .table-wrap{border:1px solid var(--line);border-radius:9px;overflow-x:auto}
+.skill-pools table{margin:0;min-width:540px;font-size:.88rem}
+.skill-pools th,.skill-pools td{vertical-align:top;padding:.65rem .72rem}
+.skill-pools thead th{background:#142a2e;color:var(--ink);font-weight:600}
+.skill-pools tbody th{font-weight:600;color:var(--ink);min-width:150px}
+.skill-pools tbody tr:nth-child(even){background:#102128}
+.skill-pools td:last-child{min-width:142px}
+.pool-total{font-size:1.23rem;line-height:1.1;color:var(--accent);white-space:nowrap;display:block}
+.pool-formula{display:block;color:var(--muted);margin:.18rem 0 .3rem}
+.pool-variant{font-size:.76rem;color:var(--gold);margin-top:.2rem;line-height:1.35}
+.skill-pools .small{line-height:1.55}
+@media(max-width:700px){
+ .skill-pools table{min-width:510px;font-size:.77rem}
+ .skill-pools th,.skill-pools td{padding:.42rem .45rem}
+ .pool-total{font-size:1.06rem}
+ .pool-variant{font-size:.72rem}
+}
