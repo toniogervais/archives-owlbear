@@ -475,3 +475,66 @@ function browseTheme(id){
 }
 function themeLanding(id){renderCategoryLanding();}
 
+
+function currentHierarchy(){
+ return catalogHierarchy(state.entries,{kind:state.kind,topic:$('#topic').value,source:$('#source').value,
+  favorites:state.kind==='favorites'?state.favorites:null,practicalOnly:$('#practicalOnly').checked});
+}
+function showBrowseHint(title){
+ const root=$('#detail');releaseArt();root.innerHTML='<div class="browse-hint"><h2>'+esc(title)+'</h2><p>Choisis une fiche dans la liste de gauche. Tu peux changer de catégorie sans refaire ta recherche.</p></div>';
+ $('.workspace').classList.remove('browse-catalog','show-detail');
+}
+function renderCategoryLanding(){
+ if(!state.kind&&!$('#topic').value){welcome();return;}
+ state.browse={family:'',sub:''};
+ $('#category').value='';$('#catalogTrail').hidden=true;
+ const groups=currentHierarchy();
+ const heading=state.kind?(state.kind==='rolls'?'Jets à prévoir':KIND_NAMES[state.kind]||'Catalogue'):topics[$('#topic').value]||'Thème';
+ const total=groups.reduce((sum,g)=>sum+g.count,0);
+ const root=$('#detail');releaseArt();state.selected=null;delete root.dataset.inventory;
+ root.innerHTML='<div class="catalog-landing"><div class="catalog-landing-top"><div><h2>'+esc(heading)+'</h2><p>'+fmt(total)+' fiches classées : choisis une catégorie, puis une sous-catégorie si nécessaire.</p></div><button id="catalogAll" class="subtle">Toutes les références</button></div><div class="catalog-grid"></div></div>';
+ const grid=root.querySelector('.catalog-grid');
+ for(const g of groups){
+  const b=document.createElement('button');b.type='button';b.className='catalog-tile';
+  b.innerHTML='<strong>'+esc(g.name)+'</strong><span>'+fmt(g.count)+' références</span><small>'+esc(g.children.slice(0,3).map(x=>x.name).join(' · '))+'</small>';
+  b.onclick=()=>chooseFamily(g.name);grid.append(b);
+ }
+ root.querySelector('#catalogAll').onclick=()=>{
+  state.browse={family:'',sub:''};$('#catalogTrail').hidden=true;showBrowseHint(heading);runSearch();
+ };
+ $('.workspace').classList.add('browse-catalog','show-detail');
+ $('#quick').hidden=true;
+}
+function chooseFamily(family,sub=''){
+ const item=currentHierarchy().find(g=>g.name===family);
+ if(!item)return renderCategoryLanding();
+ state.browse={family,sub:item.children.some(x=>x.name===sub)?sub:''};
+ $('#category').value=family;state.selected=null;
+ const trail=$('#catalogTrail');trail.replaceChildren();trail.hidden=false;
+ const back=document.createElement('button');back.textContent='← Catégories';back.className='subtle';
+ back.onclick=()=>{updateCategoryFilter();renderCategoryLanding();runSearch();};trail.append(back);
+ const heading=document.createElement('strong');heading.textContent=family+' · '+fmt(item.count);trail.append(heading);
+ const all=document.createElement('button');all.className='catalog-chip'+(!state.browse.sub?' selected':'');all.textContent='Tout';
+ all.onclick=()=>chooseFamily(family,'');trail.append(all);
+ for(const child of item.children){
+  const b=document.createElement('button');b.className='catalog-chip'+(state.browse.sub===child.name?' selected':'');
+  b.textContent=child.name+' · '+fmt(child.count);b.title='Afficher '+child.name;
+  b.onclick=()=>chooseFamily(family,child.name);trail.append(b);
+ }
+ showBrowseHint(state.browse.sub||family);runSearch();
+}
+function restoreCatalogRoute(){
+ const p=new URLSearchParams(location.search);
+ const kind=p.get('kind')||'',topic=p.get('topic')||'',family=p.get('family')||'',sub=p.get('sub')||'';
+ if(['rule','action','rolls','equipment','npc','creature','favorites'].includes(kind))state.kind=kind;
+ if(topic&&THEMES[topic])$('#topic').value=topic;
+ if(p.get('search'))$('#search').value=p.get('search');
+ if(p.get('source')&&state.books.some(b=>b.id===p.get('source')))$('#source').value=p.get('source');
+ $('#tabs').querySelectorAll('[data-kind]').forEach(b=>b.classList.toggle('active',b.dataset.kind===state.kind));
+ $('#quick').hidden=Boolean(state.kind);
+ updateCategoryFilter();
+ if(family&&currentHierarchy().some(g=>g.name===family))chooseFamily(family,sub);
+ else if(p.get('search')||state.kind==='favorites')showBrowseHint('Résultats');
+ else if(state.kind||$('#topic').value)renderCategoryLanding();
+ else welcome();
+}
