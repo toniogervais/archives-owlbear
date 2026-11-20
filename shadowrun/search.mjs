@@ -1,6 +1,6 @@
-import {hasRoll, topicsOf} from './themes.mjs?v=135';
-import {normalize} from './model.mjs?v=135';
-import {matchFacet,quickEquipmentFacet} from './catalog.mjs?v=135';
+import {hasRoll, topicsOf} from './themes.mjs?v=136';
+import {normalize} from './model.mjs?v=136';
+import {matchFacet,quickEquipmentFacet} from './catalog.mjs?v=136';
 
 const EXTRA={pv:['moniteur','dommages','blessures'],armure:['armure','armor','defensif'],initiative:['initiative','i/di'],piratage:['piratage','hacking','pirater','matrice'],pirater:['piratage','hacking','hacker'],drone:['drone','drones'],pnj:['npc','pnj','professionnalisme'],recharger:['recharger','recharge','chargeur'],tirer:['tir','tirer','attaque','firearms'],soigner:['soins','soigner','guerison','premiers','healing','medikit'],blesse:['blesse','blessures','dommages'],bete:['creature','bete'],saignement:['saignement','bleeding'],crocheter:['crocheter','crochetage','serrure'],esquiver:['esquiver','esquive','defense','dodge'],negocier:['negocier','negociation','influence'],discretement:['furtivite','discretion','se faufiler'],grimper:['escalade','escalader'],frapper:['frapper','combat rapproche','melee'],courir:['sprinter','sprint','course'],pistolet:['pistolet','pistols'],fusil:['fusil','rifle'],soin:['soins','soigner','guerison']};
 const STOP=new Set('a au aux avec ce cet cette ces c est dans de des du d en et faire faut il je jet jets le les la l mon ma mes ne on ou par pas pour qu que quel quelle quels quelles qui sa se ses son sur tel tels un une vous comment dois doit situation situations'.split(' '));
@@ -33,7 +33,7 @@ function nearWord(a,b){
 }
 export function searchEntries(entries,{query='',kind='',topic='',source='',favorites=null,limit=100,offset=0,practicalOnly=false,category='',family='',subcategory=''}={},aliases=new Map()){
  const gs=groups(query,aliases),q=normalize(query),meaning=queryWords(query).join(' ');let results=[];
- const candidates=entries.filter(e=>!(kind&&(kind==='rolls'?!hasRoll(e):e.kind!==kind)||topic&&!(e._topics||topicsOf(e)).includes(topic)||source&&e.source!==source||favorites&&!favorites.has(e.id)||category&&e.category!==category&&e.habitat!==category&&!(e.path||[]).some(p=>normalize(p)===normalize(category))||practicalOnly&&!e.summary&&!e.attributes&&!e.fields?.length||!matchFacet(e,{kind,topic,family,subcategory})));
+ const candidates=entries.filter(e=>!(kind&&(kind==='rolls'?!hasRoll(e):kind==='dice'?!(hasRoll(e)||e.kind==='skillguide'):e.kind!==kind)||topic&&!(e._topics||topicsOf(e)).includes(topic)||source&&e.source!==source||favorites&&!favorites.has(e.id)||category&&e.category!==category&&e.habitat!==category&&!(e.path||[]).some(p=>normalize(p)===normalize(category))||practicalOnly&&!e.summary&&!e.attributes&&!e.fields?.length||!matchFacet(e,{kind,topic,family,subcategory})));
  function collect(fuzzy=false){
   for(const e of candidates){
    if(gs.some(g=>!g.some(w=>e._text.includes(w)||e._title.includes(w)||fuzzy&&e._title.split(/[^\p{L}]+/u).some(t=>nearWord(w,t)))))continue;
