@@ -72,18 +72,19 @@ export async function archivesImportUrl(e,destination){
  if(url.href.length>MAX_LINK_LENGTH)throw Error('Cette fiche est trop longue : utilise l’export JSON.');
  return url.href;
 }
-export async function sendToArchives(e,destination,{obr=null}={}){
- const url=await archivesImportUrl(e,destination);
- // Within Owlbear, keep everything on the same Owlbear screen.
- if(obr?.isAvailable){
-  try{
-   if(await obr.player.getRole()==='GM'){
-    await obr.modal.open({id:'fr.archives-imaginaire.shadowrun/import-to-archives',url,fullScreen:true});
-    return 'La fenêtre Les Archives s’ouvre dans Owlbear. Le transfert est en cours.';
-   }
-  }catch(err){/* Browser fallback, not an anonymous broadcast to the scene. */}
- }
- const tab=window.open(url,'archives-sr6');
- if(tab){tab.focus();return 'Les Archives s’ouvrent avec la fiche à importer.';}
- throw Error('Le navigateur bloque l’ouverture des Archives. Autorise les fenêtres depuis Owlbear puis réessaie.');
+// Synchronous navigation preserves the user's click gesture (popup blockers).
+// Archives main is already named "archives-main" by its navigation module: reuse
+// that window instead of opening duplicate tabs or unscoped Owlbear modals.
+export function sendToArchives(e,destination){
+ if(!['canvas','library'].includes(destination))throw Error('Destination invalide.');
+ const payload={schema:'archives-sr6-transfer',version:1,destination,node:toArchiveCell(e)};
+ const raw=new TextEncoder().encode(JSON.stringify(payload));
+ if(raw.length>45000)throw Error('Cette fiche est trop longue pour un lien direct.');
+ const url=new URL('../archives.html',import.meta.url);
+ url.hash='sr6i=json.'+toBase64(raw);
+ if(url.href.length>MAX_LINK_LENGTH)throw Error('Cette fiche dépasse la taille du lien.');
+ const target=window.open(url.href,'archives-main');
+ if(!target)throw Error('Autorise les fenêtres depuis le compendium pour ouvrir Les Archives.');
+ target.focus?.();
+ return 'Les Archives s’ouvrent avec cette fiche. Le MJ conserve le choix du canevas ou de la réserve.';
 }
