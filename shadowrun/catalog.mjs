@@ -142,7 +142,7 @@ export function catalogHierarchy(entries,{kind='',topic='',source='',favorites=n
  const maps=new Map();
  for(const e of entries){
   if(!entryMatchesKind(e,kind)||topic&&!topicsOf(e).includes(topic)||source&&e.source!==source||favorites&&!favorites.has(e.id)||practicalOnly&&!e.summary&&!e.attributes&&!e.fields?.length)continue;
-  const info=kind==='equipment'&&QUICK_EQUIPMENT_GROUPS.some(g=>g.name===family)?quickEquipmentFacet(e):kind?classifyEntry(e):topic?themeFacet(e):{family:KIND_NAMES[e.kind]||'Références',subcategory:classifyEntry(e).family};
+  const info=kind?classifyEntry(e):topic?themeFacet(e):{family:KIND_NAMES[e.kind]||'Références',subcategory:classifyEntry(e).family};
   let node=maps.get(info.family);if(!node){node={name:info.family,count:0,subs:new Map()};maps.set(info.family,node);}
   node.count++;node.subs.set(info.subcategory,(node.subs.get(info.subcategory)||0)+1);
  }
@@ -189,7 +189,6 @@ export function quickEquipmentFacet(e){
  return {family,subcategory};
 }
 export function quickCatalogHierarchy(entries,options={}){
- const old=catalogHierarchy(entries,options);
  if(options.kind!=='equipment')return old;
  const counts=new Map(QUICK_EQUIPMENT_GROUPS.map(x=>[x.name,{name:x.name,count:0,subs:new Map()}]));
  for(const e of entries){
@@ -209,6 +208,6 @@ export function quickCatalogHierarchy(entries,options={}){
 
 export function matchFacet(e,{kind='',topic='',family='',subcategory=''}={}){
  if(!family&&!subcategory)return true;
- const info=kind?classifyEntry(e):topic?themeFacet(e):{family:KIND_NAMES[e.kind]||'Références',subcategory:classifyEntry(e).family};
+ const info=kind==='equipment'&&QUICK_EQUIPMENT_GROUPS.some(g=>g.name===family)?quickEquipmentFacet(e):kind?classifyEntry(e):topic?themeFacet(e):{family:KIND_NAMES[e.kind]||'Références',subcategory:classifyEntry(e).family};
  return (!family||info.family===family)&&(!subcategory||info.subcategory===subcategory);
 }
