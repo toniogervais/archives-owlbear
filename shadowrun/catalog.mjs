@@ -1,7 +1,7 @@
-import {normalize} from './model.mjs?v=135';
-import {THEMES,topicOf,topicsOf,hasRoll} from './themes.mjs?v=135';
+import {normalize} from './model.mjs?v=136';
+import {THEMES,topicOf,topicsOf,hasRoll} from './themes.mjs?v=136';
 
-export const KIND_NAMES={rule:'Règles',action:'Actions',roll:'Jets',equipment:'Équipement',npc:'PNJ',creature:'Bestiaire',reference:'Références',page:'Pages'};
+export const KIND_NAMES={rule:'Règles',action:'Actions',roll:'Jets',dice:'Jets D6',skillguide:'Compétence',equipment:'Équipement',npc:'PNJ',creature:'Bestiaire',reference:'Références',page:'Pages'};
 export const EQUIPMENT_ORDER=['Armes','Munitions et explosifs','Armures et protections','Modifications et accessoires','Augmentations','Matrice et logiciels','Véhicules','Drones','Équipement général','Matériel magique','PACKs','Équipement pour créatures'];
 const n=normalize;
 function match(text,expressions){
@@ -136,7 +136,7 @@ export function classifyEntry(e){
 }
 export function entryMatchesKind(e,kind){
  if(kind==='favorites'||!kind)return true;
- return kind==='rolls'?hasRoll(e):e.kind===kind;
+ return kind==='rolls'?hasRoll(e):kind==='dice'?hasRoll(e)||e.kind==='skillguide':e.kind===kind;
 }
 export function catalogHierarchy(entries,{kind='',topic='',source='',favorites=null,practicalOnly=false}={}){
  const maps=new Map();
