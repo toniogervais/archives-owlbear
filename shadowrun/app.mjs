@@ -1,16 +1,17 @@
-import {VERSION,validateLibrary,parseLibraryText,parseLibraryFileText,normalize,literalPrice,quantity,safeCart,inventoryText} from './model.mjs?v=135';
-import {prepareEntries,searchEntries,makeAliases,libraryPages,profileText,profileRolls} from './search.mjs?v=135';
-import {getStored,putStored,deleteStored} from './storage.mjs?v=135';
-import {bridge,ready,OBR} from './bridge.mjs?v=135';
-import {sectionExcerpt} from './reader.mjs?v=135';
-import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './content.mjs?v=135';
-import {readBookPdf} from './pdf-import.mjs?v=135';
+import {VERSION,validateLibrary,parseLibraryText,parseLibraryFileText,normalize,literalPrice,quantity,safeCart,inventoryText} from './model.mjs?v=136';
+import {prepareEntries,searchEntries,makeAliases,libraryPages,profileText,profileRolls} from './search.mjs?v=136';
+import {getStored,putStored,deleteStored} from './storage.mjs?v=136';
+import {bridge,ready,OBR} from './bridge.mjs?v=136';
+import {sectionExcerpt} from './reader.mjs?v=136';
+import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './content.mjs?v=136';
+import {readBookPdf} from './pdf-import.mjs?v=136';
 
-import {THEMES, topicOf, topicsOf, hasRoll, mergeTableRules} from './themes.mjs?v=135';
-import {hasTable, tableShelf, startTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=135';
-import {observePanel} from './panel-size.mjs?v=135';
-import {quickCatalogHierarchy,classifyEntry,KIND_NAMES} from './catalog.mjs?v=135';
-import {installWindowControls} from './window-controls.mjs?v=135';
+import {THEMES, topicOf, topicsOf, hasRoll, mergeTableRules} from './themes.mjs?v=136';
+import {hasTable, tableShelf, startTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=136';
+import {observePanel} from './panel-size.mjs?v=136';
+import {quickCatalogHierarchy,classifyEntry,KIND_NAMES} from './catalog.mjs?v=136';
+import {profileSkillPools,skillGuideEntries} from './profile-pools.mjs?v=136';
+import {installWindowControls} from './window-controls.mjs?v=136';
 
 const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -106,6 +107,18 @@ function renderEquipmentAlternatives(entry,root){
  }
  root.append(section);
 }
+function skillPoolHtml(rows){
+ const tr=rows.map(s=>{
+  const value=s.total===null?'—':s.total+' D6';
+  const formula=s.total===null?'Attribut non chiffré : consulter le livre':s.rank+' + '+s.attributeValue;
+  const spec=s.specialty&&s.bonus?'<div class="pool-variant">Spécialisation '+esc(s.specialty)+' : +'+s.bonus+' D6'+(s.specialtyTotal===null?'':' → '+s.specialtyTotal+' D6 si applicable')+'</div>':'';
+  const extras=s.contextual.map(c=>'<div class="pool-variant">Pour '+esc(c.when)+' : '+esc(c.attr)+(c.attributeValue===null?' (non chiffré)':' '+c.attributeValue+' → '+c.total+' D6')+'</div>').join('');
+  const second=s.alternateRankTotal!==null?'<div class="pool-variant">Rang alternatif '+s.alternateRank+' indiqué : '+s.alternateRankTotal+' D6 selon la situation</div>':'';
+  const augmented=s.alternateAttributeTotal!==null?'<div class="pool-variant">Attribut '+esc(s.rawAttribute)+' : variante '+s.alternateAttributeTotal+' D6, si applicable</div>':'';
+  return '<tr><th scope="row">'+esc(s.name)+'</th><td>'+s.rank+'</td><td>'+esc(s.attrName)+' ('+s.attr+') : '+(s.attributeValue===null?'—':s.attributeValue)+'</td><td><strong class="pool-total">'+value+'</strong><small class="pool-formula">'+formula+'</small>'+spec+extras+second+augmented+'</td></tr>';
+ }).join('');
+ return '<section class="skill-pools"><h3>Compétences et pools de dés</h3><p class="small">Pool de base = compétence + attribut associé. Les spécialisations, maîtrises et attributs secondaires sont des variantes conditionnelles : ne pas les additionner systématiquement.</p><div class="table-wrap"><table><thead><tr><th>Compétence</th><th>Rang</th><th>Attribut</th><th>D6 à lancer</th></tr></thead><tbody>'+tr+'</tbody></table></div><p class="small">Les connaissances ne forment pas à elles seules un pool. Les pouvoirs spéciaux peuvent demander un autre test.</p></section>';
+}
 function categoryHtml(e){
  const category=e.category||e.habitat||topics[topicOf(e)]||'Système de jeu';
  const path=(e.path||[]).filter(Boolean);
@@ -126,8 +139,14 @@ async function selectEntry(e,{mobile=true,remember=true}={}){
  if(e.attributes){
   root.insertAdjacentHTML('beforeend','<h3>Caractéristiques</h3>');
   root.insertAdjacentHTML('beforeend',`<dl class="stat-grid">${Object.entries(e.attributes).map(([k,v])=>`<div class="stat"><dt title="${esc(state.terms.attributes?.find(a=>a.fr===k)?.french||k)}">${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl><div class="derived">${Object.entries(e.derived||{}).map(([k,v])=>`<span><b>${esc(k)}</b>${esc(v)}</span>`).join('')}</div>`);
-  const rolls=profileRolls(e);if(rolls.length)root.insertAdjacentHTML('beforeend',`<h3>Jets courants</h3><div class="profile-rolls">${rolls.map(r=>`<div><span>${esc(r.label)}</span><strong>${esc(r.value)}</strong><small>${esc(r.formula)}</small></div>`).join('')}</div>`);
-  for(const [k,v] of Object.entries(e.sections||{})){root.insertAdjacentHTML('beforeend',`<h3>${esc(k)}</h3><p>${esc(v)}</p>`);}
+   const rows=profileSkillPools(e);
+   if(rows.length)root.insertAdjacentHTML('beforeend',skillPoolHtml(rows));
+   const rolls=profileRolls(e).filter(r=>!rows.some(s=>r.label===s.name));
+   if(rolls.length)root.insertAdjacentHTML('beforeend',`<h3>Autres tests courants</h3><div class="profile-rolls">${rolls.map(r=>`<div><span>${esc(r.label)}</span><strong>${esc(r.value)}</strong><small>${esc(r.formula)}</small></div>`).join('')}</div>`);
+   for(const [k,v] of Object.entries(e.sections||{})){
+    if(k==='Compétences'&&rows.length){root.insertAdjacentHTML('beforeend',`<details><summary>Compétences : formulation du livre</summary><p>${esc(v)}</p></details>`);continue;}
+    root.insertAdjacentHTML('beforeend',`<h3>${esc(k)}</h3><p>${esc(v)}</p>`);
+   }
   if(e.sourceNotes)root.insertAdjacentHTML('beforeend',`<p class="small">${esc(e.sourceNotes)}</p>`);
   root.insertAdjacentHTML('beforeend','<div class="detail-actions"><button id="copyProfile" class="subtle">Copier la fiche</button></div>');
   if(e.original&&e.source==='wild'){
@@ -223,13 +242,13 @@ function bindDetail(e){
  $('#favorite').onclick=async()=>{state.favorites.has(e.id)?state.favorites.delete(e.id):state.favorites.add(e.id);await savePreferences();counts();runSearch();selectEntry(e,{mobile:false});};
  $('#backResults')?.addEventListener('click',()=>$('.workspace').classList.remove('show-detail'));
  $('#openBooks')?.addEventListener('click',showBooks);
- $('#copyProfile')?.addEventListener('click',()=>copy(profileText(e)));
+ $('#copyProfile')?.addEventListener('click',()=>copy(profileText(e)+'\n'+profileSkillPools(e).map(s=>s.name+' : '+s.rank+' + '+s.attr+' '+(s.attributeValue??'?')+' = '+(s.total===null?'indéterminé':s.total+' D6')+(s.specialtyTotal?' ; '+s.specialty+' : '+s.specialtyTotal+' D6':'')).join('\n')));
  $('#addCart')?.addEventListener('click',()=>addToCart(e.id));
  $('#entryNote').addEventListener('input',async ev=>{state.notes[e.id]=ev.target.value;$('#noteStatus').textContent='Enregistrement…';await savePreferences();if(state.selected?.id===e.id)$('#noteStatus').textContent='Enregistré';});
  $('#detail').querySelectorAll('[data-entry]').forEach(b=>b.onclick=()=>selectEntry(state.byId.get(b.dataset.entry)));
 }
 function counts(){
- const c={rolls:0};state.entries.forEach(e=>{c[e.kind]=(c[e.kind]||0)+1;if(hasRoll(e))c.rolls++;});
+ const c={rolls:0};state.entries.forEach(e=>{c[e.kind]=(c[e.kind]||0)+1;if(hasRoll(e))c.rolls++;if(e.kind==='skillguide'||hasRoll(e))c.dice=(c.dice||0)+1;});
  $('#tabs').querySelectorAll('[data-kind]').forEach(b=>{const span=b.querySelector('span');if(span)span.textContent=fmt(b.dataset.kind==='favorites'?state.favorites.size:b.dataset.kind?c[b.dataset.kind]||0:state.entries.length);});
 }
 function situations(){
@@ -318,7 +337,7 @@ async function loadBundledJson(name){
  let lastError;
  for(let attempt=1;attempt<=2;attempt++){
   try{
-   const response=await fetch('data/'+name+'.json?v=135',{
+   const response=await fetch('data/'+name+'.json?v=136',{
     signal:typeof AbortSignal.timeout==='function'?AbortSignal.timeout(attempt===1?8000:12000):undefined,
     cache:attempt===1?'default':'reload'
    });
@@ -347,7 +366,7 @@ async function init(){
   void restoreLibrary();
   void activateTable(selection);
   void setupBridge().catch(fail);
-  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=135').catch(()=>{});
+  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=136').catch(()=>{});
  }catch(e){
    $('#resultCount').textContent='Chargement interrompu';
    $('#detail').innerHTML='<div class="startup-error"><h2>Le catalogue n’a pas pu s’ouvrir</h2><p id="startupErrorText"></p><button id="retryLoad" class="primary">Réessayer le chargement</button></div>';
@@ -358,7 +377,7 @@ async function init(){
 }
 function initWorker(){
  try{
-   const w=new Worker(new URL('./search-worker.mjs?v=135',import.meta.url),{type:'module'});state.worker=w;
+   const w=new Worker(new URL('./search-worker.mjs?v=136',import.meta.url),{type:'module'});state.worker=w;
    w.onmessage=({data})=>{if(data.type==='results')renderResults(data);if(data.type==='ready'){state.workerReady=true;runSearch();}if(data.type==='library-ready')runSearch();if(data.type==='error')fail(Error(data.message));};
    w.onerror=()=>{w.terminate();state.worker=null;state.workerReady=false;runSearch();};w.postMessage({type:'init',entries:state.entries,terms:state.terms.terms});
   }catch{state.worker=null;}
@@ -396,7 +415,7 @@ function buildEntries(extra,tests=[]) {
  const pages=tableShelf()?.gearPages||{};
  const equipment=state.equipment.map(e=>pages[e.id]?{...e,descriptionPage:pages[e.id]}:e);
  const catalog=assembleEntries({rules:state.rules,index:state.index,equipment,profiles:state.profiles});
- state.entries=[...catalog.entries,...tests].map(e=>({...e,topic:topicOf(e)}));
+ state.entries=[...catalog.entries,...skillGuideEntries(),...tests].map(e=>({...e,topic:topicOf(e)}));
   state.equipmentGroups=new Map();
   for(const e of state.entries.filter(e=>e.kind==='equipment')){
    const key=normalize(title(e))+'|'+normalize(e.category||'');
@@ -590,7 +609,7 @@ function chooseFamily(family,sub=''){
 function restoreCatalogRoute(){
  const p=new URLSearchParams(location.search);
  const kind=p.get('kind')||'',topic=p.get('topic')||'',family=p.get('family')||'',sub=p.get('sub')||'';
- if(['rule','action','rolls','equipment','npc','creature','favorites'].includes(kind))state.kind=kind;
+ if(['rule','action','rolls','dice','equipment','npc','creature','favorites'].includes(kind))state.kind=kind;
  if(topic&&THEMES[topic])$('#topic').value=topic;
  if(p.get('search'))$('#search').value=p.get('search');
  if(p.get('source')&&state.books.some(b=>b.id===p.get('source')))$('#source').value=p.get('source');
