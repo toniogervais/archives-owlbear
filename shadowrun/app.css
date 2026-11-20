@@ -78,3 +78,10 @@ dialog.image-reader{width:min(96vw,1100px);max-height:94dvh}.image-reader #infoB
  .compendium-fullscreen main#app{padding:.35rem .55rem}
 }
 @media(max-width:380px){.window-tools{max-width:64%}.catalog-grid{grid-template-columns:1fr 1fr}}
+
+.result .result-folder{color:#b5d3cd;font-weight:500}
+.result .editions{color:var(--gold);font-size:.71rem}
+.source-alternatives{border-top:1px solid var(--line);padding-top:.5rem;margin-top:1.15rem}
+.source-alternatives h3{margin:.5rem 0 .3rem;font-size:.97rem}
+.source-alternatives p{margin-bottom:.5rem}
+.source-alternatives .relation{margin:.1rem .25rem .25rem 0}
