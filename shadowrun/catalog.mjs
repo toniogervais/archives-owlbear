@@ -156,22 +156,22 @@ export function catalogHierarchy(entries,{kind='',topic='',source='',favorites=n
 // Navigation rapide : huit grandes portes d'entrée, les 12 catégories sources
 // et leurs sous-catégories restent inchangées et consultables dans les fiches.
 export const QUICK_EQUIPMENT_GROUPS=[
- {name:'Armes & munitions',categories:['Armes','Munitions et explosifs']},
- {name:'Protections',categories:['Armures et protections']},
+ {name:'Armes',categories:['Armes','Munitions et explosifs']},
+ {name:'Armures',categories:['Armures et protections']},
  {name:'Augmentations',categories:['Augmentations']},
  {name:'Matrice',categories:['Matrice et logiciels']},
- {name:'Véhicules & drones',categories:['Véhicules','Drones']},
- {name:'Matériel & accessoires',categories:['Équipement général','Modifications et accessoires']},
+ {name:'Véhicules / drones',categories:['Véhicules','Drones']},
+ {name:'Matériel',categories:['Équipement général','Modifications et accessoires']},
  {name:'Magie',categories:['Matériel magique']},
- {name:'PACKs & divers',categories:['PACKs','Équipement pour créatures']}
+ {name:'PACKs / divers',categories:['PACKs','Équipement pour créatures']}
 ];
 export function quickEquipmentFacet(e){
  const group=QUICK_EQUIPMENT_GROUPS.find(g=>g.categories.includes(e.category));
- const family=group?.name||'PACKs & divers';
+ const family=group?.name||'PACKs / divers';
  const detail=n(classifyEntry(e).subcategory);
  const cat=e.category;
  let subcategory;
- if(family==='Armes & munitions'){
+ if(family==='Armes'){
   if(cat==='Munitions et explosifs')subcategory='Munitions';
   else if(/pistolet/.test(detail))subcategory='Pistolets';
   else if(/fusil|mitraillette|mitrailleuse|shotgun|canon/.test(detail))subcategory='Armes longues';
@@ -179,12 +179,12 @@ export function quickEquipmentFacet(e){
   else if(/arbalet|arc|trait|jet/.test(detail))subcategory='Arcs & arbalètes';
   else if(/explosif|lanceur|grenade/.test(detail))subcategory='Explosifs & lanceurs';
   else subcategory='Autres armes';
- }else if(family==='Véhicules & drones')subcategory=cat;
- else if(family==='Matériel & accessoires')subcategory=cat==='Équipement général'?'Matériel général':'Accessoires & modifications';
- else if(family==='PACKs & divers')subcategory=cat;
+ }else if(family==='Véhicules / drones')subcategory=cat;
+ else if(family==='Matériel')subcategory=cat==='Équipement général'?'Matériel général':'Accessoires & modifications';
+ else if(family==='PACKs / divers')subcategory=cat;
  else if(family==='Augmentations')subcategory=/bioware/.test(detail)?'Bioware':/cyber|implant|membre/.test(detail)?'Cyberware':'Autres augmentations';
  else if(family==='Matrice')subcategory=/commlink/.test(detail)?'Commlinks':/cyberdeck|cyberhack|cyberjack/.test(detail)?'Cyberdecks':/programme|logiciel|autosoft/.test(detail)?'Logiciels':'Autre matériel matriciel';
- else if(family==='Protections')subcategory=/armure|gilet|vetement/.test(detail)?'Armures & vêtements':'Protections & accessoires';
+ else if(family==='Armures')subcategory=/armure|gilet|vetement/.test(detail)?'Armures & vêtements':'Protections & accessoires';
  else subcategory='Matériel magique';
  return {family,subcategory};
 }
