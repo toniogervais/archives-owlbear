@@ -1,7 +1,7 @@
 import {normalize} from './model.mjs?v=136';
 import {THEMES,topicOf,topicsOf,hasRoll} from './themes.mjs?v=136';
 
-export const KIND_NAMES={rule:'Règles',action:'Actions',roll:'Jets',equipment:'Équipement',npc:'PNJ',creature:'Bestiaire',reference:'Références',page:'Pages'};
+export const KIND_NAMES={rule:'Règles',action:'Actions',roll:'Jets',dice:'Jets D6',skillguide:'Compétence',equipment:'Équipement',npc:'PNJ',creature:'Bestiaire',reference:'Références',page:'Pages'};
 export const EQUIPMENT_ORDER=['Armes','Munitions et explosifs','Armures et protections','Modifications et accessoires','Augmentations','Matrice et logiciels','Véhicules','Drones','Équipement général','Matériel magique','PACKs','Équipement pour créatures'];
 const n=normalize;
 function match(text,expressions){
