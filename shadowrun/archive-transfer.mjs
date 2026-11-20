@@ -75,9 +75,26 @@ export async function archivesImportUrl(e,destination){
 // Synchronous navigation preserves the user's click gesture (popup blockers).
 // Archives main is already named "archives-main" by its navigation module: reuse
 // that window instead of opening duplicate tabs or unscoped Owlbear modals.
+function currentArtworkThumbnail(){
+ const area=document.querySelector('#detail .art-section');
+ if(!area||!area.querySelector('h3')?.textContent?.includes('Illustration du livre'))return '';
+ const image=area.querySelector('.plate-thumb img[src]');
+ if(!image?.complete||!image.naturalWidth||!image.naturalHeight)return '';
+ try{
+  const canvas=document.createElement('canvas');canvas.width=180;canvas.height=180;
+  const ctx=canvas.getContext('2d');
+  const ratio=Math.min(180/image.naturalWidth,180/image.naturalHeight);
+  const w=image.naturalWidth*ratio,h=image.naturalHeight*ratio;
+  ctx.drawImage(image,(180-w)/2,(180-h)/2,w,h);
+  const result=canvas.toDataURL('image/webp',.55);
+  return result.length<28000&&result.startsWith('data:image/webp;base64,')?result:'';
+ }catch{return '';}
+}
+
 export function sendToArchives(e,destination){
  if(!['canvas','library'].includes(destination))throw Error('Destination invalide.');
  const payload={schema:'archives-sr6-transfer',version:1,destination,node:toArchiveCell(e)};
+ payload.node.bgImg=currentArtworkThumbnail();
  const raw=new TextEncoder().encode(JSON.stringify(payload));
  if(raw.length>45000)throw Error('Cette fiche est trop longue pour un lien direct.');
  const url=new URL('../archives-app-v64-v55.html?v=4721&resume=1',import.meta.url);
