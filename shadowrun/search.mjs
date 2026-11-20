@@ -1,5 +1,6 @@
-import {hasRoll, topicsOf} from './themes.mjs?v=132';
-import {normalize} from './model.mjs?v=132';
+import {hasRoll, topicsOf} from './themes.mjs?v=133';
+import {normalize} from './model.mjs?v=133';
+import {matchFacet} from './catalog.mjs?v=133';
 
 const EXTRA={pv:['moniteur','dommages','blessures'],armure:['armure','armor','defensif'],initiative:['initiative','i/di'],piratage:['piratage','hacking','pirater','matrice'],pirater:['piratage','hacking','hacker'],drone:['drone','drones'],pnj:['npc','pnj','professionnalisme'],recharger:['recharger','recharge','chargeur'],tirer:['tir','tirer','attaque','firearms'],soigner:['soins','soigner','guerison','premiers','healing','medikit'],blesse:['blesse','blessures','dommages'],bete:['creature','bete'],saignement:['saignement','bleeding'],crocheter:['crocheter','crochetage','serrure'],esquiver:['esquiver','esquive','defense','dodge'],negocier:['negocier','negociation','influence'],discretement:['furtivite','discretion','se faufiler'],grimper:['escalade','escalader'],frapper:['frapper','combat rapproche','melee'],courir:['sprinter','sprint','course'],pistolet:['pistolet','pistols'],fusil:['fusil','rifle'],soin:['soins','soigner','guerison']};
 const STOP=new Set('a au aux avec ce cet cette ces c est dans de des du d en et faire faut il je jet jets le les la l mon ma mes ne on ou par pas pour qu que quel quelle quels quelles qui sa se ses son sur tel tels un une vous comment dois doit situation situations'.split(' '));
@@ -30,9 +31,9 @@ function nearWord(a,b){
  if(a.length===b.length){const d=[];for(let i=0;i<a.length;i++)if(a[i]!==b[i])d.push(i);return d.length===1||d.length===2&&d[1]===d[0]+1&&a[d[0]]===b[d[1]]&&a[d[1]]===b[d[0]];}
  if(a.length>b.length)[a,b]=[b,a];let i=0,j=0,skips=0;while(i<a.length&&j<b.length){if(a[i]===b[j]){i++;j++;}else{if(++skips>1)return false;j++;}}return true;
 }
-export function searchEntries(entries,{query='',kind='',topic='',source='',favorites=null,limit=100,offset=0,practicalOnly=false,category=''}={},aliases=new Map()){
+export function searchEntries(entries,{query='',kind='',topic='',source='',favorites=null,limit=100,offset=0,practicalOnly=false,category='',family='',subcategory=''}={},aliases=new Map()){
  const gs=groups(query,aliases),q=normalize(query),meaning=queryWords(query).join(' ');let results=[];
- const candidates=entries.filter(e=>!(kind&&(kind==='rolls'?!hasRoll(e):e.kind!==kind)||topic&&!(e._topics||topicsOf(e)).includes(topic)||source&&e.source!==source||favorites&&!favorites.has(e.id)||category&&e.category!==category&&e.habitat!==category&&!(e.path||[]).some(p=>normalize(p)===normalize(category))||practicalOnly&&!e.summary&&!e.attributes&&!e.fields?.length));
+ const candidates=entries.filter(e=>!(kind&&(kind==='rolls'?!hasRoll(e):e.kind!==kind)||topic&&!(e._topics||topicsOf(e)).includes(topic)||source&&e.source!==source||favorites&&!favorites.has(e.id)||category&&e.category!==category&&e.habitat!==category&&!(e.path||[]).some(p=>normalize(p)===normalize(category))||practicalOnly&&!e.summary&&!e.attributes&&!e.fields?.length||!matchFacet(e,{kind,family,subcategory})));
  function collect(fuzzy=false){
   for(const e of candidates){
    if(gs.some(g=>!g.some(w=>e._text.includes(w)||e._title.includes(w)||fuzzy&&e._title.split(/[^\p{L}]+/u).some(t=>nearWord(w,t)))))continue;
