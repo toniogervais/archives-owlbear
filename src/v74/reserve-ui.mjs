@@ -74,7 +74,7 @@ function install(){
  const tools=el('div',null,'reserve-tools'),search=el('input'),type=el('select');search.id='archives-reserve-search';search.type='search';search.placeholder='Rechercher dans la réserve…';search.setAttribute('aria-label','Rechercher dans la réserve');type.id='archives-reserve-type';type.setAttribute('aria-label','Filtrer le type de cellule');types(type,true);tools.append(search,type);search.oninput=type.onchange=draw;
  const count=el('p');count.id='archives-reserve-count';const grid=el('div',null,'reserve-grid');grid.id='archives-reserve-grid';section.append(actions,importFile,tools,count,grid);
  const original=window.ArchivesCatalogue.libraryPanel;window.ArchivesCatalogue.libraryPanel=function(which){if(!isGM())return;original.call(this,which);const head=document.querySelector('#archives-library-popout>div>div');if(head){const switcher=button(which==='images'?'Réserve de cellules':'Bibliothèque d’images',()=>window.ArchivesCatalogue.libraryPanel(which==='images'?'cells':'images'));switcher.className='catalogue-back';head.insertBefore(switcher,head.lastElementChild)}if(which!=='images')void refresh()};
- window.ArchivesCellReserve={open:()=>window.ArchivesCatalogue.libraryPanel('cells'),refresh,keep};
+ window.ArchivesCellReserve={open:()=>window.ArchivesCatalogue.libraryPanel('cells'),refresh,keep,addExternal:async function(source){if(!isGM())throw Error('Transfert réservé au MJ.');const node=reserveNode(source);await useStore(s=>s.put({id:crypto.randomUUID(),node,created:Date.now(),updated:Date.now()}));changed();await refresh();return node.title;}};
  window.addEventListener('archives:campaign-restored',()=>void refresh());
  const hidePrivate=()=>{
   if(isGM())return;sequence++;records=[];grid.replaceChildren();

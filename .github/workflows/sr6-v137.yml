@@ -1,0 +1,28 @@
+name: Vérification Compendium SR6 1.3.7 — cellules et jets
+on:
+  pull_request:
+    paths:
+      - 'shadowrun/**'
+      - 'src/v84/**'
+      - 'src/v74/reserve-ui.mjs'
+      - 'archives-app-v64-v55.html'
+      - '.github/workflows/sr6-v137.yml'
+  workflow_dispatch:
+jobs:
+  compendium-bridge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntaxe des modules Shadowrun et Archives
+        run: |
+          node --check shadowrun/app.mjs
+          node --check shadowrun/archive-transfer.mjs
+          node --check shadowrun/profile-pools.mjs
+          node --check src/v84/sr6-import.mjs
+          node --check src/v74/reserve-ui.mjs
+      - name: Tests de pools, transfert, chargement et règles
+        run: node --test shadowrun/tests/archive-transfer.test.mjs shadowrun/tests/skills-pools.test.mjs shadowrun/tests/startup.test.mjs

@@ -1,17 +1,18 @@
-import {VERSION,validateLibrary,parseLibraryText,parseLibraryFileText,normalize,literalPrice,quantity,safeCart,inventoryText} from './model.mjs?v=136';
-import {prepareEntries,searchEntries,makeAliases,libraryPages,profileText,profileRolls} from './search.mjs?v=136';
-import {getStored,putStored,deleteStored} from './storage.mjs?v=136';
-import {bridge,ready,OBR} from './bridge.mjs?v=136';
-import {sectionExcerpt} from './reader.mjs?v=136';
-import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './content.mjs?v=136';
-import {readBookPdf} from './pdf-import.mjs?v=136';
+import {VERSION,validateLibrary,parseLibraryText,parseLibraryFileText,normalize,literalPrice,quantity,safeCart,inventoryText} from './model.mjs?v=137';
+import {prepareEntries,searchEntries,makeAliases,libraryPages,profileText,profileRolls} from './search.mjs?v=137';
+import {getStored,putStored,deleteStored} from './storage.mjs?v=137';
+import {bridge,ready,OBR} from './bridge.mjs?v=137';
+import {sectionExcerpt} from './reader.mjs?v=137';
+import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './content.mjs?v=137';
+import {readBookPdf} from './pdf-import.mjs?v=137';
 
-import {THEMES, topicOf, topicsOf, hasRoll, mergeTableRules} from './themes.mjs?v=136';
-import {hasTable, tableShelf, startTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=136';
-import {observePanel} from './panel-size.mjs?v=136';
-import {quickCatalogHierarchy,classifyEntry,KIND_NAMES} from './catalog.mjs?v=136';
-import {profileSkillPools,skillGuideEntries} from './profile-pools.mjs?v=136';
-import {installWindowControls} from './window-controls.mjs?v=136';
+import {THEMES, topicOf, topicsOf, hasRoll, mergeTableRules} from './themes.mjs?v=137';
+import {hasTable, tableShelf, startTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=137';
+import {observePanel} from './panel-size.mjs?v=137';
+import {quickCatalogHierarchy,classifyEntry,KIND_NAMES} from './catalog.mjs?v=137';
+import {profileSkillPools,skillGuideEntries} from './profile-pools.mjs?v=137';
+import {installWindowControls} from './window-controls.mjs?v=137';
+import {sendToArchives} from './archive-transfer.mjs?v=137';
 
 const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -140,6 +141,9 @@ async function selectEntry(e,{mobile=true,remember=true}={}){
  if(remember&&state.trail[state.trailAt]!==e.id){state.trail.splice(state.trailAt+1);state.trail.push(e.id);state.trailAt=state.trail.length-1;}
  releaseArt();state.selected=e;const url=new URL(location.href);url.searchParams.set('entry',e.id);history.replaceState(null,'',url.href);const root=$('#detail');delete root.dataset.inventory;root.innerHTML=headerHtml(e)+categoryHtml(e);
  root.insertAdjacentHTML('afterbegin',`<div class="detail-nav"><button id="entryPrev" class="subtle" ${state.trailAt<=0?'disabled':''}>Retour</button><button id="entryNext" class="subtle" ${state.trailAt>=state.trail.length-1?'disabled':''}>Suivant</button><button id="copyEntry" class="subtle">Copier la fiche</button></div>`);
+  if(['equipment','npc','creature'].includes(e.kind)){
+   root.insertAdjacentHTML('beforeend','<section class="archives-export"><div class="archives-export-title">Exporter cette fiche dans Les Archives</div><div class="archives-export-actions"><button type="button" data-sr6-export="canvas" class="primary" title="Créer une cellule masquée sur le canevas de l’acte actif">→ Canevas</button><button type="button" data-sr6-export="library" class="subtle" title="Conserver cette fiche dans la bibliothèque privée, hors du canevas">→ Réserve de cellules</button></div><p class="small">Transfert MJ · description, caractéristiques et pools D6, si présents.</p></section>');
+  }
  if(e.kind==='roll'&&e.pools?.length)root.insertAdjacentHTML('beforeend',`<section class="pool-list"><h3>Réserves citées dans le passage</h3>${e.pools.map(pool=>`<p>${esc(pool)}</p>`).join('')}</section>`);
  if(e.procedure)root.insertAdjacentHTML('beforeend',procedureHtml(e.procedure));
  if(e.attributes){
@@ -203,7 +207,13 @@ function renderSource(e,root){
  }
  if(!book){
   if(e.summary||e.attributes||e.fields?.length)root.insertAdjacentHTML('beforeend','<button id="openBooks" class="subtle source-access">Ouvrir la section complète dans mes livres</button>');
-  else root.insertAdjacentHTML('beforeend','<div class="source-empty"><h3>Texte de cette section</h3><p>Ajoute le PDF de cet ouvrage dans Mes livres pour afficher ici son contenu détaillé.</p><button id="openBooks" class="primary">Ajouter mon PDF ou mon fichier personnel</button></div>');
+  else {
+   const path=(e.path||[]).filter(Boolean).map(esc).join(' › ');
+   const references=[...(e.related||[]),...(e.linkedProfiles||[])].map(id=>state.byId?.get(id)).filter(Boolean);
+   const exact=state.rules.filter(r=>r.source===e.source&&Math.abs(r.page-e.page)<=1&&(r.title||'').toLowerCase().includes((e.title||'').toLowerCase())).slice(0,3);
+   const linked=[...new Map([...references,...exact].map(r=>[r.id,r])).values()];
+   root.insertAdjacentHTML('beforeend','<section class="source-empty"><h3>Référence indexée dans l’ouvrage</h3><p><b>'+esc(e.title||e.name)+'</b> — '+esc(sourceLabel(e))+'</p>'+(path?'<p class="small">Rubrique : '+path+'</p>':'')+(linked.length?'<p class="small">Fiches détaillées associées :</p><div class="source-related">'+linked.map(r=>'<button type="button" class="relation" data-entry="'+esc(r.id)+'">'+esc(r.title||r.name)+'</button>').join('')+'</div>':'')+'<p class="small">Cette rubrique est indexée, sans description détaillée vérifiée. Le contenu complet est accessible dans ta bibliothèque personnelle de cinq ouvrages. Une rubrique voisine n’est jamais substituée à celle-ci.</p><button id="openBooks" class="subtle">Ouvrir ma bibliothèque personnelle</button></section>');
+  }
   return;
  }
  const details=document.createElement('details');details.className='source-reader';details.open=e.kind==='roll'||e.kind==='equipment'||(!e.summary&&!e.attributes&&!e.fields?.length)||e.kind==='page';
@@ -242,6 +252,13 @@ function highlightText(root,text,query){
  const parts=text.split(re);for(let i=0;i<parts.length;i++){if(i%2){const mark=document.createElement('mark');mark.textContent=parts[i];root.append(mark);}else root.append(document.createTextNode(parts[i]));}
 }
 function bindDetail(e){
+ $('#detail').querySelectorAll('[data-sr6-export]').forEach(btn=>btn.onclick=()=>{
+  const destination=btn.dataset.sr6Export;
+  btn.disabled=true;
+  try{const message=sendToArchives(e,destination);toast(message);}
+  catch(error){toast(error.message||String(error));}
+  finally{btn.disabled=false;}
+ });
  $('#entryPrev').onclick=()=>{state.trailAt--;selectEntry(resolveEntry(state.trail[state.trailAt]),{remember:false});};
  $('#entryNext').onclick=()=>{state.trailAt++;selectEntry(resolveEntry(state.trail[state.trailAt]),{remember:false});};
  $('#copyEntry').onclick=()=>copy(profileText(e));
@@ -344,7 +361,7 @@ async function loadBundledJson(name){
  let lastError;
  for(let attempt=1;attempt<=2;attempt++){
   try{
-   const response=await fetch('data/'+name+'.json?v=136',{
+   const response=await fetch('data/'+name+'.json?v=137',{
     signal:typeof AbortSignal.timeout==='function'?AbortSignal.timeout(attempt===1?8000:12000):undefined,
     cache:attempt===1?'default':'reload'
    });
@@ -373,7 +390,7 @@ async function init(){
   void restoreLibrary();
   void activateTable(selection);
   void setupBridge().catch(fail);
-  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=136').catch(()=>{});
+  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=137').catch(()=>{});
  }catch(e){
    $('#resultCount').textContent='Chargement interrompu';
    $('#detail').innerHTML='<div class="startup-error"><h2>Le catalogue n’a pas pu s’ouvrir</h2><p id="startupErrorText"></p><button id="retryLoad" class="primary">Réessayer le chargement</button></div>';
@@ -384,7 +401,7 @@ async function init(){
 }
 function initWorker(){
  try{
-   const w=new Worker(new URL('./search-worker.mjs?v=136',import.meta.url),{type:'module'});state.worker=w;
+   const w=new Worker(new URL('./search-worker.mjs?v=137',import.meta.url),{type:'module'});state.worker=w;
    w.onmessage=({data})=>{if(data.type==='results')renderResults(data);if(data.type==='ready'){state.workerReady=true;runSearch();}if(data.type==='library-ready')runSearch();if(data.type==='error')fail(Error(data.message));};
    w.onerror=()=>{w.terminate();state.worker=null;state.workerReady=false;runSearch();};w.postMessage({type:'init',entries:state.entries,terms:state.terms.terms});
   }catch{state.worker=null;}
@@ -555,7 +572,15 @@ function currentHierarchy(){
   favorites:state.kind==='favorites'?state.favorites:null,practicalOnly:$('#practicalOnly').checked});
 }
 function showBrowseHint(title){
- const root=$('#detail');releaseArt();root.innerHTML='<div class="browse-hint"><h2>'+esc(title)+'</h2><p>Choisis une fiche dans la liste de gauche. Tu peux changer de catégorie sans refaire ta recherche.</p></div>';
+ const root=$('#detail');releaseArt();
+ if(state.kind==='dice'){
+  const groups=[...new Set(SITUATIONS.map(x=>x.group))];
+  const section=groups.map(g=>'<div class="dice-domain"><h3>'+esc(g)+'</h3><div class="dice-links">'+SITUATIONS.filter(x=>x.group===g).map(x=>{
+   const e=state.rules.find(r=>r.title===x.title);return e?'<button class="relation" data-entry="'+esc(e.id)+'">'+esc(x.label)+'</button>':'';
+  }).join('')+'</div></div>').join('');
+  root.innerHTML='<section class="dice-overview"><span class="eyebrow">AIDE DE JEU SHADOWRUN 6</span><h2>🎲 Jets de dés</h2><p>Les 19 compétences actives et les 92 procédures répertoriées sont accessibles dans la liste. Sélectionne un domaine ci-dessus pour filtrer, ou ouvre directement un test ci-dessous.</p><p class="small">Chaque fiche précise les attributs et compétences, oppositions, seuils ou effets lorsqu’ils sont connus. Aucun dé n’est lancé automatiquement.</p><div class="dice-domains">'+section+'</div></section>';
+  root.querySelectorAll('[data-entry]').forEach(b=>b.onclick=()=>selectEntry(state.byId.get(b.dataset.entry)));
+ }else root.innerHTML='<div class="browse-hint"><h2>'+esc(title)+'</h2><p>Choisis une fiche dans la liste de gauche. Tu peux changer de catégorie sans refaire ta recherche.</p></div>';
  $('.workspace').classList.remove('browse-catalog','show-detail');
 }
 function renderCategoryLanding(){

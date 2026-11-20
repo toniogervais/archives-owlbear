@@ -1,5 +1,5 @@
 import OBR from "../../assets/owlbear-transfer-sdk-v55.mjs";
-import { archivesUrl, screenUrl } from "../v57/room.mjs?v=4720";
+import { archivesUrl, screenUrl } from "../v57/room.mjs?v=4721";
 import { trustedOwlbearSdk } from "../v56/link.mjs?v=4590";
 const channel="fr.archives-imaginaire.bridge/screen-v55";
 const viewer="fr.archives-imaginaire.bridge/archives-viewer";
@@ -59,5 +59,5 @@ void import("../soundshow/owlbear.mjs?v=4590").then(module => module.installSoun
 
 void import('../v73/main-public-host.mjs?v=4590').then(module=>module.installMainPublicHost(OBR)).catch(error=>unavailable('Archives principales',error));
 
-void import('../v82/npc-token-context.mjs?v=4720').then(module=>module.installNpcTokenContext()).catch(error=>unavailable('Fiches des personnages',error));
+void import('../v82/npc-token-context.mjs?v=4721').then(module=>module.installNpcTokenContext()).catch(error=>unavailable('Fiches des personnages',error));
 void import('../v83/token-visibility.mjs?v=4690').then(module=>module.installTokenVisibilityMenu()).catch(error=>unavailable('Visibilité des tokens',error));
