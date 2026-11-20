@@ -24,7 +24,8 @@ test('common items have useful subtype names, beyond alphabetical AK and crossbo
  const byName=name=>gear.find(x=>x.name===name);
  assert.equal(classifyEntry(byName('AK-97')).subcategory,'Fusils');
  assert.equal(classifyEntry(byName('Arbalète, légère')).subcategory,'Arbalètes');
- assert.equal(classifyEntry(byName('Ares Predator VI')).subcategory,'Pistolets');
+ assert.equal(classifyEntry(byName('Ares Predator VI')).subcategory,'Pistolets lourds');
+ assert.equal(classifyEntry(byName('Ares Light Fire 75')).subcategory,'Pistolets légers');
  assert.equal(classifyEntry(byName('Renraku Sensei')).family,'Matrice et logiciels');
  assert.equal(classifyEntry(byName('BMW Tsarina II')).family,'Véhicules');
 });
