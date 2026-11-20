@@ -572,7 +572,15 @@ function currentHierarchy(){
   favorites:state.kind==='favorites'?state.favorites:null,practicalOnly:$('#practicalOnly').checked});
 }
 function showBrowseHint(title){
- const root=$('#detail');releaseArt();root.innerHTML='<div class="browse-hint"><h2>'+esc(title)+'</h2><p>Choisis une fiche dans la liste de gauche. Tu peux changer de catégorie sans refaire ta recherche.</p></div>';
+ const root=$('#detail');releaseArt();
+ if(state.kind==='dice'){
+  const groups=[...new Set(SITUATIONS.map(x=>x.group))];
+  const section=groups.map(g=>'<div class="dice-domain"><h3>'+esc(g)+'</h3><div class="dice-links">'+SITUATIONS.filter(x=>x.group===g).map(x=>{
+   const e=state.rules.find(r=>r.title===x.title);return e?'<button class="relation" data-entry="'+esc(e.id)+'">'+esc(x.label)+'</button>':'';
+  }).join('')+'</div></div>').join('');
+  root.innerHTML='<section class="dice-overview"><span class="eyebrow">AIDE DE JEU SHADOWRUN 6</span><h2>🎲 Jets de dés</h2><p>Les 19 compétences actives et les 92 procédures répertoriées sont accessibles dans la liste. Sélectionne un domaine ci-dessus pour filtrer, ou ouvre directement un test ci-dessous.</p><p class="small">Chaque fiche précise les attributs et compétences, oppositions, seuils ou effets lorsqu’ils sont connus. Aucun dé n’est lancé automatiquement.</p><div class="dice-domains">'+section+'</div></section>';
+  root.querySelectorAll('[data-entry]').forEach(b=>b.onclick=()=>selectEntry(state.byId.get(b.dataset.entry)));
+ }else root.innerHTML='<div class="browse-hint"><h2>'+esc(title)+'</h2><p>Choisis une fiche dans la liste de gauche. Tu peux changer de catégorie sans refaire ta recherche.</p></div>';
  $('.workspace').classList.remove('browse-catalog','show-detail');
 }
 function renderCategoryLanding(){
