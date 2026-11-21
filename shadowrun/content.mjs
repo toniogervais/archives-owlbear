@@ -1,4 +1,4 @@
-import {normalize} from './model.mjs?v=142';
+import {normalize} from './model.mjs?v=143';
 
 const key=e=>normalize(e.originalTitle||e.title||e.name).replace(/\s*\([il]\)\s*$/,'');
 export function assembleEntries({rules,profiles,equipment,index}){
