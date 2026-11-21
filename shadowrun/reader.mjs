@@ -57,7 +57,7 @@ function limitByHeadings(raw,offset,entry,ref,index,first,last,book){
  // that heading is absent or mistranscribed in the index.
  if(book?.pages?.length){
   const headings=book.pages.slice(first-1,last).map(p=>p.headingLines||[]);
-  const names=[ref?.originalTitle,ref?.title,entry.originalTitle,entry.title,entry.name].filter(Boolean);
+  const names=[...(ref?.headingAliases||[]),...(entry.headingAliases||[]),ref?.originalTitle,ref?.title,entry.originalTitle,entry.title,entry.name].filter(Boolean);
   const typographic=printedHeadingBoundary(raw,headings,names,offset);
   if(typographic!==null)end=Math.min(end,typographic);
  }
@@ -112,7 +112,7 @@ function getExcerpt(raw,headingTitles,entry,ref,index,first,last,truncated,book)
 export function sectionExcerpt(entry,book,index=[]){
  if(!book?.pages?.length||!entry||!Array.isArray(index))return null;
  const ref=sectionReference(entry,index);
- const headings=distinct([ref?.originalTitle,ref?.title,entry.originalTitle,entry.title,entry.name]);
+ const headings=distinct([...(ref?.headingAliases||[]),...(entry.headingAliases||[]),ref?.originalTitle,ref?.title,entry.originalTitle,entry.title,entry.name]);
  const anchor=ref&&book.anchors?.[ref.id];
  if(Array.isArray(anchor)&&anchor.length===4){
   const [first,at,final,end]=anchor;
