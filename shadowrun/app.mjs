@@ -1,22 +1,22 @@
-import {VERSION,validateLibrary,parseLibraryText,parseLibraryFileText,normalize,literalPrice,quantity,safeCart,inventoryText} from './model.mjs?v=140';
-import {prepareEntries,searchEntries,makeAliases,libraryPages,profileText,profileRolls} from './search.mjs?v=140';
-import {getStored,putStored,deleteStored} from './storage.mjs?v=140';
-import {bridge,ready,OBR} from './bridge.mjs?v=140';
-import {sectionExcerpt} from './reader.mjs?v=140';
-import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './content.mjs?v=140';
-import {readBookPdf} from './pdf-import.mjs?v=140';
+import {VERSION,validateLibrary,parseLibraryText,parseLibraryFileText,normalize,literalPrice,quantity,safeCart,inventoryText} from './model.mjs?v=141';
+import {prepareEntries,searchEntries,makeAliases,libraryPages,profileText,profileRolls} from './search.mjs?v=141';
+import {getStored,putStored,deleteStored} from './storage.mjs?v=141';
+import {bridge,ready,OBR} from './bridge.mjs?v=141';
+import {sectionExcerpt} from './reader.mjs?v=141';
+import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './content.mjs?v=141';
+import {readBookPdf} from './pdf-import.mjs?v=141';
 
-import {THEMES, topicOf, topicsOf, hasRoll, mergeTableRules} from './themes.mjs?v=140';
-import {hasTable, tableShelf, startTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=140';
-import {observePanel} from './panel-size.mjs?v=140';
-import {quickCatalogHierarchy,classifyEntry,KIND_NAMES} from './catalog.mjs?v=140';
-import {profileSkillPools,profileChoicePools,skillGuideEntries} from './profile-pools.mjs?v=140';
-import {actionType} from './action-types.mjs?v=140';
-import {canTranslateLocally,translatePassage} from './translation.mjs?v=140';
-import {profileSectionRows} from './profile-sections.mjs?v=140';
+import {THEMES, topicOf, topicsOf, hasRoll, mergeTableRules} from './themes.mjs?v=141';
+import {hasTable, tableShelf, startTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=141';
+import {observePanel} from './panel-size.mjs?v=141';
+import {quickCatalogHierarchy,classifyEntry,KIND_NAMES} from './catalog.mjs?v=141';
+import {profileSkillPools,profileChoicePools,skillGuideEntries} from './profile-pools.mjs?v=141';
+import {actionType} from './action-types.mjs?v=141';
+import {canTranslateLocally,translatePassage} from './translation.mjs?v=141';
+import {profileSectionRows} from './profile-sections.mjs?v=141';
 import {EDGE_ENTRIES,EDGE_CATEGORIES,EDGE_COUNTS} from './edge-catalog.mjs?v=141';
-import {installWindowControls} from './window-controls.mjs?v=140';
-import {sendToArchives} from './archive-transfer.mjs?v=140';
+import {installWindowControls} from './window-controls.mjs?v=141';
+import {sendToArchives} from './archive-transfer.mjs?v=141';
 
 const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -412,7 +412,7 @@ async function loadBundledJson(name){
  let lastError;
  for(let attempt=1;attempt<=2;attempt++){
   try{
-   const response=await fetch('data/'+name+'.json?v=140',{
+   const response=await fetch('data/'+name+'.json?v=141',{
     signal:typeof AbortSignal.timeout==='function'?AbortSignal.timeout(attempt===1?8000:12000):undefined,
     cache:attempt===1?'default':'reload'
    });
@@ -441,7 +441,7 @@ async function init(){
   void restoreLibrary();
   void activateTable(selection);
   void setupBridge().catch(fail);
-  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=140').catch(()=>{});
+  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=141').catch(()=>{});
  }catch(e){
    $('#resultCount').textContent='Chargement interrompu';
    $('#detail').innerHTML='<div class="startup-error"><h2>Le catalogue n’a pas pu s’ouvrir</h2><p id="startupErrorText"></p><button id="retryLoad" class="primary">Réessayer le chargement</button></div>';
@@ -452,7 +452,7 @@ async function init(){
 }
 function initWorker(){
  try{
-   const w=new Worker(new URL('./search-worker.mjs?v=140',import.meta.url),{type:'module'});state.worker=w;
+   const w=new Worker(new URL('./search-worker.mjs?v=141',import.meta.url),{type:'module'});state.worker=w;
    w.onmessage=({data})=>{if(data.type==='results')renderResults(data);if(data.type==='ready'){state.workerReady=true;runSearch();}if(data.type==='library-ready')runSearch();if(data.type==='error')fail(Error(data.message));};
    w.onerror=()=>{w.terminate();state.worker=null;state.workerReady=false;runSearch();};w.postMessage({type:'init',entries:state.entries,terms:state.terms.terms});
   }catch{state.worker=null;}
