@@ -23,10 +23,29 @@ function sectionReference(entry,index){
  return index.filter(e=>e.source===entry.source&&comparable(e.originalTitle||e.title)===wanted&&e.page===page)
   .sort((a,b)=>Math.abs(a.page-page)-Math.abs(b.page-page))[0]||null;
 }
+// The source index is large (thousands of entries). Only headings printed
+// on the one or two requested pages need to be compared for a given fiche.
+const pagesCache=new WeakMap();
+function indexedPages(index){
+ let pages=pagesCache.get(index);
+ if(!pages){
+  pages=new Map();
+  for(const entry of index){
+   const key=entry.source+':'+entry.page;
+   if(!pages.has(key))pages.set(key,[]);
+   pages.get(key).push(entry);
+  }
+  pagesCache.set(index,pages);
+ }
+ return pages;
+}
 function limitByHeadings(raw,offset,entry,ref,index,first,last,book){
  let end=raw.length;
- for(const other of index){
-  if(other.source!==entry.source||other.id===ref?.id||other.page<first||other.page>last)continue;
+ const grouped=indexedPages(index);
+ const nearby=[];
+ for(let page=first;page<=last;page++)nearby.push(...(grouped.get(entry.source+':'+page)||[]));
+ for(const other of nearby){
+  if(other.id===ref?.id)continue;
   if(ref&&Number.isFinite(ref.level)&&Number.isFinite(other.level)&&other.level>ref.level)continue;
   if(comparable(other.originalTitle||other.title)===comparable(ref?.originalTitle||ref?.title||entry.originalTitle||entry.title||entry.name))continue;
   const re=headingPattern(other.originalTitle||other.title);if(!re)continue;
