@@ -1,4 +1,4 @@
-import {normalize} from './model.mjs?v=143';
+import {normalize} from './model.mjs?v=144';
 
 const escape=s=>s.replace(/[.*+?^$()|[\]{}\\]/g,'\\$&');
 const comparable=s=>normalize(s).replace(/\s*\([il]\)$/,'');
@@ -33,6 +33,43 @@ function limitByHeadings(raw,offset,entry,ref,index,first,last){
   if(hit&&hit.index<end)end=hit.index;
  }
  return end;
+}
+// A section may end without a full stop when its sentence continues on the
+// next printed page. Never infer a continuation merely from a close title.
+function unfinishedAtPageEnd(text){
+ const tail=String(text||'').replace(/\s+/g,' ').trim();
+ return tail.length>=35&&!/[.!?…»”)]$/.test(tail)&&/[\p{L}\d,;:–—-]$/u.test(tail);
+}
+// PDF text commonly begins with a running header (chapter, folio, book).
+// A continuation cannot be delimited against these page decorations.
+function cleanContinuationHeader(text){
+ const lines=String(text||'').split('\n');
+ let i=0;
+ while(i<4&&i<lines.length){
+  const line=lines[i].trim();
+  if(/^\d{1,3}$/.test(line)||/^shadowrun\b/i.test(line)||/^[^\n]{1,65}\s*\/\/\s*[^\n]{1,65}$/i.test(line)){i++;continue;}
+  break;
+ }
+ return lines.slice(i).join('\n');
+}
+// The outline may call the next topic "Magie" while its printed heading is
+// actually "Sorts". When the preceding section has no explicit end anchor,
+// stop at a new short heading preceded by a completed paragraph. This is a
+// safety boundary, never a claim about the heading's exact identity.
+function printedBoundary(text){
+ let offset=0,previous='';
+ for(const line of text.split('\n')){
+  const current=line.trim();
+  const candidate=current.length>=3&&current.length<=48&&
+   /^[\p{Lu}]/u.test(current)&&current.split(/\s+/).length<=5&&
+   !/[.!?;:]$/.test(current)&&!/[\/+\d]/.test(current)&&
+   !/^(?:shadowrun|table des mati[eè]res)/i.test(current)&&
+   /[.!?…»]$/.test(previous);
+  if(candidate)return offset;
+  if(current)previous=current;
+  offset+=line.length+1;
+ }
+ return text.length;
 }
 function getExcerpt(raw,headingTitles,entry,ref,index,first,last,truncated){
  const found=firstHeading(raw,headingTitles);
@@ -80,9 +117,28 @@ export function sectionExcerpt(entry,book,index=[]){
   const next=first+1;
   return getExcerpt(following,headings,entry,ref,index,next,next,Boolean(ref?.endPage>next));
  }
- const likelyContinuation=Boolean(ref?.endPage>first);
- const last=likelyContinuation?Math.min(first+1,book.pages.length):first;
- const raw=book.pages.slice(first-1,last).map(p=>p.text).join('\n');
- const extracted=getExcerpt(raw,headings,entry,ref,index,first,last,Boolean(ref?.endPage>last));
- return extracted?{...extracted,matchedBy:'exact-heading',fullEndPage:ref?.endPage||last}:null;
+ // A reliably indexed next heading ends the section, even if this page
+ // happens to finish mid-sentence. In particular, never append the next
+ // page after a different entry has already begun.
+ const start=found.hit.index+found.hit[0].length;
+ const stop=limitByHeadings(firstText,start,entry,ref,index,first,first);
+ const boundedHere=stop<firstText.length;
+ const declaredEnd=Math.max(first,ref?.endPage||first,entry.endPage||first);
+ const explicitContinuation=declaredEnd>first;
+ const inferredContinuation=!boundedHere&&unfinishedAtPageEnd(firstText.slice(start));
+ const includesNext=first<book.pages.length&&!boundedHere&&(explicitContinuation||inferredContinuation);
+ const last=includesNext?first+1:first;
+ const nextText=includesNext?cleanContinuationHeader(book.pages[first]?.text):'';
+ // Only infer printed headings when this page extension was not established by
+ // an explicit source boundary. Never let a neighbouring section join the text.
+ const safeNext=includesNext&&!explicitContinuation?nextText.slice(0,printedBoundary(nextText)):nextText;
+ const raw=includesNext?firstText+'\n'+safeNext:firstText;
+ const extracted=getExcerpt(raw,headings,entry,ref,index,first,last,Boolean(declaredEnd>last));
+ if(!extracted)return null;
+ // A following indexed heading can be the very first line on page two.
+ // In that case, the actual passage did not extend onto that page.
+ const boundary=firstText.length+1;
+ const otherHeading=includesNext?limitByHeadings(raw,start,entry,ref,index,first,last):raw.length;
+ const actualLast=includesNext&&otherHeading>boundary?last:first;
+ return {...extracted,endPage:actualLast,matchedBy:inferredContinuation&&!explicitContinuation&&actualLast>first?'two-page-continuation':'exact-heading',fullEndPage:Math.max(declaredEnd,actualLast)};
 }
