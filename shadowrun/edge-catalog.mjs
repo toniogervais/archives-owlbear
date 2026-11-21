@@ -1,6 +1,6 @@
-import {EDGE_GENERAL} from './edge-general.mjs?v=141';
-import {EDGE_COMBAT,EDGE_COMBAT_BONUS} from './edge-combat.mjs?v=141';
-import {EDGE_SPECIAL} from './edge-special.mjs?v=141';
+import {EDGE_GENERAL} from './edge-general.mjs?v=142';
+import {EDGE_COMBAT,EDGE_COMBAT_BONUS} from './edge-combat.mjs?v=142';
+import {EDGE_SPECIAL} from './edge-special.mjs?v=142';
 
 export const EDGE_CATEGORIES=['Système de jeu','Combat','Magie','Matrice','Pilotage et drones','Poursuites','Interactions sociales','Exploration et déplacement','Soins et récupération','Créatures et dressage'];
 const topic={ 'Système de jeu':'regles',Combat:'combat',Magie:'magie',Matrice:'matrice',
