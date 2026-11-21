@@ -14,12 +14,13 @@ import {profileSkillPools,profileChoicePools,skillGuideEntries} from './profile-
 import {actionType} from './action-types.mjs?v=140';
 import {canTranslateLocally,translatePassage} from './translation.mjs?v=140';
 import {profileSectionRows} from './profile-sections.mjs?v=140';
+import {EDGE_ENTRIES,EDGE_CATEGORIES,EDGE_COUNTS} from './edge-catalog.mjs?v=141';
 import {installWindowControls} from './window-controls.mjs?v=140';
 import {sendToArchives} from './archive-transfer.mjs?v=140';
 
 const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const labels={rule:'Règle',action:'Action',equipment:'Équipement',npc:'PNJ',creature:'Bestiaire',page:'Texte du livre',reference:'Référence',roll:'Passage sur un jet',skillguide:'Compétence'};
+const labels={rule:'Règle',action:'Action',edgeaction:'Action d’Atout',edgeboost:'Bonus d’Atout',equipment:'Équipement',npc:'PNJ',creature:'Bestiaire',page:'Texte du livre',reference:'Référence',roll:'Passage sur un jet',skillguide:'Compétence'};
 const topics=Object.fromEntries(Object.entries(THEMES).map(([k,v])=>[k,v[0]]));
 const state={entries:[],books:[],equipment:[],profiles:[],rules:[],coverage:{},terms:{},favorites:new Set(),notes:{},library:null,kind:'',selected:null,query:'',topic:'',source:'',offset:0,cart:[],seq:0,worker:null,bridge:null,isGm:false,trail:[],trailAt:-1,browse:{family:'',sub:''},workerReady:false};
 let toastTimer,searchTimer;
@@ -84,7 +85,7 @@ function renderResults(r){
    const timing=actionType(e);
   const folderText=e.kind==='equipment'?folder.family+' › '+folder.subcategory:e.kind==='creature'?folder.family:folder.subcategory;
    const editions=e.kind==='equipment'?(state.equipmentGroups?.get(groupKey)?.length||1):1;
-  button.innerHTML=`<span class="name">${state.favorites.has(e.id)?'★ ':''}${esc(title(e))}</span><span class="meta"><span class="type">${esc(labels[e.kind]||'Référence')}</span><span class="result-folder">${esc(folderText)}</span><span>${esc(sourceLabel(e))}</span>${editions>1?'<span class="editions">'+editions+' ouvrages / variantes</span>':''}${e.optional?'<span>Optionnelle</span>':''}</span>${e.procedure?.test||e.pools?.length?`<span class="result-roll">${esc(e.procedure?.test||e.pools.join(' · '))}</span>`:''}${timing?`<span class="result-action">Type d’action : ${esc(timing.label)}</span>`:''}${e.summary?`<span class="excerpt">${esc(e.summary)}</span>`:''}`;
+  button.innerHTML=`<span class="name">${state.favorites.has(e.id)?'★ ':''}${esc(title(e))}</span><span class="meta"><span class="type">${esc(labels[e.kind]||'Référence')}</span><span class="result-folder">${esc(folderText)}</span><span>${esc(sourceLabel(e))}</span>${editions>1?'<span class="editions">'+editions+' ouvrages / variantes</span>':''}${e.optional?'<span>Optionnelle</span>':''}</span>${e.procedure?.test||e.pools?.length?`<span class="result-roll">${esc(e.procedure?.test||e.pools.join(' · '))}</span>`:''}${e.edgeCost?`<span class="result-action">⚡ ${esc(e.edgeCost)} Atout · ${esc(e.edgeTiming)} · ${esc(e.edgeAction)}</span>`:''}${timing?`<span class="result-action">Type d’action : ${esc(timing.label)}</span>`:''}${e.summary?`<span class="excerpt">${esc(e.summary)}</span>`:''}`;
   button.addEventListener('click',()=>selectEntry(e));const item=document.createElement('div');item.setAttribute('role','listitem');item.append(button);frag.append(item);
  }
  root.append(frag);
@@ -158,6 +159,7 @@ async function selectEntry(e,{mobile=true,remember=true}={}){
   }
  if(e.kind==='roll'&&e.pools?.length)root.insertAdjacentHTML('beforeend',`<section class="pool-list"><h3>Réserves citées dans le passage</h3>${e.pools.map(pool=>`<p>${esc(pool)}</p>`).join('')}</section>`);
  const actionInfo=actionType(e);
+ if(e.edgeCost)root.insertAdjacentHTML('beforeend',`<section class="edge-cost-panel"><div><span>Coût en Atout</span><strong>${esc(e.edgeCost)} <small>points</small></strong></div><div><span>Moment</span><strong>${esc(e.edgeTiming)}</strong></div><div><span>Action majeure ou mineure</span><strong>${esc(e.edgeAction)}</strong></div></section>`);
  if(actionInfo)root.insertAdjacentHTML('beforeend',`<section class="action-identity" aria-label="Nature de l’action"><strong>Type d’action</strong><span>${esc(actionInfo.label)}</span></section>`);
  if(e.procedure)root.insertAdjacentHTML('beforeend',procedureHtml(e.procedure));
  if(e.attributes){
@@ -184,7 +186,7 @@ async function selectEntry(e,{mobile=true,remember=true}={}){
   }
  }
  if(e.summary&&e.kind!=='page')root.insertAdjacentHTML('beforeend',`<div class="summary-body"><h3>Description / rappel</h3><p>${esc(e.summary)}</p>${e.steps?.length?`<ol>${e.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>`:''}${e.warning?`<p class="warn">${esc(e.warning)}</p>`:''}</div>`);
- if(e.fields?.length&&!e.attributes){root.insertAdjacentHTML('beforeend','<h3>Caractéristiques</h3>');root.insertAdjacentHTML('beforeend',tableRows(e.fields));}
+ if(e.fields?.length&&!e.attributes&&!e.edgeCost){root.insertAdjacentHTML('beforeend','<h3>Caractéristiques</h3>');root.insertAdjacentHTML('beforeend',tableRows(e.fields));}
  if(e.kind==='equipment')root.insertAdjacentHTML('beforeend','<div class="detail-actions"><button id="addCart" class="primary">Ajouter au panier</button></div>');
   if(e.kind==='equipment')renderEquipmentAlternatives(e,root);
  root.insertAdjacentHTML('beforeend',relationHtml({...e,related:[...new Set([...(e.related||[]),...(e.linkedProfiles||[]),...suggestedRules(e,state.rules),...skillRelatedRules(e,state.rules)])]}));
@@ -487,7 +489,7 @@ function buildEntries(extra,tests=[]) {
  const pages=tableShelf()?.gearPages||{};
  const equipment=state.equipment.map(e=>pages[e.id]?{...e,descriptionPage:pages[e.id]}:e);
  const catalog=assembleEntries({rules:state.rules,index:state.index,equipment,profiles:state.profiles});
- state.entries=[...catalog.entries,...skillGuideEntries(),...tests].map(e=>({...e,topic:topicOf(e)}));
+ state.entries=[...catalog.entries,...skillGuideEntries(),...EDGE_ENTRIES,...tests].map(e=>({...e,topic:topicOf(e)}));
   state.equipmentGroups=new Map();
   for(const e of state.entries.filter(e=>e.kind==='equipment')){
    const key=normalize(title(e))+'|'+normalize(e.category||'');
@@ -628,7 +630,13 @@ function showBrowseHint(title){
   }).join('')+'</div></div>').join('');
   root.innerHTML='<section class="dice-overview"><span class="eyebrow">AIDE DE JEU SHADOWRUN 6</span><h2>🎲 Jets de dés</h2><p>Les 19 compétences actives et les 92 procédures répertoriées sont accessibles dans la liste. Sélectionne un domaine ci-dessus pour filtrer, ou ouvre directement un test ci-dessous.</p><p class="small">Chaque fiche précise les attributs et compétences, oppositions, seuils ou effets lorsqu’ils sont connus. Aucun dé n’est lancé automatiquement.</p><div class="dice-domains">'+section+'</div></section>';
   root.querySelectorAll('[data-entry]').forEach(b=>b.onclick=()=>selectEntry(state.byId.get(b.dataset.entry)));
- }else root.innerHTML='<div class="browse-hint"><h2>'+esc(title)+'</h2><p>Choisis une fiche dans la liste de gauche. Tu peux changer de catégorie sans refaire ta recherche.</p></div>';
+ }else if(state.kind==='edgeaction'||state.kind==='edgeboost'){
+   const action=state.kind==='edgeaction';
+   const items=state.entries.filter(e=>e.kind===state.kind);
+   const cards=EDGE_CATEGORIES.map(name=>({name,count:items.filter(e=>e.category===name).length})).filter(x=>x.count);
+   root.innerHTML='<section class="edge-overview"><span class="eyebrow">AIDE DE JEU SHADOWRUN 6</span><h2>'+esc(action?'⚡ Actions d’Atout':'⚡ Bonus d’Atout')+'</h2><p>Choisir une catégorie pour voir les coûts, les conditions, le moment d’utilisation et l’action majeure ou mineure associée. Les règles spécifiques des ouvrages complètent celles du livre de base.</p><p class="small">'+fmt(items.length)+' fiches · '+fmt(cards.length)+' domaines · aucune dépense ou jet automatique</p><div class="edge-category-grid">'+cards.map(c=>'<button data-edge-cat="'+esc(c.name)+'"><strong>'+esc(c.name)+'</strong><small>'+fmt(c.count)+' fiches</small></button>').join('')+'</div></section>';
+   root.querySelectorAll('[data-edge-cat]').forEach(btn=>btn.onclick=()=>chooseFamily(btn.dataset.edgeCat));
+  }else root.innerHTML='<div class="browse-hint"><h2>'+esc(title)+'</h2><p>Choisis une fiche dans la liste de gauche. Tu peux changer de catégorie sans refaire ta recherche.</p></div>';
  $('.workspace').classList.remove('browse-catalog','show-detail');
 }
 function renderCategoryLanding(){
@@ -689,7 +697,7 @@ function chooseFamily(family,sub=''){
 function restoreCatalogRoute(){
  const p=new URLSearchParams(location.search);
  const kind=p.get('kind')||'',topic=p.get('topic')||'',family=p.get('family')||'',sub=p.get('sub')||'';
- if(['rule','action','rolls','dice','equipment','npc','creature','favorites'].includes(kind))state.kind=kind;
+ if(['rule','action','edgeaction','edgeboost','rolls','dice','equipment','npc','creature','favorites'].includes(kind))state.kind=kind;
  if(topic&&THEMES[topic])$('#topic').value=topic;
  if(p.get('search'))$('#search').value=p.get('search');
  if(p.get('source')&&state.books.some(b=>b.id===p.get('source')))$('#source').value=p.get('source');
