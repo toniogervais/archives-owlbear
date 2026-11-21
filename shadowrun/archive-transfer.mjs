@@ -1,4 +1,4 @@
-import {profileSkillPools,profileChoicePools} from './profile-pools.mjs?v=140';
+import {profileSkillPools,profileChoicePools} from './profile-pools.mjs?v=141';
 
 const MAX_LINK_LENGTH=70000;
 const clean=(v,n=12000)=>String(v??'').slice(0,n);
