@@ -1,4 +1,4 @@
-import {prepareEntries,searchEntries,makeAliases,libraryPages} from './search.mjs?v=139';
+import {prepareEntries,searchEntries,makeAliases,libraryPages} from './search.mjs?v=140';
 let entries=[],pages=[],aliases=new Map();
 self.onmessage=({data})=>{
  try{
