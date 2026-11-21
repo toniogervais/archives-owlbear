@@ -12,6 +12,7 @@ import {observePanel} from './panel-size.mjs?v=138';
 import {quickCatalogHierarchy,classifyEntry,KIND_NAMES} from './catalog.mjs?v=138';
 import {profileSkillPools,skillGuideEntries} from './profile-pools.mjs?v=138';
 import {actionType} from './action-types.mjs?v=138';
+import {canTranslateLocally,translatePassage} from './translation.mjs?v=138';
 import {installWindowControls} from './window-controls.mjs?v=138';
 import {sendToArchives} from './archive-transfer.mjs?v=138';
 
@@ -151,7 +152,7 @@ async function selectEntry(e,{mobile=true,remember=true}={}){
  if(e.procedure)root.insertAdjacentHTML('beforeend',procedureHtml(e.procedure));
  if(e.attributes){
   root.insertAdjacentHTML('beforeend','<h3>Caractéristiques</h3>');
-  root.insertAdjacentHTML('beforeend',`<dl class="stat-grid">${Object.entries(e.attributes).map(([k,v])=>`<div class="stat"><dt title="${esc(state.terms.attributes?.find(a=>a.fr===k)?.french||k)}">${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl><div class="derived">${Object.entries(e.derived||{}).map(([k,v])=>`<span><b>${esc(k)}</b>${esc(v)}</span>`).join('')}</div>`);
+  root.insertAdjacentHTML('beforeend',`<dl class="stat-grid">${Object.entries(e.attributes).map(([k,v])=>`<div class="stat"><dt title="${esc(state.terms.attributes?.find(a=>a.fr===k)?.french||k)}">${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>`);
    const rows=profileSkillPools(e);
    if(rows.length)root.insertAdjacentHTML('beforeend',skillPoolHtml(rows));
    else if(e.sections?.Compétences)root.insertAdjacentHTML('beforeend','<p class="warn">Cette fiche énumère des compétences sans leur attribuer de rang chiffré. Aucun pool de D6 n’est déduit automatiquement : consulter la règle spécifique de la créature ou de l’esprit.</p>');
@@ -222,7 +223,7 @@ function renderSource(e,root){
   return;
  }
  const details=document.createElement('details');details.className='source-reader';details.open=e.kind==='roll'||e.kind==='equipment'||(!e.summary&&!e.attributes&&!e.fields?.length)||e.kind==='page';
- const sum=document.createElement('summary');sum.textContent=book.language==='en'?'Section détaillée · original anglais':'Section détaillée du livre';details.append(sum);
+ const sum=document.createElement('summary');sum.textContent=book.language==='en'?'Section détaillée · traduction française':'Section détaillée du livre';details.append(sum);
  const reader=document.createElement('div');details.append(reader);root.append(details);let rendered=false;
  const populate=()=>{
   if(rendered||!details.open)return;rendered=true;
@@ -232,8 +233,21 @@ function renderSource(e,root){
   const excerpt=passage||e.kind==='page'?null:sectionExcerpt(e,book,state.index);
   const text=passage||(e.kind==='page'?pageText:excerpt?.text||'');
   if(e.kind!=='roll'&&e.kind!=='page'&&!e.summary&&!e.attributes){const points=localKeyPoints(text,book.language);if(points.length){const section=document.createElement('section');section.className='local-points';section.innerHTML=`<h3>Points clés de la section</h3><ul>${points.map(p=>`<li>${esc(p)}</li>`).join('')}</ul>`;root.insertBefore(section,details);}}
-  if(text){const body=document.createElement('div');body.className='booktext';highlightText(body,text,state.query);reader.append(body);const full=document.createElement('button');full.className='subtle';full.textContent='Consulter le contexte et les pages suivantes';full.onclick=()=>renderPage(reader,e.source,excerpt?.page||readingPage);reader.append(full);
-    if(excerpt?.truncated){const notice=document.createElement('p');notice.className='source-warning';notice.textContent='Cette rubrique se prolonge au-delà des deux pages présentées. Consulte la page originale pour lire la suite.';reader.append(notice);}
+  if(text){
+      const body=document.createElement('div');body.className='booktext';reader.append(body);
+      if(book.language==='en'){
+       const notice=document.createElement('p');notice.className='source-warning';notice.textContent=canTranslateLocally()?'Ce passage peut être traduit en français sur cet appareil. Vérifie les termes de règles et les valeurs chiffrées dans les tableaux de la fiche.':'La traduction française de ce passage n’est pas disponible dans ce navigateur ; les caractéristiques structurées restent affichées en français ci-dessus.';body.append(notice);
+       if(canTranslateLocally()){
+        const translate=document.createElement('button');translate.className='primary';translate.textContent='Traduire cette section en français';body.append(translate);
+        translate.onclick=async()=>{
+         translate.disabled=true;translate.textContent='Traduction locale en cours…';
+         try{const fr=await translatePassage(text,(i,n)=>{translate.textContent='Traduction française : '+i+' / '+n;});if(body.isConnected){body.replaceChildren();highlightText(body,fr,state.query);}}
+         catch(e){translate.disabled=false;translate.textContent='Réessayer la traduction';toast(e.message||'Traduction indisponible');}
+        };
+       }
+      }else highlightText(body,text,state.query);
+      const full=document.createElement('button');full.className='subtle';full.textContent='Consulter le contexte et les pages suivantes';full.onclick=()=>renderPage(reader,e.source,excerpt?.page||readingPage);reader.append(full);
+      if(excerpt?.truncated){const notice=document.createElement('p');notice.className='source-warning';notice.textContent='Cette rubrique se prolonge au-delà des deux pages présentées. Consulte la page originale pour lire la suite.';reader.append(notice);}
    }else{
     const warning=document.createElement('p');warning.className='source-warning';warning.textContent='Impossible de délimiter cette description avec certitude. Aucun texte d’une rubrique voisine n’est attribué à cette fiche.';
     const openPage=document.createElement('button');openPage.className='subtle';openPage.textContent='Consulter la page originale';openPage.onclick=()=>renderPage(reader,e.source,readingPage);
@@ -246,7 +260,13 @@ function renderSource(e,root){
 function renderPage(root,source,pno){
  const book=getPrivateBook(source);if(!book)return;const p=book.pages[pno-1];if(!p)return;
  root.innerHTML=`<div class="page-nav"><button data-prev class="subtle" ${pno<=1?'disabled':''}>Précédente</button><label class="small">Page PDF <input type="number" aria-label="Page PDF" min="1" max="${book.pageCount}" value="${pno}"></label><span class="small">${p.printed>0?'p. '+p.printed:''} / ${book.pageCount} pages</span><button data-next class="subtle" ${pno>=book.pageCount?'disabled':''}>Suivante</button></div><div class="booktext"></div>`;
- highlightText(root.querySelector('.booktext'),p.text,state.query);
+ if(book.language==='en'){
+   const area=root.querySelector('.booktext');area.textContent='Section originale à traduire en français.';
+   if(canTranslateLocally()){
+    const btn=document.createElement('button');btn.className='primary';btn.textContent='Traduire cette page en français';area.append(btn);
+    btn.onclick=async()=>{btn.disabled=true;btn.textContent='Traduction en cours…';try{const fr=await translatePassage(p.text,(i,n)=>{btn.textContent='Traduction : '+i+' / '+n;});if(area.isConnected){area.replaceChildren();highlightText(area,fr,state.query);}}catch(e){btn.disabled=false;btn.textContent='Réessayer la traduction';toast(e.message||'Traduction indisponible');}};
+   }else area.textContent='La traduction française de cette page n’est pas disponible sur cet appareil.';
+  }else highlightText(root.querySelector('.booktext'),p.text,state.query);
  if(hasTable()&&tableShelf()?.pageImages)pagePlateButton(root,source,pno);
  root.querySelector('[data-prev]').onclick=()=>renderPage(root,source,pno-1);root.querySelector('[data-next]').onclick=()=>renderPage(root,source,pno+1);
  root.querySelector('input').onchange=event=>{const n=Number(event.target.value);if(Number.isInteger(n)&&n>=1&&n<=book.pageCount)renderPage(root,source,n);else event.target.value=pno;};
