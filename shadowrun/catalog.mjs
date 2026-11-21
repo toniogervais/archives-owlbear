@@ -1,5 +1,5 @@
-import {normalize} from './model.mjs?v=142';
-import {THEMES,topicOf,topicsOf,hasRoll} from './themes.mjs?v=142';
+import {normalize} from './model.mjs?v=143';
+import {THEMES,topicOf,topicsOf,hasRoll} from './themes.mjs?v=143';
 
 export const KIND_NAMES={rule:'Règles',indexed:'Rubriques des livres',action:'Actions',edgeaction:'Actions d’Atout',edgeboost:'Bonus d’Atout',roll:'Jets',dice:'Jets D6',skillguide:'Compétence',equipment:'Équipement',npc:'PNJ',creature:'Bestiaire',reference:'Références',page:'Pages'};
 export const EQUIPMENT_ORDER=['Armes','Munitions et explosifs','Armures et protections','Modifications et accessoires','Augmentations','Matrice et logiciels','Véhicules','Drones','Équipement général','Matériel magique','PACKs','Équipement pour créatures'];
