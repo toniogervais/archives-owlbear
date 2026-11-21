@@ -240,15 +240,24 @@ function renderSource(e,root){
   return;
  }
  const details=document.createElement('details');details.className='source-reader';details.open=e.kind==='roll'||e.kind==='equipment'||(!e.summary&&!e.attributes&&!e.fields?.length)||e.kind==='page';
- const sum=document.createElement('summary');sum.textContent=book.language==='en'?'Section détaillée · traduction française':'Section détaillée du livre';details.append(sum);
+ const sum=document.createElement('summary');sum.textContent='Lire l’extrait original du livre · PDF p. '+(e.descriptionPage||e.page)+(book.language==='en'?' · source anglaise':'');details.append(sum);
  const reader=document.createElement('div');details.append(reader);root.append(details);let rendered=false;
  const populate=()=>{
   if(rendered||!details.open)return;rendered=true;
   const readingPage=e.kind==='equipment'?(e.descriptionPage||e.page):e.page;
   const pageText=book.pages[readingPage-1]?.text||'';
   const passage=e.kind==='roll'&&book.anchors?pageText.slice(e.start,e.end):'';
-  const excerpt=passage||e.kind==='page'?null:sectionExcerpt(e,book,state.index);
+  const excerpt=(passage||e.kind==='page')?null:sectionExcerpt(e,book,state.index);
   const text=passage||(e.kind==='page'?pageText:excerpt?.text||'');
+  const context=sourceContext(e,book,excerpt);
+  const description=conciseSourceDescription(excerpt,book.language);
+  if(description&&!e.summary){
+   const overview=document.createElement('section');overview.className='source-overview';
+   const heading=document.createElement('h3');heading.textContent='Description de la rubrique';
+   const body=document.createElement('p');body.textContent=description.text;
+   const origin=document.createElement('p');origin.className='small';origin.textContent='Description extractive de la section, à vérifier avec le passage original. '+sourceLabel({...e,page:context.firstPage,printedPage:context.firstPage-sourceBook(e.source).printedOffset});
+   overview.append(heading,body,origin);root.insertBefore(overview,details);
+  }
   if(book.language!=='en'&&e.kind!=='roll'&&e.kind!=='page'&&!e.summary&&!e.attributes){const points=localKeyPoints(text,book.language);if(points.length){const section=document.createElement('section');section.className='local-points';section.innerHTML=`<h3>Points clés de la section</h3><ul>${points.map(p=>`<li>${esc(p)}</li>`).join('')}</ul>`;root.insertBefore(section,details);}}
   if(text){
       const body=document.createElement('div');body.className='booktext';reader.append(body);
@@ -263,7 +272,7 @@ function renderSource(e,root){
         };
        }
       }else highlightText(body,text,state.query);
-      const full=document.createElement('button');full.className='subtle';full.textContent='Consulter le contexte et les pages suivantes';full.onclick=()=>renderPage(reader,e.source,excerpt?.page||readingPage);reader.append(full);
+      const full=document.createElement('button');full.className='subtle';full.textContent='Consulter les pages PDF originales et suivantes';full.onclick=()=>renderPage(reader,e.source,excerpt?.page||readingPage);reader.append(full);
       if(excerpt?.truncated){const notice=document.createElement('p');notice.className='source-warning';notice.textContent='Cette rubrique se prolonge au-delà des deux pages présentées. Consulte la page originale pour lire la suite.';reader.append(notice);}
    }else{
     const warning=document.createElement('p');warning.className='source-warning';warning.textContent='Impossible de délimiter cette description avec certitude. Aucun texte d’une rubrique voisine n’est attribué à cette fiche.';
