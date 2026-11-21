@@ -62,6 +62,7 @@ test('le sous-chapitre de soins magiques retrouve le titre imprimé Sorts',()=>{
  const excerpt=sectionExcerpt(heading,book,[heading]);
  assert.ok(excerpt);
  assert.match(excerpt.text,/Sorcellerie \+ Magie/);
+ assert.doesNotMatch(excerpt.text,/EXEMPLES DE SOINS/);
  assert.equal(excerpt.matchedBy,'exact-heading');
 });
 
