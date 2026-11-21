@@ -16,6 +16,7 @@ export const THEMES = {
  univers: ['Sixième Monde', 'Lieux, organisations et vie dans les Ombres']
 };
 export function topicOf(e) {
+ if(e.kind==='edgeaction'||e.kind==='edgeboost')return e.topic||'regles';
  const p=e.page, src=e.source, t=e.topic, k=e.kind;
  if(k==='npc')return 'pnj';
  if(k==='creature')return 'creatures';
