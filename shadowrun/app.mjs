@@ -3,6 +3,7 @@ import {prepareEntries,searchEntries,makeAliases,libraryPages,profileText,profil
 import {getStored,putStored,deleteStored} from './storage.mjs?v=141';
 import {bridge,ready,OBR} from './bridge.mjs?v=141';
 import {sectionExcerpt} from './reader.mjs?v=141';
+import {conciseSourceDescription,sourceContext} from './source-descriptions.mjs?v=142';
 import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './content.mjs?v=141';
 import {readBookPdf} from './pdf-import.mjs?v=141';
 
@@ -228,14 +229,14 @@ function renderSource(e,root){
   open.onclick=load;if(auto)void load();return;
  }
  if(!book){
-  if(e.summary||e.attributes||e.fields?.length)root.insertAdjacentHTML('beforeend','<button id="openBooks" class="subtle source-access">Ouvrir la section complète dans mes livres</button>');
-  else {
-   const path=(e.path||[]).filter(Boolean).map(esc).join(' › ');
-   const references=[...(e.related||[]),...(e.linkedProfiles||[])].map(id=>state.byId?.get(id)).filter(Boolean);
-   const exact=state.rules.filter(r=>r.source===e.source&&Math.abs(r.page-e.page)<=1&&(r.title||'').toLowerCase().includes((e.title||'').toLowerCase())).slice(0,3);
-   const linked=[...new Map([...references,...exact].map(r=>[r.id,r])).values()];
-   root.insertAdjacentHTML('beforeend','<section class="source-empty"><h3>Référence indexée dans l’ouvrage</h3><p><b>'+esc(e.title||e.name)+'</b> — '+esc(sourceLabel(e))+'</p>'+(path?'<p class="small">Rubrique : '+path+'</p>':'')+(linked.length?'<p class="small">Fiches détaillées associées :</p><div class="source-related">'+linked.map(r=>'<button type="button" class="relation" data-entry="'+esc(r.id)+'">'+esc(r.title||r.name)+'</button>').join('')+'</div>':'')+'<p class="small">Cette rubrique est indexée, sans description détaillée vérifiée. Le contenu complet est accessible dans ta bibliothèque personnelle de cinq ouvrages. Une rubrique voisine n’est jamais substituée à celle-ci.</p><button id="openBooks" class="subtle">Ouvrir ma bibliothèque personnelle</button></section>');
-  }
+  // Source-only index titles must never receive a neighbouring rule's text.
+  // The user can load this exact book to get a real description and excerpt.
+  const area=document.createElement('section');area.className='source-empty';root.append(area);
+  const heading=document.createElement('h3');heading.textContent='Source et extrait original';area.append(heading);
+  const line=document.createElement('p');line.textContent=sourceLabel(e)+(e.endPage&&e.endPage>e.page?' · section jusqu’à PDF '+e.endPage:'');area.append(line);
+  const path=(e.path||[]).filter(Boolean).join(' › ');
+  if(path){const topic=document.createElement('p');topic.className='small';topic.textContent='Rubrique : '+path;area.append(topic);}
+  const open=document.createElement('button');open.className='subtle';open.textContent='Importer ce livre pour afficher la description et lire le passage original';open.onclick=showBooks;area.append(open);
   return;
  }
  const details=document.createElement('details');details.className='source-reader';details.open=e.kind==='roll'||e.kind==='equipment'||(!e.summary&&!e.attributes&&!e.fields?.length)||e.kind==='page';
