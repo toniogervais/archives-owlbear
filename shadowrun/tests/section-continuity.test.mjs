@@ -18,9 +18,10 @@ test('une phrase interrompue en bas de page est reprise uniquement jusqu’à la
  assert.equal(found.matchedBy,'two-page-continuation');
  assert.equal(found.page,1);
  assert.equal(found.endPage,2);
+ assert.equal(found.fullEndPage,2);
  assert.match(found.text,/terminer les soins/);
  assert.doesNotMatch(found.text,/Ce paragraphe traite/);
- assert.equal(sourceContext(index[0],library,found).exact,true);
+ assert.equal(sourceContext(index[0],library,found).exact,false);
  assert.ok(conciseSourceDescription(found,'fr'));
 });
 
