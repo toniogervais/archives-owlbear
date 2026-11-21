@@ -87,3 +87,21 @@ test('une rubrique Médikit répartie sur deux pages s’arrête au titre imprim
  assert.match(found.text,/vérification complète/);
  assert.doesNotMatch(found.text,/Sorts|soins magiques|SIXIÈME ÉDITION/);
 });
+
+test('le catalogue public ne contient aucun double strict, sans confondre les variantes légitimes',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ for(const name of ['index','equipment','profiles']){
+  const rows=JSON.parse(await readFile(new URL('../data/'+name+'.json',import.meta.url),'utf8'));
+  const seen=new Set();
+  for(const e of rows){
+   const signature=name==='index'
+    ?[e.source,e.originalTitle||e.title,e.page,e.level,e.path]
+    :name==='equipment'
+     ?[e.source,e.name,e.category,e.page,e.fields,e.path]
+     :[e.source,e.name,e.page,e.attributes,e.derived];
+   const key=JSON.stringify(signature);
+   assert.ok(!seen.has(key),'Doublon strict : '+name+' / '+e.id);
+   seen.add(key);
+  }
+ }
+});
