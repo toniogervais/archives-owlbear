@@ -1,15 +1,15 @@
 {
   "name": "Shadowrun 6 — Compendium",
-  "version": "1.3.9",
+  "version": "1.3.10",
   "manifest_version": 1,
   "description": "Compendium Shadowrun 6 : jets de dés, fiches détaillées et transfert MJ direct vers le canevas ou la réserve des Archives.",
   "author": "Les Archives de l’Imaginaire",
   "icon": "https://toniogervais.github.io/archives-owlbear/shadowrun/icon.svg",
-  "background_url": "https://toniogervais.github.io/archives-owlbear/shadowrun/background.html?v=139",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/shadowrun/background.html?v=140",
   "action": {
     "title": "Compendium SR6",
     "icon": "https://toniogervais.github.io/archives-owlbear/shadowrun/icon.svg",
-    "popover": "https://toniogervais.github.io/archives-owlbear/shadowrun/index.html?v=139",
+    "popover": "https://toniogervais.github.io/archives-owlbear/shadowrun/index.html?v=140",
     "width": 1600,
     "height": 1200
   }
