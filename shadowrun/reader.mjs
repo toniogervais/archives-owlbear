@@ -1,4 +1,4 @@
-import {normalize} from './model.mjs?v=143';
+import {normalize} from './model.mjs?v=144';
 
 const escape=s=>s.replace(/[.*+?^$()|[\]{}\\]/g,'\\$&');
 const comparable=s=>normalize(s).replace(/\s*\([il]\)$/,'');
