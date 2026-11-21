@@ -330,7 +330,7 @@ function bindDetail(e){
  $('#detail').querySelectorAll('[data-entry]').forEach(b=>b.onclick=()=>selectEntry(state.byId.get(b.dataset.entry)));
 }
 function counts(){
- const c={rolls:0};state.entries.forEach(e=>{c[e.kind]=(c[e.kind]||0)+1;if(hasRoll(e))c.rolls++;if(e.kind==='skillguide'||hasRoll(e))c.dice=(c.dice||0)+1;});
+ const c={rolls:0,indexed:0};state.entries.forEach(e=>{if(e.sourceOnly)c.indexed++;c[e.kind]=(c[e.kind]||0)+1;if(hasRoll(e))c.rolls++;if(e.kind==='skillguide'||hasRoll(e))c.dice=(c.dice||0)+1;});
  $('#tabs').querySelectorAll('[data-kind]').forEach(b=>{const span=b.querySelector('span');if(span)span.textContent=fmt(b.dataset.kind==='favorites'?state.favorites.size:b.dataset.kind?c[b.dataset.kind]||0:state.entries.length);});
 }
 function situations(){
@@ -642,7 +642,11 @@ function currentHierarchy(){
 }
 function showBrowseHint(title){
  const root=$('#detail');releaseArt();
- if(state.kind==='dice'){
+ if(state.kind==='indexed'){
+  const rows=state.books.map(b=>({book:b,items:state.entries.filter(e=>e.sourceOnly&&e.source===b.id)}));
+  root.innerHTML='<section class="indexed-overview"><span class="eyebrow">INVENTAIRE INTÉGRAL</span><h2>Rubriques des livres</h2><p>Cette rubrique rassemble les entrées de l’index qui n’ont pas encore de fiche rédigée séparément. Une rubrique de chapitre peut être un simple titre et non une règle. En ouvrant une fiche, le passage précis du livre est recherché et sa description extractive peut s’afficher si l’ouvrage est accessible.</p><div class="edge-category-grid">'+rows.map(r=>'<button data-index-source="'+esc(r.book.id)+'"><strong>'+esc(sourceName(r.book.id))+'</strong><small>'+fmt(r.items.length)+' rubriques</small></button>').join('')+'</div><p class="small">Un passage non délimité n’est jamais remplacé par le texte de la rubrique voisine.</p></section>';
+  root.querySelectorAll('[data-index-source]').forEach(b=>b.onclick=()=>{$('#source').value=b.dataset.indexSource;state.browse={family:'',sub:''};updateCategoryFilter();renderQuickBar();runSearch();showBrowseHint('Rubriques · '+sourceName(b.dataset.indexSource));});
+ }else if(state.kind==='dice'){
   const groups=[...new Set(SITUATIONS.map(x=>x.group))];
   const section=groups.map(g=>'<div class="dice-domain"><h3>'+esc(g)+'</h3><div class="dice-links">'+SITUATIONS.filter(x=>x.group===g).map(x=>{
    const e=state.rules.find(r=>r.title===x.title);return e?'<button class="relation" data-entry="'+esc(e.id)+'">'+esc(x.label)+'</button>':'';
@@ -716,7 +720,7 @@ function chooseFamily(family,sub=''){
 function restoreCatalogRoute(){
  const p=new URLSearchParams(location.search);
  const kind=p.get('kind')||'',topic=p.get('topic')||'',family=p.get('family')||'',sub=p.get('sub')||'';
- if(['rule','action','edgeaction','edgeboost','rolls','dice','equipment','npc','creature','favorites'].includes(kind))state.kind=kind;
+ if(['rule','indexed','action','edgeaction','edgeboost','rolls','dice','equipment','npc','creature','favorites'].includes(kind))state.kind=kind;
  if(topic&&THEMES[topic])$('#topic').value=topic;
  if(p.get('search'))$('#search').value=p.get('search');
  if(p.get('source')&&state.books.some(b=>b.id===p.get('source')))$('#source').value=p.get('source');
