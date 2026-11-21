@@ -2,7 +2,7 @@ import {profileSkillPools} from './profile-pools.mjs?v=138';
 
 const MAX_LINK_LENGTH=70000;
 const clean=(v,n=12000)=>String(v??'').slice(0,n);
-const sourceRef=e=>[e.source==='core'?'Livre de base':e.source==='feu'?'Feu nourri':e.source==='companion'?'Sixth World Companion':e.source==='rigger'?'À tombeau ouvert':e.source==='hacker'?'Hacker vaillant':e.source==='wild'?'Wild Life':e.source||'Source', 'p. '+(e.printedPage||e.page)].join(' · ');
+const sourceRef=e=>[e.source==='core'?'Livre de base':e.source==='feu'?'Feu nourri':e.source==='companion'?'Compagnon du Sixième Monde':e.source==='rigger'?'À tombeau ouvert':e.source==='hacker'?'Hacker vaillant':e.source==='wild'?'Vie sauvage':e.source||'Source', 'p. '+(e.printedPage||e.page)].join(' · ');
 const lines=(obj={},limit=50)=>Object.entries(obj).filter(([,v])=>v!==''&&v!=null).slice(0,limit).map(([k,v])=>k+' : '+clean(v,110)).join('\n');
 function npcSheet(e){
  const pools=profileSkillPools(e);
