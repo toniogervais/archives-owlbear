@@ -262,12 +262,14 @@ function renderSource(e,root){
   if(text){
       const body=document.createElement('div');body.className='booktext';reader.append(body);
       if(book.language==='en'){
-       const notice=document.createElement('p');notice.className='source-warning';notice.textContent=canTranslateLocally()?'Ce passage peut être traduit en français sur cet appareil. Vérifie les termes de règles et les valeurs chiffrées dans les tableaux de la fiche.':'La traduction française de ce passage n’est pas disponible dans ce navigateur ; les caractéristiques structurées restent affichées en français ci-dessus.';body.append(notice);
+       const notice=document.createElement('p');notice.className='source-warning';notice.textContent='Texte original de l’ouvrage anglais. Il reste disponible même si une traduction est affichée.';body.append(notice);
+       const original=document.createElement('div');original.className='source-original';body.append(original);highlightText(original,text,state.query);
        if(canTranslateLocally()){
-        const translate=document.createElement('button');translate.className='primary';translate.textContent='Traduire cette section en français';body.append(translate);
+        const translate=document.createElement('button');translate.className='primary';translate.textContent='Afficher aussi une traduction française';body.prepend(translate);
         translate.onclick=async()=>{
          translate.disabled=true;translate.textContent='Traduction locale en cours…';
-         try{const fr=await translatePassage(text,(i,n)=>{translate.textContent='Traduction française : '+i+' / '+n;});if(body.isConnected){body.replaceChildren();highlightText(body,fr,state.query);}}
+         try{const fr=await translatePassage(text,(i,n)=>{translate.textContent='Traduction française : '+i+' / '+n;});
+          if(body.isConnected){const translated=document.createElement('section');translated.className='source-translation';const h=document.createElement('h3');h.textContent='Traduction française automatique';translated.append(h);const content=document.createElement('div');translated.append(content);highlightText(content,fr,state.query);body.insertBefore(translated,original);translate.remove();}}
          catch(e){translate.disabled=false;translate.textContent='Réessayer la traduction';toast(e.message||'Traduction indisponible');}
         };
        }
@@ -287,12 +289,17 @@ function renderPage(root,source,pno){
  const book=getPrivateBook(source);if(!book)return;const p=book.pages[pno-1];if(!p)return;
  root.innerHTML=`<div class="page-nav"><button data-prev class="subtle" ${pno<=1?'disabled':''}>Précédente</button><label class="small">Page PDF <input type="number" aria-label="Page PDF" min="1" max="${book.pageCount}" value="${pno}"></label><span class="small">${p.printed>0?'p. '+p.printed:''} / ${book.pageCount} pages</span><button data-next class="subtle" ${pno>=book.pageCount?'disabled':''}>Suivante</button></div><div class="booktext"></div>`;
  if(book.language==='en'){
-   const area=root.querySelector('.booktext');area.textContent='Section originale à traduire en français.';
-   if(canTranslateLocally()){
-    const btn=document.createElement('button');btn.className='primary';btn.textContent='Traduire cette page en français';area.append(btn);
-    btn.onclick=async()=>{btn.disabled=true;btn.textContent='Traduction en cours…';try{const fr=await translatePassage(p.text,(i,n)=>{btn.textContent='Traduction : '+i+' / '+n;});if(area.isConnected){area.replaceChildren();highlightText(area,fr,state.query);}}catch(e){btn.disabled=false;btn.textContent='Réessayer la traduction';toast(e.message||'Traduction indisponible');}};
-   }else area.textContent='La traduction française de cette page n’est pas disponible sur cet appareil.';
-  }else highlightText(root.querySelector('.booktext'),p.text,state.query);
+  const area=root.querySelector('.booktext'),original=document.createElement('div');original.className='source-original';area.append(original);highlightText(original,p.text,state.query);
+  if(canTranslateLocally()){
+   const btn=document.createElement('button');btn.className='primary';btn.textContent='Afficher également cette page en français';area.prepend(btn);
+   btn.onclick=async()=>{
+    btn.disabled=true;btn.textContent='Traduction en cours…';
+    try{const fr=await translatePassage(p.text,(i,n)=>{btn.textContent='Traduction : '+i+' / '+n;});
+     if(area.isConnected){const box=document.createElement('section');box.className='source-translation';const h=document.createElement('h3');h.textContent='Traduction française automatique';box.append(h);const txt=document.createElement('div');box.append(txt);highlightText(txt,fr,state.query);area.insertBefore(box,original);btn.remove();}}
+    catch(e){btn.disabled=false;btn.textContent='Réessayer la traduction';toast(e.message||'Traduction indisponible');}
+   };
+  }
+ }else highlightText(root.querySelector('.booktext'),p.text,state.query);
  if(hasTable()&&tableShelf()?.pageImages)pagePlateButton(root,source,pno);
  root.querySelector('[data-prev]').onclick=()=>renderPage(root,source,pno-1);root.querySelector('[data-next]').onclick=()=>renderPage(root,source,pno+1);
  root.querySelector('input').onchange=event=>{const n=Number(event.target.value);if(Number.isInteger(n)&&n>=1&&n<=book.pageCount)renderPage(root,source,n);else event.target.value=pno;};
