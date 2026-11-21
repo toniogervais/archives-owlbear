@@ -67,7 +67,7 @@ function limitByHeadings(raw,offset,entry,ref,index,first,last,book){
 // next printed page. Never infer a continuation merely from a close title.
 function unfinishedAtPageEnd(text){
  const tail=String(text||'').replace(/\s+/g,' ').trim();
- return tail.length>=35&&!/[.!?…»”)]$/.test(tail)&&/[\p{L}\d,;:–—-]$/u.test(tail);
+ return tail.length>=18&&tail.split(/\s+/).length>=3&&!/[.!?…»”)]$/.test(tail)&&/[\p{L}\d,;:–—-]$/u.test(tail);
 }
 // PDF text commonly begins with a running header (chapter, folio, book).
 // A continuation cannot be delimited against these page decorations.
