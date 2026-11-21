@@ -32,7 +32,8 @@ function nearWord(a,b){
  if(a.length>b.length)[a,b]=[b,a];let i=0,j=0,skips=0;while(i<a.length&&j<b.length){if(a[i]===b[j]){i++;j++;}else{if(++skips>1)return false;j++;}}return true;
 }
 function edgeCostMatches(entry,selected){
- if(!selected||!entry.edgeCost)return true;
+ if(!selected)return true;
+ if(!entry.edgeCost)return false;
  const raw=String(entry.edgeCost).toLocaleLowerCase('fr'),variable=/\b(?:par|réseau|loyauté|constitution|professionnalisme|modifiée|cible)\b/.test(raw);
  if(selected==='variable')return variable||raw.includes(' / ')||raw.includes(' à ')||raw.includes('+');
  if(variable)return false;
