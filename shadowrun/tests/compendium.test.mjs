@@ -37,7 +37,7 @@ test('English profiles retain every attribute cell and every numeric value after
  assert.equal(furfur.attributes['RÉA'],'5');assert.equal(furfur.attributes['RÉS'],'4');
  assert.ok(furfur.sections.Armes.includes('VD 2E'));assert.equal(furfur.attributes.FOR,'4');
  const spirit=profiles.find(e=>e.name==='Gashadokuro');assert.equal(spirit.attributes.CON,'P+2');assert.equal(spirit.original.attributes.B,'F+2');
- const pigeon=profiles.find(e=>e.name==='noise pigeon');assert.equal(pigeon.derived['SD matriciel'],'7');assert.equal(pigeon.derived.Firewall,'3');
+ const pigeon=profiles.find(e=>e.originalTitle==='noise pigeon');assert.equal(pigeon.derived['SD matriciel'],'7');assert.equal(pigeon.derived.Firewall,'3');
 });
 
 test('French and English multiword searches, accent folding and filters find the same records',()=>{
@@ -45,7 +45,7 @@ test('French and English multiword searches, accent folding and filters find the
  assert.ok(query('armure renforcee').items.some(e=>e.title==='Armure renforcée'));
  assert.ok(query('hardened armor').items.some(e=>e.title==='Armure renforcée'));
  assert.ok(query('combat rapproché',{source:'wild'}).items.some(e=>e.name?.toLowerCase()==='furfur'));
- assert.ok(query('pigeon brouilleur',{kind:'creature'}).items.some(e=>e.name==='noise pigeon'));
+ assert.ok(query('pigeon brouilleur',{kind:'creature'}).items.some(e=>e.originalTitle==='noise pigeon'));
  const matches=query('calibrage',{kind:'action',source:'hacker'});assert.ok(matches.total>0);assert.ok(matches.items.every(e=>e.kind==='action'&&e.source==='hacker'));
  const favorite=rules[0].id;assert.deepEqual(query('',{favorites:new Set([favorite])}).items.map(e=>e.id),[favorite]);
  assert.equal(query('zzzzimpossiblezzzzz').total,0);
