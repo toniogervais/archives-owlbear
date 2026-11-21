@@ -55,3 +55,26 @@ test('une rubrique absente n’emprunte jamais le texte de la rubrique précéde
  const idx=[{id:'unknown',source:'core',title:'Nom absent',page:1,endPage:1,level:3}];
  assert.equal(sectionExcerpt(idx[0],medikitPages,idx),null);
 });
+
+test('le sous-chapitre de soins magiques retrouve le titre imprimé Sorts',()=>{
+ const heading={id:'magie',source:'core',title:'Magie',headingAliases:['Sorts'],page:1,endPage:1,level:3};
+ const book={pages:[{text:'Sorts\nSorcellerie + Magie (5 - Essence)\nLes soins magiques sont distincts des premiers soins.\nEXEMPLES DE SOINS\nUn exemple de soin.',headingLines:[{text:'Sorts',size:16},{text:'EXEMPLES DE SOINS',size:13}]}]};
+ const excerpt=sectionExcerpt(heading,book,[heading]);
+ assert.ok(excerpt);
+ assert.match(excerpt.text,/Sorcellerie \+ Magie/);
+ assert.equal(excerpt.matchedBy,'exact-heading');
+});
+
+test('les procédures de soins conservent leur source et leurs quatre accès directs',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const read=async name=>JSON.parse(await readFile(new URL('../data/'+name+'.json',import.meta.url),'utf8'));
+ const [index,rules]=await Promise.all([read('index'),read('rules')]);
+ const ref=index.find(x=>x.id==='core-section-390');
+ assert.deepEqual(ref.headingAliases,['Sorts']);
+ const magic=rules.find(x=>x.title==='Soigner par magie');
+ assert.ok(magic.referenceIds.includes(ref.id));
+ assert.equal(magic.originalTitle,'Sorts');
+ for(const title of ['Administrer les premiers soins','Soigner avec un médikit','Soigner par magie','Récupérer naturellement de ses blessures']){
+  assert.ok(rules.some(x=>x.title===title),title);
+ }
+});
