@@ -92,17 +92,18 @@ export function sectionExcerpt(entry,book,index=[]){
  const start=found.hit.index+found.hit[0].length;
  const stop=limitByHeadings(firstText,start,entry,ref,index,first,first);
  const boundedHere=stop<firstText.length;
- const explicitContinuation=(ref?.endPage||entry.endPage||first)>first;
+ const declaredEnd=Math.max(first,ref?.endPage||first,entry.endPage||first);
+ const explicitContinuation=declaredEnd>first;
  const inferredContinuation=!boundedHere&&unfinishedAtPageEnd(firstText.slice(start));
  const includesNext=first<book.pages.length&&!boundedHere&&(explicitContinuation||inferredContinuation);
  const last=includesNext?first+1:first;
  const raw=book.pages.slice(first-1,last).map(p=>p.text).join('\n');
- const extracted=getExcerpt(raw,headings,entry,ref,index,first,last,Boolean((ref?.endPage||entry.endPage||last)>last));
+ const extracted=getExcerpt(raw,headings,entry,ref,index,first,last,Boolean(declaredEnd>last));
  if(!extracted)return null;
  // A following indexed heading can be the very first line on page two.
  // In that case, the actual passage did not extend onto that page.
  const boundary=firstText.length+1;
  const otherHeading=includesNext?limitByHeadings(raw,start,entry,ref,index,first,last):raw.length;
  const actualLast=includesNext&&otherHeading>boundary?last:first;
- return {...extracted,endPage:actualLast,matchedBy:inferredContinuation&&!explicitContinuation&&includesNext?'two-page-continuation':'exact-heading',fullEndPage:ref?.endPage||entry.endPage||actualLast};
+ return {...extracted,endPage:actualLast,matchedBy:inferredContinuation&&!explicitContinuation&&actualLast>first?'two-page-continuation':'exact-heading',fullEndPage:Math.max(declaredEnd,actualLast)};
 }
