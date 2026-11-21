@@ -41,12 +41,12 @@ export function parseProfileSkills(value=''){
   const name=m[1],def=byName.get(normalize(name==='Lancement de sorts'?'Sorcellerie':name));
   if(!def)continue;
   const embedded=m[2],rank=Number(m[3]),alternateRank=m[4]?Number(m[4]):null;
-  const spec=m[5]?.match(/^\s*(.*?)\s*\+\s*(2|3)\s*$/);
-  const specialty=spec?.[1]||'',bonus=spec?Number(spec[2]):0;
+  const specializations=String(m[5]||'').split(/\s*[,;]\s*/).map(x=>/^(.+?)\s*\+\s*([23])\s*$/.exec(x)).filter(Boolean).map(x=>({name:x[1].trim(),bonus:Number(x[2])}));
+  const specialty=specializations[0]?.name||'',bonus=specializations[0]?.bonus||0;
   const label=embedded&&!/^\d+$/.test(embedded)?name+' ('+embedded.trim()+')':name;
-  const key=normalize(label)+'|'+rank+'|'+normalize(specialty);
+  const key=normalize(label)+'|'+rank+'|'+specializations.map(x=>normalize(x.name)).join('|');
   if(seen.has(key))continue;
-  seen.add(key);rows.push({name:label,rank,alternateRank,specialty,bonus,definition:def});
+  seen.add(key);rows.push({name:label,rank,alternateRank,specialty,bonus,specializations,definition:def});
  }
  return rows;
 }
@@ -61,6 +61,7 @@ export function profileSkillPools(profile){
   return {name:s.name,rank:s.rank,attr:s.definition.attr,attrName:ATTRIBUTE_NAMES[s.definition.attr],
    attributeValue:a.value,rawAttribute:a.raw,total,alternateAttributeTotal:a.alternative===null?null:s.rank+a.alternative,
    specialty:s.specialty,bonus:s.bonus,specialtyTotal:total===null||!s.bonus?null:total+s.bonus,
+   specializations:s.specializations.map(x=>({...x,total:total===null?null:total+x.bonus})),
    alternateRank:s.alternateRank,alternateRankTotal:s.alternateRank===null||a.value===null?null:s.alternateRank+a.value,
    contextual};
  });
