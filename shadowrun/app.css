@@ -151,3 +151,21 @@ dialog.image-reader{width:min(96vw,1100px);max-height:94dvh}.image-reader #infoB
 .choice-group h4{margin:.4rem 0 .5rem;color:var(--accent)}
 .choice-group small{display:block;font-size:.8rem;color:var(--muted);margin-top:.2rem}
 .choice-pools table th,.choice-pools table td{vertical-align:top}
+
+/* Rubriques Atout par domaine : listes compactes, lisibles sur PC et tablettes. */
+.edge-category-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,175px),1fr));gap:.55rem;margin:1rem 0}
+.edge-category-grid>button{display:flex;flex-direction:column;gap:.22rem;align-items:flex-start;min-height:68px;padding:.75rem .9rem;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:9px}
+.edge-category-grid>button:hover{border-color:var(--accent);background:var(--raised)}
+.edge-category-grid strong{font-size:.9rem;font-weight:650}
+.edge-category-grid small{font-size:.77rem;color:var(--muted)}
+.edge-overview{max-width:980px}
+.edge-overview h2{font-size:clamp(1.3rem,2.7vw,1.7rem);margin:.35rem 0 .5rem}
+.edge-overview>p{color:var(--muted);max-width:810px}
+.edge-cost-panel{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:.6rem;margin:.85rem 0 1rem}
+.edge-cost-panel>div{border:1px solid var(--line);background:var(--panel);padding:.62rem .8rem;border-radius:9px;display:flex;flex-direction:column;gap:.2rem;min-width:0}
+.edge-cost-panel span{color:var(--muted);font-size:.73rem;text-transform:uppercase;letter-spacing:.055em;font-weight:600}
+.edge-cost-panel strong{font-size:.91rem;line-height:1.45;overflow-wrap:anywhere}
+.edge-cost-panel>div:first-child strong{color:var(--gold);font-size:1.4rem;font-variant-numeric:tabular-nums}
+.edge-cost-panel small{color:var(--muted);font-size:.68rem}
+#tabs{max-width:100%;overflow-x:auto;scrollbar-width:thin;white-space:nowrap}
+@media(max-width:720px){.edge-cost-panel{grid-template-columns:repeat(2,minmax(0,1fr))}.edge-cost-panel>div:nth-child(3){grid-column:1/-1}}
