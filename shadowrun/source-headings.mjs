@@ -40,7 +40,9 @@ export function printedHeadingBoundary(raw,headsByPage,names,offset=0){
  let end=raw.length;
  for(const heads of headsByPage){
   for(const h of heads||[]){
-   if(!h?.text||!Number.isFinite(h.size)||h.size+0.4<ownSize)continue;
+   if(!h?.text||!Number.isFinite(h.size))continue;
+   const isSeparateExample=/^(?:EXEMPLES?|EXAMPLES?)\b/i.test(h.text);
+   if(h.size+0.4<ownSize&&!isSeparateExample)continue;
    if(currentNames.some(name=>nested(h.text,name)))continue;
    const re=headingPattern(h.text);if(!re)continue;
    re.lastIndex=offset;
