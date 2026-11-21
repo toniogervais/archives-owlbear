@@ -1,4 +1,4 @@
-import {normalize} from './model.mjs?v=142';
+import {normalize} from './model.mjs?v=143';
 
 // Compétences actives : Shadowrun Sixième Édition, « Compétences » (p. 98–105).
 // Les attributs secondaires ne remplacent l'attribut principal que pour l'action indiquée.
