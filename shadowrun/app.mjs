@@ -28,6 +28,7 @@ let toastTimer,searchTimer;
 const onlineBooks=new Map(), pendingBooks=new Map();
 let selectedArtUrls=[];
 let allBooksRequest;
+const sourceSummaryJobs=new Map();
 function toast(message){$('#toast').textContent=message;$('#toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').hidden=true,4200);}
 function fail(e){toast(e.message||String(e));}
 function sourceBook(id){return state.books.find(b=>b.id===id);}
@@ -100,7 +101,7 @@ function relationHtml(e){
  if(!rel.length)return '';
  return `<h3>À consulter aussi</h3>${rel.map(e=>`<button class="relation" data-entry="${esc(e.id)}">${esc(title(e))}</button>`).join('')}`;
 }
-function headerHtml(e){return `<div class="topline"><button class="subtle back-mobile" id="backResults">Résultats</button><span class="breadcrumb">${esc(topics[topicOf(e)]||e.habitat||e.category||'Compendium')}</span><button id="favorite" class="iconbutton" aria-label="${state.favorites.has(e.id)?'Retirer des favoris':'Ajouter aux favoris'}" aria-pressed="${state.favorites.has(e.id)}">${state.favorites.has(e.id)?'★':'☆'}</button></div><div class="badges"><span class="badge">${esc(labels[e.kind]||'Référence')}</span>${e.summary&&e.kind!=='page'?'<span class="badge summary">Rappel en français</span>':''}${e.optional?'<span class="badge optional">Règle optionnelle</span>':''}${e.verification==='a-verifier'?'<span class="badge optional">Extraction à vérifier dans la source</span>':''}</div><h2>${esc(title(e))}</h2>${e.originalTitle&&e.originalTitle!==title(e)&&!['wild','companion'].includes(e.source)?`<p class="original-title">${esc(e.originalTitle)}</p>`:''}`;}
+function headerHtml(e){return `<div class="topline"><button class="subtle back-mobile" id="backResults">Résultats</button><span class="breadcrumb">${esc(topics[topicOf(e)]||e.habitat||e.category||'Compendium')}</span><button id="favorite" class="iconbutton" aria-label="${state.favorites.has(e.id)?'Retirer des favoris':'Ajouter aux favoris'}" aria-pressed="${state.favorites.has(e.id)}">${state.favorites.has(e.id)?'★':'☆'}</button></div><div class="badges"><span class="badge">${esc(labels[e.kind]||'Référence')}</span>${e.summary&&e.kind!=='page'?'<span class="badge summary">'+(e.sourceSummary?'Description issue de la source':'Rappel en français')+'</span>':''}${e.optional?'<span class="badge optional">Règle optionnelle</span>':''}${e.verification==='a-verifier'?'<span class="badge optional">Extraction à vérifier dans la source</span>':''}</div><h2>${esc(title(e))}</h2>${e.originalTitle&&e.originalTitle!==title(e)&&!['wild','companion'].includes(e.source)?`<p class="original-title">${esc(e.originalTitle)}</p>`:''}`;}
 function renderEquipmentAlternatives(entry,root){
  const key=normalize(title(entry))+'|'+normalize(entry.category||'');
  const options=state.equipmentGroups?.get(key)||[];
@@ -187,7 +188,7 @@ async function selectEntry(e,{mobile=true,remember=true}={}){
    root.insertAdjacentHTML('beforeend',`<details><summary>Vérifier les valeurs anglais / français</summary><div class="table-wrap"><table><thead><tr><th>Anglais</th><th>Français</th><th>Valeur source</th><th>Valeur affichée</th></tr></thead><tbody>${(e.comparison||[]).map(c=>`<tr><td>${esc(c.en)}</td><td>${esc(c.fr)}</td><td>${esc(c.source)}</td><td>${esc(c.value)}</td></tr>`).join('')}</tbody></table></div></details>`);
   }
  }
- if(e.summary&&e.kind!=='page')root.insertAdjacentHTML('beforeend',`<div class="summary-body"><h3>Description / rappel</h3><p>${esc(e.summary)}</p>${e.steps?.length?`<ol>${e.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>`:''}${e.warning?`<p class="warn">${esc(e.warning)}</p>`:''}</div>`);
+ if(e.summary&&e.kind!=='page')root.insertAdjacentHTML('beforeend',`<div class="summary-body"><h3>${e.sourceSummary?'Description de la rubrique, issue du livre':'Description / rappel'}</h3><p>${esc(e.summary)}</p>${e.steps?.length?`<ol>${e.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>`:''}${e.warning?`<p class="warn">${esc(e.warning)}</p>`:''}</div>`);
  if(e.fields?.length&&!e.attributes&&!e.edgeCost){root.insertAdjacentHTML('beforeend','<h3>Caractéristiques</h3>');root.insertAdjacentHTML('beforeend',tableRows(e.fields));}
  if(e.kind==='equipment')root.insertAdjacentHTML('beforeend','<div class="detail-actions"><button id="addCart" class="primary">Ajouter au panier</button></div>');
   if(e.kind==='equipment')renderEquipmentAlternatives(e,root);
@@ -644,7 +645,8 @@ function showBrowseHint(title){
  const root=$('#detail');releaseArt();
  if(state.kind==='indexed'){
   const rows=state.books.map(b=>({book:b,items:state.entries.filter(e=>e.sourceOnly&&e.source===b.id)}));
-  root.innerHTML='<section class="indexed-overview"><span class="eyebrow">INVENTAIRE INTÉGRAL</span><h2>Rubriques des livres</h2><p>Cette rubrique rassemble les entrées de l’index qui n’ont pas encore de fiche rédigée séparément. Une rubrique de chapitre peut être un simple titre et non une règle. En ouvrant une fiche, le passage précis du livre est recherché et sa description extractive peut s’afficher si l’ouvrage est accessible.</p><div class="edge-category-grid">'+rows.map(r=>'<button data-index-source="'+esc(r.book.id)+'"><strong>'+esc(sourceName(r.book.id))+'</strong><small>'+fmt(r.items.length)+' rubriques</small></button>').join('')+'</div><p class="small">Un passage non délimité n’est jamais remplacé par le texte de la rubrique voisine.</p></section>';
+  const described=state.entries.filter(e=>e.sourceOnly&&e.sourceSummary).length;
+  root.innerHTML='<section class="indexed-overview"><span class="eyebrow">INVENTAIRE INTÉGRAL</span><h2>Rubriques des livres</h2><p>Cette rubrique rassemble les entrées de l’index qui n’ont pas encore de fiche rédigée séparément. Une rubrique de chapitre peut être un simple titre et non une règle. En ouvrant une fiche, le passage précis du livre est recherché et sa description extractive peut s’afficher si l’ouvrage est accessible.</p><p class="small">Descriptions extractives produites à partir des livres disponibles : '+fmt(described)+' / '+fmt(state.entries.filter(e=>e.sourceOnly).length)+'.</p><div class="edge-category-grid">'+rows.map(r=>'<button data-index-source="'+esc(r.book.id)+'"><strong>'+esc(sourceName(r.book.id))+'</strong><small>'+fmt(r.items.length)+' rubriques</small></button>').join('')+'</div><p class="small">Un passage non délimité n’est jamais remplacé par le texte de la rubrique voisine.</p></section>';
   root.querySelectorAll('[data-index-source]').forEach(b=>b.onclick=()=>{$('#source').value=b.dataset.indexSource;state.browse={family:'',sub:''};updateCategoryFilter();renderQuickBar();runSearch();showBrowseHint('Rubriques · '+sourceName(b.dataset.indexSource));});
  }else if(state.kind==='dice'){
   const groups=[...new Set(SITUATIONS.map(x=>x.group))];
