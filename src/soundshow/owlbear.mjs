@@ -1,6 +1,6 @@
 import {localRoom,roomMembers} from '../v57/room.mjs?v=4590';
-import {validSession,sameSession,soundShowChannel,soundShowModal,validLocalBridgeOrigin,owlbearLinkProtocol} from './protocol.mjs?v=016';
-import {SoundShowConnection} from './connection.mjs?v=4410';
+import {validSession,sameSession,soundShowChannel,soundShowModal,validLocalBridgeOrigin,owlbearLinkProtocol,isLocalVideoCommand} from './protocol.mjs?v=4730';
+import {SoundShowConnection} from './connection.mjs?v=4730';
 import {isPacket,packet} from '../v56/link.mjs?v=4590';
 export async function installSoundShow(OBR) {
   const {channel,connectionId:initial}=await localRoom(OBR),member=roomMembers(OBR);
@@ -23,8 +23,9 @@ export async function installSoundShow(OBR) {
     }catch{return null;}
   }
   async function linkLocalSession(value){
-    if(closed||role!=='GM'||await OBR.player.getRole()!=='GM'||!validSession(value))return false;
-    session={version:1,peer:value.peer,secret:value.secret};
+    if(closed||role!=='GM'||await OBR.player.getRole()!=='GM'||(value!==null&&!validSession(value)))return false;
+    if(sameSession(session,value))return true;
+    session=value?{version:1,peer:value.peer,secret:value.secret}:null;
     receivers.clear();
     await send({type:'session',session,reopen:true});
     await notifyRoom();
@@ -35,6 +36,9 @@ export async function installSoundShow(OBR) {
     return true;
   }
   function tryLocalConnector(){
+    if(localLinkReady&&localConnector?.closed){
+      localLinkReady=false;localControlToken='';receiveRemoteState({media:[],active:[]});void linkLocalSession(null);
+    }
     if(closed||role!=='GM'||localLinkReady)return;
     const opener=getLocalConnector();if(!opener)return;
     localConnector=opener;
@@ -46,23 +50,19 @@ export async function installSoundShow(OBR) {
     if(closed||role!=='GM'||data?.protocol!==owlbearLinkProtocol||
        event.source!==localConnector||!validLocalBridgeOrigin(event.origin))return;
     if(data.type==='offer'){
-      if(data.challenge!==localChallenge||!validSession(data.session)||
+      if(data.challenge!==localChallenge||(data.session!==null&&!validSession(data.session))||
          typeof data.controlToken!=='string'||!/^[0-9a-f-]{36}$/.test(data.controlToken))return;
       void(async()=>{
         if(!await linkLocalSession(data.session))return;
         localControlToken=data.controlToken;localOrigin=event.origin;
-        localLinkReady=true;clearInterval(localTimer);localTimer=null;
+        localLinkReady=true;
         event.source.postMessage({protocol:owlbearLinkProtocol,type:'accepted',challenge:localChallenge},event.origin);
         void OBR.notification.show('SoundShow et sa télécommande sont reliés à Owlbear.','SUCCESS').catch(console.warn);
       })().catch(error=>console.warn('SoundShow : connexion automatique refusée',error));
+    }else if(localLinkReady && event.origin===localOrigin && data.type==='disconnected'&&data.challenge===localChallenge){
+      localLinkReady=false;localControlToken='';receiveRemoteState({media:[],active:[]});void linkLocalSession(null);
     }else if(localLinkReady && event.origin===localOrigin && data.type==='remote-state'){
-      const value=data.state;
-      if(!value||typeof value!=='object'||!Array.isArray(value.media)||!Array.isArray(value.active))return;
-      remoteState={connected:value.connected===true,simulation:value.simulation===true,
-        project:String(value.project||'').slice(0,160),
-        media:value.media.slice(0,500),active:value.active.slice(0,100),
-        nextVolume:value.nextVolume};
-      channel.postMessage({type:'soundshow-remote-state',state:remoteState});
+      receiveRemoteState(data.state);
     }else if(localLinkReady && event.origin===localOrigin && data.type==='remote-result'){
       const entry=remotePending.get(data.id);
       if(!entry)return;
@@ -70,6 +70,14 @@ export async function installSoundShow(OBR) {
       channel.postMessage({type:'soundshow-remote-result',id:data.id,safe:data.ok===true,
         message:String(data.message||'').slice(0,200),state:remoteState});
     }
+  }
+  function receiveRemoteState(value){
+    if(!value||!Array.isArray(value.media)||!Array.isArray(value.active))return;
+    remoteState={connected:value.connected===true,simulation:value.simulation===true,
+      project:String(value.project||'').slice(0,160),media:value.media.slice(0,500),active:value.active.slice(0,100),
+      nextVolume:value.nextVolume,instantVideo:value.instantVideo===true,videoReady:value.videoReady===true,
+      quickPlaying:value.quickPlaying===true,projection:['audio','silent'].includes(value.projection)?value.projection:'off'};
+    channel.postMessage({type:'soundshow-remote-state',state:remoteState});
   }
   window.addEventListener('message',receiveLocalConnector);
   // The connector knows only the Owlbear tab; the installed Archives background
@@ -102,7 +110,7 @@ export async function installSoundShow(OBR) {
     modalQueue=modalQueue.catch(()=>{}).then(async()=>{
       if(closed||role!=='PLAYER'||!session||viewOpen||archivesViewer)return;
       const token=crypto.randomUUID(),url=new URL('../../soundshow-player.html',import.meta.url);
-      url.searchParams.set('v','4410');url.searchParams.set('viewer',token);viewToken=token;
+      url.searchParams.set('v','4730');url.searchParams.set('viewer',token);viewToken=token;
       try{
         await OBR.modal.open({id:soundShowModal,url:url.href,width:780,height:500,hideBackdrop:true,hidePaper:true});
         if(viewToken===token)viewOpen=true;
@@ -174,14 +182,16 @@ export async function installSoundShow(OBR) {
           void notifyRoom();
           return;
         }
-        if(!localLinkReady||!localConnector||!localControlToken||!remoteState.connected){
+        const viaMain=!localLinkReady&&mainWindow&&!mainWindow.closed;
+        const available=isLocalVideoCommand(data.command)?remoteState.instantVideo:remoteState.connected;
+        if((!viaMain&&(!localLinkReady||!localConnector||!localControlToken))||!available){
           channel.postMessage({type:'soundshow-remote-result',id:data.id,safe:false,
             message:'SoundShow n’est pas relié. Ouvre Owlbear depuis le connecteur Windows.',state:remoteState});
           return;
         }
         const allowed=['play_playable','toggle_player_playback','stop_player','fade_out_player',
           'set_player_volume','set_next_sound_volume','toggle_player_loop','seek_player',
-          'pause_all','resume_all','stop_all','fade_out_all'];
+          'pause_all','resume_all','stop_all','fade_out_all','show_local_video','stop_local_video'];
         if(!data.command||!allowed.includes(data.command.type)){
           channel.postMessage({type:'soundshow-remote-result',id:data.id,safe:false,
             message:'Commande non autorisée.',state:remoteState});return;
@@ -190,10 +200,11 @@ export async function installSoundShow(OBR) {
           remotePending.delete(data.id);
           channel.postMessage({type:'soundshow-remote-result',id:data.id,safe:false,
             message:'Le connecteur SoundShow ne répond pas. Aucune relance automatique.',state:remoteState});
-        },10000);
+        },data.command.type==='show_local_video'?21000:10000);
         remotePending.set(data.id,timeout);
         try{
-          localConnector.postMessage({protocol:owlbearLinkProtocol,type:'remote-command',
+          if(viaMain)mainWindow.postMessage(packet('soundshow-main-control',{roomId:OBR.room.id,id:data.id,command:data.command}),location.origin);
+          else localConnector.postMessage({protocol:owlbearLinkProtocol,type:'remote-command',
             challenge:localChallenge,controlToken:localControlToken,id:data.id,command:data.command},localOrigin);
         }catch(error){
           clearTimeout(timeout);remotePending.delete(data.id);
@@ -250,7 +261,15 @@ export async function installSoundShow(OBR) {
   }
   function fromMain(event){
     const data=event.data;
-    if(closed||role!=='GM'||event.source!==mainWindow||event.origin!==location.origin||!isPacket(data)||data.type!=='soundshow-main-session'||data.roomId!==OBR.room.id||data.session!==null&&!validSession(data.session))return;
+    if(closed||role!=='GM'||!mainWindow||event.source!==mainWindow||event.origin!==location.origin||!isPacket(data)||data.roomId!==OBR.room.id)return;
+    if(data.type==='soundshow-main-state'){if(!localLinkReady)receiveRemoteState(data.state);return;}
+    if(data.type==='soundshow-main-result'){
+      const timer=remotePending.get(data.id);if(!timer)return;
+      clearTimeout(timer);remotePending.delete(data.id);
+      channel.postMessage({type:'soundshow-remote-result',id:data.id,safe:data.safe===true,message:String(data.message||'').slice(0,200),state:remoteState});
+      return;
+    }
+    if(data.type!=='soundshow-main-session'||(data.session!==null&&!validSession(data.session)))return;
     clearTimeout(mainTimer);
     void(async()=>{
       if(await OBR.player.getRole()!=='GM'||closed)return;
@@ -259,6 +278,7 @@ export async function installSoundShow(OBR) {
         if(!sameSession(data.session,session))try{mainWindow?.postMessage(packet('soundshow-main-update',{session,roomId:OBR.room.id}),location.origin);}catch{}
         return;
       }
+      if(sameSession(session,data.session))return;
       session=data.session;receivers.clear();await send({type:'session',session,reopen:true});await notifyRoom();
     })().catch(console.warn);
   }

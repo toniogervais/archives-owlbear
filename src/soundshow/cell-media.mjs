@@ -1,7 +1,7 @@
 /* V4.26 — plusieurs médias SoundShow liés à la révélation d'une cellule, MJ uniquement. */
 import {isGM,requireGM,notice,sheet,element,button} from '../v63/ui.mjs?v=4590';
 import {safeCellAttachments} from './cell-media-core.mjs?v=027';
-export function mountCellMedia({send,getRemote,refreshRemote,embedded}){
+export function mountCellMedia({send,getRemote,refreshRemote}){
   const editorSlot=document.getElementById('cell-media-editor');
   let closed=false,activeDialog=null;
   function state(){return window.DuneApp?.getState?.();}
@@ -27,7 +27,7 @@ export function mountCellMedia({send,getRemote,refreshRemote,embedded}){
     editorSlot.append(heading,info,openButton);
   }
   function openPicker(source='editor'){
-    try{requireGM();if(!embedded)throw Error('Ouvre Les Archives dans ta salle Owlbear MJ.');
+    try{requireGM();
       const nodeId=selectedId(source),node=nodeOf(nodeId);
       if(!node)throw Error('Sélectionne une cellule avant d’associer des médias.');
       window.DuneApp?.closeContextMenus?.();
@@ -87,7 +87,7 @@ export function mountCellMedia({send,getRemote,refreshRemote,embedded}){
     }catch(err){notice(err.message);}
   }
   const revealHandler=event=>{
-    const s=state();if(closed||!embedded||!isGM()||s?.playerMode||s?.strictReadOnly)return;
+    const s=state();if(closed||!isGM()||s?.playerMode||s?.strictReadOnly)return;
     const media=safeCellAttachments(event.detail?.media,choices());
     if(!media.length)return;
     if(!getRemote()?.connected){notice('SoundShow n’est pas connecté : les médias liés à la cellule ne peuvent pas être lancés.');return;}

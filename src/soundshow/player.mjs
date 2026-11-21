@@ -1,4 +1,4 @@
-import {SoundShowConnection} from './connection.mjs?v=4410';
+import {SoundShowConnection} from './connection.mjs?v=4730';
 export function mountPlayer({container=document.body,onPlayback=()=>{},onStatus=()=>{},onState=()=>{},close,showWaiting=false}={}) {
   if(!document.querySelector('[data-soundshow-style]')){
     const style=document.createElement('link');style.rel='stylesheet';style.href=new URL('./player.css?v=4400',import.meta.url).href;
@@ -16,6 +16,7 @@ export function mountPlayer({container=document.body,onPlayback=()=>{},onStatus=
   const badge=document.createElement('button');badge.type='button';badge.className='soundshow-receive';badge.hidden=true;
   badge.setAttribute('aria-label','Afficher la vidéo du MJ');container.append(root,badge);
   let playback={active:false},destroyed=false,dismissedId=null,waitingDismissed=false,audioBlocked=false;
+  let receivedStream=null;
   let announcedAt=0,waitingForFrame=false,mediaTimer=null,mediaState='connecting',playAttempt=0;
   const state=value=>{mediaState=value;onState(value);};
   function clearMediaTimer(){clearTimeout(mediaTimer);mediaTimer=null;}
@@ -82,6 +83,7 @@ export function mountPlayer({container=document.body,onPlayback=()=>{},onStatus=
     playback=data;
     root.hidden=data.active?data.id===dismissedId:!showWaiting||waitingDismissed;
     if(data.active){
+      if(receivedStream&&video.srcObject!==receivedStream)video.srcObject=receivedStream;
       title.textContent=data.title;video.volume=data.volume;audible();
       if(!data.playing){playAttempt++;video.pause();status.textContent='En pause dans SoundShow.';state('ready');}
       else{if(!video.srcObject)status.textContent='Vidéo annoncée — réception de l’image en cours…';void play();}
@@ -91,7 +93,7 @@ export function mountPlayer({container=document.body,onPlayback=()=>{},onStatus=
     }
     refreshBadge();onPlayback(data);
   },onStream:stream=>{
-    if(destroyed)return;playAttempt++;video.srcObject=stream;
+    if(destroyed)return;playAttempt++;receivedStream=stream;video.srcObject=playback.active?stream:null;
     if(stream){
       if(playback.active&&!audioBlocked)status.textContent='Flux reçu — décodage des premières images…';
       if(typeof video.requestVideoFrameCallback==='function')video.requestVideoFrameCallback(()=>{if(!destroyed)receivedFrame();});

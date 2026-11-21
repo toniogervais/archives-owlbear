@@ -45,7 +45,7 @@ export function mountRemote(host,send){
   function render(){
     if(disposed)return;
     const connected=state?.connected===true;
-    if(!connected)status.textContent='Connecte SoundShow depuis le connecteur Windows, puis ouvre Owlbear avec son bouton.';
+    if(!connected)status.textContent='Connecte SoundShow depuis le connecteur Windows, puis ouvre les Archives du MJ ou ta salle Owlbear depuis le connecteur.';
     else if(status.textContent.startsWith('Connexion')||status.textContent.startsWith('Connecte'))
       status.textContent='SoundShow connecté — sons et vidéos disponibles dans Les Archives.';
     global.replaceChildren(

@@ -3,7 +3,7 @@ import {
   isPacket, liveRoomKey, packet, pairingKey, readLocal, screenChannel, trustedOwlbearSdk,
   validLiveRoom, validPairing, viewerId, writeLocal
 } from "./link.mjs?v=4590";
-import { localEditor, localViewer, release } from "../v57/room.mjs?v=4721";
+import { localEditor, localViewer, release } from "../v57/room.mjs?v=4730";
 import { makeEditorHost, makePlayerHost } from "../v57/room-host.mjs?v=4590";
 import {makeSoundShowPlayerHost} from '../soundshow/player-host.mjs?v=4590';
 
@@ -79,7 +79,7 @@ window.addEventListener("message", event => {
     soundShowPlayerHost?.receive(data);return;
   }
   if (gm && ['owl-soundshow-command','owl-soundshow-query','owl-soundshow-remote-command','owl-soundshow-remote-get'].includes(data.type)) {
-    void import('../soundshow/host.mjs?v=4590').then(module => module.forwardSoundShow(OBR,data,post))
+    void import('../soundshow/host.mjs?v=4730').then(module => module.forwardSoundShow(OBR,data,post))
       .catch(error => post(data.type.startsWith('owl-soundshow-remote-')?'owl-soundshow-remote-result':'owl-soundshow-result',{id:data.id,safe:false,message:error.message}));
     return;
   }

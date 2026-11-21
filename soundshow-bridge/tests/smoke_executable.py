@@ -12,7 +12,7 @@ try:
         if match:break
     else:raise RuntimeError('The executable did not start its local interface.')
     root,key=match.groups()
-    for name,expected in [('',b'SoundShow'),('host.mjs',b'encodeSession'),('peerjs.min.js',b'Peer'),('protocol.mjs',b'validSession')]:
+    for name,expected in [('',b'SoundShow'),('host.mjs',b'encodeSession'),('peerjs.min.js',b'Peer'),('protocol.mjs',b'validSession'),('projection.mjs',b'getDisplayMedia')]:
         with urllib.request.urlopen(root+name,timeout=5) as response:
             assert response.status==200 and expected in response.read()
     request=urllib.request.Request(root+'api/demo',data=b'{"action":"init"}',headers={'Content-Type':'application/json','X-Archives-Key':key},method='POST')

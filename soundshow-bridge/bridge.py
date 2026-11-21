@@ -18,7 +18,7 @@ from urllib.parse import urlsplit
 
 from aiohttp import ClientConnectorError, ClientSession, ClientTimeout, TraceConfig, WSServerHandshakeError, WSMsgType, web
 
-VERSION = '0.3.3'
+VERSION = '0.4.0'
 ROOT = Path(getattr(sys, '_MEIPASS', Path(__file__).resolve().parent))
 REPO = Path(__file__).resolve().parent.parent
 
@@ -64,15 +64,14 @@ class ShowState:
                 if not isinstance(item, dict) or item.get('kind') != 'video' or not isinstance(item.get('id'), str):
                     continue
                 videos.append({'id':item['id'][:200], 'name':str(item.get('name') or 'Vidéo')[:160]})
-        ids = {v['id'] for v in videos}
         players = []
         for item in (self.state.get('players') or [])[:1000]:
             if not isinstance(item, dict) or item.get('kind') != 'video':
                 continue
             source = item.get('source_playable_id') or item.get('state_playable_id')
-            if source not in ids or not isinstance(item.get('id'), str):
+            if not isinstance(item.get('id'), str):
                 continue
-            players.append({'id':item['id'][:200], 'source':source, 'playing':item.get('is_playing') is True,
+            players.append({'id':item['id'][:200], 'source':source[:200] if isinstance(source,str) else '', 'playing':item.get('is_playing') is True,
                 'position':finite(item.get('position_seconds')), 'volume':finite(item.get('volume_percent'),100,0,100)/100,
                 'muted':item.get('muted') is True, 'loop':item.get('loop_enabled') is True,
                 'start':finite(item.get('start_time_seconds')),
@@ -226,10 +225,11 @@ class Bridge:
                             await self.publish()
                             return  # Never loop on a wrong password.
                         self.remote_ws = ws
+                        supports_ping = 'ping' in (hello.get('features') or [])
                         async def keep_alive():
                             while True:
-                                await asyncio.sleep(2)
-                                await ws.send_json({'type':'request_state'})
+                                await asyncio.sleep(10)
+                                await ws.send_json({'type':'ping' if supports_ping else 'request_state'})
                         heartbeat = asyncio.create_task(keep_alive())
                         delay = 1
                         while True:
@@ -379,6 +379,7 @@ def create_app(bridge=None):
         name = request.match_info.get('name') or 'index.html'
         locations = {
             'index.html':ROOT/'web/index.html', 'host.mjs':ROOT/'web/host.mjs', 'style.css':ROOT/'web/style.css',
+            'projection.mjs':ROOT/'web/projection.mjs',
             'peerjs.min.js':ROOT/'assets/peerjs-1.5.2.min.js', 'protocol.mjs':ROOT/'protocol.mjs'}
         path = locations.get(name)
         if not path:

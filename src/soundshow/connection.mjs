@@ -85,7 +85,7 @@ export class SoundShowConnection {
         connection.on('open',()=>{
           if(this.epoch!==epoch)return;
           this.stage='handshake';this.onStatus('Connexion établie — validation du code SoundShow…');
-          connection.send({type:'hello',version:1,secret:session.secret,mode:this.mode});
+          connection.send({type:'hello',version:1,secret:session.secret,mode:this.mode,warmMedia:true});
         });
         connection.on('data',data=>{
           if(this.epoch!==epoch)return;

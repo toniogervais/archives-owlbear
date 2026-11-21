@@ -2,7 +2,7 @@ import OBR from '../../assets/owlbear-transfer-sdk-v55.mjs';
 import {trustedOwlbearSdk} from '../v56/link.mjs?v=4590';
 import {localRoom} from '../v57/room.mjs?v=4590';
 import {soundShowModal,validSession} from './protocol.mjs';
-import {mountPlayer} from './player.mjs?v=4410';
+import {mountPlayer} from './player.mjs?v=4730';
 if(trustedOwlbearSdk()){
   document.documentElement.classList.add('soundshow-obr-frame');
   await new Promise(resolve=>OBR.onReady(resolve));

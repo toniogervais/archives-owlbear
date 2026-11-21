@@ -1,7 +1,7 @@
 import {
   createNotice, editEvent, isPacket, localWire, packet, validLiveRoom, validPairing, validRoomId
 } from "./link.mjs?v=4590";
-import { installCentral } from "./central.mjs?v=4590";
+import { installCentral } from "./central.mjs?v=4730";
 import { dialFallback } from "./peer.mjs?v=4590";
 import { installOwlEditor, installOwlPlayer } from "../v57/editor.mjs?v=4590";
 import { localEditor, localViewer } from "../v57/room.mjs?v=4590";

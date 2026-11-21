@@ -13,7 +13,7 @@ export async function forwardSoundShow(OBR,data,post) {
   }));
   const {channel}=await hosts.get(OBR);
   const result=await new Promise((resolve,reject)=>{
-    const timer=setTimeout(()=>finish(null,Error('Le module SoundShow ne répond pas. Recharge la salle.')),10000);
+    const timer=setTimeout(()=>finish(null,Error('Le module SoundShow ne répond pas. Recharge la salle.')),data.command?.type==='show_local_video'?22000:10000);
     function finish(value,error){clearTimeout(timer);channel.removeEventListener('message',receive);error?reject(error):resolve(value);}
     function receive(event){
       const wanted=data.type.startsWith('owl-soundshow-remote-')?'soundshow-remote-result':'soundshow-result';

@@ -1,18 +1,32 @@
 import {button,element,isGM,notice,requireGM,sheet} from '../v63/ui.mjs?v=4590';
 import {isPacket,packet} from '../v56/link.mjs?v=4590';
 import {decodeSession,encodeSession,validSession} from './protocol.mjs?v=017';
-import {mountRemote} from './remote.mjs?v=017';
-import {mountSoundDock} from './sounds-dock.mjs?v=4400';
-import {mountCellMedia} from './cell-media.mjs?v=4590';
+import {mainRemote} from './main-remote.mjs?v=4730';
+import {mountRemote} from './remote.mjs?v=4730';
+import {mountSoundDock} from './sounds-dock.mjs?v=4730';
+import {mountCellMedia} from './cell-media.mjs?v=4730';
 let session=null,player,liveSession=null,infoView=null;const pending=new Map(),roomFrames=new Map();
 const embedded=window.parent!==window;
 let remoteUi=null,linkInfoView=null,soundsDock=null,cellMedia=null,remoteState=null,audienceState=null;
 let playerLoading=null,playerEpoch=0,playerReadyTimer;
+function updateRemote(state){
+  remoteState=state;remoteUi?.update(state);soundsDock?.update(state);
+}
+function forEachRoom(callback){
+  for(const [frame,roomId] of roomFrames){
+    if(window.ArchivesOwlbearBridge?.authorizeSoundShowFrame(frame,roomId))callback(frame,roomId);
+    else roomFrames.delete(frame);
+  }
+}
+const direct=embedded?null:mainRemote({isGM,onState:state=>{
+  updateRemote(state);
+  forEachRoom((frame,roomId)=>frame.postMessage(packet('soundshow-main-state',{roomId,state}),location.origin));
+},onSession:value=>void publish(value).catch(error=>notice(error.message))});
 async function usePlayerSession(value,reopen=false){
   if(isGM()||value!==null&&!validSession(value))return;
   liveSession=value;const epoch=++playerEpoch;
   if(!value&&!player&&!playerLoading)return;
-  if(!playerLoading)playerLoading=import('./player.mjs?v=4410').then(({mountPlayer})=>{
+  if(!playerLoading)playerLoading=import('./player.mjs?v=4730').then(({mountPlayer})=>{
     player=mountPlayer({onState:state=>{
       if(embedded&&!isGM())window.parent.postMessage(packet('owl-soundshow-player-status',{state}),location.origin);
     }});return player;
@@ -22,9 +36,15 @@ async function usePlayerSession(value,reopen=false){
   await reader.use(value);if(reopen)reader.reopen();
 }
 async function request(type,value) {
+  if(!embedded){
+    requireGM();
+    if(type==='owl-soundshow-remote-get')return direct.get();
+    if(type==='owl-soundshow-remote-command')return direct.command(value);
+    throw Error('Commande SoundShow inconnue.');
+  }
   const id=crypto.randomUUID();
   return new Promise((resolve,reject)=>{
-    const timer=setTimeout(()=>{pending.delete(id);reject(Error('La salle ne répond pas. Recharge Owlbear puis réessaie.'));},12000);
+    const timer=setTimeout(()=>{pending.delete(id);reject(Error('La salle ne répond pas. Recharge Owlbear puis réessaie.'));},value?.type==='show_local_video'?24000:12000);
     pending.set(id,{resolve,reject,timer});window.parent.postMessage(packet(type,
       type==='owl-soundshow-remote-command'?{id,command:value}:{id,session:value}),location.origin);
   });
@@ -34,10 +54,7 @@ async function publish(value) {
   if(embedded){const result=await request('owl-soundshow-command',value);session=result.session;return result;}
   else{
     session=value;window.ArchivesLiveInvitations?.publishSoundShow(value);
-    for(const [frame,roomId] of roomFrames){
-      if(window.ArchivesOwlbearBridge?.authorizeSoundShowFrame(frame,roomId))frame.postMessage(packet('soundshow-main-session',{session,roomId}),location.origin);
-      else roomFrames.delete(frame);
-    }
+    forEachRoom((frame,roomId)=>frame.postMessage(packet('soundshow-main-session',{session,roomId}),location.origin));
     return {rooms:roomFrames.size};
   }
 }
@@ -45,7 +62,7 @@ function open() {
   try {
     requireGM();const view=sheet('archives-soundshow','SoundShow · télécommande');
     remoteUi?.destroy();remoteUi=null;
-    if(embedded){
+    {
       const remoteHost=element('div');
       view.content.append(remoteHost);
       remoteUi=mountRemote(remoteHost,async command=>{
@@ -59,9 +76,9 @@ function open() {
       refresh();const timer=setInterval(refresh,4000);
       view.cleanup(()=>{clearInterval(timer);remoteUi?.destroy();remoteUi=null;});
     }
-    view.content.append(element('p','SoundShow se relie depuis Owlbear : ouvre Owlbear à partir du connecteur Windows, puis entre dans ta salle MJ. L’extension Les Archives relie les joueurs automatiquement. Aucun onglet Archives séparé.','studio-hint'));
+    view.content.append(element('p','Dans le connecteur Windows, clique sur « Ouvrir les Archives du MJ » ou ouvre Owlbear à partir du connecteur Windows pour rejoindre ta salle.','studio-hint'));
     const simpleStatus=element('p',session?'SoundShow relié. Les prochaines vidéos s’ouvriront dans une fenêtre des Archives ou d’Owlbear.':'En attente du connecteur SoundShow. Aucun code à recopier.','studio-status');simpleStatus.setAttribute('role','status');linkInfoView=simpleStatus;view.content.append(simpleStatus);
-    const download=element('a','Télécharger le connecteur Windows');download.href='https://github.com/toniogervais/archives-owlbear/releases/download/soundshow-bridge-v0.3.3/Archives-SoundShow-Connecteur.exe';download.target='_blank';download.rel='noopener';view.content.append(download);
+    const download=element('a','Télécharger le connecteur Windows');download.href='https://github.com/toniogervais/archives-owlbear/releases/download/soundshow-bridge-v0.4.0/Archives-SoundShow-Connecteur.exe';download.target='_blank';download.rel='noopener';view.content.append(download);
     const advanced=element('details');const summary=element('summary','Dépannage : connexion manuelle avec un code');advanced.append(summary);
     const label=element('label','Code de connexion SoundShow'),input=element('input');input.type='password';input.autocomplete='off';input.placeholder='SS2.…';input.setAttribute('aria-label','Code de connexion SoundShow');input.value=session?encodeSession(session):'';label.append(input);advanced.append(label);
     const info=element('p',null,'studio-hint');info.id='soundshow-room-status';info.setAttribute('role','status');infoView=info;
@@ -78,12 +95,19 @@ function open() {
   }catch(error){notice(error.message);}
 }
 window.addEventListener('message',event=>{
-  if(!embedded&&isGM()&&event.origin===location.origin&&isPacket(event.data)&&['soundshow-main-request','soundshow-main-update'].includes(event.data.type)){
+  if(!embedded&&isGM()&&event.origin===location.origin&&isPacket(event.data)&&['soundshow-main-request','soundshow-main-update','soundshow-main-control'].includes(event.data.type)){
     const data=event.data;
     if(!window.ArchivesOwlbearBridge?.authorizeSoundShowFrame(event.source,data.roomId))return;
     roomFrames.set(event.source,data.roomId);
-    if(data.type==='soundshow-main-request')event.source.postMessage(packet('soundshow-main-session',{session,roomId:data.roomId}),location.origin);
-    else if(data.session===null||validSession(data.session))void publish(data.session).catch(error=>notice(error.message));
+    if(data.type==='soundshow-main-request'){
+      event.source.postMessage(packet('soundshow-main-session',{session,roomId:data.roomId}),location.origin);
+      event.source.postMessage(packet('soundshow-main-state',{state:direct.get().state,roomId:data.roomId}),location.origin);
+    }else if(data.type==='soundshow-main-control'){
+      const frame=event.source, roomId=data.roomId;
+      const reply=(safe,message)=>{if(isGM()&&window.ArchivesOwlbearBridge?.authorizeSoundShowFrame(frame,roomId))
+        frame.postMessage(packet('soundshow-main-result',{id:data.id,safe,message,roomId}),location.origin);};
+      void direct.command(data.command).then(result=>reply(true,result.message)).catch(error=>reply(false,error.message));
+    }else if(data.session===null||validSession(data.session))void publish(data.session).catch(error=>notice(error.message));
     return;
   }
   if(event.source!==window.parent||event.origin!==location.origin||!isPacket(event.data))return;
@@ -120,9 +144,9 @@ if(control){
   new MutationObserver(refresh).observe(document.body,{attributes:true,attributeFilter:['class']});
 }
 function initializeSoundsDock(){
-  if(!embedded||!isGM()||soundsDock)return;
+  if(!isGM()||soundsDock)return;
   soundsDock=mountSoundDock({
-    isGM,
+    isGM,openSettings:open,
     send:async command=>{
       requireGM();
       const result=await request('owl-soundshow-remote-command',command);
@@ -139,7 +163,7 @@ function initializeSoundsDock(){
   if(audienceState)soundsDock?.updateAudience(audienceState);
   if(soundsDock){
     cellMedia=mountCellMedia({
-      embedded,isGM,
+      isGM,
       getRemote:()=>remoteState,
       send:async command=>request('owl-soundshow-remote-command',command),
       refreshRemote:async()=>{
@@ -154,10 +178,11 @@ function initializeSoundsDock(){
   }
 }
 initializeSoundsDock();
+new MutationObserver(initializeSoundsDock).observe(document.body,{attributes:true,attributeFilter:['class']});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initializeSoundsDock,{once:true});
 else setTimeout(initializeSoundsDock,700);
 window.ArchivesSoundShow={open,session:()=>session,
   openSounds:()=>{initializeSoundsDock();soundsDock?.open();},
   openCellMedia:(source='editor')=>{initializeSoundsDock();cellMedia?.openPicker(source);},
   getSoundDock:()=>soundsDock};
-window.addEventListener('pagehide',()=>{playerEpoch++;clearInterval(playerReadyTimer);player?.destroy();cellMedia?.destroy();soundsDock?.destroy();},{once:true});
+window.addEventListener('pagehide',()=>{playerEpoch++;clearInterval(playerReadyTimer);direct?.dispose();player?.destroy();cellMedia?.destroy();soundsDock?.destroy();},{once:true});

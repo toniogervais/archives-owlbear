@@ -38,7 +38,9 @@ jobs:
       - run: python soundshow-bridge/tests/browser.py
       - run: node tests/browser-soundshow.cjs
       - run: node tests/browser-soundshow-archives.cjs
-      - run: node tests/browser-v65.cjs
+      - run: node tests/browser-soundshow-route.cjs
+      - name: Vérifier le canevas et la barre sur écran mobile
+        run: node tests/browser-v459.cjs zoom
       - run: node tests/browser-startup.cjs
   windows:
     needs: verify
@@ -84,7 +86,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          if ! gh release view soundshow-bridge-v0.3.3 > /dev/null 2>&1; then
-            gh release create soundshow-bridge-v0.3.3 --target "$GITHUB_SHA" --prerelease --title "Connecteur SoundShow — essai 0.3.3" --notes "Corrige la piste sonore muette : audio capturé séparément de l’aperçu, sans seconde lecture sur le PC. Vidéo avec son dans les Archives des joueurs, autorisation audio et liaison automatique. Conserve la télécommande SoundShow et les médias de cellules. Essais Windows/tablette à confirmer."
+          if ! gh release view soundshow-bridge-v0.4.0 > /dev/null 2>&1; then
+            gh release create soundshow-bridge-v0.4.0 --target "$GITHUB_SHA" --prerelease --title "Connecteur SoundShow — 0.4.0" --notes "Télécommande depuis les Archives principales ou Owlbear. Partage de la fenêtre de projection pour la séance et diffusion à la volée de fichiers du PC avec leur piste sonore."Corrige la piste sonore muette : audio capturé séparément de l’aperçu, sans seconde lecture sur le PC. Vidéo avec son dans les Archives des joueurs, autorisation audio et liaison automatique. Conserve la télécommande SoundShow et les médias de cellules. Essais Windows/tablette à confirmer."
           fi
-          gh release upload soundshow-bridge-v0.3.3 windows/Archives-SoundShow-Connecteur.exe --clobber
+          gh release upload soundshow-bridge-v0.4.0 windows/Archives-SoundShow-Connecteur.exe --clobber
