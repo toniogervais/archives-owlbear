@@ -3,7 +3,7 @@ export const THEMES = {
  competences: ['Compétences', 'Attributs, spécialisations et usages'],
  combat: ['Combat', 'Initiative, attaque, défense et dommages'],
  magie: ['Magie', 'Sorts, esprits, adeptes et astral'],
- rigging: ['Rigging', 'Véhicules, drones et poursuites'],
+ rigging: ['Pilotage et drones', 'Véhicules, drones et poursuites'],
  matrice: ['Matrice', 'Actions, programmes et technomancie'],
  creatures: ['Bestiaire', 'Créatures, habitats et pouvoirs'],
  equipement: ['Équipement', 'Matériel, caractéristiques et prix'],
