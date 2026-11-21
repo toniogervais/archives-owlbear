@@ -1,5 +1,5 @@
 import {localRoom,roomMembers} from '../v57/room.mjs?v=4590';
-import {validSession,sameSession,soundShowChannel,soundShowModal,validLocalBridgeOrigin,owlbearLinkProtocol} from './protocol.mjs?v=016';
+import {validSession,sameSession,soundShowChannel,soundShowModal,validLocalBridgeOrigin,owlbearLinkProtocol,isLocalVideoCommand} from './protocol.mjs?v=4730';
 import {SoundShowConnection} from './connection.mjs?v=4730';
 import {isPacket,packet} from '../v56/link.mjs?v=4590';
 export async function installSoundShow(OBR) {
@@ -183,7 +183,8 @@ export async function installSoundShow(OBR) {
           return;
         }
         const viaMain=!localLinkReady&&mainWindow&&!mainWindow.closed;
-        if((!viaMain&&(!localLinkReady||!localConnector||!localControlToken))||!remoteState.connected){
+        const available=isLocalVideoCommand(data.command)?remoteState.instantVideo:remoteState.connected;
+        if((!viaMain&&(!localLinkReady||!localConnector||!localControlToken))||!available){
           channel.postMessage({type:'soundshow-remote-result',id:data.id,safe:false,
             message:'SoundShow n’est pas relié. Ouvre Owlbear depuis le connecteur Windows.',state:remoteState});
           return;

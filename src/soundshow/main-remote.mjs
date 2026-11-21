@@ -1,5 +1,5 @@
 // Only the loopback dashboard that opened this MJ window can grant control.
-import {autoLinkProtocol as protocol, validLocalBridgeOrigin, validSession, sameSession} from './protocol.mjs';
+import {autoLinkProtocol as protocol, validLocalBridgeOrigin, validSession, sameSession, isLocalVideoCommand} from './protocol.mjs?v=4730';
 
 export function mainRemote({isGM, onState, onSession}) {
   const opener=window.opener, challenge=crypto.randomUUID(), pending=new Map();
@@ -35,7 +35,8 @@ export function mainRemote({isGM, onState, onSession}) {
     }else if(d.type==='disconnected')reset();
   }
   function command(command) {
-    if(!isGM()||!token||opener?.closed||!state.connected)return Promise.reject(Error('Ouvre les Archives du MJ depuis le connecteur Windows et connecte SoundShow.'));
+    const available=isLocalVideoCommand(command)?state.instantVideo:state.connected;
+    if(!isGM()||!token||opener?.closed||!available)return Promise.reject(Error('Ouvre les Archives du MJ depuis le connecteur Windows et connecte SoundShow.'));
     const id=crypto.randomUUID();
     return new Promise((resolve,reject)=>{
       const timer=setTimeout(()=>{pending.delete(id);reject(Error('Le connecteur ne répond pas à la commande.'));},command.type==='show_local_video'?20000:9000);

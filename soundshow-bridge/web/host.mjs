@@ -53,9 +53,6 @@ function openOwlbearAndLink(){
   primeAudio();
   if(linkTimer){owlWindow?.focus();text('link-status','Liaison en cours. Rejoins ta salle Owlbear : l’extension se connectera automatiquement.');return;}
   if(owlLinked&&owlWindow&&!owlWindow.closed){owlWindow.focus();text('link-status','La salle est reliée. Lance les vidéos dans SoundShow.');return;}
-  if(!['connected','simulation'].includes(show?.status)){
-    text('link-status','Connecte SoundShow une seule fois, puis relie Owlbear.');return;
-  }
   sessionStopped=false;if(!peer||peer.destroyed)prepare();
   owlLinked=false;linkCandidate=null;linkStarted=Date.now();stopLinkTimer();
   // Never navigate to a separate Archives tab: only the Owlbear application is opened.
@@ -98,7 +95,6 @@ function sendRemoteState(){
   }
 }
 async function localCommand(command){
-  if(!['connected','simulation'].includes(show?.status))throw Error('SoundShow est déconnecté.');
   if(command?.type==='show_local_video'){
     if(!videoSession())throw Error('La liaison vidéo est en cours de connexion.');
     if(!(command.file instanceof File)||!command.file.size)throw Error('Choisis un fichier vidéo sur ton PC.');
@@ -110,6 +106,7 @@ async function localCommand(command){
   if(command?.type==='stop_local_video'){
     endQuick();return {message:'Vidéo du PC arrêtée.'};
   }
+  if(!['connected','simulation'].includes(show?.status))throw Error('SoundShow est déconnecté.');
   return api('control',command);
 }
 window.addEventListener('message',event=>{
@@ -357,14 +354,15 @@ async function startProjection(){
   $('stop-projection').hidden=false;update();void follow();
 }
 async function follow() {
-  if (!show||sessionStopped) return;
-  if(!['connected','simulation'].includes(show.status)){
-    quick=null;if(projection)gateProjection(projection,null);
+  if(sessionStopped)return;
+  if(!quick&&!['connected','simulation'].includes(show?.status)){
+    if(projection)gateProjection(projection,null);
     if(current||stream)clearSource();return;
   }
-  for(const id of stoppedProjectionCues){if(!show.players.some(p=>p.id===id))stoppedProjectionCues.delete(id);}
+  const players=show?.players||[];
+  for(const id of stoppedProjectionCues){if(!players.some(p=>p.id===id))stoppedProjectionCues.delete(id);}
   if(projection&&!quick){followProjection();return;}
-  const candidates=show.players.filter(item=>!stoppedProjectionCues.has(item.id)&&files.has(fileKey(item.source)));
+  const candidates=players.filter(item=>!stoppedProjectionCues.has(item.id)&&files.has(fileKey(item.source)));
   const known=candidates.find(item=>item.id===current?.id);
   const newer=candidates.find(item=>!current?.seen?.has(item.id));
   const item=quick?{id:quick.id,playing:true,loop:false,position:0,observedAt:quick.time,volume:1,muted:false}:newer || known || candidates.at(-1);
@@ -373,7 +371,7 @@ async function follow() {
   if (current?.id !== item.id || current.file !== file) {
     clearSource();lastFileError='';const mine=generation;
     current={id:item.id,file,seen:new Set(candidates.map(x=>x.id)),pending:true};
-    const info=show.videos.find(video=>video.id===item.source);
+    const info=show?.videos.find(video=>video.id===item.source);
     const opening={type:'playback',active:true,id:crypto.randomUUID(),title:quick?'Vidéo du MJ':info?.name || 'Vidéo du MJ',playing:item.playing,volume:item.volume,muted:item.muted};
     objectUrl=URL.createObjectURL(file);source.loop=item.loop;source.src=objectUrl;source.muted=true;
     text('stream-status','Ouverture du fichier vidéo sur le PC…');

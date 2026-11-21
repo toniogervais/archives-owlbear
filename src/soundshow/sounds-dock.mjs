@@ -233,7 +233,7 @@ export function mountSoundDock({send,refresh,isGM,openSettings}){
     searchBox.setAttribute('aria-label',films?'Rechercher une vidéo':'Rechercher un son');
     grid.setAttribute('aria-label',films?'Grille des vidéos':'Grille des sons');
     fileActions.hidden=mode.hidden=!films||!state.instantVideo;
-    pick.disabled=!state.connected||!state.videoReady;
+    pick.disabled=!state.videoReady;
     end.hidden=!state.quickPlaying;
     mode.textContent=state.projection==='audio'?'Projection SoundShow · image et son':state.projection==='silent'?'Projection SoundShow · image seule':
       'Pour lancer toute vidéo depuis SoundShow, partage sa fenêtre de projection dans le connecteur.';

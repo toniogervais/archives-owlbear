@@ -33,3 +33,5 @@ export function publicPlayback(value) {
     playing:value.playing === true,muted:value.muted === true,
     volume:Math.max(0,Math.min(1,Number.isFinite(value.volume) ? value.volume : 1))};
 }
+
+export const isLocalVideoCommand = command => command?.type==='show_local_video'||command?.type==='stop_local_video';

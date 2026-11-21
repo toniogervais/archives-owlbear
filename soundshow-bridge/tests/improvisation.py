@@ -86,4 +86,21 @@ async def exercise(host, context, tablet, fake, file, repo, wait, audible):
         assert await host.evaluate('testCapture.getTracks().every(track=>!track.enabled)')
     await host.get_by_role('button',name='Arrêter le partage',exact=True).click()
     await wait(host,"testCapture.getTracks().every(track=>track.readyState==='ended')")
+    before=sum(cmd.get('type')=='play_playable' for cmd in fake.commands)
+    await host.evaluate('''async()=>{
+      const response=await fetch('/api/disconnect',{method:'POST',headers:{'X-Archives-Key':sessionStorage.getItem('archives-soundshow-admin')}});
+      if(!response.ok)throw Error('Local test disconnect failed');
+    }''')
+    await host.get_by_text('SoundShow déconnecté.',exact=True).wait_for()
+    async with archives.expect_file_chooser() as picker:
+        await archives.get_by_role('button',name='Diffuser une vidéo du PC…').click()
+    await (await picker.value).set_files(str(unlisted))
+    await wait(tablet, "window.player.connection.playback.active && document.querySelector('video').videoWidth>0")
+    await audible(tablet)
+    await archives.get_by_role('button',name='Arrêter la vidéo du PC').click()
+    await wait(tablet,'!window.player.connection.playback.active')
+    assert sum(cmd.get('type')=='play_playable' for cmd in fake.commands)==before
+    await host.locator('#password').fill('native-password')
+    await host.get_by_role('button',name='Connecter SoundShow',exact=True).click()
+    await host.get_by_text('SoundShow connecté — les raccourcis sont suivis.',exact=True).wait_for()
     await archives.close()
