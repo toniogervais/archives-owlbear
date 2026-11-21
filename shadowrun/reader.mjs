@@ -53,7 +53,16 @@ export function sectionExcerpt(entry,book,index=[]){
   if(Number.isInteger(first)&&Number.isInteger(final)&&Number.isInteger(at)&&Number.isInteger(end)&&first>=1&&final>=first&&final<=book.pages.length&&at>=0&&end>=0){
    const last=Math.min(final,first+1),part=book.pages.slice(first-1,last).map((p,i)=>p.text.slice(i===0?at:0,first+i===final?end:undefined)).join('\n');
    const found=getExcerpt(part,headings,entry,ref,index,first,last,final>last);
-   if(found)return found;
+   if(found)return {...found,matchedBy:'heading-and-anchor',fullEndPage:final};
+   // The private book's explicit [start,end] anchor is keyed to this precise
+   // section ID. Do not require a second occurrence of its heading, because
+   // many headings start before the anchored text in the PDF's column order.
+   // Do not use this fallback for titles matched by proximity or name alone.
+   const anchored=part.trim();
+   if(ref.id===entry.id&&anchored.length>=35){
+    const maxLength=20000;
+    return {title:ref.title||entry.title,text:anchored.slice(0,maxLength),page:first,endPage:last,fullEndPage:final,truncated:final>last||anchored.length>maxLength,matchedBy:'exact-id-anchor'};
+   }
   }
  }
  // The equipment tables often occur dozens of pages after the descriptive prose.
@@ -62,9 +71,18 @@ export function sectionExcerpt(entry,book,index=[]){
  if(!Number.isInteger(first)||first<1||first>book.pages.length)return null;
  const firstText=book.pages[first-1]?.text||'';
  const found=firstHeading(firstText,headings);
- if(!found)return null; // Never substitute the full page of a neighbouring entry.
+ if(!found){
+  // PDF page numbering in a section index can drift by one across columns.
+  // Only accept a strictly matching heading on the immediately following
+  // page; never use its text merely because the page numbers are close.
+  const following=book.pages[first]?.text||'';
+  if(!firstHeading(following,headings))return null;
+  const next=first+1;
+  return getExcerpt(following,headings,entry,ref,index,next,next,Boolean(ref?.endPage>next));
+ }
  const likelyContinuation=Boolean(ref?.endPage>first);
  const last=likelyContinuation?Math.min(first+1,book.pages.length):first;
  const raw=book.pages.slice(first-1,last).map(p=>p.text).join('\n');
- return getExcerpt(raw,headings,entry,ref,index,first,last,Boolean(ref?.endPage>last));
+ const extracted=getExcerpt(raw,headings,entry,ref,index,first,last,Boolean(ref?.endPage>last));
+ return extracted?{...extracted,matchedBy:'exact-heading',fullEndPage:ref?.endPage||last}:null;
 }
