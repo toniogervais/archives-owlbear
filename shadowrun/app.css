@@ -143,3 +143,11 @@ dialog.image-reader{width:min(96vw,1100px);max-height:94dvh}.image-reader #infoB
 .skill-pools .pool-total{font-weight:800;font-variant-numeric:tabular-nums}
 .skill-pools .pool-variant{margin:.28rem 0 0;font-size:.88rem;line-height:1.45}
 .detail .table-wrap td{overflow-wrap:anywhere;white-space:pre-wrap}
+
+/* Compétences optionnelles : un seul ensemble peut être retenu. */
+.choice-pools{padding:.7rem .9rem;margin:1rem 0;border:1px solid var(--line);border-radius:10px}
+.choice-pools h3{margin:.2rem 0 .4rem}
+.choice-group{padding:.5rem 0;border-top:1px solid var(--line)}
+.choice-group h4{margin:.4rem 0 .5rem;color:var(--accent)}
+.choice-group small{display:block;font-size:.8rem;color:var(--muted);margin-top:.2rem}
+.choice-pools table th,.choice-pools table td{vertical-align:top}
