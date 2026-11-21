@@ -2,8 +2,8 @@ import {VERSION,validateLibrary,parseLibraryText,parseLibraryFileText,normalize,
 import {prepareEntries,searchEntries,makeAliases,libraryPages,profileText,profileRolls} from './search.mjs?v=143';
 import {getStored,putStored,deleteStored} from './storage.mjs?v=143';
 import {bridge,ready,OBR} from './bridge.mjs?v=143';
-import {sectionExcerpt} from './reader.mjs?v=143';
-import {conciseSourceDescription,sourceContext} from './source-descriptions.mjs?v=143';
+import {sectionExcerpt} from './reader.mjs?v=144';
+import {conciseSourceDescription,sourceContext} from './source-descriptions.mjs?v=144';
 import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './content.mjs?v=143';
 import {readBookPdf} from './pdf-import.mjs?v=143';
 
@@ -433,7 +433,7 @@ function enrichSourceDescriptions(book){
    if(state.byId?.get(entry.id)!==entry)break;
    const passage=sectionExcerpt(entry,book,state.index);
    const desc=conciseSourceDescription(passage,book.language);
-   if(desc&&passage&&['exact-heading','heading-and-anchor','exact-id-anchor'].includes(passage.matchedBy)){
+   if(desc&&passage&&['exact-heading','heading-and-anchor','exact-id-anchor','two-page-continuation'].includes(passage.matchedBy)){
     entry.summary=desc.text;entry.sourceSummary=true;entry.sourceSummaryPage=passage.page;changed=true;
    }
    if(++count%18===0)await new Promise(resolve=>setTimeout(resolve,1));
