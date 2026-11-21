@@ -31,10 +31,10 @@ export function toArchiveCell(e){
   {title:'Référence de l’ouvrage',text:source},
   {title:'Caractéristiques',text:person?lines(e.attributes)+'\n'+lines(e.derived):e.fields?.map(f=>clean(f.label,100)+' : '+clean(f.value,200)).join('\n')||''}
  ];
- if(person)for(const [name,text] of Object.entries(e.sections||{}))
-  if(text)gmDetails.push({title:clean(name,100),text:clean(text,9000)});
- if(e.kind==='equipment')gmDetails.push({title:'Catégorie et type',text:[e.category,...(e.path||[])].filter(Boolean).join(' › ')});
  const pools=person?profileSkillPools(e):[];
+ if(person)for(const [name,text] of Object.entries(e.sections||{}))
+  if(text&&!(name==='Compétences'&&pools.length))gmDetails.push({title:clean(name,100),text:clean(text,9000)});
+ if(e.kind==='equipment')gmDetails.push({title:'Catégorie et type',text:[e.category,...(e.path||[])].filter(Boolean).join(' › ')});
  if(pools.length)gmDetails.push({title:'Pools de D6',text:pools.map(s=>{
    const parts=[s.name+' : '+(s.total===null?'non chiffré':s.total+' D6')];
    for(const x of s.specializations||[])parts.push('Spécialisation '+x.name+' : '+(x.total===null?'non chiffré':x.total+' D6'));
