@@ -2,7 +2,7 @@ import {button,element,isGM,notice,requireGM,sheet} from '../v63/ui.mjs?v=4590';
 import {isPacket,packet} from '../v56/link.mjs?v=4590';
 import {decodeSession,encodeSession,validSession} from './protocol.mjs?v=017';
 import {mainRemote} from './main-remote.mjs?v=4730';
-import {mountRemote} from './remote.mjs?v=017';
+import {mountRemote} from './remote.mjs?v=4730';
 import {mountSoundDock} from './sounds-dock.mjs?v=4730';
 import {mountCellMedia} from './cell-media.mjs?v=4730';
 let session=null,player,liveSession=null,infoView=null;const pending=new Map(),roomFrames=new Map();

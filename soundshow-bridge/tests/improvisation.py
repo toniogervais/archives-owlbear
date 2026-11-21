@@ -18,6 +18,7 @@ async def exercise(host, context, tablet, fake, file, repo, wait, audible):
     async with host.expect_popup() as opened:
         await host.get_by_role('button',name='Ouvrir les Archives du MJ').click()
     archives = await opened.value
+    await archives.wait_for_url("**/archives-app-v64-v55.html*", wait_until="load")
     await wait(archives,'!!window.ArchivesSoundShow?.getSoundDock()')
     await archives.locator('#archives-title-screen').wait_for(state='hidden')
     await archives.get_by_role('button',name='Sons — ouvrir la grille SoundShow').click()

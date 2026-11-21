@@ -1,4 +1,4 @@
-import {SoundShowConnection} from './connection.mjs?v=4410';
+import {SoundShowConnection} from './connection.mjs?v=4730';
 export function mountPlayer({container=document.body,onPlayback=()=>{},onStatus=()=>{},onState=()=>{},close,showWaiting=false}={}) {
   if(!document.querySelector('[data-soundshow-style]')){
     const style=document.createElement('link');style.rel='stylesheet';style.href=new URL('./player.css?v=4400',import.meta.url).href;

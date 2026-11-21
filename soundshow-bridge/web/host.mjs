@@ -7,12 +7,21 @@ history.replaceState(null,'',location.pathname); // Keep the administrator key o
 const files = new Map(), handles = new Map(), clients = new Map();
 let show, ws, wsTimer, peer, secret, stream, objectUrl, current, generation = 0, db, closing = false;
 let playback = {type:'playback',active:false}, peerRetry = 0;
-let audioContext=null,audioSource=null,audioDestination=null;
+let audioContext=null,audioSource=null,audioDestination=null,standby=null,silentDestination=null;
 function prepareAudio(){
   if(!audioContext){
     const Context=window.AudioContext||window.webkitAudioContext;
     if(!Context)throw Error('Ce navigateur ne permet pas la diffusion audio. Ouvre le connecteur dans Chrome.');
     audioContext=new Context();audioSource=audioContext.createMediaElementSource($('source'));
+    // Negotiate audio and video with a black frame and a silent track before a file is chosen.
+    const canvas=document.createElement('canvas');canvas.width=1280;canvas.height=720;
+    if(canvas.captureStream){
+      const pen=canvas.getContext('2d');pen.fillRect(0,0,1280,720);
+      standby=canvas.captureStream(1);pen.fillRect(0,0,1,1);
+      silentDestination=audioContext.createMediaStreamDestination();
+      standby.addTrack(silentDestination.stream.getAudioTracks()[0]);
+      for(const entry of clients.values())call(entry);
+    }
     audioContext.addEventListener('statechange',()=>{$('enable-audio').hidden=audioContext.state==='running';});
   }
   $('enable-audio').hidden=audioContext.state==='running';
@@ -227,27 +236,58 @@ function renderVideos() {
 function send(entry,data) { if (entry.connection.open) entry.connection.send(data); }
 function broadcast(data) { for (const entry of clients.values()) if (entry.ready) send(entry,data); }
 function audience() { text('audience',[...clients.values()].filter(x=>x.ready && x.mode==='view').length+' lecteur(s) connecté(s).');diagnostic(); }
+function targetStream(entry){
+  if(sessionStopped||closing)return null;
+  return entry.warm?(stream||standby):(playback.active?stream:null);
+}
+function closeCall(entry){
+  const media=entry.call;entry.call=null;entry.output=null;entry.senders=null;
+  media?.close();
+}
 function call(entry) {
-  if (!stream || !entry.ready || entry.mode !== 'view' || !peer || entry.call) return;
-  const media=peer.call(entry.connection.peer,stream,{metadata:{session:entry.nonce,cue:playback.id}});entry.call=media;
-  media?.on('close',()=>{if(entry.call===media)entry.call=null;});media?.on('error',()=>{if(entry.call===media)entry.call=null;});
+  if(!entry.ready||entry.mode!=='view'||!peer)return;
+  const next=targetStream(entry);
+  if(!next){closeCall(entry);return;}
+  if(!entry.call){
+    const media=peer.call(entry.connection.peer,next,{metadata:{session:entry.nonce,cue:playback.id}});
+    if(!media)return;
+    entry.call=media;entry.output=next;
+    const cleared=()=>{if(entry.call===media){entry.call=null;entry.output=null;entry.senders=null;}};
+    media.on('close',cleared);media.on('error',cleared);return;
+  }
+  if(entry.output===next||entry.switching)return;
+  if(!entry.warm){closeCall(entry);call(entry);return;}
+  const media=entry.call;
+  const senders=entry.senders??=new Map((media.peerConnection?.getSenders()||[]).filter(s=>s.track).map(s=>[s.track.kind,s]));
+  if(!next.getTracks().every(track=>senders.has(track.kind))){
+    closeCall(entry);call(entry);return;
+  }
+  entry.switching=true;
+  void Promise.all([...senders].map(([kind,sender])=>{
+    const track=next.getTracks().find(track=>track.kind===kind)||null;
+    return sender.track===track?undefined:sender.replaceTrack(track);
+  })).then(()=>{
+    if(entry.call===media)entry.output=next;
+  }).catch(()=>{
+    if(entry.call===media)closeCall(entry);
+  }).finally(()=>{
+    entry.switching=false;
+    if(clients.get(entry.connection)===entry)call(entry);
+  });
 }
-function closeCalls(){
-  for (const entry of clients.values()) { entry.call?.close();entry.call=null; }
-}
+function updateCalls(){for(const entry of clients.values())call(entry);}
 function clearSource() {
   generation++;
   $('source').pause();$('source').removeAttribute('src');$('source').load();
   audioSource?.disconnect();
   for(const track of audioDestination?.stream.getTracks()||[])track.stop();
   audioDestination=null;
-  closeCalls();
   if(stream!==projection)for(const track of stream?.getTracks()||[])track.stop();
   if(projection)gateProjection(projection,null);
   projectionPlayer='';projectionSeen.clear();
   stream=null;current=null;
   if(objectUrl)URL.revokeObjectURL(objectUrl);objectUrl=null;
-  playback={type:'playback',active:false};broadcast(playback);
+  playback={type:'playback',active:false};broadcast(playback);updateCalls();
 }
 function desiredPosition(item, mediaDuration = Infinity) {
   const start = Math.max(0, item.start || 0);
@@ -275,7 +315,7 @@ function followProjection(){
   projectionSeen=new Set(players.map(p=>p.id));
   gateProjection(projection,item);
   if(!item){
-    if(playback.active){projectionPlayer='';playback={type:'playback',active:false};broadcast(playback);}
+    if(playback.active){projectionPlayer='';playback={type:'playback',active:false};broadcast(playback);updateCalls();}
     return;
   }
   const same=item.id===projectionPlayer;
@@ -388,7 +428,7 @@ function prepare() {
     const timer=setTimeout(()=>{if(!entry.ready)connection.close();},6000);
     connection.on('data',data=>{
       if(!entry.authenticated){if(data?.type!=='hello'||data.version!==1||data.secret!==secret){rejected++;lastIssue='Un lecteur a présenté un ancien code ou un code invalide.';diagnostic();connection.close();return;}
-        entry.authenticated=true;entry.mode=data.mode==='watch'?'watch':'view';lastIssue='Code accepté ; lecteur en cours d’activation.';diagnostic();send(entry,{type:'welcome',session:entry.nonce});return;}
+        entry.authenticated=true;entry.warm=data.warmMedia===true;entry.mode=data.mode==='watch'?'watch':'view';lastIssue='Code accepté ; lecteur en cours d’activation.';diagnostic();send(entry,{type:'welcome',session:entry.nonce});return;}
       if(data?.type==='ready'&&data.session===entry.nonce){clearTimeout(timer);entry.ready=true;lastIssue='Lecteur confirmé par le PC.';send(entry,playback);call(entry);audience();}
       // Receiving tablets cannot control SoundShow or select a local file.
     });
@@ -415,5 +455,5 @@ $('link-archives').onclick=openOwlbearAndLink;
 $('copy').onclick=async()=>{try{await navigator.clipboard.writeText($('pair-code').value);text('peer-status','Code copié. Ouvre le bouton SoundShow des Archives pour le coller.');}catch{$('pair-code').select();text('peer-status','Sélectionne le code puis copie-le avec Ctrl+C.');}};
 window.addEventListener('pagehide',()=>{closing=true;clearTimeout(wsTimer);stopLinkTimer();ws?.close();stopSession();for(const [grant,protocol] of [[mainGrant,autoLinkProtocol],[linkCandidate,linkProtocol]]){
     if(grant?.accepted)grant.source.postMessage({protocol,challenge:grant.challenge,type:'disconnected'},archivesOrigin);
-  }void audioContext?.close();},{once:true});
+  }for(const track of standby?.getTracks()||[])track.stop();void audioContext?.close();},{once:true});
 if(!key)text('show-status','Rouvre le connecteur depuis son programme pour obtenir ton accès administrateur.');else connectEvents();
