@@ -191,6 +191,7 @@ async function selectEntry(e,{mobile=true,remember=true}={}){
  }
  if(e.summary&&e.kind!=='page')root.insertAdjacentHTML('beforeend',`<div class="summary-body"><h3>${e.sourceSummary?'Description de la rubrique, issue du livre':'Description / rappel'}</h3><p>${esc(e.summary)}</p>${e.steps?.length?`<ol>${e.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>`:''}${e.warning?`<p class="warn">${esc(e.warning)}</p>`:''}</div>`);
  if(e.fields?.length&&!e.attributes&&!e.edgeCost){root.insertAdjacentHTML('beforeend','<h3>Caractéristiques</h3>');root.insertAdjacentHTML('beforeend',tableRows(e.fields));}
+ if(e.kind==='equipment'&&!e.fields?.length)root.insertAdjacentHTML('beforeend','<p class="small source-warning">Caractéristiques non encore indexées pour cette référence. Consulter la page du livre et son tableau original : aucune valeur n’est inventée.</p>');
  if(e.kind==='equipment')root.insertAdjacentHTML('beforeend','<div class="detail-actions"><button id="addCart" class="primary">Ajouter au panier</button></div>');
   if(e.kind==='equipment')renderEquipmentAlternatives(e,root);
  root.insertAdjacentHTML('beforeend',relationHtml({...e,related:[...new Set([...(e.related||[]),...(e.linkedProfiles||[]),...suggestedRules(e,state.rules),...skillRelatedRules(e,state.rules)])]}));
