@@ -62,7 +62,7 @@ function openOwlbearAndLink(){
 let mainWindow=null,mainGrant=null,projection=null,quick=null,projectionPlayer='',projectionSeen=new Set();
 let sessionStopped=false;
 const stoppedProjectionCues=new Set();
-const archiveUrl=archivesOrigin+'/archives-owlbear/archives.html';
+const archiveUrl=archivesOrigin+'/archives-owlbear/archives.html?main=1';
 const videoSession=()=>peer?.open&&secret?{version:1,peer:peer.id,secret}:null;
 function openMain(){
   primeAudio();sessionStopped=false;prepare();

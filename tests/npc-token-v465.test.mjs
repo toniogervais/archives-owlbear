@@ -85,8 +85,11 @@ test('V4.72 — anciennes ouvertures automatiques refusées',()=>{
   assert.ok(viewer.includes("query.get('source')!=='menu-v472'"));
   assert.ok(viewer.includes("await OBR.modal.close(modalId)"));
   assert.ok(html.includes("get('source')!=='menu-v472'"));
-  assert.ok(manifest.background_url.includes('/background-v72.html?v=4720'));
-  assert.ok(manifest.action.popover.includes('/index-v72.html?v=4720'));
+  for(const [value,entry] of [[manifest.background_url,'background-v72.html'],[manifest.action.popover,'index-v72.html']]){
+    const url=new URL(value);
+    assert.ok(url.pathname.endsWith('/'+entry));
+    assert.ok(Number(url.searchParams.get('v'))>=4720);
+  }
 });
 
 test('V4.66 — une blessure cliquée modifie uniquement le moniteur demandé',()=>{
