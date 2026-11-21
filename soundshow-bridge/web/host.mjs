@@ -1,4 +1,5 @@
-import {encodeSession} from './protocol.mjs';
+import {encodeSession,autoLinkProtocol} from './protocol.mjs';
+import {chooseProjection,gateProjection} from './projection.mjs';
 const $ = id => document.getElementById(id);
 const key = new URLSearchParams(location.hash.slice(1)).get('key') || sessionStorage.getItem('archives-soundshow-admin') || '';
 if(key)sessionStorage.setItem('archives-soundshow-admin',key);
@@ -46,7 +47,7 @@ function openOwlbearAndLink(){
   if(!['connected','simulation'].includes(show?.status)){
     text('link-status','Connecte SoundShow une seule fois, puis relie Owlbear.');return;
   }
-  if(!peer||peer.destroyed)prepare();
+  sessionStopped=false;if(!peer||peer.destroyed)prepare();
   owlLinked=false;linkCandidate=null;linkStarted=Date.now();stopLinkTimer();
   // Never navigate to a separate Archives tab: only the Owlbear application is opened.
   owlWindow=window.open(owlUrl,'archives-owlbear-soundshow');
@@ -58,42 +59,80 @@ function openOwlbearAndLink(){
     else if(Date.now()-linkStarted>180000){stopLinkTimer();text('link-status','Aucune salle MJ reliée après trois minutes. Vérifie que l’extension Les Archives est active dans Owlbear.');}
   },2000);
 }
+let mainWindow=null,mainGrant=null,projection=null,quick=null,projectionPlayer='',projectionSeen=new Set();
+let sessionStopped=false;
+const stoppedProjectionCues=new Set();
+const archiveUrl=archivesOrigin+'/archives-owlbear/archives.html';
+const videoSession=()=>peer?.open&&secret?{version:1,peer:peer.id,secret}:null;
+function openMain(){
+  primeAudio();sessionStopped=false;prepare();
+  if(mainWindow&&!mainWindow.closed){mainWindow.focus();return;}
+  mainGrant=null;mainWindow=window.open(archiveUrl,'archives-soundshow-mj');
+  text('link-status',mainWindow?'Archives ouvertes. Utilise le panneau Sons ou Vidéos du MJ.':'Autorise l’ouverture des Archives dans ce navigateur.');
+}
+function offer(grant,protocol){
+  grant.source.postMessage({protocol,type:'offer',challenge:grant.challenge,session:videoSession(),controlToken},archivesOrigin);
+}
+function refreshOffers(){
+  if(mainGrant)offer(mainGrant,autoLinkProtocol);
+  if(linkCandidate)offer(linkCandidate,linkProtocol);
+}
+function stateForGM(){
+  return {connected:show?.status==='connected'||show?.status==='simulation',simulation:show?.status==='simulation',
+    ...(show?.remote||{media:[],active:[]}),instantVideo:true,videoReady:!!videoSession(),quickPlaying:!!quick,
+    projection:projection?(projection.getAudioTracks().some(t=>t.readyState==='live')?'audio':'silent'):'off'};
+}
+function sendRemoteState(){
+  const state=stateForGM();
+  for(const [grant,protocol] of [[mainGrant,autoLinkProtocol],[linkCandidate,linkProtocol]]){
+    if(grant?.accepted)try{grant.source.postMessage({protocol,type:'remote-state',challenge:grant.challenge,state},archivesOrigin);}catch{}
+  }
+}
+async function localCommand(command){
+  if(!['connected','simulation'].includes(show?.status))throw Error('SoundShow est déconnecté.');
+  if(command?.type==='show_local_video'){
+    if(!videoSession())throw Error('La liaison vidéo est en cours de connexion.');
+    if(!(command.file instanceof File)||!command.file.size)throw Error('Choisis un fichier vidéo sur ton PC.');
+    quick={file:command.file,id:crypto.randomUUID(),time:Date.now()};
+    sendRemoteState();await follow();
+    if(!quick&&lastFileError)throw Error(lastFileError);
+    return {message:'Vidéo du PC en diffusion.'};
+  }
+  if(command?.type==='stop_local_video'){
+    endQuick();return {message:'Vidéo du PC arrêtée.'};
+  }
+  return api('control',command);
+}
 window.addEventListener('message',event=>{
   const data=event.data;
-  if(event.origin!==archivesOrigin||data?.protocol!==linkProtocol||!owlWindow||
-     !isInsideOwlbear(event.source,owlWindow))return;
+  if(event.origin!==archivesOrigin||!data)return;
+  const main=data.protocol===autoLinkProtocol&&mainWindow&&event.source===mainWindow;
+  const owl=data.protocol===linkProtocol&&owlWindow&&isInsideOwlbear(event.source,owlWindow);
+  if(!main&&!owl)return;
+  let grant=main?mainGrant:linkCandidate;
   if(data.type==='request'){
-    if(!peer?.open||!secret||!linkTimer||typeof data.challenge!=='string'||
-       !/^[0-9a-f-]{36}$/.test(data.challenge))return;
-    linkCandidate={source:event.source,challenge:data.challenge};
-    event.source.postMessage({protocol:linkProtocol,type:'offer',challenge:data.challenge,
-      session:{version:1,peer:peer.id,secret},controlToken},archivesOrigin);
-  }else if(data.type==='accepted'&&linkCandidate?.source===event.source &&
-      data.challenge===linkCandidate.challenge){
-    stopLinkTimer();owlLinked=true;
-    text('link-status','Owlbear relié. La télécommande est également active dans Les Archives.');
+    if(typeof data.challenge!=='string'||!/^[0-9a-f-]{36}$/.test(data.challenge))return;
+    // Older Owlbear clients require a real session; the new connector may also pair audio alone.
+    if(owl&&!linkTimer&&!owlLinked)return;
+    if(!grant||grant.source!==event.source||grant.challenge!==data.challenge){
+      grant={source:event.source,challenge:data.challenge,accepted:false};
+      if(main)mainGrant=grant;else linkCandidate=grant;
+    }
+    offer(grant,data.protocol);return;
+  }
+  if(!grant||grant.source!==event.source||grant.challenge!==data.challenge)return;
+  if(data.type==='accepted'){
+    grant.accepted=true;
+    if(owl){stopLinkTimer();owlLinked=true;}
+    text('link-status',main?'Télécommande reliée aux Archives du MJ.':'Télécommande reliée à la salle Owlbear.');
     sendRemoteState();
-  }else if(data.type==='remote-command'&&owlLinked&&linkCandidate?.source===event.source&&
-      data.challenge===linkCandidate.challenge&&data.controlToken===controlToken&&
+  }else if(data.type==='remote-command'&&grant.accepted&&data.controlToken===controlToken&&
       typeof data.id==='string'&&/^[0-9a-f-]{36}$/.test(data.id)){
-    const target=event.source;
-    void api('control',data.command).then(result=>{
-      target.postMessage({protocol:linkProtocol,type:'remote-result',id:data.id,
-        ok:true,message:result.message||'Commande envoyée à SoundShow.'},archivesOrigin);
-    }).catch(error=>{
-      target.postMessage({protocol:linkProtocol,type:'remote-result',id:data.id,
-        ok:false,message:String(error.message||'Commande refusée.').slice(0,200)},archivesOrigin);
-    });
+    const reply=(ok,message)=>grant.source.postMessage({protocol:data.protocol,type:'remote-result',
+      challenge:grant.challenge,id:data.id,ok,message},archivesOrigin);
+    void localCommand(data.command).then(result=>reply(true,result.message)).catch(error=>reply(false,String(error.message).slice(0,200)));
   }
 });
-function sendRemoteState(){
-  if(!owlLinked||!linkCandidate?.source)return;
-  try{
-    linkCandidate.source.postMessage({protocol:linkProtocol,type:'remote-state',
-      state:{connected:show?.status==='connected'||show?.status==='simulation',
-        simulation:show?.status==='simulation',...(show?.remote||{media:[],active:[]})}},archivesOrigin);
-  }catch{}
-}
 let attempts=0,rejected=0,lastIssue='Aucune demande reçue.';
 function diagnostic(){const el=$('link-diagnostic');if(!el)return;const ready=[...clients.values()].filter(e=>e.ready&&e.mode==='view').length;el.textContent=attempts+' tentative(s) reçue(s) par le PC · '+ready+' lecteur(s) confirmé(s) · '+rejected+' demande(s) refusée(s). '+lastIssue;}
 const options = () => ({config:{iceServers:[{urls:'stun:stun.l.google.com:19302'}],iceCandidatePoolSize:2},...window.ArchivesSoundShowPeerOptions});
@@ -113,12 +152,12 @@ function connectEvents() {
     else show = next;
     text('show-status',show.message);
     if(['connected','simulation'].includes(show.status)){
-      if(!peer||peer.destroyed)prepare();
+      if(!sessionStopped&&(!peer||peer.destroyed))prepare();
       void autoRestoreFiles(); // Only previously authorized files can be loaded silently.
     }
     sendRemoteState();void follow();
   };
-  ws.onclose = () => {clearSource();show=null;sendRemoteState();text('show-status','Connecteur déconnecté. Garde son programme ouvert.');if (!closing) wsTimer = setTimeout(connectEvents,2000);};
+  ws.onclose = () => {quick=null;if(projection)gateProjection(projection,null);clearSource();show=null;sendRemoteState();text('show-status','Connecteur déconnecté. Garde son programme ouvert.');if (!closing) wsTimer = setTimeout(connectEvents,2000);};
 }
 function fileKey(id) { return JSON.stringify([show?.project || '',id]); }
 async function openDatabase() {
@@ -193,14 +232,19 @@ function call(entry) {
   const media=peer.call(entry.connection.peer,stream,{metadata:{session:entry.nonce,cue:playback.id}});entry.call=media;
   media?.on('close',()=>{if(entry.call===media)entry.call=null;});media?.on('error',()=>{if(entry.call===media)entry.call=null;});
 }
+function closeCalls(){
+  for (const entry of clients.values()) { entry.call?.close();entry.call=null; }
+}
 function clearSource() {
   generation++;
   $('source').pause();$('source').removeAttribute('src');$('source').load();
   audioSource?.disconnect();
   for(const track of audioDestination?.stream.getTracks()||[])track.stop();
   audioDestination=null;
-  for (const entry of clients.values()) { entry.call?.close();entry.call=null; }
-  for (const track of stream?.getTracks() || []) track.stop();
+  closeCalls();
+  if(stream!==projection)for(const track of stream?.getTracks()||[])track.stop();
+  if(projection)gateProjection(projection,null);
+  projectionPlayer='';projectionSeen.clear();
   stream=null;current=null;
   if(objectUrl)URL.revokeObjectURL(objectUrl);objectUrl=null;
   playback={type:'playback',active:false};broadcast(playback);
@@ -214,19 +258,83 @@ function desiredPosition(item, mediaDuration = Infinity) {
     target = start + ((target-start) % (stop-start));
   return Number.isFinite(stop) ? Math.min(target,Math.max(start,stop-.05)) : target;
 }
+let lastFileError='';
+function endQuick(){
+  if(!quick)return;
+  quick=null;clearSource();sendRemoteState();void follow();
+}
+$('source').addEventListener('ended',()=>{if(quick&&current?.id===quick.id)endQuick();});
+function followProjection(){
+  if(stream!==projection){
+    clearSource();stream=projection;
+    for(const entry of clients.values())call(entry);
+  }
+  const players=show.players;
+  const item=players.findLast(p=>!projectionSeen.has(p.id))||
+    players.find(p=>p.id===projectionPlayer)||players.at(-1);
+  projectionSeen=new Set(players.map(p=>p.id));
+  gateProjection(projection,item);
+  if(!item){
+    if(playback.active){projectionPlayer='';playback={type:'playback',active:false};broadcast(playback);}
+    return;
+  }
+  const same=item.id===projectionPlayer;
+  projectionPlayer=item.id;
+  // SoundShow already applies its volume to the captured output.
+  playback={type:'playback',active:true,id:same?playback.id:crypto.randomUUID(),title:'Projection SoundShow',
+    playing:item.playing,volume:1,muted:item.muted};
+  broadcast(playback);
+  for(const entry of clients.values())call(entry);
+}
+function releaseProjection(){
+  if(!projection)return;
+  const old=projection;
+  for(const p of show?.players||[])stoppedProjectionCues.add(p.id);
+  if(stream===old)clearSource();
+  projection=null;
+  for(const track of old.getTracks())track.stop();
+  $('stop-projection').hidden=true;
+  text('projection-status','Partage de la projection arrêté.');sendRemoteState();void follow();
+}
+async function startProjection(){
+  let selected;
+  try{selected=await chooseProjection();}
+  catch(error){if(error.name!=='NotAllowedError'&&error.name!=='AbortError')text('projection-status',error.message);
+    else if(!projection)text('projection-status','Aucune fenêtre partagée.');return;}
+  if(closing){for(const track of selected.getTracks())track.stop();return;}
+  // Swap only after the new selection succeeds. A cancelled picker preserves the old share.
+  const old=projection;
+  if(old&&stream===old)clearSource();
+  if(old)for(const track of old.getTracks())track.stop();
+  projection=selected;sessionStopped=false;prepare();
+  selected.getVideoTracks()[0].addEventListener('ended',()=>{if(projection===selected)releaseProjection();},{once:true});
+  const update=()=>{if(projection!==selected)return;
+    const audio=selected.getAudioTracks().some(t=>t.readyState==='live');
+    text('projection-status',audio?'Fenêtre prête · image et son.':'Fenêtre prête · image seule. Pour transmettre aussi le son, partage l’audio de la fenêtre ou choisis le fichier dans les Archives.');
+    sendRemoteState();
+  };
+  for(const track of selected.getAudioTracks())track.addEventListener('ended',update,{once:true});
+  $('stop-projection').hidden=false;update();void follow();
+}
 async function follow() {
-  if (!show) return;
-  const candidates=show.players.filter(item=>files.has(fileKey(item.source)));
+  if (!show||sessionStopped) return;
+  if(!['connected','simulation'].includes(show.status)){
+    quick=null;if(projection)gateProjection(projection,null);
+    if(current||stream)clearSource();return;
+  }
+  for(const id of stoppedProjectionCues){if(!show.players.some(p=>p.id===id))stoppedProjectionCues.delete(id);}
+  if(projection&&!quick){followProjection();return;}
+  const candidates=show.players.filter(item=>!stoppedProjectionCues.has(item.id)&&files.has(fileKey(item.source)));
   const known=candidates.find(item=>item.id===current?.id);
   const newer=candidates.find(item=>!current?.seen?.has(item.id));
-  const item=newer || known || candidates.at(-1);
+  const item=quick?{id:quick.id,playing:true,loop:false,position:0,observedAt:quick.time,volume:1,muted:false}:newer || known || candidates.at(-1);
   if (!item || !['connected','simulation'].includes(show.status)) { if(current)clearSource();return; }
-  const source=$('source'),file=files.get(fileKey(item.source));
+  const source=$('source'),file=quick?.file||files.get(fileKey(item.source));
   if (current?.id !== item.id || current.file !== file) {
-    clearSource();const mine=generation;
+    clearSource();lastFileError='';const mine=generation;
     current={id:item.id,file,seen:new Set(candidates.map(x=>x.id)),pending:true};
     const info=show.videos.find(video=>video.id===item.source);
-    playback={type:'playback',active:true,id:crypto.randomUUID(),title:info?.name || 'Vidéo du MJ',playing:item.playing,volume:item.volume,muted:item.muted};
+    playback={type:'playback',active:true,id:crypto.randomUUID(),title:quick?'Vidéo du MJ':info?.name || 'Vidéo du MJ',playing:item.playing,volume:item.volume,muted:item.muted};
     objectUrl=URL.createObjectURL(file);source.loop=item.loop;source.src=objectUrl;source.muted=true;
     text('stream-status','Ouverture du fichier vidéo sur le PC…');
     try {
@@ -238,7 +346,7 @@ async function follow() {
       });
       if(mine!==generation)return;
       if(typeof source.captureStream!=='function')throw Error('Ouvre le connecteur dans Chrome sur ton PC pour diffuser cette vidéo.');
-      source.currentTime=desiredPosition(item,source.duration);
+      if(!quick)source.currentTime=desiredPosition(item,source.duration);
       await prepareAudio();if(mine!==generation)return;
       // Media-element muting also silences captureStream() in Chromium.
       // Route decoded audio only to a stream destination, never the PC speakers.
@@ -253,10 +361,10 @@ async function follow() {
       if (!stream.getVideoTracks().length) throw Error('La capture de cette vidéo ne fournit aucune image.');
       broadcast(playback);for(const entry of clients.values())call(entry);
       text('stream-status','Diffusion de « '+playback.title+' ». Les commandes restent dans SoundShow.');
-    } catch(error) {if(mine===generation){clearSource();if(error.name==='NotAllowedError'){$('enable-audio').hidden=false;text('stream-status','Touche « Autoriser la diffusion du son » pour démarrer la vidéo avec son audio.');}else text('stream-status',error.message);}}
+    } catch(error) {if(mine===generation){lastFileError=error.message;const wasQuick=!!quick;quick=null;clearSource();sendRemoteState();if(wasQuick&&projection)void follow();if(error.name==='NotAllowedError'){$('enable-audio').hidden=false;text('stream-status','Touche « Autoriser la diffusion du son » pour démarrer la vidéo avec son audio.');}else text('stream-status',error.message);}}
     return;
   }
-  if(current.pending)return;
+  if(current.pending||quick)return;
   const target=desiredPosition(item,source.duration);
   if(Math.abs(source.currentTime-target)>.65)source.currentTime=target;
   source.loop=item.loop;
@@ -272,7 +380,7 @@ function prepare() {
   secret=Array.from(crypto.getRandomValues(new Uint8Array(32)),x=>x.toString(16).padStart(2,'0')).join('');
   peer=new Peer(undefined,options());const mine=peer;
   text('peer-status','Préparation de la connexion aux joueurs…');
-  peer.on('open',id=>{if(peer!==mine)return;peerRetry=0;$('pair-code').value=encodeSession({version:1,peer:id,secret});$('copy').disabled=$('stop-session').disabled=false;text('peer-status','Code prêt. Colle-le dans SoundShow, dans les Archives.');});
+  peer.on('open',id=>{if(peer!==mine)return;peerRetry=0;refreshOffers();sendRemoteState();$('pair-code').value=encodeSession({version:1,peer:id,secret});$('copy').disabled=$('stop-session').disabled=false;text('peer-status','Code prêt. Colle-le dans SoundShow, dans les Archives.');});
   peer.on('connection',connection=>{
     attempts++;lastIssue='Une demande de liaison est arrivée au PC.';diagnostic();
     if(clients.size>=32){rejected++;lastIssue='Nombre maximal de connexions atteint.';diagnostic();connection.close();return;}
@@ -291,15 +399,21 @@ function prepare() {
   peer.on('error',error=>{lastIssue='Erreur de mise en relation du PC : '+String(error?.type||'inconnue').slice(0,40);diagnostic();text('peer-status','Connexion aux joueurs indisponible ('+String(error?.type||'réseau')+'). Vérifie Internet et le réseau local.');});
 }
 function stopSession() {
-  owlLinked=false;stopLinkTimer();clearSource();for(const entry of clients.values())entry.connection.close();clients.clear();peer?.destroy();peer=null;
+  sessionStopped=true;quick=null;
+  if(projection){const old=projection;projection=null;for(const track of old.getTracks())track.stop();$('stop-projection').hidden=true;text('projection-status','Partage de la projection arrêté.');}
+  clearSource();for(const entry of clients.values())entry.connection.close();clients.clear();peer?.destroy();peer=null;secret='';refreshOffers();sendRemoteState();
   $('pair-code').value='';$('copy').disabled=$('stop-session').disabled=true;text('peer-status','Diffusion terminée. Prépare une nouvelle connexion pour reprendre.');audience();
 }
 $('connection').onsubmit=async event=>{event.preventDefault();primeAudio();try{await api('connect',{url:$('address').value.trim(),password:$('password').value});$('password').value='';}catch(error){text('show-status',error.message);}};
 $('demo-init').onclick=()=>{primeAudio();void api('demo',{action:'init'}).catch(error=>text('show-status',error.message));};
 document.querySelectorAll('[data-demo]').forEach(button=>button.onclick=()=>void api('demo',{action:button.dataset.demo}).catch(error=>text('show-status',error.message)));
-$('restore').onclick=()=>{primeAudio();void restore();};$('prepare').onclick=prepare;$('stop-session').onclick=stopSession;
+$('share-projection').onclick=startProjection;$('stop-projection').onclick=releaseProjection;
+$('open-main').onclick=openMain;
+$('restore').onclick=()=>{primeAudio();void restore();};$('prepare').onclick=()=>{sessionStopped=false;prepare();};$('stop-session').onclick=stopSession;
 $('enable-audio').onclick=()=>{primeAudio();void follow();};
 $('link-archives').onclick=openOwlbearAndLink;
 $('copy').onclick=async()=>{try{await navigator.clipboard.writeText($('pair-code').value);text('peer-status','Code copié. Ouvre le bouton SoundShow des Archives pour le coller.');}catch{$('pair-code').select();text('peer-status','Sélectionne le code puis copie-le avec Ctrl+C.');}};
-window.addEventListener('pagehide',()=>{closing=true;clearTimeout(wsTimer);stopLinkTimer();ws?.close();stopSession();void audioContext?.close();},{once:true});
+window.addEventListener('pagehide',()=>{closing=true;clearTimeout(wsTimer);stopLinkTimer();ws?.close();stopSession();for(const [grant,protocol] of [[mainGrant,autoLinkProtocol],[linkCandidate,linkProtocol]]){
+    if(grant?.accepted)grant.source.postMessage({protocol,challenge:grant.challenge,type:'disconnected'},archivesOrigin);
+  }void audioContext?.close();},{once:true});
 if(!key)text('show-status','Rouvre le connecteur depuis son programme pour obtenir ton accès administrateur.');else connectEvents();

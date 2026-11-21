@@ -207,7 +207,7 @@ export function installCentral(api) {
       try {
         const url = new URL(source.location.href);
         return source !== window && source.top !== source && url.origin === location.origin &&
-          /\/background-v55\.html$/.test(url.pathname) &&
+          /\/background-v(?:55|72)\.html$/.test(url.pathname) &&
           (source.top === mapTab || (source.top.opener === window && pairing.roomId === roomId));
       } catch { return false; }
     },

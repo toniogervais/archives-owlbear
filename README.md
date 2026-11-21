@@ -1,3 +1,9 @@
+## V4.73 — SoundShow dans les Archives principales et vidéo à la volée
+
+Le panneau **Sons** du MJ pilote aussi SoundShow depuis le Salon Live des Archives. Dans le connecteur, **Partager la fenêtre de projection** prépare les lecteurs pour toute la séance. Les vidéos lancées dans SoundShow s’affichent alors chez les joueurs, y compris celles ajoutées en cours de partie. Dans **Vidéos**, **Diffuser une vidéo du PC…** permet aussi de choisir un fichier local avec sa bande-son au dernier moment.
+
+[Connecteur Windows 0.4.0](https://github.com/toniogervais/archives-owlbear/releases/download/soundshow-bridge-v0.4.0/Archives-SoundShow-Connecteur.exe) · [Installation et utilisation](soundshow-bridge/README.md)
+
 ## V4.50 — présentations successives et fondus
 
 Les images montrées aux joueurs ont maintenant leur propre transmission, séparée de la vue complète du scénario. Une vue trop volumineuse ne bloque plus les images suivantes. Le MJ peut les envoyer depuis l’onglet principal des Archives sans ouvrir un second éditeur dans Owlbear. La liaison ne transmet que la projection publique autorisée.

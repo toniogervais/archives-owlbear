@@ -1,5 +1,5 @@
 import OBR from "../../assets/owlbear-transfer-sdk-v55.mjs";
-import { archivesUrl, screenUrl } from "../v57/room.mjs?v=4721";
+import { archivesUrl, screenUrl } from "../v57/room.mjs?v=4730";
 import { trustedOwlbearSdk } from "../v56/link.mjs?v=4590";
 const channel="fr.archives-imaginaire.bridge/screen-v55";
 const viewer="fr.archives-imaginaire.bridge/archives-viewer";
@@ -55,7 +55,7 @@ function unavailable(moduleName,error) {
 void import("../v58/transfers.mjs?v=4700").then(module => module.installArtworkTransfers()).catch(error=>unavailable("Tokens",error));
 void import("../v57/room-background.mjs?v=4590").then(module => module.installRoomPlay(OBR)).catch(error=>unavailable("Synchronisation",error));
 void import("../v60/background.mjs?v=4590").then(module => module.installFileLibrary(OBR)).catch(error=>unavailable("Bibliothèque",error));
-void import("../soundshow/owlbear.mjs?v=4590").then(module => module.installSoundShow(OBR)).catch(error=>unavailable("SoundShow",error));
+void import("../soundshow/owlbear.mjs?v=4730").then(module => module.installSoundShow(OBR)).catch(error=>unavailable("SoundShow",error));
 
 void import('../v73/main-public-host.mjs?v=4590').then(module=>module.installMainPublicHost(OBR)).catch(error=>unavailable('Archives principales',error));
 

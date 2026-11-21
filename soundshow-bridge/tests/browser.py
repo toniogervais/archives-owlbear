@@ -13,6 +13,7 @@ from pathlib import Path
 from aiohttp import web
 from aiohttp.test_utils import TestServer
 from playwright.async_api import async_playwright
+from improvisation import exercise as exercise_improvisation
 
 BASE=Path(__file__).resolve().parents[1]
 REPO=BASE.parent
@@ -142,6 +143,7 @@ async def main():
                     await host.locator('#password').fill('native-password')
                     await host.get_by_role('button',name='Connecter SoundShow',exact=True).click()
                     await host.get_by_text('SoundShow connecté — les raccourcis sont suivis.',exact=True).wait_for()
+                    await host.locator('#file-associations summary').click()
                     async with host.expect_file_chooser() as picker:
                         await host.get_by_role('button',name='Choisir la vidéo',exact=True).click()
                     await (await picker.value).set_files(str(video))
@@ -198,7 +200,7 @@ async def main():
                     assert await extension.evaluate('window.receivedPairing.peer') in code
                     assert 'owlbear.rodeo' in owlbear_window.url
                     assert 'archives.html' not in owlbear_window.url and code not in owlbear_window.url
-                    await host.get_by_text('Owlbear relié. La télécommande est également active dans Les Archives.',exact=True).wait_for()
+                    await host.get_by_text('Télécommande reliée à la salle Owlbear.',exact=True).wait_for()
                     print('One click opens Owlbear only; nested Archives extension receives session: OK',flush=True)
                     await extension.evaluate("()=>window.issueRemote({type:'play_playable',playable_id:'rain',action:'start'})")
                     await wait_expression(extension,'window.controlResult?.ok===true')
@@ -305,6 +307,8 @@ async def main():
                     # A dashboard reload must not repeat the two deliberate audio/video launches.
                     launch_count=sum(command.get('type')=='play_playable' for command in fake.commands)
                     assert launch_count==2
+                    await exercise_improvisation(host,context,tablet,fake,video,REPO,wait_expression,assert_audible)
+                    launch_count=sum(command.get('type')=='play_playable' for command in fake.commands)
                     await host.reload()
                     await host.get_by_text('SoundShow connecté — les raccourcis sont suivis.',exact=True).wait_for()
                     assert sum(command.get('type')=='play_playable' for command in fake.commands)==launch_count

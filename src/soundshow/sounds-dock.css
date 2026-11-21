@@ -112,3 +112,5 @@ body.soundshow-sounds-open #soundshow-sounds-dock.ss-moved{right:auto!important}
 #soundshow-sounds-dock.ss-horizontal.ss-is-collapsed .ss-sound-trigger,
 #soundshow-sounds-dock.ss-horizontal.ss-is-collapsed .ss-video-trigger{display:none}
 #soundshow-sounds-dock.ss-moved{right:auto!important}
+
+#soundshow-sounds-panel [hidden]{display:none!important}
