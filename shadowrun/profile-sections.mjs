@@ -22,11 +22,11 @@ function weapons(value){
  return [...matches.map(s=>s.trim()),...(tail?[tail]:[])].filter(Boolean);
 }
 const LABELS={
- 'Sorts':'Sort', 'Pouvoirs':'Pouvoir', 'Pouvoir optionnel':'Pouvoir optionnel',
+ 'Sorts':'Sort', 'Pouvoirs':'Pouvoir', 'Pouvoir optionnel':'Pouvoir optionnel', 'Pouvoirs d’adepte':'Pouvoir d’adepte', 'Métamagies':'Métamagie', 'Échos':'Écho',
  'Pouvoirs optionnels':'Pouvoir optionnel', 'Traits':'Trait',
  'Augmentations':'Augmentation', 'Équipement':'Équipement',
  'Connaissances':'Connaissance','Faiblesse':'Faiblesse',
- 'Faiblesses':'Faiblesse','Armes':'Arme'
+ 'Faiblesses':'Faiblesse','Armes':'Arme','Pouvoir d’adepte':'Pouvoir d’adepte','Métamagie':'Métamagie'
 };
 export function profileSectionRows(sections={},omitSkill=false){
  const rows=[];
