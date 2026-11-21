@@ -31,9 +31,19 @@ function nearWord(a,b){
  if(a.length===b.length){const d=[];for(let i=0;i<a.length;i++)if(a[i]!==b[i])d.push(i);return d.length===1||d.length===2&&d[1]===d[0]+1&&a[d[0]]===b[d[1]]&&a[d[1]]===b[d[0]];}
  if(a.length>b.length)[a,b]=[b,a];let i=0,j=0,skips=0;while(i<a.length&&j<b.length){if(a[i]===b[j]){i++;j++;}else{if(++skips>1)return false;j++;}}return true;
 }
-export function searchEntries(entries,{query='',kind='',topic='',source='',favorites=null,limit=100,offset=0,practicalOnly=false,category='',family='',subcategory=''}={},aliases=new Map()){
+function edgeCostMatches(entry,selected){
+ if(!selected||!entry.edgeCost)return true;
+ const raw=String(entry.edgeCost).toLocaleLowerCase('fr'),variable=/\b(?:par|réseau|loyauté|constitution|professionnalisme|modifiée|cible)\b/.test(raw);
+ if(selected==='variable')return variable||raw.includes(' / ')||raw.includes(' à ')||raw.includes('+');
+ if(variable)return false;
+ const target=Number(selected),range=/(\d+)\s*à\s*(\d+)/.exec(raw);
+ if(range)return target>=Number(range[1])&&target<=Number(range[2]);
+ const numbers=(raw.match(/\d+/g)||[]).map(Number);
+ return numbers.includes(target);
+}
+export function searchEntries(entries,{query='',kind='',topic='',source='',edgeCost='',favorites=null,limit=100,offset=0,practicalOnly=false,category='',family='',subcategory=''}={},aliases=new Map()){
  const gs=groups(query,aliases),q=normalize(query),meaning=queryWords(query).join(' ');let results=[];
- const candidates=entries.filter(e=>!(kind&&(kind==='rolls'?!hasRoll(e):kind==='dice'?!(hasRoll(e)||e.kind==='skillguide'):e.kind!==kind)||topic&&!(e._topics||topicsOf(e)).includes(topic)||source&&e.source!==source||favorites&&!favorites.has(e.id)||category&&e.category!==category&&e.habitat!==category&&!(e.path||[]).some(p=>normalize(p)===normalize(category))||practicalOnly&&!e.summary&&!e.attributes&&!e.fields?.length||!matchFacet(e,{kind,topic,family,subcategory})));
+ const candidates=entries.filter(e=>!(kind&&(kind==='rolls'?!hasRoll(e):kind==='dice'?!(hasRoll(e)||e.kind==='skillguide'):e.kind!==kind)||topic&&!(e._topics||topicsOf(e)).includes(topic)||source&&e.source!==source||edgeCost&&!edgeCostMatches(e,edgeCost)||favorites&&!favorites.has(e.id)||category&&e.category!==category&&e.habitat!==category&&!(e.path||[]).some(p=>normalize(p)===normalize(category))||practicalOnly&&!e.summary&&!e.attributes&&!e.fields?.length||!matchFacet(e,{kind,topic,family,subcategory})));
  function collect(fuzzy=false){
   for(const e of candidates){
    if(gs.some(g=>!g.some(w=>e._text.includes(w)||e._title.includes(w)||fuzzy&&e._title.split(/[^\p{L}]+/u).some(t=>nearWord(w,t)))))continue;
