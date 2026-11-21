@@ -1,4 +1,5 @@
 // Book bytes are read on the device. No PDF or extracted text is uploaded.
+import {extractHeadingLines} from './source-headings.mjs?v=145';
 let pdfModule;
 export async function readBookPdf(file,book,onProgress=()=>{}){
  if(!file||!book)throw Error('Choisis le PDF de cet ouvrage.');
@@ -26,11 +27,16 @@ export async function readBookPdf(file,book,onProgress=()=>{}){
    }
    flush();
    lines.sort((a,b)=>Number(a.x>w*.5)-Number(b.x>w*.5)||b.y-a.y||a.x-b.x);
-   const text=lines.map(l=>{
+   const rows=lines.map(l=>{
     const ordered=l.parts.sort((a,b)=>a.x-b.x);let out='',right=null;
-    for(const p of ordered){if(right!==null&&p.x-right>Math.max(1,p.size*.18)&&!out.endsWith(' ')&&!p.text.startsWith(' '))out+=' ';out+=p.text;right=p.x+p.width;}return out.trim();
-   }).filter(t=>!/\b(?:Gervais\s+ANTOINE|Thomas\s+LANCON)\b|@(?:hotmail|techprint)|\b\d{6}\/\d{5,}\/\d{5,}/i.test(t)).join('\n').replace(/([\p{L}])-\s*\n(?=[\p{L}])/gu,'$1');
-   pages.push({number:n,printed:n-book.printedOffset,text,layout:text});
+    for(const p of ordered){if(right!==null&&p.x-right>Math.max(1,p.size*.18)&&!out.endsWith(' ')&&!p.text.startsWith(' '))out+=' ';out+=p.text;right=p.x+p.width;}
+    return {text:out.trim(),size:ordered.length?Math.max(...ordered.map(p=>p.size)):0};
+   }).filter(row=>! /\b(?:Gervais\s+ANTOINE|Thomas\s+LANCON)\b|@(?:hotmail|techprint)|\b\d{6}\/\d{5,}\/\d{5,}/i.test(row.text));
+   // The original line typography is kept only as a compact set of short
+   // headings. No full page text or illustrations are sent to GitHub.
+   const headingLines=extractHeadingLines(rows);
+   const text=rows.map(row=>row.text).join('\n').replace(/([\p{L}])-\s*\n(?=[\p{L}])/gu,'$1');
+   pages.push({number:n,printed:n-book.printedOffset,text,layout:text,headingLines});
    onProgress(n,doc.numPages);page.cleanup();
   }
   return {...book,pages};
