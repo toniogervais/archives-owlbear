@@ -72,3 +72,18 @@ test('une référence non vérifiée ne récupère pas la description d’une ru
  assert.equal(found.endPage,1);
  assert.doesNotMatch(found.text,/seconde notice/);
 });
+
+test('une rubrique Médikit répartie sur deux pages s’arrête au titre imprimé non indexé',()=>{
+ const index=[
+  {id:'kit',source:'core',title:'Médikit',page:1,endPage:1,level:3},
+  {id:'magic',source:'core',title:'Magie',page:2,endPage:2,level:3}
+ ];
+ const library=book(
+  'Médikit\nLe matériel médical peut être utilisé après la préparation du patient pour',
+  'COMBAT // SOINS\n124\nSHADOWRUN : SIXIÈME ÉDITION\nêtre installé et fournir le traitement nécessaire. Le traitement se termine après une vérification complète.\nSorts\nCette partie décrit les soins magiques et ne concerne plus le médikit.'
+ );
+ const found=sectionExcerpt(index[0],library,index);
+ assert.equal(found.endPage,2);
+ assert.match(found.text,/vérification complète/);
+ assert.doesNotMatch(found.text,/Sorts|soins magiques|SIXIÈME ÉDITION/);
+});
