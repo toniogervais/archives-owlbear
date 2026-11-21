@@ -357,7 +357,7 @@ async function importLibrary(file){
  try{
   if(file.size>60*1024*1024)throw Error('Le fichier dépasse 60 Mo.');
   const library=await parseLibraryFileText(await file.text());
-  const saved=await putStored('library',library);state.library=library;state.worker?.postMessage({type:'library',library});$('#fulltext').disabled=false;$('#fulltext').checked=true;$('#libraryDot').textContent='●';
+  const saved=await putStored('library',library);state.library=library;state.worker?.postMessage({type:'library',library});for(const book of library.books)enrichSourceDescriptions(book);$('#fulltext').disabled=false;$('#fulltext').checked=true;$('#libraryDot').textContent='●';
   $('#importStatus').textContent=saved.persistent?`${library.books.length} ouvrages importés.`:'Ouvrages ouverts pour cette session. Le navigateur n’a pas pu les conserver : '+saved.message;
   showBooks();
   runSearch();if(state.selected)selectEntry(state.selected,{mobile:false});
@@ -371,7 +371,7 @@ async function importPdf(file,id){
   status.textContent='Lecture de '+(meta.displayTitle||meta.title)+'…';
   const book=await readBookPdf(file,meta,(n,total)=>{progress.max=total;progress.value=n;status.textContent=`Lecture du PDF : ${n} / ${total}`;});
   const library=validateLibrary({schema:'fr.archives-imaginaire.sr6.library',version:2,partial:true,books:[...(state.library?.books||[]).filter(b=>b.id!==id),book]});
-  const saved=await putStored('library',library);state.library=library;state.worker?.postMessage({type:'library',library});$('#fulltext').disabled=false;$('#fulltext').checked=true;$('#libraryDot').textContent='●';
+  const saved=await putStored('library',library);state.library=library;state.worker?.postMessage({type:'library',library});for(const book of library.books)enrichSourceDescriptions(book);$('#fulltext').disabled=false;$('#fulltext').checked=true;$('#libraryDot').textContent='●';
   status.textContent=saved.persistent?'PDF ajouté. Le texte s’affiche directement dans les fiches.':'PDF ouvert pour cette session : '+saved.message;
   showBooks();runSearch();if(state.selected)selectEntry(state.selected,{mobile:false});
  }catch(error){status.textContent=error.name==='PasswordException'?'Ce PDF est protégé par mot de passe. Utilise sa copie déverrouillée.':error.message;}
@@ -423,8 +423,32 @@ async function showNpcInventory(){
   $('#detail').innerHTML=`<div class="panel-title"><h2>${esc(selected)}</h2><span class="badge">Inventaire MJ</span></div><div id="npcInventory"></div>`;$('#detail').dataset.inventory=id;$('#npcInventory').textContent=inventoryText(record.lines,state.equipment)||'Aucun équipement attribué.';$('#npcInventory').className='booktext';$('.workspace').classList.add('show-detail');
  }catch(e){fail(e);}
 }
+// Enrichissement progressif et privé, uniquement quand le livre est disponible.
+function enrichSourceDescriptions(book){
+ if(!book?.pages?.length||book.language!=='fr'||sourceSummaryJobs.has(book.id))return;
+ const candidates=state.entries.filter(e=>e.sourceOnly&&e.source===book.id&&!e.summary);
+ const job=(async()=>{
+  let count=0,changed=false;
+  for(const entry of candidates){
+   if(state.byId?.get(entry.id)!==entry)break;
+   const passage=sectionExcerpt(entry,book,state.index);
+   const desc=conciseSourceDescription(passage,book.language);
+   if(desc&&passage&&['exact-heading','heading-and-anchor','exact-id-anchor'].includes(passage.matchedBy)){
+    entry.summary=desc.text;entry.sourceSummary=true;entry.sourceSummaryPage=passage.page;changed=true;
+   }
+   if(++count%18===0)await new Promise(resolve=>setTimeout(resolve,1));
+  }
+  if(changed){
+   state.prepared=prepareEntries(state.entries);
+   if(state.worker)state.worker.postMessage({type:'init',entries:state.entries,terms:state.terms.terms});
+   runSearch();
+   if(state.kind==='indexed'&&!state.selected)showBrowseHint('Rubriques des livres');
+  }
+ })().finally(()=>sourceSummaryJobs.delete(book.id));
+ sourceSummaryJobs.set(book.id,job);
+}
 async function restoreLibrary(){
- try{const library=await getStored('library');if(!library)return;state.library=validateLibrary(library);$('#fulltext').disabled=false;$('#fulltext').checked=true;$('#libraryDot').textContent='●';state.worker?.postMessage({type:'library',library:state.library});if($('#booksDialog').open)showBooks();if(state.selected)selectEntry(state.selected,{mobile:false,remember:false});}catch{}
+ try{const library=await getStored('library');if(!library)return;state.library=validateLibrary(library);$('#fulltext').disabled=false;$('#fulltext').checked=true;$('#libraryDot').textContent='●';state.worker?.postMessage({type:'library',library:state.library});for(const book of state.library.books)enrichSourceDescriptions(book);if($('#booksDialog').open)showBooks();if(state.selected)selectEntry(state.selected,{mobile:false,remember:false});}catch{}
 }
 async function loadBundledJson(name){
  let lastError;
@@ -549,6 +573,7 @@ function ensureBook(id){
   const task=fetchBook(id).then(raw=>{
    const book={...sourceBook(id),...raw};
    onlineBooks.set(id,book);
+   enrichSourceDescriptions(book);
    const library={books:[...onlineBooks.values(),...(state.library?.books||[]).filter(b=>!onlineBooks.has(b.id))]};
    if(state.worker)state.worker.postMessage({type:'book',book});
    else state.fullPages=libraryPages(library);
