@@ -8,6 +8,10 @@ export function actionType(entry) {
  const phrase=direct||(hasSourceTiming?summary:'');
  const low=phrase.toLocaleLowerCase('fr');
  const major=/\bmajeur(?:e|es)?\b/.test(low),minor=/\bmineur(?:e|es)?\b/.test(low);
+ if(/majeure en combat.*mineure si tous/i.test(low))return {label:'Majeure en combat ; mineure si tous les participants connaissent les Tactiques d’escouade',known:true};
+ if(/majeure.*mineure si l.appareil/i.test(low))return {label:'Majeure normalement ; mineure si l’appareil est connecté à une interface de contrôle active',known:true};
+ if(/majeure si en combat|majeure en combat|observation.*majeure si en combat/i.test(low))return {label:'Majeure en combat ; hors combat, suivre la durée de la tâche',known:true};
+ if(/\bmineure\b.*\bmajeure\b.*attaquer|\bmineure\s*\+\s*\bmajeure\b/i.test(low))return {label:'1 action mineure + 1 action majeure Attaquer',known:true};
  if(/\bmajeur(?:e|es)?\b.*\bmineur(?:e|es)?\b|\bmineur(?:e|es)?\b.*\bmajeur(?:e|es)?\b/.test(low)) {
    if(/\brv\b/.test(low)&&/\bra\b/.test(low))return {label:'Majeure en réalité augmentée ; mineure en réalité virtuelle',known:true};
    return {label:'Action majeure et action mineure',known:true};
