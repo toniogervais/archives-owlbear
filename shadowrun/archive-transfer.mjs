@@ -1,4 +1,4 @@
-import {profileSkillPools} from './profile-pools.mjs?v=137';
+import {profileSkillPools} from './profile-pools.mjs?v=138';
 
 const MAX_LINK_LENGTH=70000;
 const clean=(v,n=12000)=>String(v??'').slice(0,n);
@@ -9,10 +9,10 @@ function npcSheet(e){
  const attributes={};for(const key of ['CON','AGI','RÉA','FOR','VOL','LOG','INT','CHA','MAG','ESS'])attributes[key]=clean(e.attributes?.[key],32);
  const combat={};for(const key of ['SD','I/DI','PA','ME','DÉPLACEMENT','DRAIN'])combat[key]=clean(e.derived?.[key]??e.derived?.[key==='DÉPLACEMENT'?'Déplacement':key],72);
  const sections={
-  competences:pools.length?pools.map(s=>s.name+' : '+s.rank+' + '+s.attr+' '+(s.attributeValue??'?')+' = '+(s.total===null?'non chiffré':s.total+' D6')+(s.specialtyTotal?' ; '+s.specialty+' : '+s.specialtyTotal+' D6':'')).join('\n'):clean(e.sections?.Compétences),
+  competences:pools.length?pools.map(s=>s.name+' : '+(s.total===null?'non chiffré':s.total+' D6')+(s.specializations||[]).map(x=>' ; '+x.name+' : '+(x.total===null?'non chiffré':x.total+' D6')).join('')).join('\n'):clean(e.sections?.Compétences),
   sorts:clean(e.sections?.Sorts),augmentations:clean(e.sections?.Augmentations),
   equipement:clean(e.sections?.Équipement),armes:clean(e.sections?.Armes),
-  pouvoirs:clean(e.sections?.Pouvoirs),notes:'Source : '+sourceRef(e)+'\n'+clean(e.sections?.Faiblesse||'')
+  pouvoirs:clean(e.sections?.Pouvoirs),notes:'Source : '+sourceRef(e)+'\n'+Object.entries(e.sections||{}).filter(([k])=>!['Compétences','Sorts','Augmentations','Équipement','Armes','Pouvoirs'].includes(k)).map(([k,v])=>k+' : '+v).join('\n')
  };
  const total=Number.parseInt(String(e.derived?.ME||''),10);
  return {attributes,combat,sections,condition:{
@@ -36,8 +36,8 @@ export function toArchiveCell(e){
  if(e.kind==='equipment')gmDetails.push({title:'Catégorie et type',text:[e.category,...(e.path||[])].filter(Boolean).join(' › ')});
  const pools=person?profileSkillPools(e):[];
  if(pools.length)gmDetails.push({title:'Pools de D6',text:pools.map(s=>{
-   const parts=[s.name+' : '+s.rank+' + '+s.attr+' '+(s.attributeValue??'?')+' = '+(s.total===null?'non chiffré':s.total+' D6')];
-   if(s.specialtyTotal)parts.push('Spécialisation '+s.specialty+' : '+s.specialtyTotal+' D6');
+   const parts=[s.name+' : '+(s.total===null?'non chiffré':s.total+' D6')];
+   for(const x of s.specializations||[])parts.push('Spécialisation '+x.name+' : '+(x.total===null?'non chiffré':x.total+' D6'));
    return parts.join(' ; ');
   }).join('\n')});
  const node={title,category:kind,shape:person?'octagon':'diamond',
