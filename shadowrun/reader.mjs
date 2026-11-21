@@ -40,6 +40,37 @@ function unfinishedAtPageEnd(text){
  const tail=String(text||'').replace(/\s+/g,' ').trim();
  return tail.length>=35&&!/[.!?…»”)]$/.test(tail)&&/[\p{L}\d,;:–—-]$/u.test(tail);
 }
+// PDF text commonly begins with a running header (chapter, folio, book).
+// A continuation cannot be delimited against these page decorations.
+function cleanContinuationHeader(text){
+ const lines=String(text||'').split('\n');
+ let i=0;
+ while(i<4&&i<lines.length){
+  const line=lines[i].trim();
+  if(/^\d{1,3}$/.test(line)||/^shadowrun\b/i.test(line)||/^[^\n]{1,65}\s*\/\/\s*[^\n]{1,65}$/i.test(line)){i++;continue;}
+  break;
+ }
+ return lines.slice(i).join('\n');
+}
+// The outline may call the next topic "Magie" while its printed heading is
+// actually "Sorts". When the preceding section has no explicit end anchor,
+// stop at a new short heading preceded by a completed paragraph. This is a
+// safety boundary, never a claim about the heading's exact identity.
+function printedBoundary(text){
+ let offset=0,previous='';
+ for(const line of text.split('\n')){
+  const current=line.trim();
+  const candidate=current.length>=3&&current.length<=48&&
+   /^[\p{Lu}]/u.test(current)&&current.split(/\s+/).length<=5&&
+   !/[.!?;:]$/.test(current)&&!/[\/+\d]/.test(current)&&
+   !/^(?:shadowrun|table des mati[eè]res)/i.test(current)&&
+   /[.!?…»]$/.test(previous);
+  if(candidate)return offset;
+  if(current)previous=current;
+  offset+=line.length+1;
+ }
+ return text.length;
+}
 function getExcerpt(raw,headingTitles,entry,ref,index,first,last,truncated){
  const found=firstHeading(raw,headingTitles);
  if(!found)return null;
@@ -97,7 +128,11 @@ export function sectionExcerpt(entry,book,index=[]){
  const inferredContinuation=!boundedHere&&unfinishedAtPageEnd(firstText.slice(start));
  const includesNext=first<book.pages.length&&!boundedHere&&(explicitContinuation||inferredContinuation);
  const last=includesNext?first+1:first;
- const raw=book.pages.slice(first-1,last).map(p=>p.text).join('\n');
+ const nextText=includesNext?cleanContinuationHeader(book.pages[first]?.text):'';
+ // Only infer printed headings when this page extension was not established by
+ // an explicit source boundary. Never let a neighbouring section join the text.
+ const safeNext=includesNext&&!explicitContinuation?nextText.slice(0,printedBoundary(nextText)):nextText;
+ const raw=includesNext?firstText+'\n'+safeNext:firstText;
  const extracted=getExcerpt(raw,headings,entry,ref,index,first,last,Boolean(declaredEnd>last));
  if(!extracted)return null;
  // A following indexed heading can be the very first line on page two.
