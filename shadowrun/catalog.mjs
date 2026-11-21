@@ -1,7 +1,7 @@
 import {normalize} from './model.mjs?v=140';
 import {THEMES,topicOf,topicsOf,hasRoll} from './themes.mjs?v=140';
 
-export const KIND_NAMES={rule:'Règles',action:'Actions',roll:'Jets',dice:'Jets D6',skillguide:'Compétence',equipment:'Équipement',npc:'PNJ',creature:'Bestiaire',reference:'Références',page:'Pages'};
+export const KIND_NAMES={rule:'Règles',action:'Actions',edgeaction:'Actions d’Atout',edgeboost:'Bonus d’Atout',roll:'Jets',dice:'Jets D6',skillguide:'Compétence',equipment:'Équipement',npc:'PNJ',creature:'Bestiaire',reference:'Références',page:'Pages'};
 export const EQUIPMENT_ORDER=['Armes','Munitions et explosifs','Armures et protections','Modifications et accessoires','Augmentations','Matrice et logiciels','Véhicules','Drones','Équipement général','Matériel magique','PACKs','Équipement pour créatures'];
 const n=normalize;
 function match(text,expressions){
@@ -127,6 +127,7 @@ function themeFacet(e){
  return {family,subcategory};
 }
 export function classifyEntry(e){
+ if(e.kind==='edgeaction'||e.kind==='edgeboost')return {family:e.category||'Système de jeu',subcategory:e.path?.at(-1)||e.category||'Atout'};
  if(e.kind==='equipment')return {family:e.category||'Équipement général',subcategory:equipmentSub(e)};
  if(e.kind==='creature')return {family:e.habitat||'Habitats non précisés',subcategory:usefulLast(e)==='Généralités'?'Créatures':usefulLast(e)};
  if(e.kind==='npc')return {family:(e.path||[]).find(p=>/gang|securite|opposition|contact|militaire|corporati|profil/i.test(n(p)))||'Profils de PNJ',subcategory:usefulLast(e)==='Généralités'?'Profils':usefulLast(e)};
