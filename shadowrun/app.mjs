@@ -10,7 +10,7 @@ import {THEMES, topicOf, topicsOf, hasRoll, mergeTableRules} from './themes.mjs?
 import {hasTable, tableShelf, startTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=138';
 import {observePanel} from './panel-size.mjs?v=138';
 import {quickCatalogHierarchy,classifyEntry,KIND_NAMES} from './catalog.mjs?v=138';
-import {profileSkillPools,skillGuideEntries} from './profile-pools.mjs?v=138';
+import {profileSkillPools,profileChoicePools,skillGuideEntries} from './profile-pools.mjs?v=139';
 import {actionType} from './action-types.mjs?v=138';
 import {canTranslateLocally,translatePassage} from './translation.mjs?v=138';
 import {profileSectionRows} from './profile-sections.mjs?v=138';
@@ -129,6 +129,15 @@ function skillPoolHtml(rows){
  }).join('');
  return '<section class="skill-pools"><h3>Compétences : D6 à lancer</h3><p class="small">Les pools sont déjà calculés. Une spécialisation ou une variante ne s’applique que dans la situation correspondante.</p><div class="table-wrap"><table><thead><tr><th>Compétence</th><th>Pool final</th></tr></thead><tbody>'+tr+'</tbody></table></div><p class="small">Une compétence sans valeur exploitable n’est pas chiffrée arbitrairement.</p></section>';
 }
+function profileChoicesHtml(groups){
+ if(!groups.length)return '';
+ return '<section class="choice-pools"><h3>Compétences au choix : ensembles exclusifs</h3><p class="small">Les variantes ci-dessous ne sont pas toutes acquises. Sélectionner une seule option, conformément à la fiche du livre.</p>'+
+ groups.map(g=>'<section class="choice-group"><h4>'+esc(g.title)+'</h4>'+
+ '<div class="table-wrap"><table><thead><tr><th>Compétence possible</th><th>D6 à lancer</th></tr></thead><tbody>'+
+ g.rows.map(r=>'<tr><th>'+esc(r.name)+'</th><td><strong>'+(r.total===null?'Non chiffré':r.total+' D6')+'</strong>'+
+ (r.choiceSpecialization===null||r.choiceSpecialization===undefined?'':'<small>Avec spécialisation choisie : '+r.choiceSpecialization+' D6</small>')+'</td></tr>').join('')+
+ '</tbody></table></div>'+(g.disclaimer?'<p class="small">'+esc(g.disclaimer)+'</p>':'')+'</section>').join('')+'</section>';
+}
 function categoryHtml(e){
  const category=e.category||e.habitat||topics[topicOf(e)]||'Système de jeu';
  const path=(e.path||[]).filter(Boolean);
@@ -156,6 +165,8 @@ async function selectEntry(e,{mobile=true,remember=true}={}){
   root.insertAdjacentHTML('beforeend',`<dl class="stat-grid">${Object.entries(e.attributes).map(([k,v])=>`<div class="stat"><dt title="${esc(state.terms.attributes?.find(a=>a.fr===k)?.french||k)}">${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>`);
    const rows=profileSkillPools(e);
    if(rows.length)root.insertAdjacentHTML('beforeend',skillPoolHtml(rows));
+   const choices=profileChoicePools(e);
+   if(choices.length)root.insertAdjacentHTML('beforeend',profileChoicesHtml(choices));
    else if(e.sections?.Compétences)root.insertAdjacentHTML('beforeend','<p class="warn">Cette fiche énumère des compétences sans leur attribuer de rang chiffré. Aucun pool de D6 n’est déduit automatiquement : consulter la règle spécifique de la créature ou de l’esprit.</p>');
    const rolls=profileRolls(e).filter(r=>r.label==='Défense physique'||r.label==='Résister aux dommages');
    if(rolls.length)root.insertAdjacentHTML('beforeend',`<h3>Autres tests courants</h3><div class="profile-rolls">${rolls.map(r=>`<div><span>${esc(r.label)}</span><strong>${esc(r.value)}</strong><small>Test réactif ; les options Bloquer et Esquiver sont des actions mineures distinctes.</small></div>`).join('')}</div>`);
