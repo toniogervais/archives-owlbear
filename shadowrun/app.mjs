@@ -13,6 +13,7 @@ import {quickCatalogHierarchy,classifyEntry,KIND_NAMES} from './catalog.mjs?v=13
 import {profileSkillPools,skillGuideEntries} from './profile-pools.mjs?v=138';
 import {actionType} from './action-types.mjs?v=138';
 import {canTranslateLocally,translatePassage} from './translation.mjs?v=138';
+import {profileSectionRows} from './profile-sections.mjs?v=138';
 import {installWindowControls} from './window-controls.mjs?v=138';
 import {sendToArchives} from './archive-transfer.mjs?v=138';
 
@@ -160,7 +161,7 @@ async function selectEntry(e,{mobile=true,remember=true}={}){
    if(rolls.length)root.insertAdjacentHTML('beforeend',`<h3>Autres tests courants</h3><div class="profile-rolls">${rolls.map(r=>`<div><span>${esc(r.label)}</span><strong>${esc(r.value)}</strong><small>Test réactif ; les options Bloquer et Esquiver sont des actions mineures distinctes.</small></div>`).join('')}</div>`);
    const allDetails=[
      ...Object.entries(e.derived||{}).map(([label,value])=>({label,value})),
-     ...Object.entries(e.sections||{}).filter(([key])=>key!=='Compétences'||!rows.length).map(([label,value])=>({label,value})),
+     ...profileSectionRows(e.sections||{},Boolean(rows.length)),
      ...(e.fields||[])
    ].filter(f=>f.value!==null&&f.value!==undefined&&String(f.value).trim());
    if(allDetails.length)root.insertAdjacentHTML('beforeend','<h3>Caractéristiques détaillées, capacités et matériel</h3>'+tableRows(allDetails));
@@ -232,7 +233,7 @@ function renderSource(e,root){
   const passage=e.kind==='roll'&&book.anchors?pageText.slice(e.start,e.end):'';
   const excerpt=passage||e.kind==='page'?null:sectionExcerpt(e,book,state.index);
   const text=passage||(e.kind==='page'?pageText:excerpt?.text||'');
-  if(e.kind!=='roll'&&e.kind!=='page'&&!e.summary&&!e.attributes){const points=localKeyPoints(text,book.language);if(points.length){const section=document.createElement('section');section.className='local-points';section.innerHTML=`<h3>Points clés de la section</h3><ul>${points.map(p=>`<li>${esc(p)}</li>`).join('')}</ul>`;root.insertBefore(section,details);}}
+  if(book.language!=='en'&&e.kind!=='roll'&&e.kind!=='page'&&!e.summary&&!e.attributes){const points=localKeyPoints(text,book.language);if(points.length){const section=document.createElement('section');section.className='local-points';section.innerHTML=`<h3>Points clés de la section</h3><ul>${points.map(p=>`<li>${esc(p)}</li>`).join('')}</ul>`;root.insertBefore(section,details);}}
   if(text){
       const body=document.createElement('div');body.className='booktext';reader.append(body);
       if(book.language==='en'){
