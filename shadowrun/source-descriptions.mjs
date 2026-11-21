@@ -42,7 +42,7 @@ export function sourceContext(entry,book,passage){
   endPage:passage?.fullEndPage||entry.endPage||passage?.endPage||entry.page,
   indexPath:(entry.path||[]).filter(Boolean),
   found:Boolean(passage),
-  exact:Boolean(passage&&['exact-heading','heading-and-anchor','exact-id-anchor'].includes(passage.matchedBy)),
+  exact:Boolean(passage&&['exact-heading','heading-and-anchor','exact-id-anchor','two-page-continuation'].includes(passage.matchedBy)),
   availablePages:pages
  };
 }
