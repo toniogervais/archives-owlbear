@@ -1,4 +1,4 @@
-export const VERSION='1.3.8';
+export const VERSION='1.3.9';
 export const NAMESPACE='fr.archives-imaginaire.shadowrun';
 export const TAB_LABELS={combat:'Combat',magie:'Magie',rigging:'Rigging',matrice:'Matrice',equipement:'Équipement',livres:'Livres',favoris:'Favoris',mj:'PNJ'};
 export function normalize(text){return String(text??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('fr').replace(/œ/g,'oe').replace(/æ/g,'ae').replace(/[’'‐‑–—]/g,' ').replace(/\s+/g,' ').trim();}
