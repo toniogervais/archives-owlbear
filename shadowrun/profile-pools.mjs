@@ -51,7 +51,9 @@ export function parseProfileSkills(value=''){
  return rows;
 }
 export function profileSkillPools(profile){
- return parseProfileSkills(profile?.sections?.Compétences||'').map(s=>{
+ const text=String(profile?.sections?.Compétences||'');
+ const fixed=/\bchoisir\b/i.test(text)?text.split(/\s*;\s*choisir\b/i)[0]:text;
+ return parseProfileSkills(fixed).map(s=>{
   const a=attrValue(profile,s.definition.attr);
   const total=a.value===null?null:a.value+s.rank;
   const contextual=s.definition.alternate.map(c=>{
@@ -65,6 +67,32 @@ export function profileSkillPools(profile){
    alternateRank:s.alternateRank,alternateRankTotal:s.alternateRank===null||a.value===null?null:s.alternateRank+a.value,
    contextual};
  });
+}
+// Certains contacts indiquent des compétences EXCLUSIVES AU CHOIX, pas toutes simultanément.
+export function profileChoicePools(profile){
+ const s=String(profile?.sections?.Compétences||'');
+ if(!/\bchoisir\b/i.test(s))return [];
+ const sets=[];
+ if(/choisir une compétence au rang 5/i.test(s)){
+  const candidates=['Astral','Escroquerie','Biotech','Électronique','Ingénierie'];
+  const choices=candidates.map(name=>{
+   const row=profileSkillPools({...profile,sections:{...profile.sections,Compétences:name+' 5'}})[0];
+   return {...row,choiceSpecialization:row?.total===null?null:row.total+2};
+  }).filter(Boolean);
+  sets.push({title:'Choisir une seule compétence parmi les propositions (rang 5)',rows:choices,disclaimer:'Choisir également une spécialisation pour cette compétence ; bonus conditionnel de 2 D6.'});
+ }else if(/choisir un ensemble/i.test(s)){
+  const groups=[
+   ['Combattant','Combat rapproché 3, Armes à feu 3'],
+   ['Technicien et pilote','Ingénierie 3, Pilotage 3'],
+   ['Spécialiste matriciel','Piratage 3, Électronique 3'],
+   ['Pratiquant de la magie','Astral 3, Conjuration 3, Sorcellerie 3']
+  ];
+  for(const [title,skills] of groups){
+   const rows=profileSkillPools({...profile,sections:{...profile.sections,Compétences:skills}});
+   sets.push({title,rows,disclaimer: title==='Pratiquant de la magie'?'Les scores de Magie ne figurent pas dans ce profil générique : aucun pool magique n’est inventé.':''});
+  }
+ }
+ return sets;
 }
 export function skillGuideEntries(){
  return SKILLS.map((s,i)=>({
