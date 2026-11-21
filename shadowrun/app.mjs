@@ -10,7 +10,8 @@ import {THEMES, topicOf, topicsOf, hasRoll, mergeTableRules} from './themes.mjs?
 import {hasTable, tableShelf, startTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=137';
 import {observePanel} from './panel-size.mjs?v=137';
 import {quickCatalogHierarchy,classifyEntry,KIND_NAMES} from './catalog.mjs?v=137';
-import {profileSkillPools,skillGuideEntries} from './profile-pools.mjs?v=137';
+import {profileSkillPools,skillGuideEntries} from './profile-pools.mjs?v=138';
+import {actionType} from './action-types.mjs?v=138';
 import {installWindowControls} from './window-controls.mjs?v=137';
 import {sendToArchives} from './archive-transfer.mjs?v=137';
 
@@ -78,9 +79,10 @@ function renderResults(r){
   shown.add(groupKey);
   const button=document.createElement('button');button.className='result'+(state.selected?.id===e.id?' active':'');button.dataset.id=e.id;
   const folder=classifyEntry(e);
+   const timing=actionType(e);
   const folderText=e.kind==='equipment'?folder.family+' › '+folder.subcategory:e.kind==='creature'?folder.family:folder.subcategory;
    const editions=e.kind==='equipment'?(state.equipmentGroups?.get(groupKey)?.length||1):1;
-  button.innerHTML=`<span class="name">${state.favorites.has(e.id)?'★ ':''}${esc(title(e))}</span><span class="meta"><span class="type">${esc(labels[e.kind]||'Référence')}</span><span class="result-folder">${esc(folderText)}</span><span>${esc(sourceLabel(e))}</span>${editions>1?'<span class="editions">'+editions+' ouvrages / variantes</span>':''}${e.optional?'<span>Optionnelle</span>':''}</span>${e.procedure?.test||e.pools?.length?`<span class="result-roll">${esc(e.procedure?.test||e.pools.join(' · '))}</span>`:''}${e.summary?`<span class="excerpt">${esc(e.summary)}</span>`:''}`;
+  button.innerHTML=`<span class="name">${state.favorites.has(e.id)?'★ ':''}${esc(title(e))}</span><span class="meta"><span class="type">${esc(labels[e.kind]||'Référence')}</span><span class="result-folder">${esc(folderText)}</span><span>${esc(sourceLabel(e))}</span>${editions>1?'<span class="editions">'+editions+' ouvrages / variantes</span>':''}${e.optional?'<span>Optionnelle</span>':''}</span>${e.procedure?.test||e.pools?.length?`<span class="result-roll">${esc(e.procedure?.test||e.pools.join(' · '))}</span>`:''}${timing?`<span class="result-action">Type d’action : ${esc(timing.label)}</span>`:''}${e.summary?`<span class="excerpt">${esc(e.summary)}</span>`:''}`;
   button.addEventListener('click',()=>selectEntry(e));const item=document.createElement('div');item.setAttribute('role','listitem');item.append(button);frag.append(item);
  }
  root.append(frag);
@@ -93,7 +95,7 @@ function relationHtml(e){
  if(!rel.length)return '';
  return `<h3>À consulter aussi</h3>${rel.map(e=>`<button class="relation" data-entry="${esc(e.id)}">${esc(title(e))}</button>`).join('')}`;
 }
-function headerHtml(e){return `<div class="topline"><button class="subtle back-mobile" id="backResults">Résultats</button><span class="breadcrumb">${esc(topics[topicOf(e)]||e.habitat||e.category||'Compendium')}</span><button id="favorite" class="iconbutton" aria-label="${state.favorites.has(e.id)?'Retirer des favoris':'Ajouter aux favoris'}" aria-pressed="${state.favorites.has(e.id)}">${state.favorites.has(e.id)?'★':'☆'}</button></div><div class="badges"><span class="badge">${esc(labels[e.kind]||'Référence')}</span>${e.summary&&e.kind!=='page'?'<span class="badge summary">Rappel en français</span>':''}${e.optional?'<span class="badge optional">Règle optionnelle</span>':''}${e.verification==='a-verifier'?'<span class="badge optional">Extraction à vérifier dans la source</span>':''}</div><h2>${esc(title(e))}</h2>${e.originalTitle&&e.originalTitle!==title(e)?`<p class="original-title">${esc(e.originalTitle)}</p>`:''}`;}
+function headerHtml(e){return `<div class="topline"><button class="subtle back-mobile" id="backResults">Résultats</button><span class="breadcrumb">${esc(topics[topicOf(e)]||e.habitat||e.category||'Compendium')}</span><button id="favorite" class="iconbutton" aria-label="${state.favorites.has(e.id)?'Retirer des favoris':'Ajouter aux favoris'}" aria-pressed="${state.favorites.has(e.id)}">${state.favorites.has(e.id)?'★':'☆'}</button></div><div class="badges"><span class="badge">${esc(labels[e.kind]||'Référence')}</span>${e.summary&&e.kind!=='page'?'<span class="badge summary">Rappel en français</span>':''}${e.optional?'<span class="badge optional">Règle optionnelle</span>':''}${e.verification==='a-verifier'?'<span class="badge optional">Extraction à vérifier dans la source</span>':''}</div><h2>${esc(title(e))}</h2>${e.originalTitle&&e.originalTitle!==title(e)&&!['wild','companion'].includes(e.source)?`<p class="original-title">${esc(e.originalTitle)}</p>`:''}`;}
 function renderEquipmentAlternatives(entry,root){
  const key=normalize(title(entry))+'|'+normalize(entry.category||'');
  const options=state.equipmentGroups?.get(key)||[];
@@ -116,15 +118,14 @@ function skillRelatedRules(e,rules){
 }
 function skillPoolHtml(rows){
  const tr=rows.map(s=>{
-  const value=s.total===null?'—':s.total+' D6';
-  const formula=s.total===null?'Attribut non chiffré : consulter le livre':s.rank+' + '+s.attributeValue;
-  const spec=s.specialty&&s.bonus?'<div class="pool-variant">Spécialisation '+esc(s.specialty)+' : +'+s.bonus+' D6'+(s.specialtyTotal===null?'':' → '+s.specialtyTotal+' D6 si applicable')+'</div>':'';
-  const extras=s.contextual.map(c=>'<div class="pool-variant">Pour '+esc(c.when)+' : '+esc(c.attr)+(c.attributeValue===null?' (non chiffré)':' '+c.attributeValue+' → '+c.total+' D6')+'</div>').join('');
-  const second=s.alternateRankTotal!==null?'<div class="pool-variant">Rang alternatif '+s.alternateRank+' indiqué : '+s.alternateRankTotal+' D6 selon la situation</div>':'';
-  const augmented=s.alternateAttributeTotal!==null?'<div class="pool-variant">Attribut '+esc(s.rawAttribute)+' : variante '+s.alternateAttributeTotal+' D6, si applicable</div>':'';
-  return '<tr><th scope="row">'+esc(s.name)+'</th><td>'+s.rank+'</td><td>'+esc(s.attrName)+' ('+s.attr+') : '+(s.attributeValue===null?'—':s.attributeValue)+'</td><td><strong class="pool-total">'+value+'</strong><small class="pool-formula">'+formula+'</small>'+spec+extras+second+augmented+'</td></tr>';
+  const value=s.total===null?'Non chiffré':s.total+' D6';
+  const spec=(s.specializations||[]).map(x=>'<div class="pool-variant">Spécialisation '+esc(x.name)+' : <strong>'+(x.total===null?'Non chiffré':x.total+' D6')+'</strong> si applicable</div>').join('');
+  const extras=s.contextual.map(c=>'<div class="pool-variant">Pour '+esc(c.when)+' : <strong>'+(c.total===null?'Non chiffré':c.total+' D6')+'</strong></div>').join('');
+  const second=s.alternateRankTotal!==null?'<div class="pool-variant">Variante de compétence : <strong>'+s.alternateRankTotal+' D6</strong> selon la situation</div>':'';
+  const augmented=s.alternateAttributeTotal!==null?'<div class="pool-variant">Variante d’attribut : <strong>'+s.alternateAttributeTotal+' D6</strong> si applicable</div>':'';
+  return '<tr><th scope="row">'+esc(s.name)+'</th><td><strong class="pool-total">'+value+'</strong>'+spec+extras+second+augmented+'</td></tr>';
  }).join('');
- return '<section class="skill-pools"><h3>Compétences et pools de dés</h3><p class="small">Pool de base = compétence + attribut associé. Les spécialisations, maîtrises et attributs secondaires sont des variantes conditionnelles : ne pas les additionner systématiquement.</p><div class="table-wrap"><table><thead><tr><th>Compétence</th><th>Rang</th><th>Attribut</th><th>D6 à lancer</th></tr></thead><tbody>'+tr+'</tbody></table></div><p class="small">Les connaissances ne forment pas à elles seules un pool. Les pouvoirs spéciaux peuvent demander un autre test.</p></section>';
+ return '<section class="skill-pools"><h3>Compétences : D6 à lancer</h3><p class="small">Les pools sont déjà calculés. Une spécialisation ou une variante ne s’applique que dans la situation correspondante.</p><div class="table-wrap"><table><thead><tr><th>Compétence</th><th>Pool final</th></tr></thead><tbody>'+tr+'</tbody></table></div><p class="small">Une compétence sans valeur exploitable n’est pas chiffrée arbitrairement.</p></section>';
 }
 function categoryHtml(e){
  const category=e.category||e.habitat||topics[topicOf(e)]||'Système de jeu';
@@ -145,6 +146,8 @@ async function selectEntry(e,{mobile=true,remember=true}={}){
    root.insertAdjacentHTML('beforeend','<section class="archives-export"><div class="archives-export-title">Exporter cette fiche dans Les Archives</div><div class="archives-export-actions"><button type="button" data-sr6-export="canvas" class="primary" title="Créer une cellule masquée sur le canevas de l’acte actif">→ Canevas</button><button type="button" data-sr6-export="library" class="subtle" title="Conserver cette fiche dans la bibliothèque privée, hors du canevas">→ Réserve de cellules</button></div><p class="small">Transfert MJ · description, caractéristiques et pools D6, si présents.</p></section>');
   }
  if(e.kind==='roll'&&e.pools?.length)root.insertAdjacentHTML('beforeend',`<section class="pool-list"><h3>Réserves citées dans le passage</h3>${e.pools.map(pool=>`<p>${esc(pool)}</p>`).join('')}</section>`);
+ const actionInfo=actionType(e);
+ if(actionInfo)root.insertAdjacentHTML('beforeend',`<section class="action-identity" aria-label="Nature de l’action"><strong>Type d’action</strong><span>${esc(actionInfo.label)}</span></section>`);
  if(e.procedure)root.insertAdjacentHTML('beforeend',procedureHtml(e.procedure));
  if(e.attributes){
   root.insertAdjacentHTML('beforeend','<h3>Caractéristiques</h3>');
@@ -153,19 +156,21 @@ async function selectEntry(e,{mobile=true,remember=true}={}){
    if(rows.length)root.insertAdjacentHTML('beforeend',skillPoolHtml(rows));
    else if(e.sections?.Compétences)root.insertAdjacentHTML('beforeend','<p class="warn">Cette fiche énumère des compétences sans leur attribuer de rang chiffré. Aucun pool de D6 n’est déduit automatiquement : consulter la règle spécifique de la créature ou de l’esprit.</p>');
    const rolls=profileRolls(e).filter(r=>r.label==='Défense physique'||r.label==='Résister aux dommages');
-   if(rolls.length)root.insertAdjacentHTML('beforeend',`<h3>Autres tests courants</h3><div class="profile-rolls">${rolls.map(r=>`<div><span>${esc(r.label)}</span><strong>${esc(r.value)}</strong><small>${esc(r.formula)}</small></div>`).join('')}</div>`);
-   for(const [k,v] of Object.entries(e.sections||{})){
-    if(k==='Compétences'&&rows.length){root.insertAdjacentHTML('beforeend',`<details><summary>Compétences : formulation du livre</summary><p>${esc(v)}</p></details>`);continue;}
-    root.insertAdjacentHTML('beforeend',`<h3>${esc(k)}</h3><p>${esc(v)}</p>`);
-   }
+   if(rolls.length)root.insertAdjacentHTML('beforeend',`<h3>Autres tests courants</h3><div class="profile-rolls">${rolls.map(r=>`<div><span>${esc(r.label)}</span><strong>${esc(r.value)}</strong><small>Test réactif ; les options Bloquer et Esquiver sont des actions mineures distinctes.</small></div>`).join('')}</div>`);
+   const allDetails=[
+     ...Object.entries(e.derived||{}).map(([label,value])=>({label,value})),
+     ...Object.entries(e.sections||{}).filter(([key])=>key!=='Compétences'||!rows.length).map(([label,value])=>({label,value})),
+     ...(e.fields||[])
+   ].filter(f=>f.value!==null&&f.value!==undefined&&String(f.value).trim());
+   if(allDetails.length)root.insertAdjacentHTML('beforeend','<h3>Caractéristiques détaillées, capacités et matériel</h3>'+tableRows(allDetails));
   if(e.sourceNotes)root.insertAdjacentHTML('beforeend',`<p class="small">${esc(e.sourceNotes)}</p>`);
   root.insertAdjacentHTML('beforeend','<div class="detail-actions"><button id="copyProfile" class="subtle">Copier la fiche</button></div>');
-  if(e.original&&e.source==='wild'){
+  if(false&&e.original&&e.source==='wild'){
    root.insertAdjacentHTML('beforeend',`<details><summary>Vérifier les valeurs anglais / français</summary><div class="table-wrap"><table><thead><tr><th>Anglais</th><th>Français</th><th>Valeur source</th><th>Valeur affichée</th></tr></thead><tbody>${(e.comparison||[]).map(c=>`<tr><td>${esc(c.en)}</td><td>${esc(c.fr)}</td><td>${esc(c.source)}</td><td>${esc(c.value)}</td></tr>`).join('')}</tbody></table></div></details>`);
   }
  }
  if(e.summary&&e.kind!=='page')root.insertAdjacentHTML('beforeend',`<div class="summary-body"><h3>Description / rappel</h3><p>${esc(e.summary)}</p>${e.steps?.length?`<ol>${e.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>`:''}${e.warning?`<p class="warn">${esc(e.warning)}</p>`:''}</div>`);
- if(e.fields?.length){root.insertAdjacentHTML('beforeend','<h3>Caractéristiques</h3>');root.insertAdjacentHTML('beforeend',tableRows(e.fields));}
+ if(e.fields?.length&&!e.attributes){root.insertAdjacentHTML('beforeend','<h3>Caractéristiques</h3>');root.insertAdjacentHTML('beforeend',tableRows(e.fields));}
  if(e.kind==='equipment')root.insertAdjacentHTML('beforeend','<div class="detail-actions"><button id="addCart" class="primary">Ajouter au panier</button></div>');
   if(e.kind==='equipment')renderEquipmentAlternatives(e,root);
  root.insertAdjacentHTML('beforeend',relationHtml({...e,related:[...new Set([...(e.related||[]),...(e.linkedProfiles||[]),...suggestedRules(e,state.rules),...skillRelatedRules(e,state.rules)])]}));
