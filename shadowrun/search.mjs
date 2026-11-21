@@ -44,7 +44,7 @@ function edgeCostMatches(entry,selected){
 }
 export function searchEntries(entries,{query='',kind='',topic='',source='',edgeCost='',favorites=null,limit=100,offset=0,practicalOnly=false,category='',family='',subcategory=''}={},aliases=new Map()){
  const gs=groups(query,aliases),q=normalize(query),meaning=queryWords(query).join(' ');let results=[];
- const candidates=entries.filter(e=>!(kind&&(kind==='rolls'?!hasRoll(e):kind==='dice'?!(hasRoll(e)||e.kind==='skillguide'):e.kind!==kind)||topic&&!(e._topics||topicsOf(e)).includes(topic)||source&&e.source!==source||edgeCost&&!edgeCostMatches(e,edgeCost)||favorites&&!favorites.has(e.id)||category&&e.category!==category&&e.habitat!==category&&!(e.path||[]).some(p=>normalize(p)===normalize(category))||practicalOnly&&!e.summary&&!e.attributes&&!e.fields?.length||!matchFacet(e,{kind,topic,family,subcategory})));
+ const candidates=entries.filter(e=>!(kind&&(kind==='indexed'?!e.sourceOnly:kind==='rolls'?!hasRoll(e):kind==='dice'?!(hasRoll(e)||e.kind==='skillguide'):e.kind!==kind)||topic&&!(e._topics||topicsOf(e)).includes(topic)||source&&e.source!==source||edgeCost&&!edgeCostMatches(e,edgeCost)||favorites&&!favorites.has(e.id)||category&&e.category!==category&&e.habitat!==category&&!(e.path||[]).some(p=>normalize(p)===normalize(category))||practicalOnly&&!e.summary&&!e.attributes&&!e.fields?.length||!matchFacet(e,{kind,topic,family,subcategory})));
  function collect(fuzzy=false){
   for(const e of candidates){
    if(gs.some(g=>!g.some(w=>e._text.includes(w)||e._title.includes(w)||fuzzy&&e._title.split(/[^\p{L}]+/u).some(t=>nearWord(w,t)))))continue;
