@@ -216,7 +216,15 @@ async function selectEntry(e,{mobile=true,remember=true}={}){
  root.scrollTop=0;$('#results').querySelectorAll('.result').forEach(b=>b.classList.toggle('active',b.dataset.id===e.id));
  if(mobile){$('.workspace').classList.add('show-detail');root.focus({preventScroll:true});}
 }
-function getPrivateBook(id){return onlineBooks.get(id)||state.library?.books.find(b=>b.id===id);}
+function getPrivateBook(id){
+ const remote=onlineBooks.get(id),local=state.library?.books.find(b=>b.id===id);
+ if(remote&&local&&remote.pages?.length===local.pages?.length){
+  // Keep the private table's content, bookmarks and artwork connections;
+  // merge only local PDF typography where it is available.
+  return {...remote,pages:remote.pages.map((page,i)=>local.pages[i]?.headingLines?.length?{...page,headingLines:local.pages[i].headingLines}:page)};
+ }
+ return remote||local;
+}
 function renderSource(e,root){
  const book=getPrivateBook(e.source);
  if(!book&&hasTable()){
@@ -354,7 +362,7 @@ function showBooks(){
  $('#libraryStatus').textContent=hasTable()?'Les six ouvrages de ta table sont accessibles en ligne.':state.library?`${readyIds.size} ouvrages consultables sur cet appareil.`:'Les index et les fiches sont disponibles. Importe le fichier de bibliothèque pour lire et rechercher dans les ouvrages.';
  $('#bookList').innerHTML=state.books.map(b=>`<div class="book-row"><div><strong>${esc(b.displayTitle||b.title)}</strong><p class="small">${b.pageCount} pages · ${b.language==='en'?'Source anglaise · fiches françaises':'Français'}</p></div><div class="book-actions"><button class="subtle" data-book="${esc(b.id)}">${readyIds.has(b.id)?'Ouvrir':'Voir les fiches'}</button><label class="subtle import-button">Ajouter son PDF<input type="file" data-pdfbook="${esc(b.id)}" accept=".pdf,application/pdf" hidden></label></div></div>`).join('');
  $('#removeLibrary').hidden=!state.library;
- $('#importLibrary').closest('label').hidden=hasTable();$('#bookList').querySelectorAll('.import-button').forEach(label=>label.hidden=hasTable());
+ $('#importLibrary').closest('label').hidden=hasTable();$('#bookList').querySelectorAll('.import-button').forEach(label=>label.hidden=false);
  $('#bookList').querySelectorAll('[data-book]').forEach(b=>b.onclick=()=>{if(!getPrivateBook(b.dataset.book)&&!hasTable()){state.kind='';$('#source').value=b.dataset.book;setKind('');$('#booksDialog').close();return;}$('#booksDialog').close();const book=sourceBook(b.dataset.book);selectEntry({id:`page:${book.id}:1`,title:book.displayTitle||book.title,kind:'page',source:book.id,page:1});});
  $('#bookList').querySelectorAll('[data-pdfbook]').forEach(input=>input.onchange=()=>importPdf(input.files[0],input.dataset.pdfbook));
  if(!$('#booksDialog').open)$('#booksDialog').showModal();
