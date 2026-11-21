@@ -1,7 +1,8 @@
-import {profileSkillPools,profileChoicePools} from './profile-pools.mjs?v=143';
+import {profileSkillPools,profileChoicePools} from './profile-pools.mjs?v=145';
 
 const MAX_LINK_LENGTH=70000;
 const clean=(v,n=12000)=>String(v??'').slice(0,n);
+const poolFormula=s=>s.total===null?'non chiffré':`${s.rank} + ${s.attr} ${s.attributeValue} = ${s.total} D6`;
 const sourceRef=e=>[e.source==='core'?'Livre de base':e.source==='feu'?'Feu nourri':e.source==='companion'?'Compagnon du Sixième Monde':e.source==='rigger'?'À tombeau ouvert':e.source==='hacker'?'Hacker vaillant':e.source==='wild'?'Vie sauvage':e.source||'Source', 'p. '+(e.printedPage||e.page)].join(' · ');
 const lines=(obj={},limit=50)=>Object.entries(obj).filter(([,v])=>v!==''&&v!=null).slice(0,limit).map(([k,v])=>k+' : '+clean(v,110)).join('\n');
 function npcSheet(e){
@@ -11,7 +12,7 @@ function npcSheet(e){
  const choices=profileChoicePools(e);
  const choicesText=choices.map(g=>g.title+'\n'+g.rows.map(r=>r.name+' : '+(r.total===null?'non chiffré':r.total+' D6')+(r.choiceSpecialization===null||r.choiceSpecialization===undefined?'':' ; avec spécialisation : '+r.choiceSpecialization+' D6')).join('\n')+'\n'+(g.disclaimer||'')).join('\n\n');
  const sections={
-  competences:pools.length?pools.map(s=>s.name+' : '+(s.total===null?'non chiffré':s.total+' D6')+(s.specializations||[]).map(x=>' ; '+x.name+' : '+(x.total===null?'non chiffré':x.total+' D6')).join('')).join('\n'):clean(e.sections?.Compétences),
+  competences:pools.length?pools.map(s=>s.name+' : '+poolFormula(s)+(s.specializations||[]).map(x=>' ; '+x.name+' : '+(x.total===null?'non chiffré':x.total+' D6')).join('')).join('\n'):clean(e.sections?.Compétences),
   sorts:clean(e.sections?.Sorts),augmentations:clean(e.sections?.Augmentations),
   equipement:clean(e.sections?.Équipement),armes:clean(e.sections?.Armes),
   pouvoirs:clean(e.sections?.Pouvoirs),notes:'Source : '+sourceRef(e)+'\n'+Object.entries(e.sections||{}).filter(([k])=>!['Compétences','Sorts','Augmentations','Équipement','Armes','Pouvoirs'].includes(k)).map(([k,v])=>k+' : '+v).join('\n')+(choicesText?'\nCompétences au choix (exclusives) :\n'+choicesText:'')+'\n'+(e.fields||[]).map(f=>f.label+' : '+f.value).join('\n')
@@ -47,7 +48,7 @@ export function toArchiveCell(e){
  if(choices.length)gmDetails.push({title:'Compétences exclusives au choix',text:choices.map(g=>g.title+' : '+g.rows.map(r=>r.name+' '+(r.total===null?'non chiffré':r.total+' D6')).join(' ; ')).join('\n')});
  if(e.kind==='equipment')gmDetails.push({title:'Catégorie et type',text:[e.category,...(e.path||[])].filter(Boolean).join(' › ')});
  if(pools.length)gmDetails.push({title:'Pools de D6',text:pools.map(s=>{
-   const parts=[s.name+' : '+(s.total===null?'non chiffré':s.total+' D6')];
+   const parts=[s.name+' : '+poolFormula(s)];
    for(const x of s.specializations||[])parts.push('Spécialisation '+x.name+' : '+(x.total===null?'non chiffré':x.total+' D6'));
    return parts.join(' ; ');
   }).join('\n')});

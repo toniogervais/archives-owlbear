@@ -83,6 +83,10 @@ for e in index:
         e['path']=[french_title(t) for t in e['path']]
     e['topic']=topic(e);e['kind']=kind(e);e['optional']=e['source']=='companion' and 144<=e['page']<=160
     e['isStructural']=e['level']==1 and norm(e['title']) in ('table des matieres','table index','index des tableaux','introduction','quartet')
+    # The core book TOC calls this care subsection « Magie », while the PDF
+    # actually prints « Sorts ». Preserve the indexed title and add an alias.
+    if e['source']=='core' and e['page']==126 and e['level']==3 and norm(e['title'])=='magie' and 'soins' in norm(' '.join(e.get('path',[]))):
+        e['headingAliases']=['Sorts']
 
 headings=read(ANALYSIS/'06-headings.json')
 merges={
@@ -146,7 +150,7 @@ for e in equipment:
 for r in RULES:
     r['referenceIds']=[]
     for e in index:
-        if e['source']==r['source'] and abs(e['page']-r['page'])<=1 and (norm(e['title'])==norm(r['title']) or r.get('originalTitle') and norm(e.get('originalTitle',e['title']))==norm(r['originalTitle'])):r['referenceIds'].append(e['id'])
+        if e['source']==r['source'] and abs(e['page']-r['page'])<=1 and (norm(e['title'])==norm(r['title']) or r.get('originalTitle') and norm(r['originalTitle']) in [norm(e.get('originalTitle',e['title'])),*(norm(alias) for alias in e.get('headingAliases',[]))]):r['referenceIds'].append(e['id'])
     candidates=[]
     # Cross-links to matching power, action or topic cards, never invented IDs.
     query=norm(r['title'].split(':')[-1]).strip()

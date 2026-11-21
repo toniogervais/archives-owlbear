@@ -1,23 +1,23 @@
-import {VERSION,validateLibrary,parseLibraryText,parseLibraryFileText,normalize,literalPrice,quantity,safeCart,inventoryText} from './model.mjs?v=144';
-import {prepareEntries,searchEntries,makeAliases,libraryPages,profileText,profileRolls} from './search.mjs?v=144';
-import {getStored,putStored,deleteStored} from './storage.mjs?v=144';
-import {bridge,ready,OBR} from './bridge.mjs?v=144';
-import {sectionExcerpt} from './reader.mjs?v=144';
-import {conciseSourceDescription,sourceContext} from './source-descriptions.mjs?v=144';
-import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './content.mjs?v=144';
-import {readBookPdf} from './pdf-import.mjs?v=144';
+import {VERSION,validateLibrary,parseLibraryText,parseLibraryFileText,normalize,literalPrice,quantity,safeCart,inventoryText} from './model.mjs?v=145';
+import {prepareEntries,searchEntries,makeAliases,libraryPages,profileText,profileRolls} from './search.mjs?v=145';
+import {getStored,putStored,deleteStored} from './storage.mjs?v=145';
+import {bridge,ready,OBR} from './bridge.mjs?v=145';
+import {sectionExcerpt} from './reader.mjs?v=145';
+import {conciseSourceDescription,sourceContext} from './source-descriptions.mjs?v=145';
+import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './content.mjs?v=145';
+import {readBookPdf} from './pdf-import.mjs?v=145';
 
-import {THEMES, topicOf, topicsOf, hasRoll, mergeTableRules} from './themes.mjs?v=144';
-import {hasTable, tableShelf, startTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=144';
-import {observePanel} from './panel-size.mjs?v=144';
-import {quickCatalogHierarchy,classifyEntry,KIND_NAMES} from './catalog.mjs?v=144';
-import {profileSkillPools,profileChoicePools,skillGuideEntries} from './profile-pools.mjs?v=144';
-import {actionType} from './action-types.mjs?v=144';
-import {canTranslateLocally,translatePassage} from './translation.mjs?v=144';
-import {profileSectionRows} from './profile-sections.mjs?v=144';
-import {EDGE_ENTRIES,EDGE_CATEGORIES,EDGE_COUNTS} from './edge-catalog.mjs?v=144';
-import {installWindowControls} from './window-controls.mjs?v=144';
-import {sendToArchives} from './archive-transfer.mjs?v=144';
+import {THEMES, topicOf, topicsOf, hasRoll, mergeTableRules} from './themes.mjs?v=145';
+import {hasTable, tableShelf, startTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=145';
+import {observePanel} from './panel-size.mjs?v=145';
+import {quickCatalogHierarchy,classifyEntry,KIND_NAMES} from './catalog.mjs?v=145';
+import {profileSkillPools,profileChoicePools,skillGuideEntries} from './profile-pools.mjs?v=145';
+import {actionType} from './action-types.mjs?v=145';
+import {canTranslateLocally,translatePassage} from './translation.mjs?v=145';
+import {profileSectionRows} from './profile-sections.mjs?v=145';
+import {EDGE_ENTRIES,EDGE_CATEGORIES,EDGE_COUNTS} from './edge-catalog.mjs?v=145';
+import {installWindowControls} from './window-controls.mjs?v=145';
+import {sendToArchives} from './archive-transfer.mjs?v=145';
 
 const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -143,9 +143,10 @@ function profileChoicesHtml(groups){
  '</tbody></table></div>'+(g.disclaimer?'<p class="small">'+esc(g.disclaimer)+'</p>':'')+'</section>').join('')+'</section>';
 }
 function categoryHtml(e){
- const category=e.category||e.habitat||topics[topicOf(e)]||'Système de jeu';
+ const info=e.kind==='equipment'?classifyEntry(e):null;
+ const category=info?.family||e.category||e.habitat||topics[topicOf(e)]||'Système de jeu';
  const path=(e.path||[]).filter(Boolean);
- const subcategory=path.length?path.slice(-2).join(' › '):'';
+ const subcategory=info?.subcategory||(path.length?path.slice(-2).join(' › '):'');
  return '<div class="entry-taxonomy"><div><span>Catégorie</span><strong>'+esc(category)+'</strong></div>'+(subcategory?'<div><span>Sous-catégorie</span><strong>'+esc(subcategory)+'</strong></div>':'')+'</div>';
 }
 function procedureHtml(p){
@@ -190,6 +191,7 @@ async function selectEntry(e,{mobile=true,remember=true}={}){
  }
  if(e.summary&&e.kind!=='page')root.insertAdjacentHTML('beforeend',`<div class="summary-body"><h3>${e.sourceSummary?'Description de la rubrique, issue du livre':'Description / rappel'}</h3><p>${esc(e.summary)}</p>${e.steps?.length?`<ol>${e.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>`:''}${e.warning?`<p class="warn">${esc(e.warning)}</p>`:''}</div>`);
  if(e.fields?.length&&!e.attributes&&!e.edgeCost){root.insertAdjacentHTML('beforeend','<h3>Caractéristiques</h3>');root.insertAdjacentHTML('beforeend',tableRows(e.fields));}
+ if(e.kind==='equipment'&&!e.fields?.length)root.insertAdjacentHTML('beforeend','<p class="small source-warning">Caractéristiques non encore indexées pour cette référence. Consulter la page du livre et son tableau original : aucune valeur n’est inventée.</p>');
  if(e.kind==='equipment')root.insertAdjacentHTML('beforeend','<div class="detail-actions"><button id="addCart" class="primary">Ajouter au panier</button></div>');
   if(e.kind==='equipment')renderEquipmentAlternatives(e,root);
  root.insertAdjacentHTML('beforeend',relationHtml({...e,related:[...new Set([...(e.related||[]),...(e.linkedProfiles||[]),...suggestedRules(e,state.rules),...skillRelatedRules(e,state.rules)])]}));
@@ -215,7 +217,15 @@ async function selectEntry(e,{mobile=true,remember=true}={}){
  root.scrollTop=0;$('#results').querySelectorAll('.result').forEach(b=>b.classList.toggle('active',b.dataset.id===e.id));
  if(mobile){$('.workspace').classList.add('show-detail');root.focus({preventScroll:true});}
 }
-function getPrivateBook(id){return onlineBooks.get(id)||state.library?.books.find(b=>b.id===id);}
+function getPrivateBook(id){
+ const remote=onlineBooks.get(id),local=state.library?.books.find(b=>b.id===id);
+ if(remote&&local&&remote.pages?.length===local.pages?.length){
+  // Keep the private table's content, bookmarks and artwork connections;
+  // merge only local PDF typography where it is available.
+  return {...remote,pages:remote.pages.map((page,i)=>local.pages[i]?.headingLines?.length?{...page,headingLines:local.pages[i].headingLines}:page)};
+ }
+ return remote||local;
+}
 function renderSource(e,root){
  const book=getPrivateBook(e.source);
  if(!book&&hasTable()){
@@ -252,6 +262,12 @@ function renderSource(e,root){
   const text=passage||(e.kind==='page'?pageText:excerpt?.text||'');
   const context=sourceContext(e,book,excerpt);
   const description=conciseSourceDescription(excerpt,book.language);
+   if(excerpt){
+    const pageInfo=document.createElement('p');pageInfo.className='small';
+    pageInfo.textContent='Section du PDF '+excerpt.page+(excerpt.endPage>excerpt.page?' à '+excerpt.endPage:'')+
+     (excerpt.matchedBy==='two-page-continuation'?' · Suite repérée automatiquement, à vérifier':' · Délimitation par titre ou repère');
+    reader.append(pageInfo);
+   }
   if(description&&!e.summary){
    const overview=document.createElement('section');overview.className='source-overview';
    const heading=document.createElement('h3');heading.textContent='Description de la rubrique';
@@ -347,7 +363,7 @@ function showBooks(){
  $('#libraryStatus').textContent=hasTable()?'Les six ouvrages de ta table sont accessibles en ligne.':state.library?`${readyIds.size} ouvrages consultables sur cet appareil.`:'Les index et les fiches sont disponibles. Importe le fichier de bibliothèque pour lire et rechercher dans les ouvrages.';
  $('#bookList').innerHTML=state.books.map(b=>`<div class="book-row"><div><strong>${esc(b.displayTitle||b.title)}</strong><p class="small">${b.pageCount} pages · ${b.language==='en'?'Source anglaise · fiches françaises':'Français'}</p></div><div class="book-actions"><button class="subtle" data-book="${esc(b.id)}">${readyIds.has(b.id)?'Ouvrir':'Voir les fiches'}</button><label class="subtle import-button">Ajouter son PDF<input type="file" data-pdfbook="${esc(b.id)}" accept=".pdf,application/pdf" hidden></label></div></div>`).join('');
  $('#removeLibrary').hidden=!state.library;
- $('#importLibrary').closest('label').hidden=hasTable();$('#bookList').querySelectorAll('.import-button').forEach(label=>label.hidden=hasTable());
+ $('#importLibrary').closest('label').hidden=hasTable();$('#bookList').querySelectorAll('.import-button').forEach(label=>label.hidden=false);
  $('#bookList').querySelectorAll('[data-book]').forEach(b=>b.onclick=()=>{if(!getPrivateBook(b.dataset.book)&&!hasTable()){state.kind='';$('#source').value=b.dataset.book;setKind('');$('#booksDialog').close();return;}$('#booksDialog').close();const book=sourceBook(b.dataset.book);selectEntry({id:`page:${book.id}:1`,title:book.displayTitle||book.title,kind:'page',source:book.id,page:1});});
  $('#bookList').querySelectorAll('[data-pdfbook]').forEach(input=>input.onchange=()=>importPdf(input.files[0],input.dataset.pdfbook));
  if(!$('#booksDialog').open)$('#booksDialog').showModal();
@@ -454,7 +470,7 @@ async function loadBundledJson(name){
  let lastError;
  for(let attempt=1;attempt<=2;attempt++){
   try{
-   const response=await fetch('data/'+name+'.json?v=144',{
+   const response=await fetch('data/'+name+'.json?v=145',{
     signal:typeof AbortSignal.timeout==='function'?AbortSignal.timeout(attempt===1?8000:12000):undefined,
     cache:attempt===1?'default':'reload'
    });
@@ -483,7 +499,7 @@ async function init(){
   void restoreLibrary();
   void activateTable(selection);
   void setupBridge().catch(fail);
-  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=144').catch(()=>{});
+  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=145').catch(()=>{});
  }catch(e){
    $('#resultCount').textContent='Chargement interrompu';
    $('#detail').innerHTML='<div class="startup-error"><h2>Le catalogue n’a pas pu s’ouvrir</h2><p id="startupErrorText"></p><button id="retryLoad" class="primary">Réessayer le chargement</button></div>';
@@ -494,7 +510,7 @@ async function init(){
 }
 function initWorker(){
  try{
-   const w=new Worker(new URL('./search-worker.mjs?v=144',import.meta.url),{type:'module'});state.worker=w;
+   const w=new Worker(new URL('./search-worker.mjs?v=145',import.meta.url),{type:'module'});state.worker=w;
    w.onmessage=({data})=>{if(data.type==='results')renderResults(data);if(data.type==='ready'){state.workerReady=true;runSearch();}if(data.type==='library-ready')runSearch();if(data.type==='error')fail(Error(data.message));};
    w.onerror=()=>{w.terminate();state.worker=null;state.workerReady=false;runSearch();};w.postMessage({type:'init',entries:state.entries,terms:state.terms.terms});
   }catch{state.worker=null;}

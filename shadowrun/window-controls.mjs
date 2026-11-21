@@ -5,7 +5,7 @@ const $=id=>document.getElementById(id);
 export function installWindowControls({OBR,ready,viewState}){
  const large=$('resizeButton'),full=$('fullscreenButton'),restore=$('restoreButton');
  if(!large||!full||!restore)return;
- const mode=new URLSearchParams(location.search).get('view');
+ const mode=new URL(window.location.href).searchParams.get('view');
  let enlarged=false;
  const inModal=mode==='fullscreen';
  const update=()=>{
@@ -24,7 +24,7 @@ export function installWindowControls({OBR,ready,viewState}){
   update();
  };
  const urlForModal=()=>{
-  const url=new URL(location.href);url.searchParams.set('view','fullscreen');
+  const url=new URL(window.location.href);url.searchParams.set('view','fullscreen');
   const v=viewState();
   for(const key of ['kind','topic','source','search','family','sub','entry']){
    if(v[key])url.searchParams.set(key,v[key]);else url.searchParams.delete(key);
@@ -51,7 +51,7 @@ export function installWindowControls({OBR,ready,viewState}){
   try{
    if(inModal&&OBR?.isAvailable){await ready();await OBR.modal.close(MODAL_ID);}
    else if(document.fullscreenElement){await document.exitFullscreen();}
-   else {const url=new URL(location.href);url.searchParams.delete('view');location.replace(url.href);}
+   else {const url=new URL(window.location.href);url.searchParams.delete('view');window.location.replace(url.href);}
   }catch(e){restore.title=e.message||String(e);}
  };
  document.addEventListener('fullscreenchange',update);

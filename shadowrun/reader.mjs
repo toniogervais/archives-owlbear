@@ -1,4 +1,5 @@
-import {normalize} from './model.mjs?v=144';
+import {normalize} from './model.mjs?v=145';
+import {printedHeadingBoundary} from './source-headings.mjs?v=145';
 
 const escape=s=>s.replace(/[.*+?^$()|[\]{}\\]/g,'\\$&');
 const comparable=s=>normalize(s).replace(/\s*\([il]\)$/,'');
@@ -22,15 +23,43 @@ function sectionReference(entry,index){
  return index.filter(e=>e.source===entry.source&&comparable(e.originalTitle||e.title)===wanted&&e.page===page)
   .sort((a,b)=>Math.abs(a.page-page)-Math.abs(b.page-page))[0]||null;
 }
-function limitByHeadings(raw,offset,entry,ref,index,first,last){
+// The source index is large (thousands of entries). Only headings printed
+// on the one or two requested pages need to be compared for a given fiche.
+const pagesCache=new WeakMap();
+function indexedPages(index){
+ let pages=pagesCache.get(index);
+ if(!pages){
+  pages=new Map();
+  for(const entry of index){
+   const key=entry.source+':'+entry.page;
+   if(!pages.has(key))pages.set(key,[]);
+   pages.get(key).push(entry);
+  }
+  pagesCache.set(index,pages);
+ }
+ return pages;
+}
+function limitByHeadings(raw,offset,entry,ref,index,first,last,book){
  let end=raw.length;
- for(const other of index){
-  if(other.source!==entry.source||other.id===ref?.id||other.page<first||other.page>last)continue;
+ const grouped=indexedPages(index);
+ const nearby=[];
+ for(let page=first;page<=last;page++)nearby.push(...(grouped.get(entry.source+':'+page)||[]));
+ for(const other of nearby){
+  if(other.id===ref?.id)continue;
   if(ref&&Number.isFinite(ref.level)&&Number.isFinite(other.level)&&other.level>ref.level)continue;
   if(comparable(other.originalTitle||other.title)===comparable(ref?.originalTitle||ref?.title||entry.originalTitle||entry.title||entry.name))continue;
   const re=headingPattern(other.originalTitle||other.title);if(!re)continue;
   re.lastIndex=offset;const hit=re.exec(raw);
   if(hit&&hit.index<end)end=hit.index;
+ }
+ // A real PDF import preserves the typographic hierarchy of headings.
+ // Stop before the next printed heading of equal or greater size even if
+ // that heading is absent or mistranscribed in the index.
+ if(book?.pages?.length){
+  const headings=book.pages.slice(first-1,last).map(p=>p.headingLines||[]);
+  const names=[...(ref?.headingAliases||[]),...(entry.headingAliases||[]),ref?.originalTitle,ref?.title,entry.originalTitle,entry.title,entry.name].filter(Boolean);
+  const typographic=printedHeadingBoundary(raw,headings,names,offset);
+  if(typographic!==null)end=Math.min(end,typographic);
  }
  return end;
 }
@@ -38,7 +67,7 @@ function limitByHeadings(raw,offset,entry,ref,index,first,last){
 // next printed page. Never infer a continuation merely from a close title.
 function unfinishedAtPageEnd(text){
  const tail=String(text||'').replace(/\s+/g,' ').trim();
- return tail.length>=35&&!/[.!?…»”)]$/.test(tail)&&/[\p{L}\d,;:–—-]$/u.test(tail);
+ return tail.length>=18&&tail.split(/\s+/).length>=3&&!/[.!?…»”)]$/.test(tail)&&/[\p{L}\d,;:–—-]$/u.test(tail);
 }
 // PDF text commonly begins with a running header (chapter, folio, book).
 // A continuation cannot be delimited against these page decorations.
@@ -71,11 +100,11 @@ function printedBoundary(text){
  }
  return text.length;
 }
-function getExcerpt(raw,headingTitles,entry,ref,index,first,last,truncated){
+function getExcerpt(raw,headingTitles,entry,ref,index,first,last,truncated,book){
  const found=firstHeading(raw,headingTitles);
  if(!found)return null;
  const start=found.hit.index+found.hit[0].length;
- const end=limitByHeadings(raw,start,entry,ref,index,first,last);
+ const end=limitByHeadings(raw,start,entry,ref,index,first,last,book);
  const text=raw.slice(start,end).trim();
  if(text.length<25)return null;
  return {title:found.title,text,page:first,endPage:last,truncated};
@@ -83,13 +112,13 @@ function getExcerpt(raw,headingTitles,entry,ref,index,first,last,truncated){
 export function sectionExcerpt(entry,book,index=[]){
  if(!book?.pages?.length||!entry||!Array.isArray(index))return null;
  const ref=sectionReference(entry,index);
- const headings=distinct([ref?.originalTitle,ref?.title,entry.originalTitle,entry.title,entry.name]);
+ const headings=distinct([...(ref?.headingAliases||[]),...(entry.headingAliases||[]),ref?.originalTitle,ref?.title,entry.originalTitle,entry.title,entry.name]);
  const anchor=ref&&book.anchors?.[ref.id];
  if(Array.isArray(anchor)&&anchor.length===4){
   const [first,at,final,end]=anchor;
   if(Number.isInteger(first)&&Number.isInteger(final)&&Number.isInteger(at)&&Number.isInteger(end)&&first>=1&&final>=first&&final<=book.pages.length&&at>=0&&end>=0){
    const last=Math.min(final,first+1),part=book.pages.slice(first-1,last).map((p,i)=>p.text.slice(i===0?at:0,first+i===final?end:undefined)).join('\n');
-   const found=getExcerpt(part,headings,entry,ref,index,first,last,final>last);
+   const found=getExcerpt(part,headings,entry,ref,index,first,last,final>last,book);
    if(found)return {...found,matchedBy:'heading-and-anchor',fullEndPage:final};
    // The private book's explicit [start,end] anchor is keyed to this precise
    // section ID. Do not require a second occurrence of its heading, because
@@ -115,13 +144,14 @@ export function sectionExcerpt(entry,book,index=[]){
   const following=book.pages[first]?.text||'';
   if(!firstHeading(following,headings))return null;
   const next=first+1;
-  return getExcerpt(following,headings,entry,ref,index,next,next,Boolean(ref?.endPage>next));
+  const excerpt=getExcerpt(following,headings,entry,ref,index,next,next,Boolean(ref?.endPage>next),book);
+  return excerpt?{...excerpt,matchedBy:'exact-heading',fullEndPage:ref?.endPage||next}:null;
  }
  // A reliably indexed next heading ends the section, even if this page
  // happens to finish mid-sentence. In particular, never append the next
  // page after a different entry has already begun.
  const start=found.hit.index+found.hit[0].length;
- const stop=limitByHeadings(firstText,start,entry,ref,index,first,first);
+ const stop=limitByHeadings(firstText,start,entry,ref,index,first,first,book);
  const boundedHere=stop<firstText.length;
  const declaredEnd=Math.max(first,ref?.endPage||first,entry.endPage||first);
  const explicitContinuation=declaredEnd>first;
@@ -131,14 +161,15 @@ export function sectionExcerpt(entry,book,index=[]){
  const nextText=includesNext?cleanContinuationHeader(book.pages[first]?.text):'';
  // Only infer printed headings when this page extension was not established by
  // an explicit source boundary. Never let a neighbouring section join the text.
- const safeNext=includesNext&&!explicitContinuation?nextText.slice(0,printedBoundary(nextText)):nextText;
+ const hasTypography=Boolean(book.pages[first-1]?.headingLines?.length||book.pages[first]?.headingLines?.length);
+ const safeNext=includesNext&&!explicitContinuation&&!hasTypography?nextText.slice(0,printedBoundary(nextText)):nextText;
  const raw=includesNext?firstText+'\n'+safeNext:firstText;
- const extracted=getExcerpt(raw,headings,entry,ref,index,first,last,Boolean(declaredEnd>last));
+ const extracted=getExcerpt(raw,headings,entry,ref,index,first,last,Boolean(declaredEnd>last),book);
  if(!extracted)return null;
  // A following indexed heading can be the very first line on page two.
  // In that case, the actual passage did not extend onto that page.
  const boundary=firstText.length+1;
- const otherHeading=includesNext?limitByHeadings(raw,start,entry,ref,index,first,last):raw.length;
+ const otherHeading=includesNext?limitByHeadings(raw,start,entry,ref,index,first,last,book):raw.length;
  const actualLast=includesNext&&otherHeading>boundary?last:first;
  return {...extracted,endPage:actualLast,matchedBy:inferredContinuation&&!explicitContinuation&&actualLast>first?'two-page-continuation':'exact-heading',fullEndPage:Math.max(declaredEnd,actualLast)};
 }

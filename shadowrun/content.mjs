@@ -71,6 +71,8 @@ export const SITUATIONS=[
  {label:'Recharger',title:'Recharger une arme sans smartlink',group:'Combat'},
  {label:'Soigner un blessé',title:'Administrer les premiers soins',group:'Soins'},
  {label:'Utiliser un médikit',title:'Soigner avec un médikit',group:'Soins'},
+ {label:'Soigner avec la magie',title:'Soigner par magie',group:'Soins'},
+ {label:'Guérir par le repos',title:'Récupérer naturellement de ses blessures',group:'Soins'},
  {label:'Passer discrètement',title:'Se déplacer sans être repéré',group:'Infiltration'},
  {label:'Crocheter une serrure',title:'Crocheter une serrure',group:'Infiltration'},
  {label:'Repérer un indice',title:'Remarquer un détail',group:'Infiltration'},
