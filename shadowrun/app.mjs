@@ -171,6 +171,7 @@ async function selectEntry(e,{mobile=true,remember=true}={}){
    const rolls=profileRolls(e).filter(r=>r.label==='Défense physique'||r.label==='Résister aux dommages');
    if(rolls.length)root.insertAdjacentHTML('beforeend',`<h3>Autres tests courants</h3><div class="profile-rolls">${rolls.map(r=>`<div><span>${esc(r.label)}</span><strong>${esc(r.value)}</strong><small>Test réactif ; les options Bloquer et Esquiver sont des actions mineures distinctes.</small></div>`).join('')}</div>`);
    const allDetails=[
+     ...(e.description?[{label:'Description détaillée',value:e.description}]:[]),
      ...Object.entries(e.derived||{}).map(([label,value])=>({label,value})),
      ...profileSectionRows(e.sections||{},Boolean(rows.length)),
      ...(e.fields||[])
