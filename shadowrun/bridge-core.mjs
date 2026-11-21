@@ -1,4 +1,4 @@
-import {NAMESPACE,safeCart,mergeInventory,updateNpcSheetRecord} from './model.mjs?v=142';
+import {NAMESPACE,safeCart,mergeInventory,updateNpcSheetRecord} from './model.mjs?v=143';
 const ASSET='fr.archives-imaginaire.bridge/artwork-v58';const SCENE='fr.archives-imaginaire.bridge/scene-key';
 export function createBridge(obr,storage,equipment){
  let active=true;let sequence=Promise.resolve(),identitySequence=Promise.resolve();
