@@ -1,4 +1,4 @@
-import {profileSkillPools} from './profile-pools.mjs?v=138';
+import {profileSkillPools,profileChoicePools} from './profile-pools.mjs?v=139';
 
 const MAX_LINK_LENGTH=70000;
 const clean=(v,n=12000)=>String(v??'').slice(0,n);
@@ -7,17 +7,25 @@ const lines=(obj={},limit=50)=>Object.entries(obj).filter(([,v])=>v!==''&&v!=nul
 function npcSheet(e){
  const pools=profileSkillPools(e);
  const attributes={};for(const key of ['CON','AGI','RÉA','FOR','VOL','LOG','INT','CHA','MAG','ESS'])attributes[key]=clean(e.attributes?.[key],32);
- const combat={};for(const key of ['SD','I/DI','PA','ME','DÉPLACEMENT','DRAIN'])combat[key]=clean(e.derived?.[key]??e.derived?.[key==='DÉPLACEMENT'?'Déplacement':key],72);
+ const combat={};for(const key of ['SD','SD sans armure','I/DI','PA','ME','Moniteur physique','Moniteur étourdissant','DÉPLACEMENT','DRAIN'])combat[key]=clean(e.derived?.[key]??e.derived?.[key==='DÉPLACEMENT'?'Déplacement':key],72);
+ const choices=profileChoicePools(e);
+ const choicesText=choices.map(g=>g.title+'\n'+g.rows.map(r=>r.name+' : '+(r.total===null?'non chiffré':r.total+' D6')+(r.choiceSpecialization===null||r.choiceSpecialization===undefined?'':' ; avec spécialisation : '+r.choiceSpecialization+' D6')).join('\n')+'\n'+(g.disclaimer||'')).join('\n\n');
  const sections={
   competences:pools.length?pools.map(s=>s.name+' : '+(s.total===null?'non chiffré':s.total+' D6')+(s.specializations||[]).map(x=>' ; '+x.name+' : '+(x.total===null?'non chiffré':x.total+' D6')).join('')).join('\n'):clean(e.sections?.Compétences),
   sorts:clean(e.sections?.Sorts),augmentations:clean(e.sections?.Augmentations),
   equipement:clean(e.sections?.Équipement),armes:clean(e.sections?.Armes),
-  pouvoirs:clean(e.sections?.Pouvoirs),notes:'Source : '+sourceRef(e)+'\n'+Object.entries(e.sections||{}).filter(([k])=>!['Compétences','Sorts','Augmentations','Équipement','Armes','Pouvoirs'].includes(k)).map(([k,v])=>k+' : '+v).join('\n')
+  pouvoirs:clean(e.sections?.Pouvoirs),notes:'Source : '+sourceRef(e)+'\n'+Object.entries(e.sections||{}).filter(([k])=>!['Compétences','Sorts','Augmentations','Équipement','Armes','Pouvoirs'].includes(k)).map(([k,v])=>k+' : '+v).join('\n')+(choicesText?'\nCompétences au choix (exclusives) :\n'+choicesText:'')+'\n'+(e.fields||[]).map(f=>f.label+' : '+f.value).join('\n')
  };
  const total=Number.parseInt(String(e.derived?.ME||''),10);
+ const constitution=Number.parseInt(String(e.attributes?.CON||''),10);
+ const volonte=Number.parseInt(String(e.attributes?.VOL||''),10);
+ const physique=Number.parseInt(String(e.derived?.['Moniteur physique']||''),10);
+ const etourdissement=Number.parseInt(String(e.derived?.['Moniteur étourdissant']||''),10);
+ const physical=Number.isFinite(physique)?physique:Number.isFinite(total)?total:Number.isFinite(constitution)?8+Math.ceil(constitution/2):0;
+ const stun=Number.isFinite(etourdissement)?etourdissement:Number.isFinite(total)?total:Number.isFinite(volonte)?8+Math.ceil(volonte/2):0;
  return {attributes,combat,sections,condition:{
-  physical:{total:Number.isFinite(total)?Math.min(total,60):0,damage:0},
-  stun:{total:Number.isFinite(total)?Math.min(total,60):0,damage:0}
+  physical:{total:Math.min(physical,60),damage:0},
+  stun:{total:Math.min(stun,60),damage:0}
  }};
 }
 export function toArchiveCell(e){
@@ -34,6 +42,9 @@ export function toArchiveCell(e){
  const pools=person?profileSkillPools(e):[];
  if(person)for(const [name,text] of Object.entries(e.sections||{}))
   if(text&&!(name==='Compétences'&&pools.length))gmDetails.push({title:clean(name,100),text:clean(text,9000)});
+ if(person&&e.fields?.length)gmDetails.push({title:'Autres caractéristiques et informations de contact',text:e.fields.map(f=>clean(f.label)+' : '+clean(f.value)).join('\n')});
+ const choices=person?profileChoicePools(e):[];
+ if(choices.length)gmDetails.push({title:'Compétences exclusives au choix',text:choices.map(g=>g.title+' : '+g.rows.map(r=>r.name+' '+(r.total===null?'non chiffré':r.total+' D6')).join(' ; ')).join('\n')});
  if(e.kind==='equipment')gmDetails.push({title:'Catégorie et type',text:[e.category,...(e.path||[])].filter(Boolean).join(' › ')});
  if(pools.length)gmDetails.push({title:'Pools de D6',text:pools.map(s=>{
    const parts=[s.name+' : '+(s.total===null?'non chiffré':s.total+' D6')];
