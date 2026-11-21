@@ -39,7 +39,8 @@ jobs:
       - run: node tests/browser-soundshow.cjs
       - run: node tests/browser-soundshow-archives.cjs
       - run: node tests/browser-soundshow-route.cjs
-      - run: node tests/browser-v459.cjs
+      - name: Vérifier le canevas et la barre sur écran mobile
+        run: node tests/browser-v459.cjs zoom
       - run: node tests/browser-startup.cjs
   windows:
     needs: verify
