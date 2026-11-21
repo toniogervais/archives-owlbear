@@ -256,7 +256,7 @@ function renderSource(e,root){
    const overview=document.createElement('section');overview.className='source-overview';
    const heading=document.createElement('h3');heading.textContent='Description de la rubrique';
    const body=document.createElement('p');body.textContent=description.text;
-   const origin=document.createElement('p');origin.className='small';origin.textContent='Description extractive de la section, à vérifier avec le passage original. '+sourceLabel({...e,page:context.firstPage,printedPage:context.firstPage-sourceBook(e.source).printedOffset});
+   const origin=document.createElement('p');origin.className='small';origin.textContent=(excerpt?.matchedBy==='two-page-continuation'?'La suite sur la deuxième page est déduite d’une phrase interrompue : vérifier les deux pages originales. ':'Description extractive de la section, à vérifier avec le passage original. ')+sourceLabel({...e,page:context.firstPage,printedPage:context.firstPage-sourceBook(e.source).printedOffset});
    overview.append(heading,body,origin);root.insertBefore(overview,details);
   }
   if(book.language!=='en'&&e.kind!=='roll'&&e.kind!=='page'&&!e.summary&&!e.attributes){const points=localKeyPoints(text,book.language);if(points.length){const section=document.createElement('section');section.className='local-points';section.innerHTML=`<h3>Points clés de la section</h3><ul>${points.map(p=>`<li>${esc(p)}</li>`).join('')}</ul>`;root.insertBefore(section,details);}}
@@ -433,7 +433,7 @@ function enrichSourceDescriptions(book){
    if(state.byId?.get(entry.id)!==entry)break;
    const passage=sectionExcerpt(entry,book,state.index);
    const desc=conciseSourceDescription(passage,book.language);
-   if(desc&&passage&&['exact-heading','heading-and-anchor','exact-id-anchor','two-page-continuation'].includes(passage.matchedBy)){
+   if(desc&&passage&&['exact-heading','heading-and-anchor','exact-id-anchor'].includes(passage.matchedBy)){
     entry.summary=desc.text;entry.sourceSummary=true;entry.sourceSummaryPage=passage.page;changed=true;
    }
    if(++count%18===0)await new Promise(resolve=>setTimeout(resolve,1));
