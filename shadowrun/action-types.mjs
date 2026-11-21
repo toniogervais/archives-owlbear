@@ -1,6 +1,11 @@
 // Classement conservateur : ne pas inventer un coût en actions lorsqu'il n'est pas précisé.
 export function actionType(entry) {
- const p=entry?.procedure||{}, phrase=String(p.action||'').trim();
+ const p=entry?.procedure||{};
+ const summary=String(entry?.summary||'');
+ const direct=String(p.action||'').trim();
+ // Les résumés vérifiés des suppléments indiquent parfois le coût en actions sans champ séparé.
+ const hasSourceTiming=/\b(?:action\s+mineure|action\s+majeure|mineure\s+(?:libre|légale|illégale|peut)|majeure\s+(?:libre|légale|illégale))\b/i.test(summary);
+ const phrase=direct||(hasSourceTiming?summary:'');
  const low=phrase.toLocaleLowerCase('fr');
  const major=/\bmajeur(?:e|es)?\b/.test(low),minor=/\bmineur(?:e|es)?\b/.test(low);
  if(/\bmajeur(?:e|es)?\b.*\bmineur(?:e|es)?\b|\bmineur(?:e|es)?\b.*\bmajeur(?:e|es)?\b/.test(low)) {
@@ -12,6 +17,7 @@ export function actionType(entry) {
  if(/utiliser une compétence|utilisation d'une compétence/i.test(phrase))return {label:'Action majeure en combat (utiliser une compétence)',known:true};
  if(/intervalle|minute|heure|jour|semaine|durée|récupération/i.test(phrase))return {label:'Durée ou intervalle propre au test, hors du découpage ordinaire des actions',known:false};
  if(/selon la manœuvre|selon le mode|selon l'action|selon la situation/i.test(phrase))return {label:'Variable selon la manœuvre ou la situation',known:false};
+ if(/action d.atout/i.test(summary))return {label:'Action d’Atout : son coût en actions dépend de l’attaque ou de l’action associée',known:false};
  if(entry?.kind==='skillguide')return {label:'Variable selon l’utilisation de la compétence ; majeure en combat pour « Utiliser une compétence »',known:false};
  if(entry?.kind==='roll')return {label:'Dépend de l’action à l’origine du jet ; un jet de résistance peut être réactif',known:false};
  if(entry?.kind==='action')return {label:'Action majeure ou mineure non précisée dans la fiche : consulter la règle citée',known:false};
