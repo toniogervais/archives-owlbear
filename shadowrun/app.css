@@ -134,3 +134,12 @@ dialog.image-reader{width:min(96vw,1100px);max-height:94dvh}.image-reader #infoB
 .dice-links{display:flex;flex-wrap:wrap;gap:6px}
 .dice-links button{font-size:.79rem;text-align:left;white-space:normal;min-height:35px}
 @media(max-width:640px){.dice-domains{grid-template-columns:1fr}.archives-export{padding:10px}.archives-export-actions button{font-size:.79rem}}
+
+/* SR6 1.3.8 — une action identifiable sans masquer le type de jet. */
+.action-identity{display:flex;gap:.9rem;align-items:flex-start;flex-wrap:wrap;margin:.7rem 0 1rem;padding:.75rem 1rem;border:1px solid #466a66;border-radius:10px;background:#19322f;color:#e6f9ed}
+.action-identity>strong{font-size:.85rem;text-transform:uppercase;letter-spacing:.07em;color:var(--accent);white-space:nowrap}
+.action-identity>span{flex:1;min-width:185px;font-weight:600}
+.result-action{display:block;font-size:.82rem;color:var(--accent);margin:.15rem 0}
+.skill-pools .pool-total{font-weight:800;font-variant-numeric:tabular-nums}
+.skill-pools .pool-variant{margin:.28rem 0 0;font-size:.88rem;line-height:1.45}
+.detail .table-wrap td{overflow-wrap:anywhere;white-space:pre-wrap}
