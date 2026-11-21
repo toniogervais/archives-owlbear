@@ -31,9 +31,13 @@ async def exercise(host, context, tablet, fake, file, repo, wait, audible):
     # A new file with no registered SoundShow button goes through the real MJ picker.
     async with archives.expect_file_chooser() as picker:
         await archives.get_by_role('button',name='Diffuser une vidéo du PC…').click()
-    await (await picker.value).set_files(str(file))
+    unlisted = file.with_name('improvisation.webm')
+    unlisted.write_bytes(file.read_bytes())
+    start = monotonic()
+    await (await picker.value).set_files(str(unlisted))
     await wait(tablet, "document.querySelector('video').videoWidth>0 && !document.querySelector('video').paused && document.querySelector('h2').textContent==='Vidéo du MJ'")
     await audible(tablet)
+    print(f'Unlisted PC file reached the player with audio in {1000*(monotonic()-start):.0f} ms, including audio verification', flush=True)
     await archives.get_by_role('button',name='Arrêter la vidéo du PC').click()
     await wait(tablet, "!window.player.connection.playback.active")
     # Real audio and video tracks, controlled only at the OS chooser boundary.

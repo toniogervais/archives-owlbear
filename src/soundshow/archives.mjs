@@ -44,7 +44,7 @@ async function request(type,value) {
   }
   const id=crypto.randomUUID();
   return new Promise((resolve,reject)=>{
-    const timer=setTimeout(()=>{pending.delete(id);reject(Error('La salle ne répond pas. Recharge Owlbear puis réessaie.'));},12000);
+    const timer=setTimeout(()=>{pending.delete(id);reject(Error('La salle ne répond pas. Recharge Owlbear puis réessaie.'));},value?.type==='show_local_video'?24000:12000);
     pending.set(id,{resolve,reject,timer});window.parent.postMessage(packet(type,
       type==='owl-soundshow-remote-command'?{id,command:value}:{id,session:value}),location.origin);
   });

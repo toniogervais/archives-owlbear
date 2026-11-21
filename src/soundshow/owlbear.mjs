@@ -199,7 +199,7 @@ export async function installSoundShow(OBR) {
           remotePending.delete(data.id);
           channel.postMessage({type:'soundshow-remote-result',id:data.id,safe:false,
             message:'Le connecteur SoundShow ne répond pas. Aucune relance automatique.',state:remoteState});
-        },10000);
+        },data.command.type==='show_local_video'?21000:10000);
         remotePending.set(data.id,timeout);
         try{
           if(viaMain)mainWindow.postMessage(packet('soundshow-main-control',{roomId:OBR.room.id,id:data.id,command:data.command}),location.origin);

@@ -38,7 +38,7 @@ export function mainRemote({isGM, onState, onSession}) {
     if(!isGM()||!token||opener?.closed||!state.connected)return Promise.reject(Error('Ouvre les Archives du MJ depuis le connecteur Windows et connecte SoundShow.'));
     const id=crypto.randomUUID();
     return new Promise((resolve,reject)=>{
-      const timer=setTimeout(()=>{pending.delete(id);reject(Error('Le connecteur ne répond pas à la commande.'));},9000);
+      const timer=setTimeout(()=>{pending.delete(id);reject(Error('Le connecteur ne répond pas à la commande.'));},command.type==='show_local_video'?20000:9000);
       pending.set(id,{resolve,reject,timer});
       try{opener.postMessage({protocol,type:'remote-command',id,challenge,controlToken:token,command},origin);}
       catch(error){pending.delete(id);clearTimeout(timer);reject(error);}

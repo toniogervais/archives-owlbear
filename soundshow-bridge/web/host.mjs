@@ -368,13 +368,13 @@ async function follow() {
   const known=candidates.find(item=>item.id===current?.id);
   const newer=candidates.find(item=>!current?.seen?.has(item.id));
   const item=quick?{id:quick.id,playing:true,loop:false,position:0,observedAt:quick.time,volume:1,muted:false}:newer || known || candidates.at(-1);
-  if (!item || !['connected','simulation'].includes(show.status)) { if(current)clearSource();return; }
+  if(!item){if(current)clearSource();return;}
   const source=$('source'),file=quick?.file||files.get(fileKey(item.source));
   if (current?.id !== item.id || current.file !== file) {
     clearSource();lastFileError='';const mine=generation;
     current={id:item.id,file,seen:new Set(candidates.map(x=>x.id)),pending:true};
     const info=show.videos.find(video=>video.id===item.source);
-    playback={type:'playback',active:true,id:crypto.randomUUID(),title:quick?'Vidéo du MJ':info?.name || 'Vidéo du MJ',playing:item.playing,volume:item.volume,muted:item.muted};
+    const opening={type:'playback',active:true,id:crypto.randomUUID(),title:quick?'Vidéo du MJ':info?.name || 'Vidéo du MJ',playing:item.playing,volume:item.volume,muted:item.muted};
     objectUrl=URL.createObjectURL(file);source.loop=item.loop;source.src=objectUrl;source.muted=true;
     text('stream-status','Ouverture du fichier vidéo sur le PC…');
     try {
@@ -399,7 +399,7 @@ async function follow() {
       stream=new MediaStream([...captured.getVideoTracks(),...destination.stream.getAudioTracks()]);
       if(!item.playing)source.pause();current.pending=false;
       if (!stream.getVideoTracks().length) throw Error('La capture de cette vidéo ne fournit aucune image.');
-      broadcast(playback);for(const entry of clients.values())call(entry);
+      playback=opening;broadcast(playback);updateCalls();
       text('stream-status','Diffusion de « '+playback.title+' ». Les commandes restent dans SoundShow.');
     } catch(error) {if(mine===generation){lastFileError=error.message;const wasQuick=!!quick;quick=null;clearSource();sendRemoteState();if(wasQuick&&projection)void follow();if(error.name==='NotAllowedError'){$('enable-audio').hidden=false;text('stream-status','Touche « Autoriser la diffusion du son » pour démarrer la vidéo avec son audio.');}else text('stream-status',error.message);}}
     return;

@@ -79,7 +79,7 @@ window.addEventListener("message", event => {
     soundShowPlayerHost?.receive(data);return;
   }
   if (gm && ['owl-soundshow-command','owl-soundshow-query','owl-soundshow-remote-command','owl-soundshow-remote-get'].includes(data.type)) {
-    void import('../soundshow/host.mjs?v=4590').then(module => module.forwardSoundShow(OBR,data,post))
+    void import('../soundshow/host.mjs?v=4730').then(module => module.forwardSoundShow(OBR,data,post))
       .catch(error => post(data.type.startsWith('owl-soundshow-remote-')?'owl-soundshow-remote-result':'owl-soundshow-result',{id:data.id,safe:false,message:error.message}));
     return;
   }
