@@ -1,4 +1,4 @@
-name: Vérification Compendium SR6 1.3.7 — cellules et jets
+name: Vérification Compendium SR6 — suite complète
 on:
   pull_request:
     paths:
@@ -24,5 +24,5 @@ jobs:
           node --check shadowrun/profile-pools.mjs
           node --check src/v84/sr6-import.mjs
           node --check src/v74/reserve-ui.mjs
-      - name: Tests de pools, transfert, chargement et règles
-        run: node --test shadowrun/tests/archive-transfer.test.mjs shadowrun/tests/skills-pools.test.mjs shadowrun/tests/startup.test.mjs
+      - name: Tests complets du compendium Shadowrun 6
+        run: npm run test:sr6
