@@ -2,7 +2,7 @@
 // ne contient ni les paragraphes ni les illustrations des livres.
 const clean=s=>String(s??'').trim().replace(/\s+/g,' ');
 const key=s=>clean(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[’'‐‑–—]/g,' ').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
-const headingLike=s=>s.length>=3&&s.length<=100&&/[\p{L}]/u.test(s)&&
+const headingLike=s=>s.length>=3&&s.length<=100&&/^[\p{Lu}\d]/u.test(s)&&!s.endsWith('-')&&
  !/^(?:shadowrun\b|\d+$|table des mati[eè]res|pdf\s+\d+)/i.test(s)&&
  !/\s*\/\/\s*/.test(s)&&!s.includes('@');
 export function extractHeadingLines(rows){
