@@ -87,6 +87,6 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           if ! gh release view soundshow-bridge-v0.4.0 > /dev/null 2>&1; then
-            gh release create soundshow-bridge-v0.4.0 --target "$GITHUB_SHA" --prerelease --title "Connecteur SoundShow — 0.4.0" --notes "Télécommande depuis les Archives principales ou Owlbear. Partage de la fenêtre de projection pour la séance et diffusion à la volée de fichiers du PC avec leur piste sonore."Corrige la piste sonore muette : audio capturé séparément de l’aperçu, sans seconde lecture sur le PC. Vidéo avec son dans les Archives des joueurs, autorisation audio et liaison automatique. Conserve la télécommande SoundShow et les médias de cellules. Essais Windows/tablette à confirmer."
+            gh release create soundshow-bridge-v0.4.0 --target "$GITHUB_SHA" --prerelease --title "Connecteur SoundShow — 0.4.0" --notes "Télécommande depuis les Archives principales ou Owlbear. Partage de la fenêtre de projection pour la séance et diffusion à la volée de fichiers du PC avec leur piste sonore."
           fi
           gh release upload soundshow-bridge-v0.4.0 windows/Archives-SoundShow-Connecteur.exe --clobber
