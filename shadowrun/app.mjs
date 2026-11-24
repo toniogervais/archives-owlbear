@@ -274,7 +274,7 @@ function renderSource(e,parent){
  const book=getPrivateBook(e.source);
  if(!book&&hasTable()){
   const area=document.createElement('div');area.className='remote-source';root.append(area);
-  const auto=e.kind==='roll'||e.kind==='page'||e.kind==='equipment'||!(e.summary||e.attributes||e.fields?.length);
+  const auto=true; // load every source without manual interaction
   const open=document.createElement('button');open.className='subtle';open.textContent='Lire la section du livre';area.append(open);
   const load=async()=>{
    open.disabled=true;open.textContent='Ouverture de la section…';
@@ -291,19 +291,20 @@ function renderSource(e,parent){
   const line=document.createElement('p');line.textContent=sourceLabel(e)+(e.endPage&&e.endPage>e.page?' · section jusqu’à PDF '+e.endPage:'');area.append(line);
   const path=(e.path||[]).filter(Boolean).join(' › ');
   if(path){const topic=document.createElement('p');topic.className='small';topic.textContent='Rubrique : '+path;area.append(topic);}
-  const open=document.createElement('button');open.className='subtle';open.textContent='Importer ce livre pour afficher la description et lire le passage original';open.onclick=showBooks;area.append(open);
+  const open=document.createElement('button');open.className='primary';open.textContent='Relier ma bibliothèque privée, sans importer les PDF';open.onclick=showPersonalTableConnection;area.append(open);
   return;
  }
- const details=document.createElement('details');details.className='source-reader';details.open=e.kind==='roll'||e.kind==='equipment'||(!e.summary&&!e.attributes&&!e.fields?.length)||e.kind==='page';
- const sum=document.createElement('summary');sum.textContent='Lire l’extrait original du livre · PDF p. '+(e.descriptionPage||e.page)+(book.language==='en'?' · source anglaise':'');details.append(sum);
+ const details=document.createElement('details');details.className='source-reader';details.open=true;
+ const sum=document.createElement('summary');sum.textContent='Texte original · '+sourceName(e.source)+' · PDF '+(e.descriptionPage||e.page)+(book.language==='en'?' · original anglais':'');details.append(sum);
  const reader=document.createElement('div');details.append(reader);root.append(details);let rendered=false;
  const populate=()=>{
   if(rendered||!details.open)return;rendered=true;
   const readingPage=e.kind==='equipment'?(e.descriptionPage||e.page):e.page;
   const pageText=book.pages[readingPage-1]?.text||'';
-  const passage=e.kind==='roll'&&book.anchors?pageText.slice(e.start,e.end):'';
+  const validRoll=e.kind==='roll'&&Number.isInteger(e.start)&&Number.isInteger(e.end)&&e.start>=0&&e.end>e.start&&e.end<=pageText.length;
+   const passage=validRoll?pageText.slice(e.start,e.end):'';
   const excerpt=(passage||e.kind==='page')?null:sectionExcerpt(e,book,state.index);
-  const text=passage||(e.kind==='page'?pageText:excerpt?.text||'');
+  const text=passage||(e.kind==='page'?pageText:excerpt?.text||pageText);
   const context=sourceContext(e,book,excerpt);
   const description=conciseSourceDescription(excerpt,book.language);
    if(excerpt){
@@ -342,6 +343,7 @@ function renderSource(e,parent){
     const openPage=document.createElement('button');openPage.className='subtle';openPage.textContent='Consulter la page originale';openPage.onclick=()=>renderPage(reader,e.source,readingPage);
     reader.append(warning,openPage);
    }
+  for(const ref of refs.filter(r=>r.facsimile))appendSourceFacsimile(reader,ref.source,ref.page);
  };
  details.addEventListener('toggle',populate);if(details.open)populate();
 }
