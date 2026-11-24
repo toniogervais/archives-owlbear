@@ -56,10 +56,10 @@ test('a missing section heading never falls back to an unrelated page',()=>{
  const book={pages:[{text:'Autre règle\nUn paragraphe sur une règle totalement différente.'}]};
  assert.equal(sectionExcerpt({source:'core',title:'Premiers soins',page:1},book,[]),null);
 });
-test('sections never silently absorb a third page',()=>{
+test('sections without verified anchors never silently absorb a third page',()=>{
  const pages=[{text:'Test\nDescription suffisamment longue pour servir de premier paragraphe.'},{text:'Suite de la description avec des conditions différentes.'},{text:'Une troisième page qui ne doit pas être mélangée.'}];
  const index=[{id:'a',source:'core',title:'Test',page:1,endPage:3,level:3}];
- const result=sectionExcerpt(index[0],{pages,anchors:{a:[1,0,3,40]}},index);
+ const result=sectionExcerpt(index[0],{pages},index);
  assert.equal(result.endPage,2);
  assert.equal(result.truncated,true);
  assert.doesNotMatch(result.text,/troisième page/);

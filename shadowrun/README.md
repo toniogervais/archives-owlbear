@@ -17,6 +17,14 @@ Les anciens fichiers V2 / V2.1 restent compatibles mais ne contiennent pas néce
 
 Le sommaire nomme « Magie » la sous-rubrique des soins du livre de base (PDF 126), alors que l'intitulé imprimé est « Sorts » ; le renvoi conserve les deux noms sans les fusionner. Premiers soins, médikit, soins magiques et récupération naturelle disposent chacun de leur procédure et de leur jet.
 
+## Extraits et tableaux originaux directement sous les fiches (1.4.5)
+
+Chaque fiche présente désormais en bas le titre de l'ouvrage, la page imprimée et le numéro de page du PDF, puis le passage original extrait de la bibliothèque privée. Cette lecture se déclenche sans clic supplémentaire. Les équipements issus des tableaux et les profils chiffrés présentent aussi leur ligne de caractéristiques indexée et, **si la bibliothèque privée possède son image**, le fac-similé de la page contenant le tableau, zoomable. Le tableau imprimé prime sur une transcription susceptible de décaler des colonnes.
+
+Le manifeste public ne peut pas embarquer les textes complets et images protégés des ouvrages. Le lien personnel de la table privée peut être collé **une seule fois** dans « Relier ma bibliothèque privée » : son accès est mémorisé localement par le navigateur, sans importation de PDF. Ne pas placer ce lien et sa clé dans le dépôt GitHub ou dans une URL publique. L'utilisateur qui a déjà relié sa table peut consulter ses sources automatiquement.
+
+Un passage qui ne peut être isolé avec certitude est marqué comme tel : l'application montre la transcription de la page complète, plutôt que de lui attribuer une citation erronée. Un fac-similé manquant est déclaré indisponible, et non remplacé par une image sans rapport. La validation des références contrôle les pages sur toutes les fiches ; elle **ne garantit pas** à elle seule la fidélité littérale de chaque extraction. Une validation éditoriale des sources et de leurs tableaux reste nécessaire, notamment pour les illustrations anciennes et les livres non fournis.
+
 ## Consultation par thème et par table
 
 Le sommaire regroupe quinze thèmes. Le filtre « Jets à prévoir » réunit les procédures qui donnent une réserve et les passages de test indexés. Les compétences, les notes et les favoris se consultent dans le panneau Owlbear. Sa taille suit la fiche ouverte.

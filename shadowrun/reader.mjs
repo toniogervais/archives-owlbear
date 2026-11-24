@@ -117,7 +117,7 @@ export function sectionExcerpt(entry,book,index=[]){
  if(Array.isArray(anchor)&&anchor.length===4){
   const [first,at,final,end]=anchor;
   if(Number.isInteger(first)&&Number.isInteger(final)&&Number.isInteger(at)&&Number.isInteger(end)&&first>=1&&final>=first&&final<=book.pages.length&&at>=0&&end>=0){
-   const last=Math.min(final,first+1),part=book.pages.slice(first-1,last).map((p,i)=>p.text.slice(i===0?at:0,first+i===final?end:undefined)).join('\n');
+   const last=Math.min(final,first+19),part=book.pages.slice(first-1,last).map((p,i)=>p.text.slice(i===0?at:0,first+i===final?end:undefined)).join('\n');
    const found=getExcerpt(part,headings,entry,ref,index,first,last,final>last,book);
    if(found)return {...found,matchedBy:'heading-and-anchor',fullEndPage:final};
    // The private book's explicit [start,end] anchor is keyed to this precise
@@ -126,7 +126,7 @@ export function sectionExcerpt(entry,book,index=[]){
    // Do not use this fallback for titles matched by proximity or name alone.
    const anchored=part.trim();
    if(ref.id===entry.id&&anchored.length>=35){
-    const maxLength=20000;
+    const maxLength=100000;
     return {title:ref.title||entry.title,text:anchored.slice(0,maxLength),page:first,endPage:last,fullEndPage:final,truncated:final>last||anchored.length>maxLength,matchedBy:'exact-id-anchor'};
    }
   }

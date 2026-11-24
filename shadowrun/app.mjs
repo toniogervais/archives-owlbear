@@ -1,23 +1,24 @@
-import {VERSION,validateLibrary,parseLibraryText,parseLibraryFileText,normalize,literalPrice,quantity,safeCart,inventoryText} from './model.mjs?v=145';
-import {prepareEntries,searchEntries,makeAliases,libraryPages,profileText,profileRolls} from './search.mjs?v=145';
-import {getStored,putStored,deleteStored} from './storage.mjs?v=145';
-import {bridge,ready,OBR} from './bridge.mjs?v=145';
-import {sectionExcerpt} from './reader.mjs?v=145';
-import {conciseSourceDescription,sourceContext} from './source-descriptions.mjs?v=145';
-import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './content.mjs?v=145';
-import {readBookPdf} from './pdf-import.mjs?v=145';
+import {VERSION,validateLibrary,parseLibraryText,parseLibraryFileText,normalize,literalPrice,quantity,safeCart,inventoryText} from './model.mjs?v=146';
+import {prepareEntries,searchEntries,makeAliases,libraryPages,profileText,profileRolls} from './search.mjs?v=146';
+import {getStored,putStored,deleteStored} from './storage.mjs?v=146';
+import {bridge,ready,OBR} from './bridge.mjs?v=146';
+import {sectionExcerpt} from './reader.mjs?v=146';
+import {conciseSourceDescription,sourceContext} from './source-descriptions.mjs?v=146';
+import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './content.mjs?v=146';
+import {readBookPdf} from './pdf-import.mjs?v=146';
 
-import {THEMES, topicOf, topicsOf, hasRoll, mergeTableRules} from './themes.mjs?v=145';
-import {hasTable, tableShelf, startTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=145';
-import {observePanel} from './panel-size.mjs?v=145';
-import {quickCatalogHierarchy,classifyEntry,KIND_NAMES} from './catalog.mjs?v=145';
-import {profileSkillPools,profileChoicePools,skillGuideEntries} from './profile-pools.mjs?v=145';
-import {actionType} from './action-types.mjs?v=145';
-import {canTranslateLocally,translatePassage} from './translation.mjs?v=145';
-import {profileSectionRows} from './profile-sections.mjs?v=145';
-import {EDGE_ENTRIES,EDGE_CATEGORIES,EDGE_COUNTS} from './edge-catalog.mjs?v=145';
-import {installWindowControls} from './window-controls.mjs?v=145';
-import {sendToArchives} from './archive-transfer.mjs?v=145';
+import {THEMES, topicOf, topicsOf, hasRoll, mergeTableRules} from './themes.mjs?v=146';
+import {hasTable, tableShelf, startTable, connectPersonalTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=146';
+import {originalReferences,originalSourceLabel} from './source-links.mjs?v=146';
+import {observePanel} from './panel-size.mjs?v=146';
+import {quickCatalogHierarchy,classifyEntry,KIND_NAMES} from './catalog.mjs?v=146';
+import {profileSkillPools,profileChoicePools,skillGuideEntries} from './profile-pools.mjs?v=146';
+import {actionType} from './action-types.mjs?v=146';
+import {canTranslateLocally,translatePassage} from './translation.mjs?v=146';
+import {profileSectionRows} from './profile-sections.mjs?v=146';
+import {EDGE_ENTRIES,EDGE_CATEGORIES,EDGE_COUNTS} from './edge-catalog.mjs?v=146';
+import {installWindowControls} from './window-controls.mjs?v=146';
+import {sendToArchives} from './archive-transfer.mjs?v=146';
 
 const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -212,8 +213,9 @@ async function selectEntry(e,{mobile=true,remember=true}={}){
   if(section){const b=document.createElement('button');b.className='relation';b.textContent='Rubrique · '+title(section);b.onclick=()=>selectEntry(section);root.append(b);}
  }
  renderArtwork(e,root);
+ root.insertAdjacentHTML('beforeend',`<details class="my-notes"><summary>Mes notes de partie</summary>${noteHtml(e)}</details>`);
  renderSource(e,root);
- root.insertAdjacentHTML('beforeend',`<details class="my-notes"><summary>Mes notes de partie</summary>${noteHtml(e)}</details>`);bindDetail(e);
+ bindDetail(e);
  root.scrollTop=0;$('#results').querySelectorAll('.result').forEach(b=>b.classList.toggle('active',b.dataset.id===e.id));
  if(mobile){$('.workspace').classList.add('show-detail');root.focus({preventScroll:true});}
 }
@@ -226,11 +228,72 @@ function getPrivateBook(id){
  }
  return remote||local;
 }
-function renderSource(e,root){
+function showPersonalTableConnection(){
+ const dialog=$('#infoDialog'),body=$('#infoBody');
+ $('#infoTitle').textContent='Relier ma bibliothèque privée Shadowrun';
+ body.replaceChildren();
+ const explanation=document.createElement('p');
+ explanation.textContent='Colle le lien personnel de ta table privée une seule fois. Aucun PDF à réimporter.';
+ const input=document.createElement('input');input.type='password';input.autocomplete='off';
+ input.className='source-access-input';input.placeholder='Lien personnel de la table';input.setAttribute('aria-label','Lien personnel de la table');
+ const status=document.createElement('p');status.className='small';status.setAttribute('role','status');
+ const button=document.createElement('button');button.className='primary';button.textContent='Activer la bibliothèque';
+ button.onclick=async()=>{
+  button.disabled=true;status.textContent='Vérification du lien privé…';
+  try{await connectPersonalTable(input.value);dialog.close();await activateTable(state.selected?.id);}
+  catch(error){status.textContent=error.message;button.disabled=false;}
+ };
+ body.append(explanation,input,button,status);if(!dialog.open)dialog.showModal();input.focus();
+}
+function appendIndexedSourceTable(root,e){
+ const fields=e.kind==='equipment'?(e.fields||[]):[];
+ const originalCells=['npc','creature'].includes(e.kind)?(e.original?.attributeCells||[]):[];
+ if(!fields.length&&!originalCells.length)return;
+ const section=document.createElement('section');section.className='source-indexed-table';
+ const heading=document.createElement('h4');heading.textContent=fields.length?'Ligne de tableau indexée':'Cellules originales du profil';
+ const note=document.createElement('p');note.className='small';
+ note.textContent='Valeurs relevées dans le tableau source. Le fac-similé, lorsqu’il est disponible, permet de contrôler leur alignement.';
+ const table=document.createElement('table');
+ const thead=document.createElement('thead'),body=document.createElement('tbody');
+ const names=fields.length?fields.map(f=>String(f.label)):originalCells.map(c=>String(c.label));
+ const values=fields.length?fields.map(f=>String(f.value)):originalCells.map(c=>String(c.value));
+ const th=document.createElement('tr'),td=document.createElement('tr');
+ names.forEach(x=>{const cell=document.createElement('th');cell.textContent=x;th.append(cell);});
+ values.forEach(x=>{const cell=document.createElement('td');cell.textContent=x;td.append(cell);});
+ thead.append(th);body.append(td);table.append(thead,body);
+ const scroll=document.createElement('div');scroll.className='table-wrap';scroll.append(table);
+ section.append(heading,note,scroll);root.append(section);
+}
+function appendSourceFacsimile(root,source,page){
+ const wrapper=document.createElement('figure');wrapper.className='source-facsimile';root.append(wrapper);
+ const caption=document.createElement('figcaption');caption.textContent='Tableau ou profil original · '+sourceName(source)+' · PDF '+page;
+ wrapper.append(caption);
+ if(!hasTable()||!tableShelf()?.pageImages){
+  const warning=document.createElement('p');warning.className='small source-warning';
+  warning.textContent='Fac-similé non disponible dans cette bibliothèque ; les colonnes ne peuvent pas être garanties par la seule transcription.';wrapper.append(warning);return;
+ }
+ const message=document.createElement('p');message.className='small';message.textContent='Chargement du tableau original…';wrapper.append(message);
+ const file='art-'+page+'-999.webp';
+ fetchPlate(source,file).then(blob=>{
+  if(!wrapper.isConnected)return;
+  const url=URL.createObjectURL(blob);selectedArtUrls.push(url);
+  const img=document.createElement('img');img.src=url;img.alt='Page originale : '+sourceName(source)+' PDF '+page;img.loading='lazy';
+  const zoom=document.createElement('button');zoom.type='button';zoom.className='subtle';zoom.textContent='Agrandir le tableau';
+  zoom.onclick=()=>openPlate(source,{file,page},true);
+  wrapper.replaceChildren(caption,img,zoom);
+ }).catch(()=>{if(wrapper.isConnected)message.textContent='Fac-similé indisponible. Vérifie les pages originales de la bibliothèque privée.';});
+}
+function renderSource(e,parent){
+ const root=document.createElement('section');root.className='source-bottom';parent.append(root);
+ const heading=document.createElement('h3');heading.textContent='Source originale — extrait et tableau';root.append(heading);
+ const refs=originalReferences(e,state.books);
+ const refLine=document.createElement('p');refLine.className='small source-info';
+ refLine.textContent=refs.length?refs.map(r=>r.roleName+' : '+originalSourceLabel(r)).join(' · '):'Référence précise manquante';
+ root.append(refLine);
  const book=getPrivateBook(e.source);
  if(!book&&hasTable()){
   const area=document.createElement('div');area.className='remote-source';root.append(area);
-  const auto=e.kind==='roll'||e.kind==='page'||e.kind==='equipment'||!(e.summary||e.attributes||e.fields?.length);
+  const auto=true; // load every source without manual interaction
   const open=document.createElement('button');open.className='subtle';open.textContent='Lire la section du livre';area.append(open);
   const load=async()=>{
    open.disabled=true;open.textContent='Ouverture de la section…';
@@ -247,19 +310,21 @@ function renderSource(e,root){
   const line=document.createElement('p');line.textContent=sourceLabel(e)+(e.endPage&&e.endPage>e.page?' · section jusqu’à PDF '+e.endPage:'');area.append(line);
   const path=(e.path||[]).filter(Boolean).join(' › ');
   if(path){const topic=document.createElement('p');topic.className='small';topic.textContent='Rubrique : '+path;area.append(topic);}
-  const open=document.createElement('button');open.className='subtle';open.textContent='Importer ce livre pour afficher la description et lire le passage original';open.onclick=showBooks;area.append(open);
+  const open=document.createElement('button');open.className='primary';open.textContent='Relier ma bibliothèque privée, sans importer les PDF';open.onclick=showPersonalTableConnection;area.append(open);
   return;
  }
- const details=document.createElement('details');details.className='source-reader';details.open=e.kind==='roll'||e.kind==='equipment'||(!e.summary&&!e.attributes&&!e.fields?.length)||e.kind==='page';
- const sum=document.createElement('summary');sum.textContent='Lire l’extrait original du livre · PDF p. '+(e.descriptionPage||e.page)+(book.language==='en'?' · source anglaise':'');details.append(sum);
+ const details=document.createElement('details');details.className='source-reader';details.open=true;
+ const sum=document.createElement('summary');sum.textContent='Texte original · '+sourceName(e.source)+' · PDF '+(e.descriptionPage||e.page)+(book.language==='en'?' · original anglais':'');details.append(sum);
  const reader=document.createElement('div');details.append(reader);root.append(details);let rendered=false;
  const populate=()=>{
   if(rendered||!details.open)return;rendered=true;
   const readingPage=e.kind==='equipment'?(e.descriptionPage||e.page):e.page;
   const pageText=book.pages[readingPage-1]?.text||'';
-  const passage=e.kind==='roll'&&book.anchors?pageText.slice(e.start,e.end):'';
+  const validRoll=e.kind==='roll'&&Number.isInteger(e.start)&&Number.isInteger(e.end)&&e.start>=0&&e.end>e.start&&e.end<=pageText.length;
+   const passage=validRoll?pageText.slice(e.start,e.end):'';
   const excerpt=(passage||e.kind==='page')?null:sectionExcerpt(e,book,state.index);
-  const text=passage||(e.kind==='page'?pageText:excerpt?.text||'');
+  const text=passage||(e.kind==='page'?pageText:excerpt?.text||pageText);
+   if(!passage&&!excerpt&&e.kind!=='page'){const note=document.createElement('p');note.className='small source-warning';note.textContent='Le passage individuel n’est pas délimité avec certitude : voici la transcription de sa page de référence complète. Vérifier les limites sur l’original.';reader.append(note);}
   const context=sourceContext(e,book,excerpt);
   const description=conciseSourceDescription(excerpt,book.language);
    if(excerpt){
@@ -298,6 +363,8 @@ function renderSource(e,root){
     const openPage=document.createElement('button');openPage.className='subtle';openPage.textContent='Consulter la page originale';openPage.onclick=()=>renderPage(reader,e.source,readingPage);
     reader.append(warning,openPage);
    }
+  appendIndexedSourceTable(reader,e);
+  for(const ref of refs.filter(r=>r.facsimile))appendSourceFacsimile(reader,ref.source,ref.page);
  };
  details.addEventListener('toggle',populate);if(details.open)populate();
 }
@@ -360,10 +427,11 @@ function situations(){
 async function copy(text){try{await navigator.clipboard.writeText(text);toast('Copié.');}catch{const d=$('#infoDialog');$('#infoTitle').textContent='Texte à copier';$('#infoBody').replaceChildren();const t=document.createElement('textarea');t.className='note';t.value=text;$('#infoBody').append(t);d.showModal();t.select();}}
 function showBooks(){
  const readyIds=new Set(hasTable()?state.books.map(b=>b.id):(state.library?.books.map(b=>b.id)||[]));
- $('#libraryStatus').textContent=hasTable()?'Les six ouvrages de ta table sont accessibles en ligne.':state.library?`${readyIds.size} ouvrages consultables sur cet appareil.`:'Les index et les fiches sont disponibles. Importe le fichier de bibliothèque pour lire et rechercher dans les ouvrages.';
+ $('#libraryStatus').textContent=hasTable()?'Les six ouvrages de ta table sont accessibles en ligne.':state.library?`${readyIds.size} ouvrages consultables sur cet appareil.`:'Les références sont disponibles. Pour afficher leurs textes et tableaux originaux directement, relie ta bibliothèque personnelle une seule fois.';
  $('#bookList').innerHTML=state.books.map(b=>`<div class="book-row"><div><strong>${esc(b.displayTitle||b.title)}</strong><p class="small">${b.pageCount} pages · ${b.language==='en'?'Source anglaise · fiches françaises':'Français'}</p></div><div class="book-actions"><button class="subtle" data-book="${esc(b.id)}">${readyIds.has(b.id)?'Ouvrir':'Voir les fiches'}</button><label class="subtle import-button">Ajouter son PDF<input type="file" data-pdfbook="${esc(b.id)}" accept=".pdf,application/pdf" hidden></label></div></div>`).join('');
  $('#removeLibrary').hidden=!state.library;
- $('#importLibrary').closest('label').hidden=hasTable();$('#bookList').querySelectorAll('.import-button').forEach(label=>label.hidden=false);
+ $('#importLibrary').closest('label').hidden=true;$('#bookList').querySelectorAll('.import-button').forEach(label=>label.hidden=true);
+ if(!hasTable()){const connect=document.createElement('button');connect.type='button';connect.className='primary';connect.textContent='Relier ma bibliothèque privée (une seule fois)';connect.onclick=showPersonalTableConnection;$('#bookList').prepend(connect);}
  $('#bookList').querySelectorAll('[data-book]').forEach(b=>b.onclick=()=>{if(!getPrivateBook(b.dataset.book)&&!hasTable()){state.kind='';$('#source').value=b.dataset.book;setKind('');$('#booksDialog').close();return;}$('#booksDialog').close();const book=sourceBook(b.dataset.book);selectEntry({id:`page:${book.id}:1`,title:book.displayTitle||book.title,kind:'page',source:book.id,page:1});});
  $('#bookList').querySelectorAll('[data-pdfbook]').forEach(input=>input.onchange=()=>importPdf(input.files[0],input.dataset.pdfbook));
  if(!$('#booksDialog').open)$('#booksDialog').showModal();
@@ -470,7 +538,7 @@ async function loadBundledJson(name){
  let lastError;
  for(let attempt=1;attempt<=2;attempt++){
   try{
-   const response=await fetch('data/'+name+'.json?v=145',{
+   const response=await fetch('data/'+name+'.json?v=146',{
     signal:typeof AbortSignal.timeout==='function'?AbortSignal.timeout(attempt===1?8000:12000):undefined,
     cache:attempt===1?'default':'reload'
    });
@@ -499,7 +567,7 @@ async function init(){
   void restoreLibrary();
   void activateTable(selection);
   void setupBridge().catch(fail);
-  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=145').catch(()=>{});
+  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js?v=146').catch(()=>{});
  }catch(e){
    $('#resultCount').textContent='Chargement interrompu';
    $('#detail').innerHTML='<div class="startup-error"><h2>Le catalogue n’a pas pu s’ouvrir</h2><p id="startupErrorText"></p><button id="retryLoad" class="primary">Réessayer le chargement</button></div>';
@@ -510,7 +578,7 @@ async function init(){
 }
 function initWorker(){
  try{
-   const w=new Worker(new URL('./search-worker.mjs?v=145',import.meta.url),{type:'module'});state.worker=w;
+   const w=new Worker(new URL('./search-worker.mjs?v=146',import.meta.url),{type:'module'});state.worker=w;
    w.onmessage=({data})=>{if(data.type==='results')renderResults(data);if(data.type==='ready'){state.workerReady=true;runSearch();}if(data.type==='library-ready')runSearch();if(data.type==='error')fail(Error(data.message));};
    w.onerror=()=>{w.terminate();state.worker=null;state.workerReady=false;runSearch();};w.postMessage({type:'init',entries:state.entries,terms:state.terms.terms});
   }catch{state.worker=null;}
