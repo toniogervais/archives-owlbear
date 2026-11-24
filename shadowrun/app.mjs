@@ -245,6 +245,25 @@ function showPersonalTableConnection(){
  };
  body.append(explanation,input,button,status);if(!dialog.open)dialog.showModal();input.focus();
 }
+function appendIndexedSourceTable(root,e){
+ const fields=e.kind==='equipment'?(e.fields||[]):[];
+ const originalCells=['npc','creature'].includes(e.kind)?(e.original?.attributeCells||[]):[];
+ if(!fields.length&&!originalCells.length)return;
+ const section=document.createElement('section');section.className='source-indexed-table';
+ const heading=document.createElement('h4');heading.textContent=fields.length?'Ligne de tableau indexée':'Cellules originales du profil';
+ const note=document.createElement('p');note.className='small';
+ note.textContent='Valeurs relevées dans le tableau source. Le fac-similé, lorsqu’il est disponible, permet de contrôler leur alignement.';
+ const table=document.createElement('table');
+ const thead=document.createElement('thead'),body=document.createElement('tbody');
+ const names=fields.length?fields.map(f=>String(f.label)):originalCells.map(c=>String(c.label));
+ const values=fields.length?fields.map(f=>String(f.value)):originalCells.map(c=>String(c.value));
+ const th=document.createElement('tr'),td=document.createElement('tr');
+ names.forEach(x=>{const cell=document.createElement('th');cell.textContent=x;th.append(cell);});
+ values.forEach(x=>{const cell=document.createElement('td');cell.textContent=x;td.append(cell);});
+ thead.append(th);body.append(td);table.append(thead,body);
+ const scroll=document.createElement('div');scroll.className='table-wrap';scroll.append(table);
+ section.append(heading,note,scroll);root.append(section);
+}
 function appendSourceFacsimile(root,source,page){
  const wrapper=document.createElement('figure');wrapper.className='source-facsimile';root.append(wrapper);
  const caption=document.createElement('figcaption');caption.textContent='Tableau ou profil original · '+sourceName(source)+' · PDF '+page;
@@ -305,6 +324,7 @@ function renderSource(e,parent){
    const passage=validRoll?pageText.slice(e.start,e.end):'';
   const excerpt=(passage||e.kind==='page')?null:sectionExcerpt(e,book,state.index);
   const text=passage||(e.kind==='page'?pageText:excerpt?.text||pageText);
+   if(!passage&&!excerpt&&e.kind!=='page'){const note=document.createElement('p');note.className='small source-warning';note.textContent='Le passage individuel n’est pas délimité avec certitude : voici la transcription de sa page de référence complète. Vérifier les limites sur l’original.';reader.append(note);}
   const context=sourceContext(e,book,excerpt);
   const description=conciseSourceDescription(excerpt,book.language);
    if(excerpt){
@@ -343,6 +363,7 @@ function renderSource(e,parent){
     const openPage=document.createElement('button');openPage.className='subtle';openPage.textContent='Consulter la page originale';openPage.onclick=()=>renderPage(reader,e.source,readingPage);
     reader.append(warning,openPage);
    }
+  appendIndexedSourceTable(reader,e);
   for(const ref of refs.filter(r=>r.facsimile))appendSourceFacsimile(reader,ref.source,ref.page);
  };
  details.addEventListener('toggle',populate);if(details.open)populate();
