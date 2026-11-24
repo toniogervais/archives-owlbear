@@ -9,7 +9,7 @@ export function originalReferences(entry,books){
   const key=source+':'+page;
   if(seen.has(key)){
    const existing=result.find(item=>item.source===source&&item.page===page);
-   if(existing&&role==='table')existing.role=role;
+   if(existing&&(role==='table'||role==='profile')){existing.role=role;existing.roleName=roleNames[role];existing.facsimile=true;}
    return;
   }
   seen.add(key);
