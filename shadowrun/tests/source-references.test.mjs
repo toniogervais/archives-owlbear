@@ -65,3 +65,27 @@ test('le lien de table privé doit être explicite et ne peut pas être deviné'
  assert.equal(accessFromText('https://example.org/shadowrun/'),null);
  assert.equal(accessFromText('not-a-token'),null);
 });
+
+test('la fiche place les extraits sous les notes et les ouvre par défaut',async()=>{
+ const app=await readFile(new URL('../app.mjs',import.meta.url),'utf8');
+ const detail=app.slice(app.indexOf('async function selectEntry('),app.indexOf('function getPrivateBook('));
+ assert.ok(detail.indexOf('renderSource(e,root)')>detail.indexOf('Mes notes de partie'));
+ assert.ok(app.includes("details.open=true;"));
+ assert.ok(app.includes("appendSourceFacsimile(reader,ref.source,ref.page)"));
+ assert.ok(app.includes("connectPersonalTable(input.value)"));
+});
+
+test('les ancres d’une rubrique sur trois pages conservent le passage jusqu’à sa fin',async()=>{
+ const {sectionExcerpt}=await import('../reader.mjs');
+ const content=['Sur cette première page, le passage commence et continue.',
+  'Le deuxième feuillet contient encore la même règle et ses restrictions.',
+  'Sur la troisième page, la dernière phrase appartient encore à cette rubrique.'];
+ const pages=content.map((text,i)=>({text:i===0?'Rubrique étendue\n'+text:text}));
+ const source={pages,anchors:{a:[1,0,3,content[2].length]}};
+ const entry={id:'a',source:'core',title:'Rubrique étendue',page:1,endPage:3,level:3};
+ const excerpt=sectionExcerpt(entry,source,[entry]);
+ assert.ok(excerpt);
+ assert.equal(excerpt.page,1);
+ assert.equal(excerpt.endPage,3);
+ assert.match(excerpt.text,/troisième page/);
+});
