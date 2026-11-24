@@ -8,7 +8,8 @@ import {assembleEntries,localKeyPoints,suggestedRules,SITUATIONS} from './conten
 import {readBookPdf} from './pdf-import.mjs?v=145';
 
 import {THEMES, topicOf, topicsOf, hasRoll, mergeTableRules} from './themes.mjs?v=145';
-import {hasTable, tableShelf, startTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=145';
+import {hasTable, tableShelf, startTable, connectPersonalTable, fetchBook, selectPlates, fetchPlate} from './table-books.mjs?v=146';
+import {originalReferences,originalSourceLabel} from './source-links.mjs?v=146';
 import {observePanel} from './panel-size.mjs?v=145';
 import {quickCatalogHierarchy,classifyEntry,KIND_NAMES} from './catalog.mjs?v=145';
 import {profileSkillPools,profileChoicePools,skillGuideEntries} from './profile-pools.mjs?v=145';
@@ -212,8 +213,9 @@ async function selectEntry(e,{mobile=true,remember=true}={}){
   if(section){const b=document.createElement('button');b.className='relation';b.textContent='Rubrique · '+title(section);b.onclick=()=>selectEntry(section);root.append(b);}
  }
  renderArtwork(e,root);
+ root.insertAdjacentHTML('beforeend',`<details class="my-notes"><summary>Mes notes de partie</summary>${noteHtml(e)}</details>`);
  renderSource(e,root);
- root.insertAdjacentHTML('beforeend',`<details class="my-notes"><summary>Mes notes de partie</summary>${noteHtml(e)}</details>`);bindDetail(e);
+ bindDetail(e);
  root.scrollTop=0;$('#results').querySelectorAll('.result').forEach(b=>b.classList.toggle('active',b.dataset.id===e.id));
  if(mobile){$('.workspace').classList.add('show-detail');root.focus({preventScroll:true});}
 }
