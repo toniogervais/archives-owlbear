@@ -7,6 +7,30 @@ const pending=new Map();
 let key, shelf;
 export function hasTable(){return valid(key);}
 export function tableShelf(){return shelf;}
+export function accessFromText(value){
+ const raw=String(value||'').trim();
+ if(valid(raw))return raw;
+ const found=/(?:[?#&]table=)([A-Za-z0-9_-]{32})(?:$|[&#])/i.exec(raw);
+ return found&&valid(found[1])?found[1]:null;
+}
+// Paste the previously issued private table link once; no PDF import is
+// required. The bearer credential must never be published in GitHub assets.
+export async function connectPersonalTable(value){
+ const candidate=accessFromText(value);
+ if(!candidate)throw Error('Lien personnel non reconnu. Utilise le lien privé de ta bibliothèque Shadowrun.');
+ const previous=key,previousShelf=shelf;
+ key=candidate;shelf=null;
+ try{
+  const requested=await readFile('shelf.json','json');
+  shelf=requested;
+  await putStored('table-access-v1',candidate);
+  pending.clear();
+  return requested;
+ }catch(error){
+  key=previous;shelf=previousShelf;
+  throw Error('Accès à la table privée impossible. Vérifie ton lien personnel.');
+ }
+}
 export async function startTable(){
  const fromLink=new URLSearchParams(location.hash.slice(1)).get('table');
  key=valid(fromLink)?fromLink:await getStored('table-access-v1');
