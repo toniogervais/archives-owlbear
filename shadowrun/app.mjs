@@ -228,7 +228,49 @@ function getPrivateBook(id){
  }
  return remote||local;
 }
-function renderSource(e,root){
+function showPersonalTableConnection(){
+ const dialog=$('#infoDialog'),body=$('#infoBody');
+ $('#infoTitle').textContent='Relier ma bibliothèque privée Shadowrun';
+ body.replaceChildren();
+ const explanation=document.createElement('p');
+ explanation.textContent='Colle le lien personnel de ta table privée une seule fois. Aucun PDF à réimporter.';
+ const input=document.createElement('input');input.type='password';input.autocomplete='off';
+ input.className='source-access-input';input.placeholder='Lien personnel de la table';input.setAttribute('aria-label','Lien personnel de la table');
+ const status=document.createElement('p');status.className='small';status.setAttribute('role','status');
+ const button=document.createElement('button');button.className='primary';button.textContent='Activer la bibliothèque';
+ button.onclick=async()=>{
+  button.disabled=true;status.textContent='Vérification du lien privé…';
+  try{await connectPersonalTable(input.value);dialog.close();await activateTable(state.selected?.id);}
+  catch(error){status.textContent=error.message;button.disabled=false;}
+ };
+ body.append(explanation,input,button,status);if(!dialog.open)dialog.showModal();input.focus();
+}
+function appendSourceFacsimile(root,source,page){
+ const wrapper=document.createElement('figure');wrapper.className='source-facsimile';root.append(wrapper);
+ const caption=document.createElement('figcaption');caption.textContent='Tableau ou profil original · '+sourceName(source)+' · PDF '+page;
+ wrapper.append(caption);
+ if(!hasTable()||!tableShelf()?.pageImages){
+  const warning=document.createElement('p');warning.className='small source-warning';
+  warning.textContent='Fac-similé non disponible dans cette bibliothèque ; les colonnes ne peuvent pas être garanties par la seule transcription.';wrapper.append(warning);return;
+ }
+ const message=document.createElement('p');message.className='small';message.textContent='Chargement du tableau original…';wrapper.append(message);
+ const file='art-'+page+'-999.webp';
+ fetchPlate(source,file).then(blob=>{
+  if(!wrapper.isConnected)return;
+  const url=URL.createObjectURL(blob);selectedArtUrls.push(url);
+  const img=document.createElement('img');img.src=url;img.alt='Page originale : '+sourceName(source)+' PDF '+page;img.loading='lazy';
+  const zoom=document.createElement('button');zoom.type='button';zoom.className='subtle';zoom.textContent='Agrandir le tableau';
+  zoom.onclick=()=>openPlate(source,{file,page},true);
+  wrapper.replaceChildren(caption,img,zoom);
+ }).catch(()=>{if(wrapper.isConnected)message.textContent='Fac-similé indisponible. Vérifie les pages originales de la bibliothèque privée.';});
+}
+function renderSource(e,parent){
+ const root=document.createElement('section');root.className='source-bottom';parent.append(root);
+ const heading=document.createElement('h3');heading.textContent='Source originale — extrait et tableau';root.append(heading);
+ const refs=originalReferences(e,state.books);
+ const refLine=document.createElement('p');refLine.className='small source-info';
+ refLine.textContent=refs.length?refs.map(r=>r.roleName+' : '+originalSourceLabel(r)).join(' · '):'Référence précise manquante';
+ root.append(refLine);
  const book=getPrivateBook(e.source);
  if(!book&&hasTable()){
   const area=document.createElement('div');area.className='remote-source';root.append(area);
