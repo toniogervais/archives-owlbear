@@ -24,6 +24,11 @@ export async function connectPersonalTable(value){
   const requested=await readFile('shelf.json','json');
   shelf=requested;
   await putStored('table-access-v1',candidate);
+  // A previously opened personal URL must not overwrite the newly connected
+  // key on the next activation. Once stored, the bearer need not stay in URL.
+  if(typeof location!=='undefined'&&typeof history!=='undefined'&&/[?#&]table=/.test(location.hash)){
+   const cleanUrl=new URL(location.href);cleanUrl.hash='';history.replaceState(null,'',cleanUrl.href);
+  }
   pending.clear();
   return requested;
  }catch(error){
