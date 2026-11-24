@@ -184,3 +184,18 @@ dialog.image-reader{width:min(96vw,1100px);max-height:94dvh}.image-reader #infoB
 .source-translation>div{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.58}
 .source-reader>summary{font-weight:650;cursor:pointer;padding:.65rem .5rem}
 .source-empty button{max-width:100%;white-space:normal}
+
+/* SR6 1.4.5 — exact original sources always at the bottom of the opened fiche. */
+.source-bottom{margin:1.1rem 0 0;padding:1rem;border:1px solid var(--line);border-radius:12px;background:var(--panel);max-width:100%;min-width:0}
+.source-bottom>h3{margin:0 0 .6rem;font-size:1.12rem;color:var(--accent)}
+.source-bottom .source-info{color:var(--muted);line-height:1.55;overflow-wrap:anywhere;margin:.3rem 0 .7rem}
+.source-bottom .source-reader{border-top:1px solid var(--line);padding-top:.55rem}
+.source-bottom .source-reader>summary{cursor:pointer;font-size:.94rem;padding:.5rem 0;font-weight:650}
+.source-bottom .source-original,.source-bottom .booktext{font-size:.92rem;line-height:1.64;max-width:100%;overflow-wrap:anywhere;white-space:pre-wrap}
+.source-facsimile{margin:1rem 0 .6rem;padding:.75rem;border:1px solid var(--line);border-radius:10px;max-width:100%;background:var(--raised)}
+.source-facsimile figcaption{font-size:.83rem;font-weight:650;margin:0 0 .55rem}
+.source-facsimile img{display:block;width:100%;max-width:100%;height:auto;object-fit:contain;border-radius:5px}
+.source-facsimile button{margin-top:.65rem}
+.source-bottom .source-access-input{display:block;width:100%;min-height:40px;margin:.6rem 0 .9rem;padding:.6rem;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.source-bottom .source-warning{line-height:1.55;overflow-wrap:anywhere}
+@media(max-width:650px){.source-bottom{padding:.65rem}.source-facsimile{padding:.45rem}}
