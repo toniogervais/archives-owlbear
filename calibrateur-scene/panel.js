@@ -8,7 +8,7 @@ async function refresh(force=false){if(!ready)return;const e=epoch;const [m,i,d,
 async function run(fn){if(busy||!ready||!gm)return;busy=true;paint();try{await fn();await refresh(true)}catch(e){msg(e?.message||String(e),true)}finally{busy=false;paint()}}
 function form(){const r={...s,mapId:$("map").value,size:Number($("size").value),x:Number($("x").value),y:Number($("y").value)};if(!valid(r)||!$("size").value||!$("x").value||!$("y").value)throw Error("Saisis une taille valide et les coordonnées du centre.");return r}
 for(const id of ["size","x","y"])$(id).oninput=()=>{dirty=true;paint()};
-$("map").onchange=()=>{if(s)run(async()=>{await write({...form(),mapId:$("map").value});msg("Carte de référence choisie.")})};
+$("map").onchange=()=>{const selected=$("map").value;if(s)run(async()=>{await write({...form(),mapId:selected});msg("Carte de référence choisie.")})};
 $("pick").onclick=()=>run(async()=>{const selection=await OBR.player.getSelection();const tokens=(await OBR.scene.items.getItems(selection||[])).filter(isToken);if(tokens.length!==1)throw Error("Sélectionne exactement un token personnage, monture ou objet sur la scène.");const token=tokens[0];const b=await OBR.scene.items.getItemBounds([token.id]);const mapId=$("map").value||items.find(isMap)?.id||"";await write({id:crypto.randomUUID(),...fromBounds(b),tokenId:token.id,mapId,active:true,full:false});msg("Case créée autour du token. Ajuste sa taille ou tire un coin avec l’outil Calibrer la case.")});
 $("update").onclick=()=>run(async()=>{await write({...form(),active:true});msg("Case actualisée.")});
 $("preview").onclick=()=>run(async()=>{await write({...form(),active:true,full:s.active?!s.full:false});msg("Aperçu réservé au MJ.")});
