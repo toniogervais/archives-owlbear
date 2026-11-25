@@ -1,0 +1,14 @@
+{
+  "name": "Calibrateur V2.6 — Case intégrée",
+  "version": "2.6.0",
+  "manifest_version": 1,
+  "description": "Case temporaire dans les pixels de la carte originale, sans moteur de fond.",
+  "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v260/icon.svg",
+  "action": {
+    "title": "Calibrateur V2.6",
+    "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v260/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/calibrateur-v260/index.html",
+    "width": 380,
+    "height": 650
+  }
+}
