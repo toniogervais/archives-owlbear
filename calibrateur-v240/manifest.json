@@ -1,0 +1,15 @@
+{
+  "name": "Calibrateur de grille V2.4",
+  "version": "2.4.0",
+  "manifest_version": 1,
+  "description": "Support temporaire pour Align Image, transfert sur la carte originale et retrait de grille.",
+  "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v240/icon.svg",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/calibrateur-v240/background.html",
+  "action": {
+    "title": "Calibrateur V2.4",
+    "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v240/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/calibrateur-v240/index.html",
+    "width": 420,
+    "height": 760
+  }
+}
