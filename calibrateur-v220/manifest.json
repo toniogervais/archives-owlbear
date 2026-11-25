@@ -1,0 +1,15 @@
+{
+  "name": "Calibrateur de grille V2.2",
+  "version": "2.2.0",
+  "manifest_version": 1,
+  "description": "Grille ancrée aux cartes et mode de superposition native.",
+  "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v220/icon.svg",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/calibrateur-v220/background.html",
+  "action": {
+    "title": "Calibrateur V2.2",
+    "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v220/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/calibrateur-v220/index.html",
+    "width": 420,
+    "height": 760
+  }
+}
