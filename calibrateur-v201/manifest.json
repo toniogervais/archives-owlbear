@@ -1,0 +1,15 @@
+{
+  "name": "Calibrateur de grille V2.0.1",
+  "version": "2.0.1",
+  "manifest_version": 1,
+  "description": "Grille personnalisée par scène, calibration visuelle, mesure et aimantation.",
+  "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v201/icon.svg",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/calibrateur-v201/background.html",
+  "action": {
+    "title": "Calibrateur V2.0.1",
+    "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v201/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/calibrateur-v201/index.html",
+    "width": 420,
+    "height": 700
+  }
+}
