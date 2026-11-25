@@ -1,5 +1,5 @@
-import {OBR,KEY,UNDO,isMap,isToken,state,write} from "./shared.js";
-import {valid,fromBounds,transform,snapshot,same} from "./math.js";
+import {OBR,KEY,UNDO,isMap,isToken,state,write} from "./shared.js?v=110";
+import {valid,fromBounds,transform,snapshot,same} from "./math.js?v=110";
 const $=id=>document.getElementById(id);let s=null,undo=null,items=[],ready=false,gm=false,busy=false,dpi=0,type="",dirty=false,epoch=0;
 const msg=(v,error=false)=>{$("status").textContent=v;$("status").classList.toggle("error",error)};
 function option(sel,items,preferred){const old=preferred||sel.value;sel.replaceChildren();for(const i of items){const o=document.createElement("option");o.value=i.id;o.textContent=i.name||i.id;sel.append(o)}if(items.some(i=>i.id===old))sel.value=old}
@@ -9,7 +9,7 @@ async function run(fn){if(busy||!ready||!gm)return;busy=true;paint();try{await f
 function form(){const r={...s,mapId:$("map").value,size:Number($("size").value),x:Number($("x").value),y:Number($("y").value)};if(!valid(r)||!$("size").value||!$("x").value||!$("y").value)throw Error("Saisis une taille valide et les coordonnées du centre.");return r}
 for(const id of ["size","x","y"])$(id).oninput=()=>{dirty=true;paint()};
 $("map").onchange=()=>{const selected=$("map").value;if(s)run(async()=>{await write({...form(),mapId:selected});msg("Carte de référence choisie.")})};
-$("pick").onclick=()=>run(async()=>{const selection=await OBR.player.getSelection();const tokens=(await OBR.scene.items.getItems(selection||[])).filter(isToken);if(tokens.length!==1)throw Error("Sélectionne exactement un token personnage, monture ou objet sur la scène.");const token=tokens[0];const b=await OBR.scene.items.getItemBounds([token.id]);const mapId=$("map").value||items.find(isMap)?.id||"";await write({id:crypto.randomUUID(),...fromBounds(b),tokenId:token.id,mapId,active:true,full:false});msg("Case créée autour du token. Ajuste sa taille ou tire un coin avec l’outil Calibrer la case.")});
+$("pick").onclick=()=>run(async()=>{const selection=await OBR.player.getSelection();const tokens=(await OBR.scene.items.getItems(selection||[])).filter(isToken);if(tokens.length!==1)throw Error("Sélectionne exactement un token personnage, monture ou objet sur la scène.");const token=tokens[0];const b=await OBR.scene.items.getItemBounds([token.id]);const mapId=$("map").value||items.find(isMap)?.id||"";await write({id:crypto.randomUUID(),...fromBounds(b),tokenId:token.id,mapId,active:true,full:false});msg("Case créée autour du token. Tire l’une des 8 poignées avec l’outil Calibrer la case.")});
 $("update").onclick=()=>run(async()=>{await write({...form(),active:true});msg("Case actualisée.")});
 $("preview").onclick=()=>run(async()=>{await write({...form(),active:true,full:s.active?!s.full:false});msg("Aperçu réservé au MJ.")});
 $("hide").onclick=()=>run(async()=>{await write({...form(),active:false});msg("Aperçu masqué.")});
