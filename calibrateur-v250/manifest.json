@@ -1,0 +1,15 @@
+{
+  "name": "Calibrateur V2.5 — Paramètres natifs",
+  "version": "2.5.0",
+  "manifest_version": 1,
+  "description": "Calcul et application des paramètres DPI et origine de la carte, sans grille superposée.",
+  "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v250/icon.svg",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/calibrateur-v250/background.html",
+  "action": {
+    "title": "Calibrateur V2.5",
+    "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v250/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/calibrateur-v250/index.html",
+    "width": 420,
+    "height": 760
+  }
+}
