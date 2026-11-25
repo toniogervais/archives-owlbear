@@ -13,4 +13,18 @@ export function read(i){const m=i.metadata[KEY];return clean({...defaults,...m,w
 export function apply(i,s){s=clean(s);i.position={x:s.x,y:s.y};i.rotation=s.rotation;i.scale={x:1,y:1};i.commands=commands(s);i.style.strokeColor=s.color;i.style.strokeOpacity=s.shown?s.opacity:0;i.style.strokeWidth=s.thickness;i.style.fillOpacity=0;i.visible=s.shown;i.locked=s.locked||!s.shown;i.disableHit=s.locked||!s.shown;i.layer="GRID";i.metadata[KEY]=s;delete i.attachedTo}
 export function make(s){s=clean(s);return buildPath().name("Grille tactique libre").layer("GRID").position({x:s.x,y:s.y}).rotation(s.rotation).scale({x:1,y:1}).commands(commands(s)).fillOpacity(0).strokeColor(s.color).strokeOpacity(s.opacity).strokeWidth(s.thickness).metadata({[KEY]:s}).locked(s.locked).disableHit(s.locked).build()}
 export async function save(id,s){await OBR.scene.items.updateItems([id],items=>{for(const i of items){if(isGrid(i))apply(i,s)}})}
-export function dragGeometry(s,start,end,resize){const dx=end.x-start.x,dy=end.y-start.y;if(!resize)return clean({...s,x:s.x+dx,y:s.y+dy});const rad=s.rotation*Math.PI/180,c=Math.cos(rad),n=Math.sin(rad);const lx=c*dx+n*dy,ly=-n*dx+c*dy;const localX=c*(start.x-s.x)+n*(start.y-s.y),localY=-n*(start.x-s.x)+c*(start.y-s.y);const sx=localX<0?-1:1,sy=localY<0?-1:1;const w=clamp(s.width+sx*lx,1,100000),h=clamp(s.height+sy*ly,1,100000);const cx=sx*(w-s.width)/2,cy=sy*(h-s.height)/2;return clean({...s,width:w,height:h,x:s.x+c*cx-n*cy,y:s.y+n*cx+c*cy})}
+export function cornerHit(s,p){const a=s.rotation*Math.PI/180,c=Math.cos(a),n=Math.sin(a),dx=p.x-s.x,dy=p.y-s.y;const x=c*dx+n*dy,y=-n*dx+c*dy;return Math.abs(Math.abs(x)-s.width/2)<=s.width*.08&&Math.abs(Math.abs(y)-s.height/2)<=s.height*.08}
+export function dragGeometry(s,start,end,resize){
+ const dx=end.x-start.x,dy=end.y-start.y;
+ if(!resize)return clean({...s,x:s.x+dx,y:s.y+dy});
+ const rad=s.rotation*Math.PI/180,c=Math.cos(rad),n=Math.sin(rad);
+ const lx=c*dx+n*dy,ly=-n*dx+c*dy;
+ const localX=c*(start.x-s.x)+n*(start.y-s.y),localY=-n*(start.x-s.x)+c*(start.y-s.y);
+ const sx=localX<0?-1:1,sy=localY<0?-1:1;
+ // Project the pointer displacement onto the selected diagonal.
+ // Use one scale for both axes and keep the opposite corner fixed.
+ const k=clamp(1+(sx*s.width*lx+sy*s.height*ly)/(s.width*s.width+s.height*s.height),Math.max(1/s.width,1/s.height),Math.min(100000/s.width,100000/s.height));
+ const w=s.width*k,h=s.height*k;
+ const cx=sx*(w-s.width)/2,cy=sy*(h-s.height)/2;
+ return clean({...s,width:w,height:h,x:s.x+c*cx-n*cy,y:s.y+n*cx+c*cy});
+}
