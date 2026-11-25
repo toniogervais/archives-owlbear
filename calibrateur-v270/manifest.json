@@ -1,0 +1,14 @@
+{
+  "name": "Calibrateur numérique V2.7",
+  "version": "2.7.0",
+  "manifest_version": 1,
+  "description": "Mesure du token et calcul des dimensions natives de la carte. Lecture seule.",
+  "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v270/icon.svg",
+  "action": {
+    "title": "Calibrateur V2.7",
+    "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v270/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/calibrateur-v270/index.html",
+    "width": 400,
+    "height": 690
+  }
+}
