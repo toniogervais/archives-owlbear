@@ -1,0 +1,14 @@
+{
+  "name": "Calibrateur V2.8 — Import natif",
+  "version": "2.8.0",
+  "manifest_version": 1,
+  "description": "Copie de carte avec DPI et origine natifs définis à l’import. Aucun quadrillage ajouté.",
+  "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v280/icon.svg",
+  "action": {
+    "title": "Calibrateur V2.8",
+    "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v280/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/calibrateur-v280/index.html",
+    "width": 400,
+    "height": 610
+  }
+}
