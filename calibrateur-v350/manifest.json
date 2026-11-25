@@ -1,0 +1,15 @@
+{
+  "name": "Calibrateur V3.5 — Sur la scène",
+  "version": "3.5.0",
+  "manifest_version": 1,
+  "description": "Mesure directement dans la scène, repères locaux MJ et calibrage natif.",
+  "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v350/ruler.svg",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/calibrateur-v350/background.html",
+  "action": {
+    "title": "Aide calibrateur V3.5",
+    "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v350/ruler.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/calibrateur-v350/index.html",
+    "width": 320,
+    "height": 260
+  }
+}
