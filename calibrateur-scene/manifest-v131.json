@@ -1,0 +1,15 @@
+{
+  "name": "Calibrateur de scène V1.3.1",
+  "version": "1.3.1",
+  "manifest_version": 1,
+  "description": "Calibration visuelle à partir d’un token, correction de la détection de la carte.",
+  "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-scene/icon.svg",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/calibrateur-scene/background.html?v=131",
+  "action": {
+    "title": "Calibrateur V1.3.1",
+    "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-scene/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/calibrateur-scene/index.html?v=131",
+    "width": 420,
+    "height": 640
+  }
+}
