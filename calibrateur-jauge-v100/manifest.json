@@ -1,0 +1,14 @@
+{
+  "name": "Calibrateur à jauge V1.0",
+  "version": "1.0.0",
+  "manifest_version": 1,
+  "description": "Calibration par homothétie de la scène et jauge de 1, 3 et 5 cases.",
+  "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-jauge-v100/icon.svg",
+  "action": {
+    "title": "Calibrateur à jauge",
+    "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-jauge-v100/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/calibrateur-jauge-v100/index.html",
+    "width": 340,
+    "height": 375
+  }
+}
