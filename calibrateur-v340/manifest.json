@@ -1,0 +1,14 @@
+{
+  "name": "Calibrateur V3.4 — Vérification native",
+  "version": "3.4.0",
+  "manifest_version": 1,
+  "description": "Calibrage proportionnel des images de la scène sur les intersections natives, avec contrôle des limites réelles et annulation.",
+  "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v340/icon.svg",
+  "action": {
+    "title": "Calibrateur V3.4",
+    "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v340/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/calibrateur-v340/index.html",
+    "width": 440,
+    "height": 780
+  }
+}
