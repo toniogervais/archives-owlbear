@@ -1,0 +1,15 @@
+{
+  "name": "Calibrateur V2.4.1 — Case unique",
+  "version": "2.4.1",
+  "manifest_version": 1,
+  "description": "Une case image temporaire pour alignement natif, puis transfert sur la carte propre.",
+  "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v241/icon.svg",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/calibrateur-v241/background.html",
+  "action": {
+    "title": "Calibrateur V2.4.1",
+    "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v241/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/calibrateur-v241/index.html",
+    "width": 420,
+    "height": 760
+  }
+}
