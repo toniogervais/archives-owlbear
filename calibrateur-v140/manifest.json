@@ -1,0 +1,15 @@
+{
+  "name": "Calibrateur de scène V1.4",
+  "version": "1.4.0",
+  "manifest_version": 1,
+  "description": "Calibrer une carte à partir d’un token et transférer son échelle vers la grille native Owlbear.",
+  "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v140/icon.svg",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/calibrateur-v140/background.html?v=140",
+  "action": {
+    "title": "Calibrateur V1.4",
+    "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v140/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/calibrateur-v140/launcher.html",
+    "width": 235,
+    "height": 115
+  }
+}
