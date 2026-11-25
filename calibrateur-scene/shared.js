@@ -1,5 +1,5 @@
 import OBR,{buildPath,Command} from "https://esm.sh/@owlbear-rodeo/sdk@3";
-import {valid,extent,HANDLES} from "./math.js?v=110";
+import {valid,extent,HANDLES} from "./math.js?v=120";
 export {OBR};
 export const KEY="fr.toniogervais.calibrateur/v1",UNDO=KEY+"/undo",LOCAL=KEY+"/preview",TOOL=KEY+"/tool",MODE=TOOL+"/adjust";
 export const isMap=i=>i.layer==="MAP"&&i.type==="IMAGE";
