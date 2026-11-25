@@ -1,0 +1,15 @@
+{
+  "name": "Calibrateur V2.4.2 — Alignement automatique",
+  "version": "2.4.2",
+  "manifest_version": 1,
+  "description": "Calibrage direct de la carte sur la grille native sans loupe ni support temporaire.",
+  "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v242/icon.svg",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/calibrateur-v242/background.html",
+  "action": {
+    "title": "Calibrateur V2.4.2",
+    "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v242/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/calibrateur-v242/index.html",
+    "width": 420,
+    "height": 760
+  }
+}
