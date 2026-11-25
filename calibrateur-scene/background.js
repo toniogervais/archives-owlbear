@@ -1,5 +1,5 @@
-import {OBR,KEY,TOOL,MODE,state,write,render} from "./shared.js?v=120";
-import {valid,drag,handleAt} from "./math.js?v=120";
+import {OBR,KEY,TOOL,MODE,state,write,render} from "./shared.js?v=131";
+import {valid,drag,handleAt} from "./math.js?v=131";
 let current=null,bounds=null,gesture=null,pending=null,running=false,epoch=0;
 function queue(s){pending={s,b:bounds,e:epoch};if(!running)void flush()}
 async function flush(){running=true;try{while(pending){const p=pending;pending=null;if(p.e===epoch&&await OBR.scene.isReady())await render(p.s,p.b)}}catch(e){console.error("Calibrateur aperçu",e)}finally{running=false;if(pending)void flush()}}

@@ -12,3 +12,8 @@ export function extent(s,b){if(!b)return {l:-5,r:6,t:-5,b:6};const x=s.x-s.size/
 export function imageFrame(item,b){const x=(b.min.x+b.max.x)/2,y=(b.min.y+b.max.y)/2,bw=b.max.x-b.min.x,bh=b.max.y-b.min.y,a=(item.rotation||0)*Math.PI/180,c=Math.abs(Math.cos(a)),s=Math.abs(Math.sin(a));const rw=item.image.width*Math.abs(item.scale.x),rh=item.image.height*Math.abs(item.scale.y);const pw=c*rw+s*rh,ph=s*rw+c*rh;const k=(bw*pw+bh*ph)/(pw*pw+ph*ph);if(!(k>0&&Number.isFinite(k)))throw Error("Dimensions du token indisponibles.");return {x,y,w:rw*k,h:rh*k,rotation:item.rotation||0,flipX:Math.sign(item.scale.x)||1,flipY:Math.sign(item.scale.y)||1}}
 export function independentCase(b,dpi){return {x:(b.min.x+b.max.x)/2,y:(b.min.y+b.max.y)/2,size:clamp(dpi||150,1,100000)}}
 export function descendsFrom(item,ancestor,all){const seen=new Set();let p=item.attachedTo;while(p&&!seen.has(p)){if(p===ancestor)return true;seen.add(p);p=all.find(i=>i.id===p)?.attachedTo}return false}
+
+export const image=i=>!!i&&i.type==="IMAGE"&&!!i.image;
+export function maps(items,tokenId){const list=items.filter(i=>image(i)&&i.id!==tokenId);const native=list.filter(i=>i.layer==="MAP");return native.length?native:list}
+export function pickMap(items,tokenId,preferred){const list=maps(items,tokenId);return list.find(i=>i.id===preferred)?.id||(list.length===1&&list[0].layer==="MAP"?list[0].id:"")}
+export function closeTransform(i,t){return !!i&&["x","y"].every(k=>["position","scale"].every(p=>Math.abs(i[p][k]-t[p][k])<=Math.max(.001,Math.abs(t[p][k])*.000001)))}

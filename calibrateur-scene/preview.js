@@ -1,4 +1,4 @@
-import {HANDLES,drag,clamp} from "./math.js?v=120";
+import {HANDLES,drag,clamp} from "./math.js?v=131";
 const NS="http://www.w3.org/2000/svg";
 function el(name,attrs={}){const a=document.createElementNS(NS,name);for(const [k,v] of Object.entries(attrs))a.setAttribute(k,String(v));return a}
 export function createPreview(svg,onChange,onCommit){
