@@ -1,0 +1,15 @@
+{
+  "name": "Calibrateur de grille V2.3",
+  "version": "2.3.0",
+  "manifest_version": 1,
+  "description": "Grille incrustée dans une copie PNG pour Align Image, grille superposée et nettoyage.",
+  "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v230/icon.svg",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/calibrateur-v230/background.html",
+  "action": {
+    "title": "Calibrateur V2.3",
+    "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v230/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/calibrateur-v230/index.html",
+    "width": 420,
+    "height": 780
+  }
+}
