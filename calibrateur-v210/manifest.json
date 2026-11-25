@@ -1,0 +1,15 @@
+{
+  "name": "Calibrateur de grille V2.1",
+  "version": "2.1.0",
+  "manifest_version": 1,
+  "description": "Grille personnalisée sur plusieurs cartes, calibration visuelle, mesure et aimantation.",
+  "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v210/icon.svg",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/calibrateur-v210/background.html",
+  "action": {
+    "title": "Calibrateur V2.1",
+    "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v210/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/calibrateur-v210/index.html",
+    "width": 420,
+    "height": 760
+  }
+}
