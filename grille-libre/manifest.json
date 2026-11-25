@@ -1,14 +1,14 @@
 {
   "name": "Grille tactique libre",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "manifest_version": 1,
-  "description": "Grille indépendante : redimensionnement proportionnel aux coins, déplacement, masquage et verrouillage par scène.",
+  "description": "Grille indépendante : proportions conservées aux coins et aux côtés, déplacement, masquage et verrouillage.",
   "icon": "https://toniogervais.github.io/archives-owlbear/grille-libre/icon.svg",
-  "background_url": "https://toniogervais.github.io/archives-owlbear/grille-libre/background.html?v=110",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/grille-libre/background.html?v=120",
   "action": {
     "title": "Grille libre",
     "icon": "https://toniogervais.github.io/archives-owlbear/grille-libre/icon.svg",
-    "popover": "https://toniogervais.github.io/archives-owlbear/grille-libre/index.html?v=110",
+    "popover": "https://toniogervais.github.io/archives-owlbear/grille-libre/index.html?v=120",
     "width": 365,
     "height": 570
   }

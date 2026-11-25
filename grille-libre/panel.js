@@ -1,4 +1,4 @@
-import {OBR,defaults,clean,getGrid,read,make,save,isGrid,TOOL,MOVE,SIZE} from "./common.js?v=110";
+import {OBR,defaults,clean,getGrid,read,make,save,isGrid,TOOL,MOVE,SIZE} from "./common.js?v=120";
 const $=id=>document.getElementById(id),fields=["cols","rows","width","height","x","y","rotation","color","opacity","thickness"];
 let grid=null,busy=false,allowed=false,ready=false,dirty=false;
 function status(t,err=false){$("status").textContent=t;$("status").classList.toggle("error",err)}
