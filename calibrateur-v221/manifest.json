@@ -1,0 +1,15 @@
+{
+  "name": "Calibrateur de grille V2.2.1",
+  "version": "2.2.1",
+  "manifest_version": 1,
+  "description": "Grille ancrée, alignement natif et nettoyage des anciennes grilles.",
+  "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v221/icon.svg",
+  "background_url": "https://toniogervais.github.io/archives-owlbear/calibrateur-v221/background.html",
+  "action": {
+    "title": "Calibrateur V2.2.1",
+    "icon": "https://toniogervais.github.io/archives-owlbear/calibrateur-v221/icon.svg",
+    "popover": "https://toniogervais.github.io/archives-owlbear/calibrateur-v221/index.html",
+    "width": 420,
+    "height": 780
+  }
+}
